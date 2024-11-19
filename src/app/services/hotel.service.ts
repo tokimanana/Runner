@@ -58,24 +58,33 @@ export class HotelService {
         name: 'Bed & Breakfast',
         description: 'Daily breakfast at main restaurant',
         rates: [
-          { type: 'adult', rate: 35, ageRange: '12+' },
-          { type: 'child', rate: 18, ageRange: '2-11' },
-          { type: 'infant', rate: 0, ageRange: '0-1' }
+          { type: 'adult', rate: 35, ageRange: '13+' },
+          { type: 'child', rate: 18, ageRange: '4-12' },
+          { type: 'infant', rate: 0, ageRange: '0-3' }
+        ],
+        inclusions: [
+          'Breakfast Buffet',
+          'Non-alcoholic Drinks',
+          'Room Service'
         ]
       },
       {
         type: 'HB',
         name: 'Half Board',
-        description: 'Daily breakfast and dinner',
+        description: 'Daily breakfast and dinner at main restaurant',
         rates: [
-          { type: 'adult', rate: 65, ageRange: '12+' },
-          { type: 'child', rate: 33, ageRange: '2-11' },
-          { type: 'infant', rate: 0, ageRange: '0-1' }
+          { type: 'adult', rate: 65, ageRange: '13+' },
+          { type: 'child', rate: 33, ageRange: '4-12' },
+          { type: 'infant', rate: 0, ageRange: '0-3' }
+        ],
+        inclusions: [
+          'Breakfast Buffet',
+          'Dinner Buffet',
+          'Non-alcoholic Drinks',
+          'Room Service'
         ]
       }
     ]);
-
-
   
     // Initialize room data
     this.roomsMap.set(1, [
@@ -198,7 +207,7 @@ export class HotelService {
     return this.roomsMap.get(hotelId) || [];
   }
 
-  getMealPlans(hotelId: number): any[] {
+  getMealPlans(hotelId: number): MealPlan[] {
     return this.mealPlansMap.get(hotelId) || [];
   }
 
@@ -255,24 +264,25 @@ export class HotelService {
     this.roomsMap.set(hotelId, rooms.filter(r => r.id !== roomId));
   }
 
-  deleteMealPlan(hotelId: number, planType: string): void {
-    const plans = this.mealPlansMap.get(hotelId) || [];
-    this.mealPlansMap.set(hotelId, plans.filter(p => p.type !== planType));
+  deleteMealPlan(hotelId: number, planType: string) {
+    const currentPlans = this.mealPlansMap.get(hotelId) || [];
+    const filteredPlans = currentPlans.filter(plan => plan.type !== planType);
+    this.mealPlansMap.set(hotelId, filteredPlans);
   }
   
-  updateMealPlan(hotelId: number, mealPlan: MealPlan): void {
-    const plans = this.mealPlansMap.get(hotelId) || [];
-    const index = plans.findIndex(p => p.type === mealPlan.type);
-    if (index >= 0) {
-      plans[index] = mealPlan;
-      this.mealPlansMap.set(hotelId, plans);
+  updateMealPlan(hotelId: number, updatedPlan: MealPlan) {
+    const currentPlans = this.mealPlansMap.get(hotelId) || [];
+    const index = currentPlans.findIndex(plan => plan.type === updatedPlan.type);
+    if (index !== -1) {
+      currentPlans[index] = updatedPlan;
+      this.mealPlansMap.set(hotelId, currentPlans);
     }
   }
   
-  addMealPlan(hotelId: number, mealPlan: MealPlan): void {
-    const plans = this.mealPlansMap.get(hotelId) || [];
-    plans.push(mealPlan);
-    this.mealPlansMap.set(hotelId, plans);
+  addMealPlan(hotelId: number, mealPlan: MealPlan) {
+    const currentPlans = this.mealPlansMap.get(hotelId) || [];
+    currentPlans.push(mealPlan);
+    this.mealPlansMap.set(hotelId, currentPlans);
   }
   
   deleteSeason(hotelId: number, seasonId: number): void {
