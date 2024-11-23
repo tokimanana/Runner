@@ -1,0 +1,142 @@
+<div class="market-config-container">
+  <div class="market-groups-header">
+    <h2>Market Regions Configuration</h2>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="openMarketGroupEditor()">
+        <mat-icon>add</mat-icon>
+        Add Region
+      </button>
+    </div>
+  </div>
+
+  <div class="market-groups-grid">
+    <mat-card *ngFor="let group of marketGroups" class="market-group-card">
+      <mat-card-header>
+        <div class="market-group-title">
+          <mat-icon class="region-icon">public</mat-icon>
+          <mat-card-title>{{group.name}}</mat-card-title>
+          <mat-chip-set>
+            <mat-chip color="primary" selected>{{group.code}}</mat-chip>
+          </mat-chip-set>
+        </div>
+        <div class="market-group-actions">
+          <button mat-icon-button color="primary" (click)="openMarketGroupEditor(group)" 
+                  matTooltip="Edit Region">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" (click)="openMarketEditor(undefined, group)" 
+                  matTooltip="Add Market to {{group.name}}">
+            <mat-icon>add_business</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteMarketGroup(group)" 
+                  [disabled]="group.markets.length > 0" 
+                  matTooltip="Delete Region">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="markets-grid">
+          <mat-card *ngFor="let market of group.markets" class="market-card">
+            <div class="market-header">
+              <div class="market-title">
+                <mat-icon>location_city</mat-icon>
+                <span class="market-name">{{market.name}}</span>
+                <mat-chip-set>
+                  <mat-chip>{{market.code}}</mat-chip>
+                  <mat-chip color="accent" selected>{{market.currency}}</mat-chip>
+                </mat-chip-set>
+              </div>
+              <div class="market-status">
+                <mat-slide-toggle
+                  [checked]="market.isActive"
+                  (change)="toggleMarketStatus(market)"
+                  matTooltip="Toggle market status">
+                  {{market.isActive ? 'Active' : 'Inactive'}}
+                </mat-slide-toggle>
+              </div>
+            </div>
+            <div class="market-actions">
+              <button mat-button color="primary" (click)="openMarketEditor(market, group)">
+                <mat-icon>edit</mat-icon>
+                Edit
+              </button>
+              <button mat-button color="primary" (click)="navigateToRates(market)">
+                <mat-icon>price_check</mat-icon>
+                Rates
+              </button>
+              <button mat-button color="warn" (click)="deleteMarket(market)">
+                <mat-icon>delete</mat-icon>
+                Delete
+              </button>
+            </div>
+          </mat-card>
+          
+          <!-- Empty state when no markets -->
+          <div *ngIf="group.markets.length === 0" class="empty-markets">
+            <mat-icon>info</mat-icon>
+            <p>No markets added to this region</p>
+            <button mat-stroked-button color="primary" (click)="openMarketEditor(undefined, group)">
+              <mat-icon>add</mat-icon>
+              Add Market
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Market Group Editor Modal -->
+  <div class="modal" *ngIf="showMarketGroupEditor">
+    <div class="modal-content">
+      <h2>{{selectedMarketGroup ? 'Edit' : 'Add'}} Region</h2>
+      
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput [(ngModel)]="newMarketGroup.name" placeholder="e.g., Europe">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input matInput [(ngModel)]="newMarketGroup.code" placeholder="e.g., EUR">
+      </mat-form-field>
+
+      <div class="modal-actions">
+        <button mat-button (click)="closeMarketGroupEditor()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="saveMarketGroup()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Market Editor Modal -->
+  <div class="modal" *ngIf="showMarketEditor">
+    <div class="modal-content">
+      <h2>{{selectedMarket ? 'Edit' : 'Add'}} Market</h2>
+      
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput [(ngModel)]="newMarket.name" placeholder="e.g., Paris">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input matInput [(ngModel)]="newMarket.code" placeholder="e.g., PAR">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Currency</mat-label>
+        <mat-select [(ngModel)]="newMarket.currency">
+          <mat-option *ngFor="let currency of currencySettings" [value]="currency.code">
+            {{currency.name}} ({{currency.code}})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="modal-actions">
+        <button mat-button (click)="closeMarketEditor()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="saveMarket()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

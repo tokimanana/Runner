@@ -1,847 +1,775 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { HotelService } from '../../services/hotel.service';
-import { Hotel, MealPlan, MealPlanRate, MEAL_PLAN_TYPES, AGE_CATEGORIES } from '../../models/types';
+import { Hotel, MealPlan, MealPlanType } from '../../models/types';
 
 @Component({
   selector: 'app-meal-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule
+  ],
   template: `
-  <div class="meal-plans-container">
-    <div class="dashboard-header">
-      <div class="title-section">
-        <h2>Meal Plans</h2>
-        <p class="subtitle">Manage your hotel's dining packages and rates</p>
+    <div class="meal-plans-container">
+      <div class="dashboard-header">
+        <div class="title-section">
+          <h2>Meal Plans</h2>
+          <p class="subtitle">Configure and manage meal plans for your hotel</p>
+        </div>
+        <button class="add-button" (click)="addNewMealPlan()">
+          <i class="material-icons">add</i>
+          Add Meal Plan
+        </button>
       </div>
-      <button (click)="addNewMealPlan()" class="primary-button">
-        <i class="material-icons">add_circle</i>
-        New Meal Plan
-      </button>
-    </div>
 
-    <div class="meal-plans-grid">
-      <div *ngFor="let plan of mealPlans" class="meal-plan-card">
-        <div class="card-header">
-          <div class="title-group">
-            <h3>{{ getPlanTypeLabel(plan.type) }}</h3>
-            <span class="card-badge">{{ plan.type }}</span>
+      <div class="meal-plans-grid">
+        <div *ngFor="let plan of mealPlans" class="meal-plan-card" [attr.data-plan-type]="plan.type">
+          <div class="plan-header">
+            <span class="plan-type" [attr.data-plan-type]="plan.type">{{ plan.type }}</span>
+            <h3>{{ plan.name }}</h3>
           </div>
+          <p class="description">{{ plan.description }}</p>
+          
+          <div class="included-meals">
+            <h4>Included Meals</h4>
+            <ul class="inclusions-list">
+              <li *ngFor="let meal of plan.includedMeals" 
+                  class="inclusion-item"
+                  [class.included]="true">
+                {{ meal }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="default-inclusions" *ngIf="plan.defaultInclusions?.length">
+            <h4>Default Inclusions</h4>
+            <ul class="inclusions-list">
+              <li *ngFor="let inclusion of plan.defaultInclusions" 
+                  class="inclusion-item"
+                  [class.included]="true">
+                {{ inclusion }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="restrictions" *ngIf="plan.restrictions?.length">
+            <h4>Restrictions</h4>
+            <div class="restrictions-list">
+              <span *ngFor="let restriction of plan.restrictions" 
+                    class="restriction-item">
+                {{ restriction }}
+              </span>
+            </div>
+          </div>
+
           <div class="action-buttons">
-            <button (click)="editMealPlan(plan)" class="icon-button edit">
+            <button class="icon-button edit" (click)="editMealPlan(plan)">
               <i class="material-icons">edit</i>
             </button>
-            <button (click)="deleteMealPlan(plan)" class="icon-button delete">
+            <button class="icon-button delete" (click)="deleteMealPlan(plan.id)">
               <i class="material-icons">delete</i>
             </button>
           </div>
         </div>
+      </div>
 
-        <div class="plan-details">
-          <div class="plan-features">
-            <i class="material-icons">restaurant</i>
-            <p>{{ plan.description }}</p>
+      <!-- Modal -->
+      <div class="modal-overlay" *ngIf="showModal">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h2>{{ selectedPlan ? 'Edit' : 'Add' }} Meal Plan</h2>
+            <button class="close-button" (click)="closeModal()">×</button>
           </div>
 
-          <div class="rates-section">
-            <div class="rates-header">
-              <i class="material-icons">payments</i>
-              <h4>Daily Rates</h4>
-            </div>
-            
-            <div class="rates-table">
-              <div *ngFor="let rate of plan.rates" class="rate-row">
-                <div class="rate-info">
-                  <span class="rate-category">{{ rate.type | titlecase }}</span>
-                  <span class="age-range">{{ rate.ageRange }}</span>
+          <div class="modal-content">
+            <div class="form-section">
+              <div class="type-section">
+                <h3>Plan Type</h3>
+                <select [(ngModel)]="mealPlanForm.type" class="form-control">
+                  <option value="BB">Bed & Breakfast (BB)</option>
+                  <option value="BB+">Bed & Breakfast Plus (BB+)</option>
+                  <option value="HB">Half Board (HB)</option>
+                  <option value="HB+">Half Board Plus (HB+)</option>
+                  <option value="FB">Full Board (FB)</option>
+                  <option value="FB+">Full Board Plus (FB+)</option>
+                  <option value="AI">All Inclusive (AI)</option>
+                  <option value="AI+">All Inclusive Plus (AI+)</option>
+                </select>
+              </div>
+
+              <div class="name-section">
+                <h3>Name & Description</h3>
+                <input 
+                  type="text" 
+                  [(ngModel)]="mealPlanForm.name" 
+                  placeholder="Plan Name"
+                  class="form-control"
+                >
+                <textarea 
+                  [(ngModel)]="mealPlanForm.description" 
+                  placeholder="Plan Description"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div class="meals-section">
+                <h3>Included Meals</h3>
+                <div class="meal-toggles">
+                  <label class="meal-toggle">
+                    <input 
+                      type="checkbox" 
+                      [checked]="mealPlanForm.includedMeals.includes('Breakfast')"
+                      (change)="toggleMeal('Breakfast')"
+                    >
+                    Breakfast
+                  </label>
+                  <label class="meal-toggle">
+                    <input 
+                      type="checkbox" 
+                      [checked]="mealPlanForm.includedMeals.includes('Lunch')"
+                      (change)="toggleMeal('Lunch')"
+                    >
+                    Lunch
+                  </label>
+                  <label class="meal-toggle">
+                    <input 
+                      type="checkbox" 
+                      [checked]="mealPlanForm.includedMeals.includes('Dinner')"
+                      (change)="toggleMeal('Dinner')"
+                    >
+                    Dinner
+                  </label>
                 </div>
-                <div class="rate-price">
-                  <span class="currency">€</span>
-                  <span class="amount">{{ rate.rate }}</span>
+              </div>
+
+              <div class="inclusions-section">
+                <h3>Default Inclusions</h3>
+                <div class="inclusion-toggles">
+                  <label class="inclusion-toggle" *ngFor="let inclusion of availableInclusions">
+                    <input 
+                      type="checkbox" 
+                      [checked]="mealPlanForm.defaultInclusions.includes(inclusion)"
+                      (change)="toggleInclusion(inclusion)"
+                    >
+                    {{ inclusion }}
+                  </label>
+                </div>
+              </div>
+
+              <div class="restrictions-section">
+                <h3>Restrictions</h3>
+                <div class="restrictions-input">
+                  <input 
+                    type="text" 
+                    [(ngModel)]="newRestriction" 
+                    placeholder="Add restriction..."
+                    class="form-control"
+                    (keyup.enter)="addRestriction(newRestriction)"
+                  >
+                  <button 
+                    class="add-button" 
+                    (click)="addRestriction(newRestriction)"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div class="restrictions-list">
+                  <span 
+                    *ngFor="let restriction of mealPlanForm.restrictions" 
+                    class="restriction-item"
+                  >
+                    {{ restriction }}
+                    <button 
+                      class="remove-btn" 
+                      (click)="removeRestriction(restriction)"
+                    >×</button>
+                  </span>
                 </div>
               </div>
             </div>
-
           </div>
 
-          <div *ngIf="plan.inclusions?.length" class="inclusions-section">
-            <div class="inclusions-header">
-              <i class="material-icons">check_circle</i>
-              <h4>What's Included</h4>
-            </div>
-            <div class="inclusion-tags">
-              <span *ngFor="let inclusion of plan.inclusions" class="inclusion-tag">
-                <i class="material-icons">done</i>
-                {{ inclusion }}
-              </span>
-            </div>
+          <div class="modal-footer">
+            <button class="cancel-button" (click)="closeModal()">Cancel</button>
+            <button class="save-button" (click)="saveMealPlan()">Save</button>
           </div>
         </div>
       </div>
+
+      <style>
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+
+        .modal-container {
+          background: white;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 600px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .modal-header {
+          padding: 16px 24px;
+          border-bottom: 1px solid #eee;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .modal-header h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          color: #2c3e50;
+        }
+
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: #7f8c8d;
+        }
+
+        .modal-content {
+          padding: 24px;
+          overflow-y: auto;
+        }
+
+        .form-section {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .form-section h3 {
+          margin: 0 0 12px;
+          color: #2c3e50;
+          font-size: 1.1rem;
+        }
+
+        .form-control {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+
+        .meal-toggles,
+        .inclusion-toggles {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 12px;
+        }
+
+        .meal-toggle,
+        .inclusion-toggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+
+        .restrictions-input {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .restrictions-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .restriction-item {
+          background: #f0f2f5;
+          padding: 4px 8px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .remove-btn {
+          background: none;
+          border: none;
+          color: #7f8c8d;
+          cursor: pointer;
+          padding: 0 4px;
+        }
+
+        .modal-footer {
+          padding: 16px 24px;
+          border-top: 1px solid #eee;
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+
+        .cancel-button,
+        .save-button {
+          padding: 8px 16px;
+          border-radius: 4px;
+          border: none;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .cancel-button {
+          background: #f0f2f5;
+          color: #2c3e50;
+        }
+
+        .save-button {
+          background: #3498db;
+          color: white;
+        }
+
+        .save-button:hover {
+          background: #2980b9;
+        }
+      </style>
     </div>
-  </div>
-
-  <!-- Meal Plan Form Modal -->
-<div *ngIf="showMealPlanForm" class="modal-overlay">
-  <div class="modal-container">
-    <div class="modal-header">
-      <h2>{{ editingPlan ? 'Edit Meal Plan' : 'Create New Meal Plan' }}</h2>
-      <button class="close-button" (click)="cancelEdit()">
-        <i class="material-icons">close</i>
-      </button>
-    </div>
-
-    <div class="modal-content">
-      <div class="form-section">
-        <div class="plan-type-selector">
-          <h3>Select Plan Type</h3>
-          <div class="type-options">
-            <div *ngFor="let type of mealPlanTypes" 
-                 [class.selected]="mealPlanForm.type === type"
-                 (click)="selectPlanType(type)" 
-                 class="type-option">
-              <span class="type-code">{{type}}</span>
-              <span class="type-name">{{getPlanTypeLabel(type)}}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="description-section">
-          <h3>Description</h3>
-          <textarea 
-            [(ngModel)]="mealPlanForm.description" 
-            rows="3" 
-            placeholder="Describe what's included in this meal plan..."
-          ></textarea>
-        </div>
-
-        <div class="rates-section">
-          <h3>Age Categories & Rates</h3>
-          <div class="age-rates-grid">
-            <div *ngFor="let category of customAgeCategories; let i = index" class="age-rate-card">
-              <div class="age-range-inputs">
-                <input 
-                  [(ngModel)]="category.label" 
-                  placeholder="Category Name"
-                  class="category-input"
-                >
-                <div class="age-inputs">
-                  <input 
-                    type="number" 
-                    [(ngModel)]="category.minAge" 
-                    placeholder="Min Age"
-                    class="age-input"
-                  >
-                  <span>to</span>
-                  <input 
-                    type="number" 
-                    [(ngModel)]="category.maxAge" 
-                    placeholder="Max Age"
-                    class="age-input"
-                  >
-                </div>
-              </div>
-              <div class="rate-input">
-                <span class="currency">€</span>
-                <input 
-                  type="number" 
-                  [(ngModel)]="rateInputs[category.type]"
-                  [min]="0"
-                  [step]="0.5"
-                  placeholder="Rate"
-                >
-              </div>
-              <button class="remove-category" (click)="removeAgeCategory(i)" *ngIf="customAgeCategories.length > 1">
-                <i class="material-icons">remove_circle</i>
-              </button>
-            </div>
-          </div>
-          <button class="add-category" (click)="addAgeCategory()">
-            <i class="material-icons">add_circle</i>
-            Add Age Category
-          </button>
-        </div>
-
-        <div class="inclusions-section">
-          <h3>Inclusions</h3>
-          <div class="inclusions-grid">
-            <div *ngFor="let inclusion of availableInclusions" 
-                 [class.selected]="isInclusionSelected(inclusion)"
-                 (click)="toggleInclusion(inclusion)" 
-                 class="inclusion-item">
-              <i class="material-icons">{{ isInclusionSelected(inclusion) ? 'check_circle' : 'radio_button_unchecked' }}</i>
-              <span>{{inclusion}}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="secondary-button" (click)="cancelEdit()">Cancel</button>
-      <button class="primary-button" (click)="saveMealPlan()">
-        <i class="material-icons">save</i>
-        Save Plan
-      </button>
-    </div>
-  </div>
-</div>
-
   `,
   styles: [`
     .meal-plans-container {
       padding: 24px;
-      background: #f8f9fa;
-      min-height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: #f5f8fa;
     }
-  
+
     .dashboard-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
-  
+
     .title-section h2 {
-      font-size: 28px;
-      color: #2c3e50;
+      font-size: 24px;
       margin: 0;
+      color: #2c3e50;
     }
-  
-    .subtitle {
-      color: #6c757d;
-      margin-top: 4px;
+
+    .title-section .subtitle {
+      color: #7f8c8d;
+      margin: 4px 0 0;
     }
-  
-    .primary-button {
+
+    .add-button {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #0d6efd;
+      padding: 8px 16px;
+      background: #3498db;
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 500;
+      border-radius: 4px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background 0.3s;
     }
-  
-    .primary-button:hover {
-      background: #0b5ed7;
-      transform: translateY(-1px);
+
+    .add-button:hover {
+      background: #2980b9;
     }
-  
+
     .meal-plans-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 24px;
     }
-  
+
     .meal-plan-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      transition: transform 0.2s ease;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      position: relative;
+      border: 1px solid #e1e8ed;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-  
-    .meal-plan-card:hover {
-      transform: translateY(-4px);
+
+    .meal-plan-card[data-plan-type="BB"] {
+      background: linear-gradient(to bottom right, #ffffff, #f0f9ff);
+      border-left: 4px solid #3498db;
     }
-  
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
+
+    .meal-plan-card[data-plan-type="BB+"] {
+      background: linear-gradient(to bottom right, #ffffff, #e3f2fd);
+      border-left: 4px solid #2196f3;
     }
-  
-    .title-group {
+
+    .meal-plan-card[data-plan-type="HB"] {
+      background: linear-gradient(to bottom right, #ffffff, #f0fff4);
+      border-left: 4px solid #2ecc71;
+    }
+
+    .meal-plan-card[data-plan-type="HB+"] {
+      background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+      border-left: 4px solid #4caf50;
+    }
+
+    .meal-plan-card[data-plan-type="FB"] {
+      background: linear-gradient(to bottom right, #ffffff, #fff5f0);
+      border-left: 4px solid #e67e22;
+    }
+
+    .meal-plan-card[data-plan-type="FB+"] {
+      background: linear-gradient(to bottom right, #ffffff, #fff3e0);
+      border-left: 4px solid #ff9800;
+    }
+
+    .meal-plan-card[data-plan-type="AI"] {
+      background: linear-gradient(to bottom right, #ffffff, #fdf0ff);
+      border-left: 4px solid #9b59b6;
+    }
+
+    .meal-plan-card[data-plan-type="AI+"] {
+      background: linear-gradient(to bottom right, #ffffff, #f3e5f5);
+      border-left: 4px solid #9c27b0;
+    }
+
+    .plan-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      margin-bottom: 16px;
+      padding-right: 90px; 
+      position: relative; 
     }
-  
-    .card-header h3 {
-      color: #2c3e50;
+
+    .plan-header h3 {
       margin: 0;
-      font-size: 20px;
+      color: #2c3e50;
+      font-size: 18px;
+      flex: 1; 
+      white-space: nowrap; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
     }
-  
-    .card-badge {
-      background: #e3f2fd;
-      color: #0d6efd;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-weight: 600;
-      font-size: 14px;
-    }
-  
+
     .action-buttons {
+      position: absolute;
+      top: 0;
+      right: 0;
       display: flex;
       gap: 8px;
+      z-index: 1;
     }
-  
-    .icon-button {
-      background: none;
-      border: none;
-      padding: 8px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
+
+    .plan-type {
+      background: #e1e8ed;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-right: 12px; 
+      flex-shrink: 0; 
+      position: relative;
     }
-  
-    .icon-button.edit:hover {
-      background: #e3f2fd;
-      color: #0d6efd;
+
+    .plan-type[data-plan-type$="+"]::after {
+      content: "+";
+      position: relative;
+      top: -4px;
+      margin-left: 1px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #e74c3c;
     }
-  
-    .icon-button.delete:hover {
-      background: #fee2e2;
-      color: #dc3545;
-    }
-  
-    .plan-details {
-      margin-top: 20px;
-    }
-  
-    .plan-features {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-  
-    .plan-features i {
-      color: #0d6efd;
-      font-size: 24px;
-    }
-  
-    .plan-features p {
-      margin: 0;
-      color: #495057;
+
+    .description {
+      color: #7f8c8d;
+      margin-bottom: 16px;
+      font-size: 14px;
       line-height: 1.5;
     }
-  
-    .rates-section {
-      background: white;
-      border: 1px solid #e9ecef;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-  
-    .rates-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 16px;
-      background: #f8f9fa;
-      border-bottom: 1px solid #e9ecef;
-    }
-  
-    .rates-header i {
-      color: #198754;
-    }
-  
-    .rates-header h4 {
+
+    .inclusions-list {
+      list-style: none;
+      padding: 0;
       margin: 0;
-      color: #2c3e50;
-      font-size: 16px;
-    }
-  
-    .rates-table {
-      padding: 8px;
-    }
-  
-    .rate-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid #e9ecef;
-    }
-  
-    .rate-row:last-child {
-      border-bottom: none;
-    }
-  
-    .rate-info {
-      display: flex;
-      flex-direction: column;
-    }
-  
-    .rate-category {
-      color: #2c3e50;
-      font-weight: 500;
-    }
-  
-    .age-range {
-      color: #6c757d;
-      font-size: 14px;
-      margin-top: 2px;
-    }
-  
-    .rate-price {
-      display: flex;
-      align-items: baseline;
-      gap: 2px;
-    }
-  
-    .currency {
-      color: #198754;
-      font-size: 14px;
-    }
-  
-    .amount {
-      color: #198754;
-      font-size: 18px;
-      font-weight: 600;
-    }
-  
-    .inclusions-section {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 16px;
-    }
-  
-    .inclusions-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-  
-    .inclusions-header i {
-      color: #0d6efd;
-    }
-  
-    .inclusions-header h4 {
-      margin: 0;
-      color: #2c3e50;
-      font-size: 16px;
-    }
-  
-    .inclusion-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-  
-    .inclusion-tag {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: white;
-      color: #495057;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 14px;
-    }
-  
-    .inclusion-tag i {
-      color: #198754;
-      font-size: 16px;
-    }
-
-    /* Modal Overlay */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal-container {
-      background: white;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 800px;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .modal-header {
-      padding: 24px;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-content {
-      padding: 24px;
-      overflow-y: auto;
-    }
-
-    .modal-footer {
-      padding: 24px;
-      border-top: 1px solid #e0e0e0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    /* Form Sections */
-    .form-section > div {
-      margin-bottom: 32px;
-    }
-
-    .type-options {
-      display: flex;
-      gap: 12px;
-      margin: 16px 0;
-    }
-
-    .type-option {
-      flex: 1;
-      padding: 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s ease;
-    }
-
-    .type-option.selected {
-      border-color: #0d6efd;
-      background: #e3f2fd;
-    }
-
-    .type-code {
-      display: block;
-      font-size: 18px;
-      font-weight: 600;
-      color: #0d6efd;
-      margin-bottom: 4px;
-    }
-
-    .type-name {
-      display: block;
-      font-size: 14px;
-      color: #6c757d;
-    }
-
-    /* Age Categories Section */
-    .age-rates-grid {
-      display: grid;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .age-rate-card {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 8px;
-    }
-
-    .age-range-inputs {
-      flex: 1;
-    }
-
-    .category-input {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-      margin-bottom: 8px;
-    }
-
-    .age-inputs {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .age-input {
-      width: 80px;
-      padding: 8px;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-    }
-
-    .rate-input {
-      position: relative;
-      width: 120px;
-    }
-
-    .rate-input input {
-      width: 100%;
-      padding: 8px 8px 8px 24px;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-    }
-
-    /* Inclusion Section */
-    .inclusions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
     }
 
     .inclusion-item {
+      padding: 8px 0;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
+      color: #34495e;
+      font-size: 14px;
       transition: all 0.2s ease;
+    }
+
+    .inclusion-item::before {
+      content: "";
+      width: 18px;
+      height: 18px;
+      margin-right: 12px;
+      border-radius: 50%;
+      border: 2px solid #e1e8ed;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .inclusion-item.included {
+      color: #2c3e50;
+    }
+
+    .inclusion-item.included::before {
+      content: "✓";
+      border-color: #27ae60;
+      background-color: #27ae60;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
     }
 
     .inclusion-item:hover {
-      background: #f8f9fa;
+      background-color: rgba(0, 0, 0, 0.02);
+      border-radius: 4px;
+      padding-left: 8px;
+      padding-right: 8px;
     }
 
-    .inclusion-item.selected {
-      background: #e3f2fd;
-      color: #0d6efd;
+    h4 {
+      color: #2c3e50;
+      margin: 16px 0 8px;
+      font-size: 14px;
+      font-weight: 600;
     }
 
-    /* Buttons */
-    .close-button {
-      background: none;
-      border: none;
-      color: #6c757d;
-      cursor: pointer;
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      font-size: 14px;
+      color: #34495e;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .icon-button {
+      background: #ffffff;
+      border: 1px solid #e1e8ed;
       padding: 8px;
       border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .close-button:hover {
-      background: #f8f9fa;
-    }
-
-    .add-category {
+      cursor: pointer;
+      color: #7f8c8d;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: none;
-      border: 2px dashed #0d6efd;
-      color: #0d6efd;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
       justify-content: center;
-      transition: all 0.2s ease;
     }
 
-    .add-category:hover {
-      background: #e3f2fd;
+    .icon-button:hover {
+      background: #f8f9fa;
+      color: #2c3e50;
     }
 
-    .remove-category {
-      background: none;
-      border: none;
-      color: #dc3545;
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      transition: all 0.2s ease;
+    .icon-button.edit:hover {
+      color: #3498db;
+      border-color: #3498db;
     }
 
-    .remove-category:hover {
-      background: #fee2e2;
-    }
-    
-    .secondary-button {
-      background: #e9ecef;
-      color: #495057;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .secondary-button:hover {
-      background: #dee2e6;
-      transform: translateY(-1px);
+    .icon-button.delete:hover {
+      color: #e74c3c;
+      border-color: #e74c3c;
     }
   `]
 })
-
 export class MealPlanComponent implements OnInit {
   @Input() hotel!: Hotel;
+  
   mealPlans: MealPlan[] = [];
-  showMealPlanForm = false;
-  editingPlan: MealPlan | null = null;
-  mealPlanTypes = MEAL_PLAN_TYPES;
-  ageCategories = AGE_CATEGORIES;
-  selectedInclusions: string[] = [];
+  selectedPlan: MealPlan | null = null;
+  showModal = false;
   
-  customAgeCategories = [
-    { type: 'adult', label: 'Adult', minAge: 12, maxAge: 99 },
-    { type: 'child', label: 'Child', minAge: 2, maxAge: 11 },
-    { type: 'infant', label: 'Infant', minAge: 0, maxAge: 1 }
-  ];
-
-  addAgeCategory() {
-    this.customAgeCategories.push({
-      type: `category_${this.customAgeCategories.length}`,
-      label: 'New Category',
-      minAge: 0,
-      maxAge: 0
-    });
-  }
-
-  removeAgeCategory(index: number) {
-    this.customAgeCategories.splice(index, 1);
-  }
-
-  rateInputs: { [key: string]: number } = {
-    adult: 0,
-    child: 0,
-    infant: 0
+  readonly mealPlanTypes: MealPlanType[] = ['BB', 'BB+', 'HB', 'HB+', 'FB', 'FB+', 'AI', 'AI+'];
+  
+  mealPlanForm: MealPlan = {
+    id: '',
+    type: 'BB' as MealPlanType,
+    name: '',
+    description: '',
+    includedMeals: [],
+    defaultInclusions: [],
+    restrictions: []
   };
 
-  selectPlanType(type: string) {
-    this.mealPlanForm.type = type;
-    this.mealPlanForm.name = this.planTypeLabels[type];
-  }
-  
-  isInclusionSelected(inclusion: string): boolean {
-    return this.selectedInclusions.includes(inclusion);
-  }
-  
-  toggleInclusion(inclusion: string) {
-    if (this.isInclusionSelected(inclusion)) {
-      this.selectedInclusions = this.selectedInclusions.filter(i => i !== inclusion);
-    } else {
-      this.selectedInclusions.push(inclusion);
-    }
-  }
-
-  private planTypeLabels: { [key: string]: string } = {
+  readonly planTypeLabels: Record<MealPlanType, string> = {
     'BB': 'Bed & Breakfast',
+    'BB+': 'Bed & Breakfast Plus',
     'HB': 'Half Board',
+    'HB+': 'Half Board Plus',
     'FB': 'Full Board',
-    'AI': 'All Inclusive'
+    'FB+': 'Full Board Plus',
+    'AI': 'All Inclusive',
+    'AI+': 'All Inclusive Plus'
   };
 
-  availableInclusions = [
-    'Breakfast Buffet',
-    'Lunch Buffet',
-    'Dinner Buffet',
-    'Non-alcoholic Drinks',
-    'Selected Alcoholic Drinks',
-    'Room Service',
-    'Pool Bar Access',
-    'Theme Restaurant Access'
-  ];
+  readonly availableMeals = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
+  readonly availableInclusions = [
+    'Welcome Drink',
+    'Afternoon Tea',
+    'Mini Bar',
+    'Soft Drinks',
+    'House Wine',
+    'Local Spirits',
+    'Premium Drinks'
+  ] as const;
+
+  newRestriction = '';
 
   constructor(private hotelService: HotelService) {}
 
-  ngOnInit() {
-    if (this.hotel) {
-      this.mealPlans = this.hotelService.getMealPlans(this.hotel.id);
+  ngOnInit(): void {
+    if (this.hotel?.id) {
+      this.loadMealPlans();
     }
   }
 
-  getPlanTypeLabel(type: string): string {
-    return this.planTypeLabels[type] || type;
-  }
-
-  getCategoryLabel(rate: MealPlanRate): string {
-    const category = this.ageCategories.find(cat => cat.type === rate.type);
-    return category ? `${category.label} (${category.ageRange})` : rate.type;
-  }
-
-  addNewMealPlan() {
-    this.editingPlan = null;
-    this.mealPlanForm = {
-      type: 'BB',
-      name: this.planTypeLabels['BB'],
-      description: ''
+  private getEmptyMealPlan(): MealPlan {
+    return {
+      id: '',
+      type: 'BB' as MealPlanType,
+      name: '',
+      description: '',
+      includedMeals: [],
+      defaultInclusions: [],
+      restrictions: []
     };
-    this.resetRateInputs();
-    this.showMealPlanForm = true;
   }
-  
 
-  editMealPlan(plan: MealPlan) {
-    this.editingPlan = plan;
-    this.mealPlanForm = {
-      type: plan.type,
-      name: plan.name,
-      description: plan.description
-    };
-    this.selectedInclusions = plan.inclusions || [];
-    this.resetRateInputs();
-    plan.rates.forEach(rate => {
-      this.rateInputs[rate.type] = rate.rate;
-    });
-    this.showMealPlanForm = true;
+  loadMealPlans(): void {
+    this.mealPlans = this.hotel.mealPlans || [];
   }
-  
 
-  mealPlanForm: Omit<MealPlan, 'rates'> = {
-    type: 'BB',
-    name: this.planTypeLabels['BB'],
-    description: ''
-  };
+  getPlanTypeLabel(type: MealPlanType): string {
+    return this.planTypeLabels[type];
+  }
 
-  deleteMealPlan(plan: MealPlan) {
-    if (confirm('Are you sure you want to delete this meal plan?')) {
-      this.hotelService.deleteMealPlan(this.hotel.id, plan.type);
-      this.mealPlans = this.hotelService.getMealPlans(this.hotel.id);
+  addNewMealPlan(): void {
+    this.selectedPlan = null;
+    this.mealPlanForm = this.getEmptyMealPlan();
+    this.showModal = true;
+  }
+
+  editMealPlan(plan: MealPlan): void {
+    this.selectedPlan = plan;
+    this.mealPlanForm = { ...plan };
+    this.showModal = true;
+  }
+
+  saveMealPlan(): void {
+    if (!this.validateForm()) {
+      return;
     }
+
+    const updatedPlans = this.selectedPlan
+      ? this.mealPlans.map(p => p.id === this.selectedPlan?.id ? this.mealPlanForm : p)
+      : [...this.mealPlans, { ...this.mealPlanForm, id: crypto.randomUUID() }];
+
+    this.hotel.mealPlans = updatedPlans;
+    this.mealPlans = updatedPlans;
+    this.closeModal();
   }
 
-  saveMealPlan() {
-    const rates: MealPlanRate[] = Object.entries(this.rateInputs).map(([type, rate]) => ({
-      type: type as 'adult' | 'child' | 'infant',
-      ageRange: this.ageCategories.find(cat => cat.type === type)?.ageRange,
-      rate
-    }));
+  private validateForm(): boolean {
+    const errors: string[] = [];
 
-    const mealPlan: MealPlan = {
-      ...this.mealPlanForm,
-      rates
-    };
+    if (!this.mealPlanForm.name.trim()) {
+      errors.push('Please enter a plan name');
+    }
+    if (!this.mealPlanForm.description.trim()) {
+      errors.push('Please enter a plan description');
+    }
+    if (this.mealPlanForm.includedMeals.length === 0) {
+      errors.push('Please select at least one meal');
+    }
 
-    if (this.editingPlan) {
-      this.hotelService.updateMealPlan(this.hotel.id, mealPlan);
-    } else {
-      this.hotelService.addMealPlan(this.hotel.id, mealPlan);
+    if (errors.length > 0) {
+      alert(errors.join('\n'));
+      return false;
+    }
+
+    return true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.selectedPlan = null;
+    this.mealPlanForm = this.getEmptyMealPlan();
+    this.newRestriction = '';
+  }
+
+  addRestriction(restriction: string): void {
+    const trimmed = restriction.trim();
+    if (!trimmed) return;
+    
+    if (!this.mealPlanForm.restrictions.includes(trimmed)) {
+      this.mealPlanForm.restrictions = [...this.mealPlanForm.restrictions, trimmed];
+    }
+    this.newRestriction = '';
+  }
+
+  removeRestriction(restriction: string): void {
+    this.mealPlanForm.restrictions = this.mealPlanForm.restrictions.filter(
+      r => r !== restriction
+    );
+  }
+
+  deleteMealPlan(planId: string): void {
+    if (!confirm('Are you sure you want to delete this meal plan?')) {
+      return;
     }
     
-    this.mealPlans = this.hotelService.getMealPlans(this.hotel.id);
-    this.showMealPlanForm = false;
-    this.editingPlan = null;
+    this.mealPlans = this.mealPlans.filter(p => p.id !== planId);
+    this.hotel.mealPlans = this.mealPlans;
   }
 
-  cancelEdit() {
-    this.showMealPlanForm = false;
-    this.editingPlan = null;
+  toggleMeal(meal: string): void {
+    const index = this.mealPlanForm.includedMeals.indexOf(meal);
+    if (index === -1) {
+      this.mealPlanForm.includedMeals = [...this.mealPlanForm.includedMeals, meal];
+    } else {
+      this.mealPlanForm.includedMeals = this.mealPlanForm.includedMeals.filter(m => m !== meal);
+    }
   }
 
-  private resetRateInputs() {
-    this.rateInputs = {
-      adult: 0,
-      child: 0,
-      infant: 0
-    };
+  toggleInclusion(inclusion: string): void {
+    const index = this.mealPlanForm.defaultInclusions.indexOf(inclusion);
+    if (index === -1) {
+      this.mealPlanForm.defaultInclusions = [...this.mealPlanForm.defaultInclusions, inclusion];
+    } else {
+      this.mealPlanForm.defaultInclusions = this.mealPlanForm.defaultInclusions.filter(i => i !== inclusion);
+    }
   }
 }

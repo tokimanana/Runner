@@ -2,17 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HotelService } from '../../services/hotel.service';
-import { Hotel } from '../../models/types';
-
-interface Season {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  mlos: number;
-  isBlackout?: boolean;
-  description?: string;
-}
+import { Hotel, Season } from '../../models/types';
 
 @Component({
   selector: 'app-period-mlos',
@@ -389,21 +379,25 @@ export class PeriodMlosComponent implements OnInit {
     }
   }
 
-  saveSeason() {
-    if (!this.validateDates()) {
-      alert('Please ensure the end date is after the start date.');
-      return;
-    }
+  saveSeason(): void {
+    if (!this.hotel || !this.validateDates()) return;
+
+    const seasonData: Season = {
+      id: this.editingSeason?.id || 0,
+      name: this.seasonForm.name,
+      startDate: this.seasonForm.startDate,
+      endDate: this.seasonForm.endDate,
+      mlos: this.seasonForm.mlos,
+      description: this.seasonForm.description || '',  
+      isBlackout: this.seasonForm.isBlackout || false
+    };
 
     if (this.editingSeason) {
-      this.hotelService.updateSeason(this.hotel.id, {
-        ...this.seasonForm,
-        id: this.editingSeason.id
-      });
+      this.hotelService.updateSeason(this.hotel.id, seasonData);
     } else {
-      this.hotelService.addSeason(this.hotel.id, this.seasonForm);
+      this.hotelService.addSeason(this.hotel.id, seasonData);
     }
-    
+
     this.seasons = this.hotelService.getSeasons(this.hotel.id);
     this.showSeasonForm = false;
     this.editingSeason = null;

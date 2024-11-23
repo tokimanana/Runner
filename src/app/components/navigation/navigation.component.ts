@@ -1,76 +1,124 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MenuItem, MenuItemId } from '../../models/types';
+import { MatIconModule } from '@angular/material/icon';
 import { HotelService } from '../../services/hotel.service';
+import { MenuItemId } from '../../models/types';
+
+interface TabItem {
+  id: string;
+  label: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-navigation',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule],
   template: `
-    <nav class="nav-menu">
-      <div
-        *ngFor="let item of menuItems"
-        class="nav-item"
-        [class.active]="activeItem === item.id"
-        (click)="onMenuItemClick(item)"
-      >
-        <i class="material-icons">{{ item.icon }}</i>
-        <span>{{ item.label }}</span>
+    <nav class="nav-container">
+      <div class="main-tabs">
+        <div
+          *ngFor="let tab of mainTabs"
+          class="tab-item"
+          [class.active]="activeTab === tab.id"
+          (click)="onTabClick(tab)"
+        >
+          <div class="tab-content">
+            <mat-icon>{{tab.icon}}</mat-icon>
+            <span>{{tab.label}}</span>
+          </div>
+        </div>
       </div>
     </nav>
   `,
   styles: [`
-    .nav-menu {
-      background: #f8f9fa;
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem;
+    .nav-container {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0 1rem;
     }
-    .nav-item {
+
+    .main-tabs {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .tab-item {
+      padding: 1rem 1.5rem;
+      color: #4b5563;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-size: 0.875rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      user-select: none;
+      position: relative;
+    }
+
+    .tab-item:hover {
+      color: #0284c7;
+    }
+
+    .tab-item.active {
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+      font-weight: 500;
+    }
+
+    .tab-content {
       display: flex;
       align-items: center;
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      border-radius: 4px;
-      margin-bottom: 0.5rem;
-      transition: background-color 0.3s;
+      gap: 0.5rem;
     }
-    .nav-item:hover {
-      background: #e9ecef;
+
+    mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      line-height: 20px;
+      opacity: 0.8;
     }
-    .nav-item.active {
-      background: #0d6efd;
-      color: white;
-    }
-    .material-icons {
-      margin-right: 0.5rem;
+
+    .tab-item:hover mat-icon,
+    .tab-item.active mat-icon {
+      opacity: 1;
     }
   `]
 })
 export class NavigationComponent implements OnInit {
-  menuItems: MenuItem[] = [
-    { id: 'description', label: 'Description', icon: 'description' },
-    { id: 'policies', label: 'Policies', icon: 'policy' },
-    { id: 'capacity', label: 'Room Types', icon: 'hotel' },
-    { id: 'mealPlan', label: 'Meal Plans', icon: 'restaurant' },
-    { id: 'periodAndMlos', label: 'Periods & MLOS', icon: 'date_range' },
-    { id: 'currency', label: 'Currency Settings', icon: 'currency_exchange' },
-    { id: 'ratesConfig', label: 'Rates Configuration', icon: 'settings' }
+  mainTabs: TabItem[] = [
+    { id: 'general', label: 'General Information', icon: 'dashboard' },
+    { id: 'rates', label: 'Rates', icon: 'tune' },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
+    { id: 'offers', label: 'Offers', icon: 'local_offer' }
   ];
 
-  activeItem: MenuItemId = 'description';
+  activeTab = 'general';
+
+  private defaultMenuItems: { [key: string]: MenuItemId } = {
+    general: 'description',
+    rates: 'markets',
+    inventory: 'roomInventory',
+    offers: 'specialOffers'
+  } as const;
 
   constructor(private hotelService: HotelService) {}
 
-  ngOnInit(): void {
-    this.hotelService.getSelectedMenuItem().subscribe(
-      menuItem => this.activeItem = menuItem
-    );
+  ngOnInit() {
+    // Subscribe to active tab changes
+    this.hotelService.getActiveTab().subscribe(tab => {
+      this.activeTab = tab;
+    });
+    
+    // Initialize with default menu item
+    this.hotelService.setActiveTab(this.activeTab);
+    this.hotelService.setActiveMenuItem(this.defaultMenuItems[this.activeTab]);
   }
 
-  onMenuItemClick(item: MenuItem): void {
-    this.activeItem = item.id;
-    this.hotelService.setSelectedMenuItem(item.id);
+  onTabClick(tab: TabItem) {
+    this.hotelService.setActiveTab(tab.id);
+    this.hotelService.setActiveMenuItem(this.defaultMenuItems[tab.id]);
   }
 }

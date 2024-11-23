@@ -1,0 +1,445 @@
+.market-config-container {
+  padding: 20px;
+}
+
+.market-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.market-groups-header h2 {
+  margin: 0;
+  color: #1976d2;
+}
+
+.market-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  padding: 16px;
+}
+
+.market-group-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.market-group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.region-icon {
+  color: #1976d2;
+}
+
+.market-group-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.markets-grid {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.market-card {
+  background: white;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.market-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.market-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.market-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.market-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.empty-markets {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px;
+  background: white;
+  border-radius: 4px;
+  color: #666;
+}
+
+.empty-markets mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #ccc;
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.modal-content h2 {
+  margin: 0 0 24px 0;
+  color: #1976d2;
+}
+
+.modal-content mat-form-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* Material Overrides */
+mat-form-field {
+  width: 100%;
+}
+
+mat-expansion-panel-header {
+  height: auto !important;
+  padding: 16px !important;
+}
+
+mat-panel-title {
+  flex: 1;
+}
+
+mat-panel-description {
+  justify-content: flex-end;
+}
+
+/* Tab Styles */
+:host ::ng-deep .mat-tab-body-content {
+  padding: 20px;
+}
+
+:host ::ng-deep .mat-tab-label {
+  height: 48px;
+  padding: 0 24px;
+  cursor: pointer;
+  box-sizing: border-box;
+  opacity: 0.6;
+  min-width: 160px;
+  text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+  position: relative;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+::ng-deep .mat-tab-group .mat-tab-label-active {
+  background-color: #e3f2fd;
+  opacity: 1 !important;
+}
+
+::ng-deep .mat-tab-group .mat-tab-label {
+  min-width: 120px;
+}
+
+.active-tab {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Add a border bottom to the active tab */
+::ng-deep .mat-tab-group .mat-tab-label-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #1976d2;
+}
+
+/* Tab Styles */
+:host ::ng-deep .mdc-tab.mdc-tab--active {
+  background-color: #e3f2fd !important;
+  opacity: 1 !important;
+  position: relative;
+}
+
+:host ::ng-deep .mdc-tab {
+  min-width: 120px !important;
+  height: 48px !important;
+}
+
+:host ::ng-deep .mat-mdc-tab-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  margin-bottom: 24px;
+}
+
+:host ::ng-deep .mdc-tab.mdc-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #1976d2 !important;
+}
+
+:host ::ng-deep .mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: #1976d2 !important;
+}
+
+.active-tab {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.market-config-section {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.market-config-section h4 {
+  margin: 0 0 12px 0;
+  color: #1976d2;
+}
+
+.supplements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.active-status {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.inactive-status {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.inactive-icon {
+  color: #f44336;
+  margin-left: 8px;
+}
+
+.market-title span {
+  margin-left: 8px;
+}
+
+.market-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.market-actions button {
+  min-width: 120px;
+}
+
+.status-chip {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+}
+
+.active-chip {
+  background-color: #69f0ae;
+  color: #000;
+}
+
+.inactive-chip {
+  background-color: #ff5252;
+  color: #fff;
+}
+
+.market-groups {
+  padding: 20px;
+}
+
+.market-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.market-group-card {
+  margin-bottom: 20px;
+}
+
+.market-group-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.markets-list {
+  margin-top: 16px;
+}
+
+.market-details {
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.market-info {
+  margin-bottom: 16px;
+}
+
+.market-info p {
+  margin: 4px 0;
+}
+
+.market-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.no-markets {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.preview-code {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.market-groups-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+mat-expansion-panel-header {
+  height: auto !important;
+  padding: 16px !important;
+}
+
+mat-panel-title,
+mat-panel-description {
+  margin: 0 !important;
+  line-height: 24px !important;
+}

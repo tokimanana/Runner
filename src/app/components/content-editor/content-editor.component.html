@@ -1,0 +1,80 @@
+<div class="content-editor">
+  <div *ngIf="!selectedHotel" class="no-hotel">
+    <p>Please select a hotel to continue</p>
+  </div>
+
+  <div *ngIf="selectedHotel" class="editor-layout">
+    <div class="side-menu">
+      <div class="sub-menu-items">
+        <div
+          *ngFor="let item of getCurrentMenuItems()"
+          class="nav-item"
+          [class.active]="currentMenuItem === item.id"
+          (click)="onMenuItemClick(item)"
+        >
+          <mat-icon>{{item.icon}}</mat-icon>
+          <span>{{item.label}}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div [ngSwitch]="currentMenuItem">
+        <app-description 
+          *ngSwitchCase="'description'"
+          [hotel]="selectedHotel"
+        ></app-description>
+        
+        <app-policies
+          *ngSwitchCase="'policies'"
+          [hotel]="selectedHotel"
+        ></app-policies>
+        
+        <app-room-types
+          *ngSwitchCase="'capacity'"
+          [hotel]="selectedHotel"
+        ></app-room-types>
+        
+        <app-meal-plan
+          *ngSwitchCase="'mealPlan'"
+          [hotel]="selectedHotel"
+        ></app-meal-plan>
+        
+        <app-period-mlos
+          *ngSwitchCase="'periodAndMlos'"
+          [hotel]="selectedHotel"
+        ></app-period-mlos>
+        
+        <app-rates-config
+          *ngSwitchCase="'ratesConfig'"
+          [hotel]="selectedHotel"
+        ></app-rates-config>
+
+        <app-market-config
+          *ngSwitchCase="'markets'"
+          [hotel]="selectedHotel"
+        ></app-market-config>
+
+        <app-currency
+          *ngSwitchCase="'currency'"
+          [hotel]="selectedHotel"
+        ></app-currency>
+
+        <div *ngSwitchCase="'rateSeasons'" class="placeholder-content">
+          <h3>Seasonal Rates</h3>
+          <p>Coming Soon</p>
+        </div>
+
+        <div *ngSwitchCase="'roomInventory'" class="placeholder-content">
+          <h3>Room Inventory</h3>
+          <p>Coming Soon</p>
+        </div>
+
+        <div *ngSwitchCase="'specialOffers'" class="placeholder-content">
+          <h3>Special Offers</h3>
+          <p>Coming Soon</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

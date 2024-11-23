@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HotelService } from '../../services/hotel.service';
@@ -105,8 +105,8 @@ import { Hotel } from '../../models/types';
     }
   `]
 })
-export class PoliciesComponent implements OnInit {
-  @Input() hotel!: Hotel;
+export class PoliciesComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() hotel: Hotel | null = null;
   cancellationPolicy: string = '';
   checkInOutPolicy: string = '';
 
@@ -135,10 +135,34 @@ Additional fees may apply.`
 
   ngOnInit() {
     if (this.hotel) {
-      const policies = this.hotelService.getHotelPolicies(this.hotel.id);
-      this.cancellationPolicy = policies.cancellation;
-      this.checkInOutPolicy = policies.checkInOut;
+      this.loadPolicies(this.hotel);
     }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['hotel'] && !changes['hotel'].firstChange) {
+      const hotel = changes['hotel'].currentValue;
+      if (hotel) {
+        this.loadPolicies(hotel);
+      } else {
+        this.resetPolicies();
+      }
+    }
+  }
+
+  ngOnDestroy() {
+    // Cleanup if needed
+  }
+
+  private loadPolicies(hotel: Hotel) {
+    const policies = this.hotelService.getHotelPolicies(hotel.id);
+    this.cancellationPolicy = policies.cancellation || '';
+    this.checkInOutPolicy = policies.checkInOut || '';
+  }
+
+  private resetPolicies() {
+    this.cancellationPolicy = '';
+    this.checkInOutPolicy = '';
   }
 
   savePolicies() {

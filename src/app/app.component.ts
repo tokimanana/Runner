@@ -11,34 +11,70 @@ import { ContentEditorComponent } from './components/content-editor/content-edit
   template: `
     <div class="app-container">
       <header>
-        <h1>Hotel Management Console</h1>
-        <app-hotel-selector></app-hotel-selector>
+        <div class="header-content">
+          <h1>Hotel Management Console</h1>
+          <app-hotel-selector></app-hotel-selector>
+        </div>
+        <app-navigation></app-navigation>
       </header>
       
-      <div class="main-content">
-        <app-navigation></app-navigation>
+      <main class="main-content">
         <app-content-editor></app-content-editor>
-      </div>
+      </main>
     </div>
   `,
   styles: [`
     .app-container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 1rem;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f8fafc;
     }
+
+    .header-content {
+      background: #ffffff;
+      padding: 1.25rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      margin-bottom: 0.75rem;
+      border: 1px solid #f0f0f0;
+    }
+
     header {
-      margin-bottom: 2rem;
+      margin-bottom: 0.75rem;
     }
+
     h1 {
-      color: #333;
+      color: #1e293b;
       margin-bottom: 1rem;
+      font-size: 1.75rem;
+      font-weight: 600;
     }
+
     .main-content {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      gap: 2rem;
-      min-height: calc(100vh - 200px);
+      flex: 1;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      padding: 1.5rem;
+      border: 1px solid #f0f0f0;
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 1rem;
+      }
+
+      .header-content {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
     }
   `]
 })

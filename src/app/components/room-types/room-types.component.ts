@@ -1,8 +1,8 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HotelService } from '../../services/hotel.service';
-import { Hotel, Room } from '../../models/types';
+import { Hotel, RoomType } from '../../models/types';
 
 @Component({
   selector: 'app-room-types',
@@ -294,14 +294,14 @@ import { Hotel, Room } from '../../models/types';
     }
   `]
 })
-export class RoomTypesComponent implements OnInit {
-  @Input() hotel!: Hotel;
-  rooms: Room[] = [];
+export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() hotel: Hotel | null = null;
+  rooms: RoomType[] = [];
   showRoomForm = false;
-  editingRoom: Room | null = null;
+  editingRoom: RoomType | null = null;
   newAmenity = '';
   
-  roomForm: Omit<Room, 'id'> = {
+  roomForm: Omit<RoomType, 'id'> = {
     type: '',
     description: '',
     location: '',
@@ -317,8 +317,31 @@ export class RoomTypesComponent implements OnInit {
 
   ngOnInit() {
     if (this.hotel) {
-      this.rooms = this.hotelService.getRooms(this.hotel.id);
+      this.loadRooms(this.hotel);
     }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['hotel'] && !changes['hotel'].firstChange) {
+      const hotel = changes['hotel'].currentValue;
+      if (hotel) {
+        this.loadRooms(hotel);
+      } else {
+        this.resetRooms();
+      }
+    }
+  }
+
+  ngOnDestroy() {
+    // Cleanup if needed
+  }
+
+  private loadRooms(hotel: Hotel) {
+    this.rooms = this.hotelService.getRooms(hotel.id);
+  }
+
+  private resetRooms() {
+    this.rooms = [];
   }
 
   addNewRoom() {
@@ -337,7 +360,7 @@ export class RoomTypesComponent implements OnInit {
     this.showRoomForm = true;
   }
 
-  editRoom(room: Room) {
+  editRoom(room: RoomType) {
     this.editingRoom = room;
     this.roomForm = {
       type: room.type || '',
@@ -353,12 +376,10 @@ export class RoomTypesComponent implements OnInit {
     this.showRoomForm = true;
   }
   
-  
-
-  deleteRoom(room: Room) {
+  deleteRoom(room: RoomType) {
     if (confirm('Are you sure you want to delete this room type?')) {
-      this.hotelService.deleteRoom(this.hotel.id, room.id);
-      this.rooms = this.hotelService.getRooms(this.hotel.id);
+      this.hotelService.deleteRoom(this.hotel!.id, room.id);
+      this.rooms = this.hotelService.getRooms(this.hotel!.id);
     }
   }
 
@@ -375,15 +396,15 @@ export class RoomTypesComponent implements OnInit {
 
   saveRoom() {
     if (this.editingRoom) {
-      this.hotelService.updateRoom(this.hotel.id, {
+      this.hotelService.updateRoom(this.hotel!.id, {
         ...this.roomForm,
         id: this.editingRoom.id
       });
     } else {
-      this.hotelService.addRoom(this.hotel.id, this.roomForm);
+      this.hotelService.addRoom(this.hotel!.id, this.roomForm);
     }
     
-    this.rooms = this.hotelService.getRooms(this.hotel.id);
+    this.rooms = this.hotelService.getRooms(this.hotel!.id);
     this.showRoomForm = false;
     this.editingRoom = null;
   }

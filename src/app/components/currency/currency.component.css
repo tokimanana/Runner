@@ -1,0 +1,97 @@
+.currency-container {
+  padding: 20px;
+}
+
+.currency-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.currency-header h2 {
+  margin: 0;
+  color: #1976d2;
+}
+
+.currency-table {
+  width: 100%;
+}
+
+.status-chip {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.active-chip {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.inactive-chip {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.modal-content h2 {
+  margin: 0 0 24px 0;
+  color: #1976d2;
+}
+
+.modal-content mat-form-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* Table styles */
+.mat-mdc-table {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mat-mdc-header-cell {
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.mat-mdc-cell {
+  color: #333;
+}
+
+.mat-mdc-row:hover {
+  background-color: #f5f5f5;
+}

@@ -1,15 +1,18 @@
+// Core interfaces
 export interface Hotel {
   id: number;
   name: string;
-  faxSheet?: string;
+  factSheet?: string;
+  mealPlans?: MealPlan[];
+  ageCategories?: AgeCategory[];
 }
 
-export interface Room {
+// Room management
+export interface RoomType {
   id: number;
   type: string;
   description: string;
   location: string;
-  size?: string;
   maxOccupancy: {
     adults: number;
     children: number;
@@ -18,28 +21,92 @@ export interface Room {
   amenities: string[];
 }
 
-export interface MealPlanRate {
-  type: 'adult' | 'child' | 'infant';
-  ageRange?: string;
-  rate: number;
-}
+// Meal Plan Types
+export type MealPlanType = 'BB' | 'BB+' | 'HB' | 'HB+' | 'FB' | 'FB+' | 'AI' | 'AI+';
+
+export const MEAL_PLAN_TYPES: MealPlanType[] = ['BB', 'BB+', 'HB', 'HB+', 'FB', 'FB+', 'AI', 'AI+'];
 
 export interface MealPlan {
-  type: string;
+  id: string;
+  type: MealPlanType;
   name: string;
   description: string;
-  rates: MealPlanRate[];
-  inclusions?: string[];
+  includedMeals: string[];
+  defaultInclusions: string[];
+  restrictions: string[];
 }
 
+// Currency management
+export interface Currency {
+  code: string;
+  symbol: string;
+  name: string;
+}
+
+export interface CurrencySettings {
+  id: number;
+  name: string;
+  code: string;
+  symbol: string;
+  isActive: boolean;
+  currency: Currency;
+}
+
+// Market management
+export interface Market {
+  id: number;
+  name: string;
+  code: string;
+  currency: string;
+  isActive: boolean;
+  region: string;
+}
+
+export interface MarketGroup {
+  id: number;
+  code: string;
+  name: string;
+  markets: Market[];
+}
+
+// Menu item types
+export type MenuItemId = 
+  | 'description'
+  | 'policies'
+  | 'capacity'
+  | 'mealPlan'
+  | 'markets'
+  | 'currency'
+  | 'periodAndMlos'
+  | 'ratesConfig'
+  | 'rateSeasons'
+  | 'roomInventory'
+  | 'specialOffers';
+
+export interface MenuItem {
+  id: MenuItemId;
+  icon: string;
+  label: string;
+}
+
+// Policy management
+export interface Policy {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  isActive: boolean;
+}
+
+// Rate management
 export interface Season {
   id: number;
   name: string;
   startDate: string;
   endDate: string;
   mlos: number;
+  description: string;
   isBlackout?: boolean;
-  description?: string;
 }
 
 export interface Contract {
@@ -50,84 +117,74 @@ export interface Contract {
   roomTypeId: number;
   startDate: string;
   endDate: string;
-  status: 'draft' | 'active' | 'expired';
-  rateType: 'public' | 'special' | 'group';
+  status: string;
+  rateType: string;
   terms: string;
-  rates: RateConfiguration[];
   validFrom: Date;
   validTo: Date;
+  rates: Rate[];
 }
 
-export interface RateConfiguration {
+export interface Rate {
+  id: number;
+  name: string;
   marketId: number;
   amount: number;
   seasonId: number;
   roomTypeId: number;
   contractId: number;
   baseRate: number;
+  currency: string;
+  mealPlanId?: MealPlanType;
   supplements: {
     extraAdult: number;
     extraChild: number;
     singleOccupancy: number;
   };
-  specialOffers?: SpecialOffer[];
-}
-
-export interface SpecialOffer {
-  type: 'early_bird' | 'long_stay' | 'honeymoon';
-  discount: number;
-  conditions: string;
-  validFrom?: Date;
-  validTo?: Date;
-  applicableMarkets?: number[];
-  minimumStay?: number;
-}
-
-export interface Market {
-  id: number;
-  name: string;
-  currency: Currency;
-  seasonRates?: {
-    [season: string]: {
-      [roomType: string]: {
-        [mealPlan: string]: number;
-      };
-    };
+  extraAdult: number;
+  extraChild: number;
+  singleOccupancy: number;
+  ageCategoryRates: {
+    [key: string]: number;
   };
+  specialOffers?: any[];
 }
 
+export interface MarketMealPlanRate {
+  id: number;
+  marketId: number;
+  mealPlanId: string;
+  rate: number;
+  currency: string;
+}
+
+// Rate configuration
+export interface RateConfiguration {
+  roomType: RoomType;
+  season: Season;
+  rates: Rate[];
+}
+
+// Market template
 export interface MarketTemplate {
   id: number;
   name: string;
-  rates: RateConfiguration[];
-  baseConfiguration: {
-    defaultMealPlans: string[];
-    defaultSupplements: boolean;
-    defaultSpecialOffers: boolean;
+  marketId: number;
+  configuration: {
+    rates: Rate[];
+    mealPlans: MealPlan[];
   };
 }
 
-export type MenuItemId =
-  | 'description'
-  | 'policies'
-  | 'capacity'
-  | 'mealPlan'
-  | 'periodAndMlos'
-  | 'currency'
-  | 'ratesConfig';
-
-export interface MenuItem {
-  id: MenuItemId;
+// Age category management
+export interface AgeCategory {
+  id: number;
+  type: string;
   label: string;
-  icon: string;
+  minAge: number;
+  maxAge: number;
+  defaultRate: number;
 }
 
-export const MEAL_PLAN_TYPES = ['BB', 'HB', 'FB', 'AI'] as const;
-export const AGE_CATEGORIES = [
-  { type: 'adult', label: 'Adult', ageRange: '13+' },
-  { type: 'child', label: 'Child', ageRange: '4-12' },
-  { type: 'infant', label: 'Infant', ageRange: '0-3' },
-] as const;
-
-export const AVAILABLE_CURRENCIES = ['USD', 'EUR', 'GBP', 'MUR'] as const;
-export type Currency = typeof AVAILABLE_CURRENCIES[number];
+// Hotel data management
+export type HotelDataKey = 'description' | 'cancellation' | 'checkInOut' | 'factSheet' | 'dressCode';
