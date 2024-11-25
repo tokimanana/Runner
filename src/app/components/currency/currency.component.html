@@ -57,28 +57,44 @@
   </mat-card>
 
   <!-- Currency Editor Modal -->
-  <div class="modal" *ngIf="showCurrencyEditor">
-    <div class="modal-content">
-      <h2>{{selectedCurrency ? 'Edit' : 'Add'}} Currency</h2>
+  <div class="modal" [class.show]="showCurrencyEditor" (click)="closeCurrencyEditor()">
+    <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">{{selectedCurrency ? 'Edit' : 'Add'}} Currency</h2>
       
-      <mat-form-field appearance="outline">
-        <mat-label>Code</mat-label>
-        <input matInput [(ngModel)]="newCurrency.code" placeholder="e.g., USD">
-      </mat-form-field>
+      <div class="form-group">
+        <label for="currencyCode">Currency Code</label>
+        <input id="currencyCode" 
+               type="text" 
+               [(ngModel)]="newCurrency.code" 
+               placeholder="e.g., USD"
+               (keydown.enter)="saveCurrency()" 
+               (keydown.escape)="closeCurrencyEditor()"
+               #firstInput>
+      </div>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Symbol</mat-label>
-        <input matInput [(ngModel)]="newCurrency.symbol" placeholder="e.g., $">
-      </mat-form-field>
+      <div class="form-group">
+        <label for="currencySymbol">Currency Symbol</label>
+        <input id="currencySymbol" 
+               type="text" 
+               [(ngModel)]="newCurrency.symbol" 
+               placeholder="e.g., $"
+               (keydown.enter)="saveCurrency()" 
+               (keydown.escape)="closeCurrencyEditor()">
+      </div>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Name</mat-label>
-        <input matInput [(ngModel)]="newCurrency.name" placeholder="e.g., US Dollar">
-      </mat-form-field>
+      <div class="form-group">
+        <label for="currencyName">Currency Name</label>
+        <input id="currencyName" 
+               type="text" 
+               [(ngModel)]="newCurrency.name" 
+               placeholder="e.g., US Dollar"
+               (keydown.enter)="saveCurrency()" 
+               (keydown.escape)="closeCurrencyEditor()">
+      </div>
 
       <div class="modal-actions">
-        <button mat-button (click)="closeCurrencyEditor()">Cancel</button>
-        <button mat-raised-button color="primary" (click)="saveCurrency()">Save</button>
+        <button mat-button (click)="closeCurrencyEditor()" type="button">Cancel</button>
+        <button mat-raised-button color="primary" (click)="saveCurrency()" type="submit">Save</button>
       </div>
     </div>
   </div>

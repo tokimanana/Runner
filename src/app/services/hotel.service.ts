@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, Currency, AgeCategory, CurrencySettings, MarketGroup } from '../models/types';
-
+import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, Currency, AgeCategory, CurrencySetting, MarketGroup } from '../models/types';
 interface RoomType {
   id: number;
   type: string;
@@ -179,38 +178,34 @@ export class HotelService {
   private marketMealPlanRates = new Map<number, MarketMealPlanRate[]>();
   private contractsMap = new Map<number, Contract[]>();
   
-  private currencySettings: CurrencySettings[] = [
+  private currencySettings: CurrencySetting[] = [
     {
       id: 1,
       code: 'EUR',
       symbol: '€',
       name: 'Euro',
-      isActive: true,
-      currency: { code: 'EUR', symbol: '€', name: 'Euro' }
+      isActive: true
     },
     {
       id: 2,
       code: 'GBP',
       symbol: '£',
       name: 'British Pound',
-      isActive: true,
-      currency: { code: 'GBP', symbol: '£', name: 'British Pound' }
+      isActive: true
     },
     {
       id: 3,
-      code: 'USD',
-      symbol: '$',
-      name: 'US Dollar',
-      isActive: true,
-      currency: { code: 'USD', symbol: '$', name: 'US Dollar' }
+      code: 'INR',
+      symbol: '₹',
+      name: 'Indian Rupee',
+      isActive: true
     },
     {
       id: 4,
       code: 'MUR',
       symbol: 'Rs',
       name: 'Mauritian Rupee',
-      isActive: true,
-      currency: { code: 'MUR', symbol: 'Rs', name: 'Mauritian Rupee' }
+      isActive: true
     }
   ];
 
@@ -226,7 +221,8 @@ export class HotelService {
           code: 'FR',
           currency: 'EUR',
           isActive: true,
-          region: 'Europe'
+          region: 'Europe',
+          description: 'Major European market with strong focus on luxury travel and cultural experiences'
         },
         { 
           id: 2, 
@@ -234,7 +230,8 @@ export class HotelService {
           code: 'UK',
           currency: 'GBP',
           isActive: true,
-          region: 'Europe'
+          region: 'Europe',
+          description: 'Key market with high demand for premium accommodations and family packages'
         }
       ]
     },
@@ -249,7 +246,8 @@ export class HotelService {
           code: 'MU',
           currency: 'MUR',
           isActive: true,
-          region: 'Africa'
+          region: 'Africa',
+          description: 'Local market with focus on domestic tourism and regional partnerships'
         }
       ]
     },
@@ -262,9 +260,10 @@ export class HotelService {
           id: 4, 
           name: 'India', 
           code: 'IN',
-          currency: 'USD',
+          currency: 'INR',
           isActive: true,
-          region: 'Asia'
+          region: 'Asia',
+          description: 'Growing market with increasing demand for luxury and destination weddings'
         }
       ]
     }
@@ -279,7 +278,8 @@ export class HotelService {
         code: 'FR',
         currency: 'EUR',
         isActive: true,
-        region: 'Europe'
+        region: 'Europe',
+        description: 'Major European market with strong focus on luxury travel and cultural experiences'
       },
       { 
         id: 2, 
@@ -287,7 +287,8 @@ export class HotelService {
         code: 'UK',
         currency: 'GBP',
         isActive: true,
-        region: 'Europe'
+        region: 'Europe',
+        description: 'Key market with high demand for premium accommodations and family packages'
       },
       { 
         id: 3, 
@@ -295,15 +296,17 @@ export class HotelService {
         code: 'MU',
         currency: 'MUR',
         isActive: true,
-        region: 'Africa'
+        region: 'Africa',
+        description: 'Local market with focus on domestic tourism and regional partnerships'
       },
       { 
         id: 4, 
         name: 'India', 
         code: 'IN',
-        currency: 'USD',
+        currency: 'INR',
         isActive: true,
-        region: 'Asia'
+        region: 'Asia',
+        description: 'Growing market with increasing demand for luxury and destination weddings'
       }
     ]);
 
@@ -367,8 +370,8 @@ export class HotelService {
     this.contractsMap.set(1, [
       {
         id: 1,
-        name: 'Summer Contract 2024',
-        marketId: 1,
+        name: 'Summer Contract 2024 - France',
+        marketId: 1, // France
         seasonId: 1,
         roomTypeId: 1,
         startDate: '2024-06-01',
@@ -381,8 +384,8 @@ export class HotelService {
         rates: [
           {
             id: 1,
-            name: 'Standard Room Summer Rate',
-            marketId: 1,
+            name: 'Standard Room Summer Rate - France',
+            marketId: 1, // France
             amount: 200,
             seasonId: 1,
             roomTypeId: 1,
@@ -404,39 +407,13 @@ export class HotelService {
               infant: 0
             },
             specialOffers: []
-          },
-          {
-            id: 2,
-            name: 'Deluxe Room Summer Rate',
-            marketId: 1,
-            amount: 300,
-            seasonId: 1,
-            roomTypeId: 2,
-            contractId: 1,
-            baseRate: 300,
-            currency: 'EUR',
-            supplements: {
-              extraAdult: 75,
-              extraChild: 35,
-              singleOccupancy: -45
-            },
-            extraAdult: 75,
-            extraChild: 35,
-            singleOccupancy: -45,
-            ageCategoryRates: {
-              adult: 300,
-              teen: 225,
-              child: 150,
-              infant: 0
-            },
-            specialOffers: []
           }
         ]
       },
       {
         id: 2,
-        name: 'Winter Contract 2024',
-        marketId: 1,
+        name: 'Winter Contract 2024 - UK',
+        marketId: 2, // UK
         seasonId: 2,
         roomTypeId: 1,
         startDate: '2024-12-01',
@@ -448,15 +425,15 @@ export class HotelService {
         validTo: new Date('2024-12-31'),
         rates: [
           {
-            id: 3,
-            name: 'Standard Room Winter Rate',
-            marketId: 1,
+            id: 2,
+            name: 'Standard Room Winter Rate - UK',
+            marketId: 2, // UK
             amount: 250,
             seasonId: 2,
             roomTypeId: 1,
             contractId: 2,
             baseRate: 250,
-            currency: 'EUR',
+            currency: 'GBP',
             supplements: {
               extraAdult: 60,
               extraChild: 30,
@@ -472,29 +449,45 @@ export class HotelService {
               infant: 0
             },
             specialOffers: []
-          },
+          }
+        ]
+      },
+      {
+        id: 3,
+        name: 'Summer Contract 2024 - India',
+        marketId: 4, // India
+        seasonId: 1,
+        roomTypeId: 2,
+        startDate: '2024-06-01',
+        endDate: '2024-08-31',
+        status: 'active',
+        rateType: 'public',
+        terms: 'Standard terms and conditions apply',
+        validFrom: new Date('2024-06-01'),
+        validTo: new Date('2024-08-31'),
+        rates: [
           {
-            id: 4,
-            name: 'Deluxe Room Winter Rate',
-            marketId: 1,
-            amount: 350,
-            seasonId: 2,
+            id: 3,
+            name: 'Deluxe Room Summer Rate - India',
+            marketId: 4, // India
+            amount: 25000,
+            seasonId: 1,
             roomTypeId: 2,
-            contractId: 2,
-            baseRate: 350,
-            currency: 'EUR',
+            contractId: 3,
+            baseRate: 25000,
+            currency: 'INR',
             supplements: {
-              extraAdult: 85,
-              extraChild: 40,
-              singleOccupancy: -50
+              extraAdult: 5000,
+              extraChild: 2500,
+              singleOccupancy: -3000
             },
-            extraAdult: 85,
-            extraChild: 40,
-            singleOccupancy: -50,
+            extraAdult: 5000,
+            extraChild: 2500,
+            singleOccupancy: -3000,
             ageCategoryRates: {
-              adult: 350,
-              teen: 262.5,
-              child: 175,
+              adult: 25000,
+              teen: 18750,
+              child: 12500,
               infant: 0
             },
             specialOffers: []
@@ -510,32 +503,28 @@ export class HotelService {
         code: 'EUR',
         symbol: '€',
         name: 'Euro',
-        isActive: true,
-        currency: { code: 'EUR', symbol: '€', name: 'Euro' }
+        isActive: true
       },
       {
         id: 2,
         code: 'GBP',
         symbol: '£',
         name: 'British Pound',
-        isActive: true,
-        currency: { code: 'GBP', symbol: '£', name: 'British Pound' }
+        isActive: true
       },
       {
         id: 3,
-        code: 'USD',
-        symbol: '$',
-        name: 'US Dollar',
-        isActive: true,
-        currency: { code: 'USD', symbol: '$', name: 'US Dollar' }
+        code: 'INR',
+        symbol: '₹',
+        name: 'Indian Rupee',
+        isActive: true
       },
       {
         id: 4,
         code: 'MUR',
         symbol: 'Rs',
         name: 'Mauritian Rupee',
-        isActive: true,
-        currency: { code: 'MUR', symbol: 'Rs', name: 'Mauritian Rupee' }
+        isActive: true
       }
     ];
   }
@@ -665,7 +654,8 @@ export class HotelService {
       code: marketData.name.substring(0, 2).toUpperCase(),  // Simple code generation
       currency: marketData.currency,
       region: marketData.region || 'Other',  // Default region if not specified
-      isActive: true
+      isActive: true,
+      description: marketData.description || ''
     };
 
     // Add market to marketsMap
@@ -857,7 +847,23 @@ export class HotelService {
   }
 
   getContracts(hotelId: number): Contract[] {
-    return this.contractsMap.get(hotelId) || [];
+    console.log('Getting contracts for hotel:', hotelId);
+    const contracts = this.contractsMap.get(hotelId) || [];
+    console.log('Found contracts:', contracts.map(c => ({
+      id: c.id,
+      name: c.name,
+      marketId: c.marketId,
+      rates: c.rates?.map(r => ({
+        id: r.id,
+        name: r.name,
+        marketId: r.marketId,
+        seasonId: r.seasonId,
+        roomTypeId: r.roomTypeId,
+        amount: r.amount,
+        currency: r.currency
+      }))
+    })));
+    return contracts;
   }
 
   addContract(hotelId: number, contract: Contract): Observable<Contract> {
@@ -952,30 +958,88 @@ export class HotelService {
     currency: Currency | null 
   }): Observable<RateConfiguration[]> {
     try {
+      console.log('Getting rates for hotel:', hotelId);
       const contracts = this.getContracts(hotelId);
+      console.log('Found contracts:', contracts);
+      
       const rooms = this.getRooms(hotelId);
       const seasons = this.getSeasons(hotelId);
       
+      console.log('Available data:', {
+        rooms: rooms.map(r => ({ id: r.id, type: r.type })),
+        seasons: seasons.map(s => ({ id: s.id, name: s.name })),
+        contracts: contracts.map(c => ({
+          id: c.id,
+          name: c.name,
+          marketId: c.marketId,
+          ratesCount: c.rates?.length || 0,
+          rates: c.rates?.map(r => ({
+            id: r.id,
+            marketId: r.marketId,
+            seasonId: r.seasonId,
+            roomTypeId: r.roomTypeId,
+            amount: r.amount,
+            currency: r.currency
+          }))
+        }))
+      });
+      
       // Convert rates to RateConfigurations
       const configurations = contracts.reduce<RateConfiguration[]>((accumulator, contract) => {
+        console.log('Processing contract:', {
+          id: contract.id,
+          name: contract.name,
+          marketId: contract.marketId,
+          ratesCount: contract.rates?.length || 0,
+          rates: contract.rates?.map(r => ({
+            id: r.id,
+            marketId: r.marketId,
+            seasonId: r.seasonId,
+            roomTypeId: r.roomTypeId,
+            amount: r.amount,
+            currency: r.currency
+          }))
+        });
+        
         if (!contract?.rates?.length) {
+          console.log('No rates found for contract:', contract.id);
           return accumulator;
         }
 
         const rateConfigs = contract.rates
-          .filter(rate => 
-            rate && 
-            typeof rate.seasonId === 'number' && 
-            typeof rate.roomTypeId === 'number' && 
-            rate.currency
-          )
           .map(rate => {
+            console.log('Processing rate:', {
+              id: rate.id,
+              marketId: rate.marketId,
+              seasonId: rate.seasonId,
+              roomTypeId: rate.roomTypeId,
+              amount: rate.amount,
+              currency: rate.currency
+            });
+
+            // Find matching room type and season
             const roomType = rooms.find(r => r.id === rate.roomTypeId);
             const season = seasons.find(s => s.id === rate.seasonId);
-            
+
             if (!roomType || !season) {
+              console.log('Missing room type or season for rate:', {
+                rateId: rate.id,
+                roomTypeId: rate.roomTypeId,
+                seasonId: rate.seasonId,
+                foundRoomType: !!roomType,
+                foundSeason: !!season
+              });
               return null;
             }
+
+            console.log('Creating configuration for rate:', {
+              rateId: rate.id,
+              marketId: rate.marketId,
+              roomType: roomType.type,
+              season: season.name,
+              amount: rate.amount,
+              currency: rate.currency
+            });
 
             return {
               roomType,
@@ -983,11 +1047,40 @@ export class HotelService {
               rates: [rate]
             };
           })
-          .filter((config): config is RateConfiguration => config !== null);
+          .filter(config => config !== null) as RateConfiguration[];
 
+        console.log('Created rate configs for contract:', {
+          contractId: contract.id,
+          configCount: rateConfigs.length,
+          configs: rateConfigs.map(c => ({
+            roomType: c.roomType.type,
+            season: c.season.name,
+            rates: c.rates.map(r => ({
+              id: r.id,
+              marketId: r.marketId,
+              amount: r.amount,
+              currency: r.currency
+            }))
+          }))
+        });
+        
         return [...accumulator, ...rateConfigs];
       }, []);
 
+      console.log('Final configurations:', {
+        totalCount: configurations.length,
+        configs: configurations.map(c => ({
+          roomType: c.roomType.type,
+          season: c.season.name,
+          rates: c.rates.map(r => ({
+            id: r.id,
+            marketId: r.marketId,
+            amount: r.amount,
+            currency: r.currency
+          }))
+        }))
+      });
+      
       // Apply filters if they exist
       return of(configurations.filter(config => {
         if (filters.seasonId && config.season.id !== filters.seasonId) {
@@ -996,12 +1089,10 @@ export class HotelService {
         if (filters.roomTypeId && config.roomType.id !== filters.roomTypeId) {
           return false;
         }
-        if (filters.currency && config.rates[0].currency !== filters.currency.code) {
-          return false;
-        }
         return true;
       }));
     } catch (error) {
+      console.error('Error in getRates:', error);
       return throwError(() => error);
     }
   }
@@ -1010,85 +1101,61 @@ export class HotelService {
     this.marketGroups = [...groups];
   }
 
+  getMarketGroups(): MarketGroup[] {
+    return this.marketGroups;
+  }
+
+  getMarketGroup(id: number): MarketGroup | undefined {
+    return this.marketGroups.find(group => group.id === id);
+  }
+
   addMarketGroup(group: Omit<MarketGroup, 'id'>): MarketGroup {
-    const newId = Math.max(0, ...this.marketGroups.map(g => g.id)) + 1;
-    const newGroup = { ...group, id: newId, markets: [] };
-    this.marketGroups = [...this.marketGroups, newGroup];
+    const newId = Math.max(...this.marketGroups.map(g => g.id), 0) + 1;
+    const newGroup: MarketGroup = {
+      ...group,
+      id: newId,
+      markets: []
+    };
+    this.marketGroups.push(newGroup);
     return newGroup;
   }
 
-  deleteMarketGroup(id: number): void {
-    this.marketGroups = this.marketGroups.filter(g => g.id !== id);
+  updateMarketGroup(group: MarketGroup): MarketGroup {
+    const index = this.marketGroups.findIndex(g => g.id === group.id);
+    if (index === -1) {
+      throw new Error(`Market group with id ${group.id} not found`);
+    }
+    // Preserve existing markets when updating
+    const existingMarkets = this.marketGroups[index].markets;
+    this.marketGroups[index] = { ...group, markets: existingMarkets };
+    return this.marketGroups[index];
   }
 
-  private validateContracts(contracts: Contract[]): boolean {
-    try {
-      for (const contract of contracts) {
-        // Validate required fields
-        if (!contract.id || !contract.name || !contract.marketId || 
-            !contract.seasonId || !contract.roomTypeId || !contract.startDate || 
-            !contract.endDate || !contract.status || !contract.rateType) {
-          console.error('Contract missing required fields:', contract);
-          return false;
-        }
-
-        // Validate dates
-        const startDate = new Date(contract.startDate);
-        const endDate = new Date(contract.endDate);
-        const validFrom = contract.validFrom;
-        const validTo = contract.validTo;
-
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) ||
-            isNaN(validFrom.getTime()) || isNaN(validTo.getTime())) {
-          console.error('Invalid dates in contract:', contract);
-          return false;
-        }
-
-        if (endDate < startDate || validTo < validFrom) {
-          console.error('End date before start date in contract:', contract);
-          return false;
-        }
-
-        // Validate rates
-        if (!contract.rates || !Array.isArray(contract.rates) || contract.rates.length === 0) {
-          console.error('Contract has no valid rates:', contract);
-          return false;
-        }
-
-        for (const rate of contract.rates) {
-          if (!rate.marketId || !rate.amount || !rate.baseRate || 
-              !rate.seasonId || !rate.roomTypeId || !rate.contractId || !rate.currency) {
-            console.error('Rate missing required fields:', rate);
-            return false;
-          }
-
-          // Validate supplements
-          if (!rate.supplements || typeof rate.supplements !== 'object') {
-            console.error('Invalid supplements in rate:', rate);
-            return false;
-          }
-
-          // Validate special offers if present
-          if (rate.specialOffers) {
-            if (!Array.isArray(rate.specialOffers)) {
-              console.error('Invalid special offers format:', rate);
-              return false;
-            }
-
-            for (const offer of rate.specialOffers) {
-              if (!offer.type || typeof offer.discount !== 'number' || !offer.conditions) {
-                console.error('Invalid special offer:', offer);
-                return false;
-              }
-            }
-          }
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Error validating contracts:', error);
-      return false;
+  deleteMarketGroup(id: number): void {
+    const index = this.marketGroups.findIndex(g => g.id === id);
+    if (index === -1) {
+      throw new Error(`Market group with id ${id} not found`);
     }
+    if (this.marketGroups[index].markets.length > 0) {
+      throw new Error('Cannot delete market group that contains markets');
+    }
+    this.marketGroups.splice(index, 1);
+  }
+
+  validateMarketGroup(group: Partial<MarketGroup>): string | null {
+    if (!group.name?.trim()) {
+      return 'Region name is required';
+    }
+    if (!group.code?.trim()) {
+      return 'Region code is required';
+    }
+    const existingGroup = this.marketGroups.find(g => 
+      g.code === group.code && g.id !== group.id
+    );
+    if (existingGroup) {
+      return 'Region code must be unique';
+    }
+    return null;
   }
 
   getHotel(id: number): Hotel | undefined {
@@ -1138,15 +1205,11 @@ export class HotelService {
     return this.roomsMap.get(hotelId) || [];
   }
 
-  getMarketGroups(): MarketGroup[] {
-    return this.marketGroups;
-  }
-
-  getCurrencySettings(): CurrencySettings[] {
+  getCurrencySettings(): CurrencySetting[] {
     return this.currencySettings;
   }
 
-  updateCurrencySettings(settings: CurrencySettings[]): void {
+  updateCurrencySettings(settings: CurrencySetting[]): void {
     this.currencySettings = settings;
   }
 }

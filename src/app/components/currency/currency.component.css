@@ -38,41 +38,106 @@
 
 /* Modal styles */
 .modal {
+  display: none;
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
 }
 
 .modal-content {
   background: white;
   padding: 24px;
   border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-}
-
-.modal-content h2 {
-  margin: 0 0 24px 0;
-  color: #1976d2;
-}
-
-.modal-content mat-form-field {
   width: 100%;
-  margin-bottom: 16px;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+.modal.show .modal-content {
+  transform: translateY(0);
+}
+
+h2 {
+  margin: 0 0 24px;
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #1976d2;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
   margin-top: 24px;
+}
+
+button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button[mat-button] {
+  background: transparent;
+  border: none;
+  color: #666;
+}
+
+button[mat-button]:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+button[mat-raised-button] {
+  background: #1976d2;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button[mat-raised-button]:hover {
+  background: #1565c0;
 }
 
 /* Table styles */

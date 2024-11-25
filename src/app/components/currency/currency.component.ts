@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -10,7 +10,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { HotelService } from '../../services/hotel.service';
-import { CurrencySettings, Hotel } from '../../models/types';
+import { CurrencySetting, Hotel } from '../../models/types';
 
 @Component({
   selector: 'app-currency',
@@ -32,16 +32,18 @@ import { CurrencySettings, Hotel } from '../../models/types';
 export class CurrencyComponent implements OnInit {
   @Input() hotel!: Hotel;
   
-  currencySettings: CurrencySettings[] = [];
+  currencySettings: CurrencySetting[] = [];
   displayedColumns: string[] = ['code', 'symbol', 'name', 'status', 'actions'];
   showCurrencyEditor = false;
-  selectedCurrency: CurrencySettings | null = null;
-  newCurrency: Partial<CurrencySettings> = {
+  selectedCurrency: CurrencySetting | null = null;
+  newCurrency: Partial<CurrencySetting> = {
     code: '',
     symbol: '',
     name: '',
     isActive: true
   };
+
+  @ViewChild('firstInput') firstInput!: ElementRef;
 
   constructor(private hotelService: HotelService) {}
 
@@ -53,7 +55,7 @@ export class CurrencyComponent implements OnInit {
     this.currencySettings = this.hotelService.getCurrencySettings();
   }
 
-  openCurrencyEditor(currency?: CurrencySettings): void {
+  openCurrencyEditor(currency?: CurrencySetting): void {
     this.selectedCurrency = currency || null;
     if (currency) {
       this.newCurrency = { ...currency };
@@ -66,6 +68,13 @@ export class CurrencyComponent implements OnInit {
       };
     }
     this.showCurrencyEditor = true;
+    
+    // Focus the first input after the modal is shown
+    setTimeout(() => {
+      if (this.firstInput) {
+        this.firstInput.nativeElement.focus();
+      }
+    });
   }
 
   closeCurrencyEditor(): void {
@@ -99,7 +108,7 @@ export class CurrencyComponent implements OnInit {
         }
         this.currencySettings = [
           ...this.currencySettings.slice(0, index),
-          { ...this.newCurrency as CurrencySettings },
+          { ...this.newCurrency as CurrencySetting },
           ...this.currencySettings.slice(index + 1)
         ];
       } else {
@@ -111,7 +120,7 @@ export class CurrencyComponent implements OnInit {
         const newId = Math.max(...this.currencySettings.map(c => c.id ?? 0), 0) + 1;
         this.currencySettings = [
           ...this.currencySettings,
-          { ...this.newCurrency, id: newId } as CurrencySettings
+          { ...this.newCurrency, id: newId } as CurrencySetting
         ];
       }
       
@@ -123,7 +132,7 @@ export class CurrencyComponent implements OnInit {
     }
   }
 
-  updateCurrencyStatus(currency: CurrencySettings): void {
+  updateCurrencyStatus(currency: CurrencySetting): void {
     try {
       // Prevent deactivating the last active currency
       if (currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {
@@ -148,7 +157,7 @@ export class CurrencyComponent implements OnInit {
     }
   }
 
-  deleteCurrency(currency: CurrencySettings): void {
+  deleteCurrency(currency: CurrencySetting): void {
     try {
       // Prevent deleting the last active currency
       if (currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {

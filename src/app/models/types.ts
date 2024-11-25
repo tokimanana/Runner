@@ -40,16 +40,14 @@ export interface MealPlan {
 export interface Currency {
   code: string;
   symbol: string;
-  name: string;
 }
 
-export interface CurrencySettings {
+export interface CurrencySetting {
   id: number;
   name: string;
   code: string;
   symbol: string;
   isActive: boolean;
-  currency: Currency;
 }
 
 // Market management
@@ -60,6 +58,7 @@ export interface Market {
   currency: string;
   isActive: boolean;
   region: string;
+  description?: string;
 }
 
 export interface MarketGroup {

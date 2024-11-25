@@ -45,9 +45,9 @@ export class ContentEditorComponent implements OnInit {
       { id: 'mealPlan', icon: 'restaurant', label: 'Meal Plan' }
     ],
     rates: [
-      { id: 'markets', icon: 'public', label: 'Markets' },
       { id: 'currency', icon: 'currency_exchange', label: 'Currency Settings' },
       { id: 'periodAndMlos', icon: 'calendar_today', label: 'Period and MLOS' },
+      { id: 'markets', icon: 'public', label: 'Markets' },
       { id: 'ratesConfig', icon: 'tune', label: 'Pricing Configuration' },
       { id: 'rateSeasons', icon: 'date_range', label: 'Seasonal Rates' }
     ],

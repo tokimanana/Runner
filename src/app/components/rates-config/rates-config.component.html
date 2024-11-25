@@ -1,299 +1,237 @@
-<div class="rates-container mat-app-background">
-  <div *ngIf="!hotel" class="no-hotel-message">
-    <mat-icon>hotel</mat-icon>
-    <p>Please select a hotel to configure rates</p>
+<div class="rates-config-container">
+  <!-- Header Card -->
+  <div class="header-card">
+    <div class="header-title">
+      <i class="material-icons">payments</i>
+      Rate Configuration
+    </div>
   </div>
 
-  <div *ngIf="hotel" class="content-wrapper">
-    <mat-card class="header-card">
-      <mat-card-header>
-        <div class="header-title">
-          <mat-icon class="header-icon">payments</mat-icon>
-          <mat-card-title>Rates Configuration</mat-card-title>
-          <span class="hotel-name" *ngIf="hotel">{{hotel.name}}</span>
-        </div>
-        <div class="header-actions">
-          <button mat-raised-button color="primary" (click)="showRateEditor = true">
-            <mat-icon>add_circle</mat-icon>
-            Add New Rate
-          </button>
-          <button mat-raised-button color="accent" (click)="openAgeCategoryEditor()">
-            <mat-icon>settings</mat-icon>
-            Configure Age Categories
-          </button>
-        </div>
-      </mat-card-header>
-    </mat-card>
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading rates...</p>
+  </div>
 
+  <div *ngIf="!isLoading">
     <!-- Filters Section -->
-    <div class="filters-section">
-      <mat-expansion-panel [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon>filter_list</mat-icon>
-            Filters
-          </mat-panel-title>
-        </mat-expansion-panel-header>
-        
-        <div class="filters-grid">
-          <div class="form-field">
+    <div class="filter-section">
+      <details>
+        <summary>
+          <i class="material-icons">filter_list</i>
+          <span>Filters</span>
+          <small>Filter rates by season, room type, and currency</small>
+        </summary>
+
+        <form [formGroup]="filterForm" class="filters-form">
+          <div class="filter-field">
             <label>Season</label>
-            <div class="select-wrapper">
-              <select [(ngModel)]="selectedSeason" (ngModelChange)="applyFilters()">
-                <option [ngValue]="null">All Seasons</option>
-                <option *ngFor="let season of seasons; trackBy: trackById" [ngValue]="season.id">
-                  {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
-                </option>
-              </select>
-              <i class="material-icons">event</i>
-            </div>
+            <select formControlName="seasonId">
+              <option [value]="null">All Seasons</option>
+              <option *ngFor="let season of seasons" [value]="season.id">
+                {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
+              </option>
+            </select>
           </div>
 
-          <div class="form-field">
+          <div class="filter-field">
             <label>Room Type</label>
-            <div class="select-wrapper">
-              <select [(ngModel)]="selectedRoomType" (ngModelChange)="applyFilters()">
-                <option [ngValue]="null">All Room Types</option>
-                <option *ngFor="let room of rooms; trackBy: trackById" [ngValue]="room.id">
-                  {{room.type}}
-                </option>
-              </select>
-              <i class="material-icons">hotel</i>
-            </div>
+            <select formControlName="roomTypeId">
+              <option [value]="null">All Room Types</option>
+              <option *ngFor="let room of rooms" [value]="room.id">
+                {{room.type}}
+              </option>
+            </select>
           </div>
 
-          <div class="form-field">
+          <div class="filter-field">
             <label>Currency</label>
-            <div class="select-wrapper">
-              <select [(ngModel)]="selectedCurrency" (ngModelChange)="onCurrencySelect($event)">
-                <option [ngValue]="null">All Currencies</option>
-                <option *ngFor="let currency of currencies; trackBy: trackByValue" [ngValue]="currency">
-                  {{currency}}
-                </option>
-              </select>
-              <i class="material-icons">currency_exchange</i>
-            </div>
+            <select formControlName="currency" (change)="onCurrencySelect($event)">
+              <option [value]="null">All Currencies</option>
+              <option *ngFor="let currency of currencies" [value]="currency">
+                {{currency}}
+              </option>
+            </select>
           </div>
-        </div>
 
-        <div class="filters-actions">
-          <button mat-button color="primary" (click)="resetFilters()" class="reset-button">
-            <i class="material-icons">refresh</i>
-            Reset Filters
-          </button>
-        </div>
-      </mat-expansion-panel>
+          <div class="filter-actions">
+            <button class="btn-primary" (click)="applyFilters()">
+              <i class="material-icons">filter_list</i>
+              Apply Filters
+            </button>
+            <button class="btn-secondary" (click)="resetFilters()">
+              <i class="material-icons">clear</i>
+              Reset
+            </button>
+          </div>
+        </form>
+      </details>
     </div>
 
-    <!-- Loading State -->
-    <div class="loading-overlay" *ngIf="isLoading">
-      <mat-spinner [diameter]="40"></mat-spinner>
-    </div>
-
-    <!-- No Results State -->
-    <div class="no-results" *ngIf="!isLoading && filteredRates?.length === 0">
-      <mat-icon>search_off</mat-icon>
-      <p>No rates match your current filters</p>
-      <button mat-button color="primary" (click)="clearFilters()">Clear Filters</button>
+    <!-- Error State -->
+    <div *ngIf="error" class="error-container">
+      <p>{{ error }}</p>
+      <button class="btn-primary" (click)="loadInitialData()">Retry</button>
     </div>
 
     <!-- Rates Display -->
-    <div *ngIf="!isLoading">
-      <div *ngFor="let group of getRatesGroupedByCurrency(); trackBy: trackByCurrency" class="rates-group">
-        <mat-expansion-panel [expanded]="false" class="currency-group-panel">
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              <mat-icon>payments</mat-icon>
-              {{group.currency}} Rates ({{group.rates.length}})
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-          
-          <div class="rates-grid">
-            <mat-card *ngFor="let rate of group.rates; trackBy: trackByRate" class="rate-card" [class.highlight]="rate === editingRate">
-              <div class="rate-actions">
-                <button mat-icon-button color="primary" (click)="editRate(rate)" matTooltip="Edit Rate">
-                  <mat-icon>edit</mat-icon>
+    <div class="rates-container">
+      <div *ngFor="let group of getRatesGroupedByCurrency()" class="currency-group">
+        <h3 class="currency-header">
+          <i class="material-icons">payments</i>
+          {{ group.currency }} Rates ({{ group.rates.length }})
+        </h3>
+        
+        <table class="rates-table">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>Room Type</th>
+              <th>Base Rate</th>
+              <th>Extra Adult</th>
+              <th>Extra Child</th>
+              <th>Single Occupancy</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rate of group.rates">
+              <td>{{ rate.season.name }}</td>
+              <td>{{ rate.roomType.type }}</td>
+              <td>{{ rate.rates[0].baseRate | number:'1.2-2' }} {{ group.currency }}</td>
+              <td>{{ rate.rates[0].supplements.extraAdult | number:'1.2-2' }} {{ group.currency }}</td>
+              <td>{{ rate.rates[0].supplements.extraChild | number:'1.2-2' }} {{ group.currency }}</td>
+              <td>{{ rate.rates[0].supplements.singleOccupancy | number:'1.2-2' }} {{ group.currency }}</td>
+              <td class="action-buttons">
+                <button class="btn-primary" (click)="editRate(rate)">
+                  <i class="material-icons">edit</i>
                 </button>
-                <button mat-icon-button color="accent" (click)="duplicateRate(rate)" matTooltip="Duplicate Rate">
-                  <mat-icon>content_copy</mat-icon>
+                <button class="btn-secondary" (click)="deleteRate(rate)">
+                  <i class="material-icons">delete</i>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteRate(rate)" matTooltip="Delete Rate">
-                  <mat-icon>delete</mat-icon>
+                <button class="btn-accent" (click)="duplicateRate(rate)">
+                  <i class="material-icons">content_copy</i>
                 </button>
-              </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-              <div class="rate-header">
-                <div class="rate-identifiers">
-                  <span class="room-type">{{getRoomName(rate.roomType.id)}}</span>
-                  <span class="season-name">{{getSeasonName(rate.season.id)}}</span>
-                </div>
-                <div class="rate-amount" [attr.data-currency]="group.currency">
-                  {{rate.rates[0].baseRate | number:'1.2-2'}}
-                </div>
-              </div>
-              
-              <div class="rate-details">
-                <div *ngIf="rate.rates[0].mealPlanId" class="meal-plan">
-                  <mat-icon>restaurant</mat-icon>
-                  {{getMealPlanLabel(rate.rates[0].mealPlanId)}}
-                </div>
-                
-                <div class="supplements">
-                  <div *ngFor="let category of hotel?.ageCategories || []" class="supplement-item">
-                    <span>{{category.label}} Rate</span>
-                    <span>{{rate.rates[0].ageCategoryRates[category.type] | currency:group.currency:'symbol':'1.2-2'}}</span>
-                  </div>
-                </div>
-
-                <div *ngIf="rate.rates[0].specialOffers?.length" class="special-offers-list">
-                  <h4>Special Offers</h4>
-                  <div *ngFor="let offer of rate.rates[0].specialOffers" class="offer-badge">
-                    <mat-icon>local_offer</mat-icon>
-                    {{offer.type | titlecase}} - {{offer.discount}}% Off
-                  </div>
-                </div>
-              </div>
-            </mat-card>
-          </div>
-        </mat-expansion-panel>
+      <!-- No rates found -->
+      <div *ngIf="getRatesGroupedByCurrency().length === 0" class="no-rates-container">
+        <p>No rates found for the selected filters.</p>
+        <button class="btn-primary" (click)="resetFilters()">Reset Filters</button>
       </div>
     </div>
   </div>
 
   <!-- Rate Editor Modal -->
-  <div class="modal" *ngIf="showRateEditor">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>{{editingRate ? 'Edit Rate' : 'Add New Rate'}}</h2>
-        <button mat-icon-button (click)="cancelRateEdit()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      
-      <div class="modal-body">
-        <div class="rate-form">
-          <div class="form-row">
-            <div class="form-field">
-              <label>Season</label>
-              <div class="select-wrapper">
-                <select [(ngModel)]="selectedSeason" (ngModelChange)="applyFilters()">
-                  <option [ngValue]="null">All Seasons</option>
-                  <option *ngFor="let season of seasons; trackBy: trackById" [ngValue]="season.id">
-                    {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
+  <div *ngIf="showRateEditor" class="rate-editor">
+    <div class="toolbar">
+      <span>{{ editingRate ? 'Edit Rate' : 'Add New Rate' }}</span>
+    </div>
+
+    <div class="stepper">
+      <!-- Basic Info Step -->
+      <div class="step">
+        <div class="step-label">Basic Information</div>
+        <div class="step-content">
+          <form [formGroup]="basicInfoForm" class="rate-form">
+            <div class="form-row">
+              <div class="form-field">
+                <label>Season</label>
+                <select formControlName="season">
+                  <option *ngFor="let season of seasons" [value]="season.id">
+                    {{season.name}}
                   </option>
                 </select>
-                <i class="material-icons">event</i>
               </div>
-            </div>
 
-            <div class="form-field">
-              <label>Room Type</label>
-              <div class="select-wrapper">
-                <select [(ngModel)]="selectedRoomType" (ngModelChange)="applyFilters()">
-                  <option [ngValue]="null">All Room Types</option>
-                  <option *ngFor="let room of rooms; trackBy: trackById" [ngValue]="room.id">
+              <div class="form-field">
+                <label>Room Type</label>
+                <select formControlName="roomType">
+                  <option *ngFor="let room of rooms" [value]="room.id">
                     {{room.type}}
                   </option>
                 </select>
-                <i class="material-icons">hotel</i>
               </div>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-field">
-              <label>Currency</label>
-              <div class="select-wrapper">
-                <select [(ngModel)]="selectedCurrency" (ngModelChange)="onCurrencySelect($event)">
-                  <option [ngValue]="null">All Currencies</option>
-                  <option *ngFor="let currency of currencies; trackBy: trackByValue" [ngValue]="currency">
-                    {{currency}}
-                  </option>
-                </select>
-                <i class="material-icons">currency_exchange</i>
-              </div>
+            <div class="step-actions">
+              <button class="btn-primary" matStepperNext>Next</button>
             </div>
-          </div>
+          </form>
+        </div>
+      </div>
 
-          <!-- Age Category Rates -->
-          <div class="age-category-rates">
-            <h3>Age Category Rates</h3>
+      <!-- Category Rates Step -->
+      <div class="step">
+        <div class="step-label">Category Rates</div>
+        <div class="step-content">
+          <form [formGroup]="categoryRatesForm">
             <div class="category-rates-grid">
-              <div *ngFor="let category of hotel?.ageCategories" class="category-rate">
-                <mat-form-field appearance="outline">
-                  <mat-label>{{category.type}} ({{getAgeRange(category)}})</mat-label>
-                  <input matInput type="number" [ngModel]="getRateForCategory(category.type)"
-                         (ngModelChange)="updateCategoryRate(category.type, $event)" min="0">
-                  <span matSuffix>{{selectedCurrency}}</span>
-                </mat-form-field>
-              </div>
-            </div>
-          </div>
-
-          <!-- Meal Plans -->
-          <div class="meal-plans-section">
-            <h3>Meal Plans</h3>
-            <div class="meal-plan-chips">
-              <mat-chip-listbox multiple>
-                <mat-chip-option *ngFor="let plan of mealPlanTypes" 
-                         [value]="plan"
-                         [selected]="selectedMealPlans.includes(plan)"
-                         (selectionChange)="toggleMealPlan($event)">
-                  {{getMealPlanLabel(plan)}}
-                </mat-chip-option>
-              </mat-chip-listbox>
-            </div>
-
-            <div *ngFor="let plan of selectedMealPlans" class="meal-plan-rates">
-              <h4>{{getMealPlanLabel(plan)}} Rates</h4>
-              <div class="category-rates-grid">
-                <div *ngFor="let category of hotel?.ageCategories" class="category-rate">
-                  <mat-form-field appearance="outline">
-                    <mat-label>{{category.type}} ({{getAgeRange(category)}})</mat-label>
-                    <input matInput type="number" [ngModel]="getMealPlanRate(plan, category.type)"
-                           (ngModelChange)="setMealPlanRate(plan, category.type, $event)" min="0">
-                    <span matSuffix>{{selectedCurrency}}</span>
-                  </mat-form-field>
+              <div *ngFor="let category of categories" class="category-rate-card animate-in">
+                <div class="form-field">
+                  <label>{{category.type | titlecase}} ({{category.minAge}}-{{category.maxAge}})</label>
+                  <input type="number" [formControlName]="category.id.toString()">
+                  <div class="error-message" *ngIf="categoryRatesForm.get(category.id.toString())?.hasError('required')">
+                    Rate is required
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+            <div class="step-actions">
+              <button class="btn-secondary" matStepperPrevious>Back</button>
+              <button class="btn-primary" matStepperNext>Next</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-          <!-- Special Offers -->
-          <div class="special-offers-section">
-            <h3>Special Offers</h3>
-            <button mat-stroked-button color="primary" (click)="addSpecialOffer()">
-              <mat-icon>add</mat-icon>
-              Add Special Offer
-            </button>
+      <!-- Meal Plans Step -->
+      <div class="step">
+        <div class="step-label">Meal Plans</div>
+        <div class="step-content">
+          <form [formGroup]="mealPlansForm">
+            <div class="meal-plans-container">
+              <div class="form-field">
+                <label>Meal Plans</label>
+                <div class="chip-list">
+                  <div *ngFor="let plan of mealPlans" class="chip">
+                    {{plan}}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="step-actions">
+              <button class="btn-secondary" matStepperPrevious>Back</button>
+              <button class="btn-primary" matStepperNext>Next</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-            <div *ngFor="let offer of specialOffers; let i = index" class="special-offer">
-              <mat-form-field appearance="outline">
-                <mat-label>Offer Type</mat-label>
-                <mat-select [(ngModel)]="offer.type">
-                  <mat-option value="early_bird">Early Booking</mat-option>
-                  <mat-option value="long_stay">Long Stay</mat-option>
-                  <mat-option value="honeymoon">Honeymoon</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Discount (%)</mat-label>
-                <input matInput type="number" [(ngModel)]="offer.discount" min="0" max="100">
-              </mat-form-field>
-
-              <button mat-icon-button color="warn" (click)="removeOffer(i)">
-                <mat-icon>delete</mat-icon>
-              </button>
+      <!-- Review Step -->
+      <div class="step">
+        <div class="step-label">Review</div>
+        <div class="step-content">
+          <div class="rate-review">
+            <h3>Review Rate Configuration</h3>
+            <div class="rate-info-grid">
+              <div class="rate-info-item">
+                <span class="rate-label">Season</span>
+                <span class="rate-value">{{basicInfoForm.get('season')?.value}}</span>
+              </div>
+              <div class="rate-info-item">
+                <span class="rate-label">Room Type</span>
+                <span class="rate-value">{{basicInfoForm.get('roomType')?.value}}</span>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="modal-actions">
-          <button mat-button (click)="cancelRateEdit()">Cancel</button>
-          <button mat-raised-button color="primary" (click)="saveRate()">
-            {{editingRate ? 'Update' : 'Create'}} Rate
-          </button>
+          <div class="step-actions">
+            <button class="btn-secondary" matStepperPrevious>Back</button>
+            <button class="btn-primary" (click)="saveRate()">Save Rate</button>
+          </div>
         </div>
       </div>
     </div>
@@ -304,8 +242,8 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Configure Age Categories</h2>
-        <button mat-icon-button (click)="closeAgeCategoryEditor()">
-          <mat-icon>close</mat-icon>
+        <button class="btn-secondary" (click)="closeAgeCategoryEditor()">
+          <i class="material-icons">close</i>
         </button>
       </div>
 
@@ -313,52 +251,52 @@
         <div class="categories-list">
           <div class="section-header">
             <h3>Age Categories</h3>
-            <button mat-stroked-button color="primary" (click)="showCategoryForm = true">
-              <mat-icon>add</mat-icon>
+            <button class="btn-primary" (click)="showCategoryForm = true">
+              <i class="material-icons">add</i>
               Add Category
             </button>
           </div>
 
-          <mat-list>
-            <mat-list-item *ngFor="let category of hotel.ageCategories">
+          <div class="list">
+            <div *ngFor="let category of hotel.ageCategories" class="list-item">
               <div class="category-item">
                 <span class="category-type">{{category.type}}</span>
                 <span class="age-range">{{getAgeRange(category)}}</span>
                 <div class="category-actions">
-                  <button mat-icon-button color="primary" (click)="editCategory(category)">
-                    <mat-icon>edit</mat-icon>
+                  <button class="btn-primary" (click)="editCategory(category)">
+                    <i class="material-icons">edit</i>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteCategory(category)">
-                    <mat-icon>delete</mat-icon>
+                  <button class="btn-secondary" (click)="deleteCategory(category)">
+                    <i class="material-icons">delete</i>
                   </button>
                 </div>
               </div>
-            </mat-list-item>
-          </mat-list>
+            </div>
+          </div>
         </div>
 
         <div class="category-form" *ngIf="showCategoryForm">
           <h3>{{editingCategory ? 'Edit' : 'Add'}} Category</h3>
           <div class="form-fields">
-            <mat-form-field appearance="outline">
-              <mat-label>Category Type</mat-label>
-              <input matInput [(ngModel)]="newCategory.type" required>
-            </mat-form-field>
+            <div class="form-field">
+              <label>Category Type</label>
+              <input type="text" [(ngModel)]="newCategory.type" required>
+            </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Minimum Age</mat-label>
-              <input matInput type="number" [(ngModel)]="newCategory.minAge" required min="0">
-            </mat-form-field>
+            <div class="form-field">
+              <label>Minimum Age</label>
+              <input type="number" [(ngModel)]="newCategory.minAge" required min="0">
+            </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Maximum Age</mat-label>
-              <input matInput type="number" [(ngModel)]="newCategory.maxAge" required min="0">
-            </mat-form-field>
+            <div class="form-field">
+              <label>Maximum Age</label>
+              <input type="number" [(ngModel)]="newCategory.maxAge" required min="0">
+            </div>
           </div>
 
           <div class="form-actions">
-            <button mat-button (click)="cancelCategoryEdit()">Cancel</button>
-            <button mat-raised-button color="primary" (click)="saveCategory()">
+            <button class="btn-secondary" (click)="cancelCategoryEdit()">Cancel</button>
+            <button class="btn-primary" (click)="saveCategory()">
               {{editingCategory ? 'Update' : 'Add'}} Category
             </button>
           </div>
