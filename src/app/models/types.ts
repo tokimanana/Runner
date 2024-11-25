@@ -66,6 +66,7 @@ export interface MarketGroup {
   code: string;
   name: string;
   markets: Market[];
+  defaultCurrency: string;
 }
 
 // Menu item types
@@ -124,6 +125,24 @@ export interface Contract {
   rates: Rate[];
 }
 
+export type OfferType = 'cumulative' | 'exclusive';
+
+export interface SpecialOffer {
+  id: number;
+  name: string;
+  description: string;
+  marketId: number;
+  type: OfferType;
+  discount: {
+    type: 'percentage' | 'fixed';
+    value: number;
+  };
+  validFrom: string;
+  validTo: string;
+  conditions?: string[];
+  isActive: boolean;
+}
+
 export interface Rate {
   id: number;
   name: string;
@@ -146,7 +165,7 @@ export interface Rate {
   ageCategoryRates: {
     [key: string]: number;
   };
-  specialOffers?: any[];
+  specialOffers?: SpecialOffer[];
 }
 
 export interface MarketMealPlanRate {
@@ -159,9 +178,28 @@ export interface MarketMealPlanRate {
 
 // Rate configuration
 export interface RateConfiguration {
+  id?: string;
+  name: string;
+  description?: string;
+  startDate?: Date;
+  endDate?: Date;
   roomType: RoomType;
   season: Season;
   rates: Rate[];
+  seasonId: number;
+  roomTypeId: number;
+  marketId: number;
+  baseRate: number;
+  extraAdult: number;
+  extraChild: number;
+  singleOccupancy: number;
+  currency: string;
+  markets?: string[];
+  regions?: string[];
+  contractId?: number;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // Market template

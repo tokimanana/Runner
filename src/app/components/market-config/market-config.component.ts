@@ -11,6 +11,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule } from '@angular/material/dialog';
 import { RouterModule } from '@angular/router'; // Added import
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { HotelService } from '../../services/hotel.service';
 import { Market, Hotel, CurrencySetting, MarketGroup, Rate } from '../../models/types';
@@ -92,87 +93,73 @@ export class MarketConfigComponent implements OnInit, OnChanges {
     console.log('Loaded currency settings:', this.currencySettings);
   }
 
-  loadRates(): void {
-    if (!this.hotel) {
-      console.warn('No hotel selected');
-      return;
-    }
+  async loadRates(): Promise<void> {
+    try {
+      const contracts = await firstValueFrom(this.hotelService.getContracts(this.hotel.id));
+      console.log('Found contracts:', contracts.map(c => ({
+        id: c.id,
+        name: c.name,
+        marketId: c.marketId,
+        ratesCount: c.rates?.length || 0
+      })));
 
-    console.log('Starting rate load for hotel:', {
-      hotelId: this.hotel.id,
-      marketGroups: this.marketGroups?.map(g => ({
-        name: g.name,
-        markets: g.markets.map(m => ({
-          id: m.id,
-          name: m.name
-        }))
-      }))
-    });
-    
-    // Get all contracts first
-    const contracts = this.hotelService.getContracts(this.hotel.id);
-    console.log('Found contracts:', contracts.map(c => ({
-      id: c.id,
-      name: c.name,
-      marketId: c.marketId,
-      ratesCount: c.rates?.length || 0
-    })));
-
-    // Extract all rates from contracts
-    this.rates = contracts.flatMap(contract => contract.rates || []);
-    console.log('Extracted rates:', this.rates.map(r => ({
-      id: r.id,
-      marketId: r.marketId,
-      amount: r.amount,
-      currency: r.currency
-    })));
-    
-    // Clear the cache when loading new rates
-    this.marketRatesCache.clear();
-    
-    // Pre-calculate results for all markets
-    const marketIdsWithRates = new Set(this.rates.map(rate => rate.marketId));
-    console.log('Market IDs with rates:', Array.from(marketIdsWithRates));
-    
-    // Initialize cache for all markets
-    if (this.marketGroups) {
-      this.marketGroups.forEach(group => {
-        console.log('Processing group:', group.name);
-        group.markets.forEach(market => {
-          const marketRates = this.rates.filter(r => r.marketId === market.id);
-          const hasRate = marketRates.length > 0;
-          
-          console.log(`Market ${market.name} (ID: ${market.id}):`, { 
-            hasRate, 
-            marketId: market.id,
-            rateCount: marketRates.length,
-            rates: marketRates.map(r => ({
-              id: r.id,
-              amount: r.amount,
-              currency: r.currency
-            }))
-          });
-          
-          this.marketRatesCache.set(market.id, hasRate);
-        });
-      });
+      this.rates = contracts.flatMap(contract => contract.rates || []);
+      console.log('Extracted rates:', this.rates.map(r => ({
+        id: r.id,
+        marketId: r.marketId,
+        amount: r.amount,
+        currency: r.currency
+      })));
       
-      console.log('Final market rates cache:', Array.from(this.marketRatesCache.entries()).map(([id, hasRate]) => {
-        const market = this.marketGroups
-          .flatMap(g => g.markets)
-          .find(m => m.id === id);
-        return [
-          `${market?.name || id}`, 
-          { 
-            hasRate,
-            matchingRates: this.rates.filter(r => r.marketId === id).map(r => ({
-              id: r.id,
-              amount: r.amount,
-              currency: r.currency
-            }))
-          }
-        ];
-      }));
+      // Clear the cache when loading new rates
+      this.marketRatesCache.clear();
+      
+      // Pre-calculate results for all markets
+      const marketIdsWithRates = new Set(this.rates.map(rate => rate.marketId));
+      console.log('Market IDs with rates:', Array.from(marketIdsWithRates));
+      
+      // Initialize cache for all markets
+      if (this.marketGroups) {
+        this.marketGroups.forEach(group => {
+          console.log('Processing group:', group.name);
+          group.markets.forEach(market => {
+            const marketRates = this.rates.filter(r => r.marketId === market.id);
+            const hasRate = marketRates.length > 0;
+            
+            console.log(`Market ${market.name} (ID: ${market.id}):`, { 
+              hasRate, 
+              marketId: market.id,
+              rateCount: marketRates.length,
+              rates: marketRates.map(r => ({
+                id: r.id,
+                amount: r.amount,
+                currency: r.currency
+              }))
+            });
+            
+            this.marketRatesCache.set(market.id, hasRate);
+          });
+        });
+        
+        console.log('Final market rates cache:', Array.from(this.marketRatesCache.entries()).map(([id, hasRate]) => {
+          const market = this.marketGroups
+            .flatMap(g => g.markets)
+            .find(m => m.id === id);
+          return [
+            `${market?.name || id}`, 
+            { 
+              hasRate,
+              matchingRates: this.rates.filter(r => r.marketId === id).map(r => ({
+                id: r.id,
+                amount: r.amount,
+                currency: r.currency
+              }))
+            }
+          ];
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading rates:', error);
     }
   }
 
@@ -378,6 +365,7 @@ export class MarketConfigComponent implements OnInit, OnChanges {
       id: this.getNextGroupId(),
       name: marketGroupData.name || '',
       code: marketGroupData.code || '',
+      defaultCurrency: marketGroupData.defaultCurrency || this.getDefaultCurrency(),
       markets: []
     };
     

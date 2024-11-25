@@ -1,9 +1,15 @@
-<div class="rates-config-container">
+<div class="container">
   <!-- Header Card -->
   <div class="header-card">
-    <div class="header-title">
-      <i class="material-icons">payments</i>
-      Rate Configuration
+    <div class="header-content">
+      <div class="header-title">
+        <i class="material-icons">payments</i>
+        Rate Configuration
+      </div>
+      <button mat-raised-button color="primary" (click)="openRateModal()">
+        <i class="material-icons">add</i>
+        Add New Rate
+      </button>
     </div>
   </div>
 
@@ -46,22 +52,16 @@
 
           <div class="filter-field">
             <label>Currency</label>
-            <select formControlName="currency" (change)="onCurrencySelect($event)">
-              <option [value]="null">All Currencies</option>
+            <select formControlName="currency">
+              <option value="All">All Currencies</option>
               <option *ngFor="let currency of currencies" [value]="currency">
                 {{currency}}
               </option>
             </select>
-          </div>
 
-          <div class="filter-actions">
-            <button class="btn-primary" (click)="applyFilters()">
-              <i class="material-icons">filter_list</i>
-              Apply Filters
-            </button>
-            <button class="btn-secondary" (click)="resetFilters()">
+            <button type="button" class="btn-secondary" (click)="resetFilters()">
               <i class="material-icons">clear</i>
-              Reset
+              Reset Filters
             </button>
           </div>
         </form>
@@ -71,7 +71,7 @@
     <!-- Error State -->
     <div *ngIf="error" class="error-container">
       <p>{{ error }}</p>
-      <button class="btn-primary" (click)="loadInitialData()">Retry</button>
+      <button mat-raised-button color="primary" (click)="loadInitialData()">Retry</button>
     </div>
 
     <!-- Rates Display -->
@@ -82,158 +82,163 @@
           {{ group.currency }} Rates ({{ group.rates.length }})
         </h3>
         
-        <table class="rates-table">
-          <thead>
-            <tr>
-              <th>Season</th>
-              <th>Room Type</th>
-              <th>Base Rate</th>
-              <th>Extra Adult</th>
-              <th>Extra Child</th>
-              <th>Single Occupancy</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let rate of group.rates">
-              <td>{{ rate.season.name }}</td>
-              <td>{{ rate.roomType.type }}</td>
-              <td>{{ rate.rates[0].baseRate | number:'1.2-2' }} {{ group.currency }}</td>
-              <td>{{ rate.rates[0].supplements.extraAdult | number:'1.2-2' }} {{ group.currency }}</td>
-              <td>{{ rate.rates[0].supplements.extraChild | number:'1.2-2' }} {{ group.currency }}</td>
-              <td>{{ rate.rates[0].supplements.singleOccupancy | number:'1.2-2' }} {{ group.currency }}</td>
-              <td class="action-buttons">
-                <button class="btn-primary" (click)="editRate(rate)">
-                  <i class="material-icons">edit</i>
+        <div class="rate-cards">
+          <div *ngFor="let rate of group.rates" class="rate-card">
+            <div class="rate-header">
+              <h3>{{rate.roomType.type}} - {{rate.season.name}}</h3>
+              <div class="actions">
+                <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Rate actions">
+                  <mat-icon>more_vert</mat-icon>
                 </button>
-                <button class="btn-secondary" (click)="deleteRate(rate)">
-                  <i class="material-icons">delete</i>
-                </button>
-                <button class="btn-accent" (click)="duplicateRate(rate)">
-                  <i class="material-icons">content_copy</i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                <mat-menu #menu="matMenu">
+                  <button mat-menu-item (click)="editRate(rate)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Edit</span>
+                  </button>
+                  <button mat-menu-item (click)="duplicateRate(rate)">
+                    <mat-icon>content_copy</mat-icon>
+                    <span>Duplicate</span>
+                  </button>
+                  <button mat-menu-item (click)="deleteRate(rate)">
+                    <mat-icon>delete</mat-icon>
+                    <span>Delete</span>
+                  </button>
+                </mat-menu>
+              </div>
+            </div>
 
-      <!-- No rates found -->
-      <div *ngIf="getRatesGroupedByCurrency().length === 0" class="no-rates-container">
-        <p>No rates found for the selected filters.</p>
-        <button class="btn-primary" (click)="resetFilters()">Reset Filters</button>
+            <div class="rate-details">
+              <div class="detail-row">
+                <span class="label">Base Rate:</span>
+                <span class="value">{{rate.rates[0].baseRate | number:'1.2-2'}} {{ group.currency }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Extra Adult:</span>
+                <span class="value">{{rate.rates[0].supplements.extraAdult | number:'1.2-2'}} {{ group.currency }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Extra Child:</span>
+                <span class="value">{{rate.rates[0].supplements.extraChild | number:'1.2-2'}} {{ group.currency }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Single Occupancy:</span>
+                <span class="value">{{rate.rates[0].supplements.singleOccupancy | number:'1.2-2'}} {{ group.currency }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="group.rates.length === 0" class="empty-state">
+            <mat-icon>hotel</mat-icon>
+            <p>No rates found. Add a new rate to get started.</p>
+            <button mat-raised-button color="primary" (click)="openRateModal()">
+              Add New Rate
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Rate Editor Modal -->
-  <div *ngIf="showRateEditor" class="rate-editor">
-    <div class="toolbar">
-      <span>{{ editingRate ? 'Edit Rate' : 'Add New Rate' }}</span>
-    </div>
-
-    <div class="stepper">
-      <!-- Basic Info Step -->
-      <div class="step">
-        <div class="step-label">Basic Information</div>
-        <div class="step-content">
-          <form [formGroup]="basicInfoForm" class="rate-form">
-            <div class="form-row">
-              <div class="form-field">
-                <label>Season</label>
-                <select formControlName="season">
-                  <option *ngFor="let season of seasons" [value]="season.id">
-                    {{season.name}}
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-field">
-                <label>Room Type</label>
-                <select formControlName="roomType">
-                  <option *ngFor="let room of rooms" [value]="room.id">
-                    {{room.type}}
-                  </option>
-                </select>
-              </div>
-            </div>
-            <div class="step-actions">
-              <button class="btn-primary" matStepperNext>Next</button>
-            </div>
-          </form>
+  <!-- Rate Modal -->
+  <div class="modal" [class.show]="showRateModal" (click)="closeRateModal($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">{{ editingRate ? 'Edit' : 'Add' }} Rate</h2>
+      
+      <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
+        <div class="form-group">
+          <label>Season <span class="required">*</span></label>
+          <select formControlName="seasonId">
+            <option value="">Select a Season</option>
+            <option *ngFor="let season of seasons" [value]="season.id">
+              {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
+            </option>
+          </select>
+          <mat-error *ngIf="rateModalForm.get('seasonId')?.errors?.['required'] && rateModalForm.get('seasonId')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
         </div>
-      </div>
 
-      <!-- Category Rates Step -->
-      <div class="step">
-        <div class="step-label">Category Rates</div>
-        <div class="step-content">
-          <form [formGroup]="categoryRatesForm">
-            <div class="category-rates-grid">
-              <div *ngFor="let category of categories" class="category-rate-card animate-in">
-                <div class="form-field">
-                  <label>{{category.type | titlecase}} ({{category.minAge}}-{{category.maxAge}})</label>
-                  <input type="number" [formControlName]="category.id.toString()">
-                  <div class="error-message" *ngIf="categoryRatesForm.get(category.id.toString())?.hasError('required')">
-                    Rate is required
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="step-actions">
-              <button class="btn-secondary" matStepperPrevious>Back</button>
-              <button class="btn-primary" matStepperNext>Next</button>
-            </div>
-          </form>
+        <div class="form-group">
+          <label>Room Type <span class="required">*</span></label>
+          <select formControlName="roomTypeId">
+            <option value="">Select a Room Type</option>
+            <option *ngFor="let room of rooms" [value]="room.id">
+              {{room.type}}
+            </option>
+          </select>
+          <mat-error *ngIf="rateModalForm.get('roomTypeId')?.errors?.['required'] && rateModalForm.get('roomTypeId')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
         </div>
-      </div>
 
-      <!-- Meal Plans Step -->
-      <div class="step">
-        <div class="step-label">Meal Plans</div>
-        <div class="step-content">
-          <form [formGroup]="mealPlansForm">
-            <div class="meal-plans-container">
-              <div class="form-field">
-                <label>Meal Plans</label>
-                <div class="chip-list">
-                  <div *ngFor="let plan of mealPlans" class="chip">
-                    {{plan}}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="step-actions">
-              <button class="btn-secondary" matStepperPrevious>Back</button>
-              <button class="btn-primary" matStepperNext>Next</button>
-            </div>
-          </form>
+        <div class="form-group">
+          <label>Region <span class="required">*</span></label>
+          <select formControlName="region" (change)="onRegionChange($event)">
+            <option value="">Select a Region</option>
+            <option *ngFor="let group of marketGroups" [value]="group.code">
+              {{group.name}}
+            </option>
+          </select>
+          <mat-error *ngIf="rateModalForm.get('region')?.errors?.['required'] && rateModalForm.get('region')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
         </div>
-      </div>
 
-      <!-- Review Step -->
-      <div class="step">
-        <div class="step-label">Review</div>
-        <div class="step-content">
-          <div class="rate-review">
-            <h3>Review Rate Configuration</h3>
-            <div class="rate-info-grid">
-              <div class="rate-info-item">
-                <span class="rate-label">Season</span>
-                <span class="rate-value">{{basicInfoForm.get('season')?.value}}</span>
-              </div>
-              <div class="rate-info-item">
-                <span class="rate-label">Room Type</span>
-                <span class="rate-value">{{basicInfoForm.get('roomType')?.value}}</span>
-              </div>
-            </div>
-          </div>
-          <div class="step-actions">
-            <button class="btn-secondary" matStepperPrevious>Back</button>
-            <button class="btn-primary" (click)="saveRate()">Save Rate</button>
-          </div>
+        <div class="form-group">
+          <label>Market <span class="required">*</span></label>
+          <select formControlName="marketId" [attr.disabled]="!selectedRegion">
+            <option value="">Select a Market</option>
+            <option *ngFor="let market of filteredMarkets" [value]="market.id">
+              {{market.name}}
+            </option>
+          </select>
+          <mat-error *ngIf="rateModalForm.get('marketId')?.errors?.['required'] && rateModalForm.get('marketId')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
         </div>
-      </div>
+
+        <div class="form-group">
+          <label>Base Rate <span class="required">*</span></label>
+          <input type="number" formControlName="baseRate" min="0">
+          <mat-error *ngIf="rateModalForm.get('baseRate')?.errors?.['required'] && rateModalForm.get('baseRate')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+          <mat-error *ngIf="rateModalForm.get('baseRate')?.errors?.['min'] && rateModalForm.get('baseRate')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+        </div>
+
+        <div class="form-group">
+          <label>Extra Adult Rate <span class="required">*</span></label>
+          <input type="number" formControlName="extraAdult" min="0">
+          <mat-error *ngIf="rateModalForm.get('extraAdult')?.errors?.['required'] && rateModalForm.get('extraAdult')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+          <mat-error *ngIf="rateModalForm.get('extraAdult')?.errors?.['min'] && rateModalForm.get('extraAdult')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+        </div>
+
+        <div class="form-group">
+          <label>Extra Child <span class="required">*</span></label>
+          <input type="number" formControlName="extraChild" min="0">
+          <mat-error *ngIf="rateModalForm.get('extraChild')?.errors?.['required'] && rateModalForm.get('extraChild')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+          <mat-error *ngIf="rateModalForm.get('extraChild')?.errors?.['min'] && rateModalForm.get('extraChild')?.touched">
+            <i class="material-icons">error</i>
+          </mat-error>
+        </div>
+
+        <div class="modal-actions">
+          <button mat-button type="button" (click)="closeRateModal()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="!rateModalForm.valid || isLoading">
+            <span *ngIf="!isLoading">{{ editingRate ? 'Update' : 'Save' }}</span>
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -242,7 +247,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Configure Age Categories</h2>
-        <button class="btn-secondary" (click)="closeAgeCategoryEditor()">
+        <button mat-button (click)="closeAgeCategoryEditor()">
           <i class="material-icons">close</i>
         </button>
       </div>
@@ -251,7 +256,7 @@
         <div class="categories-list">
           <div class="section-header">
             <h3>Age Categories</h3>
-            <button class="btn-primary" (click)="showCategoryForm = true">
+            <button mat-raised-button color="primary" (click)="showCategoryForm = true">
               <i class="material-icons">add</i>
               Add Category
             </button>
@@ -263,11 +268,11 @@
                 <span class="category-type">{{category.type}}</span>
                 <span class="age-range">{{getAgeRange(category)}}</span>
                 <div class="category-actions">
-                  <button class="btn-primary" (click)="editCategory(category)">
-                    <i class="material-icons">edit</i>
+                  <button mat-icon-button (click)="editCategory(category)">
+                    <mat-icon>edit</mat-icon>
                   </button>
-                  <button class="btn-secondary" (click)="deleteCategory(category)">
-                    <i class="material-icons">delete</i>
+                  <button mat-icon-button (click)="deleteCategory(category)">
+                    <mat-icon>delete</mat-icon>
                   </button>
                 </div>
               </div>
@@ -279,24 +284,24 @@
           <h3>{{editingCategory ? 'Edit' : 'Add'}} Category</h3>
           <div class="form-fields">
             <div class="form-field">
-              <label>Category Type</label>
+              <label>Category Type <span class="required">*</span></label>
               <input type="text" [(ngModel)]="newCategory.type" required>
             </div>
 
             <div class="form-field">
-              <label>Minimum Age</label>
+              <label>Minimum Age <span class="required">*</span></label>
               <input type="number" [(ngModel)]="newCategory.minAge" required min="0">
             </div>
 
             <div class="form-field">
-              <label>Maximum Age</label>
+              <label>Maximum Age <span class="required">*</span></label>
               <input type="number" [(ngModel)]="newCategory.maxAge" required min="0">
             </div>
           </div>
 
           <div class="form-actions">
-            <button class="btn-secondary" (click)="cancelCategoryEdit()">Cancel</button>
-            <button class="btn-primary" (click)="saveCategory()">
+            <button mat-button (click)="cancelCategoryEdit()">Cancel</button>
+            <button mat-raised-button color="primary" (click)="saveCategory()">
               {{editingCategory ? 'Update' : 'Add'}} Category
             </button>
           </div>
