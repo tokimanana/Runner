@@ -1,13 +1,12 @@
 import { Component, OnInit, ViewEncapsulation, Input } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
+import { CommonModule } from '@angular/common';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   Hotel,
@@ -40,14 +39,12 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    DecimalPipe,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
     MatButtonModule,
-    MatCardModule,
     MatIconModule,
     MatMenuModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCardModule,
     MatProgressSpinnerModule
   ]
 })
@@ -61,7 +58,16 @@ export class RatesConfigComponent implements OnInit {
   showRateEditor = false;
   showAgeCategoryEditor = false;
   isLoading = false;
-  error: string | null = null;
+  /**
+   * Success message handling
+   */
+  public success = '';
+
+  /**
+   * Error message handling
+   */
+  public error: string | null = null;
+
   currentRates: RateConfiguration[] = [];
   filteredRates: RateConfiguration[] = [];
   seasons: Season[] = [];
@@ -107,6 +113,21 @@ export class RatesConfigComponent implements OnInit {
 
   private defaultCurrency = 'EUR';  // Default currency for the application
 
+  public originalValues: any = null;
+
+  modalMessage: string | null = null;
+  modalError: boolean = false;
+
+  get modalTitle(): string {
+    if (this.editingRate) {
+      return 'Edit Rate';
+    }
+    if (this.originalValues) {
+      return 'Duplicate Rate';
+    }
+    return 'Add Rate';
+  }
+
   constructor(
     private hotelService: HotelService,
     private formBuilder: FormBuilder
@@ -132,24 +153,14 @@ export class RatesConfigComponent implements OnInit {
       marketId: [null, Validators.required],
       baseRate: [null, [Validators.required, Validators.min(0)]],
       extraAdult: [null, [Validators.required, Validators.min(0)]],
-      extraChild: [null, [Validators.required, Validators.min(0)]]
+      extraChild: [null, [Validators.required, Validators.min(0)]],
+      singleOccupancy: [0, Validators.min(0)]
     });
   }
 
   ngOnInit() {
-    // Initialize filter form subscription
-    this.filterForm.valueChanges
-      .pipe(
-        debounceTime(300), // Add small delay to prevent rapid filtering
-        distinctUntilChanged((prev, curr) => 
-          prev.seasonId === curr.seasonId && 
-          prev.roomTypeId === curr.roomTypeId && 
-          prev.currency === curr.currency
-        )
-      )
-      .subscribe(() => this.applyFilters());
-
-    // Load initial data
+    this.initializeForms();
+    this.subscribeToFormChanges();
     this.loadInitialData();
   }
 
@@ -170,12 +181,17 @@ export class RatesConfigComponent implements OnInit {
       this.hotel = hotel;
       
       // Load all required data
-      await Promise.all([
-        this.loadSeasons(),
-        this.loadRooms(),
-        this.loadCurrencies(),
-        this.loadRates()
-      ]);
+      await this.loadSeasons();
+      await this.loadRooms();
+      await this.loadCurrencies();
+      await this.loadRates();
+
+      console.log('Initial data loaded:', {
+        seasons: this.seasons,
+        rooms: this.rooms,
+        currencies: this.currencies,
+        rates: this.currentRates
+      });
 
       // Initialize filters with default values
       this.initializeFilters();
@@ -184,6 +200,7 @@ export class RatesConfigComponent implements OnInit {
       this.applyFilters();
       
     } catch (error) {
+      console.error('Error loading initial data:', error);
       this.handleError(error, 'Error loading initial data');
     } finally {
       this.isLoading = false;
@@ -310,112 +327,122 @@ export class RatesConfigComponent implements OnInit {
     this.filterForm.patchValue({ currency }, { emitEvent: true });
   }
 
-  initializeForms() {
+  private initializeForms() {
     // Basic info form
     this.basicInfoForm = this.formBuilder.group({
       season: ['', Validators.required],
       roomType: ['', Validators.required],
-      currency: ['', Validators.required],
-      region: ['', Validators.required]
+      currency: ['', Validators.required]
     });
 
-    // Subscribe to form changes
-    this.basicInfoForm.get('season')?.valueChanges.subscribe(value => {
-      this.selectedSeason = value;
-      this.applyFilters();
-    });
-
-    this.basicInfoForm.get('roomType')?.valueChanges.subscribe(value => {
-      this.selectedRoomType = value;
-      this.applyFilters();
-    });
-
-    this.basicInfoForm.get('currency')?.valueChanges.subscribe(value => {
-      const currencySetting = this.currencySettings.find(c => c.code === value);
-      if (currencySetting) {
-        this.selectedCurrency = {
-          code: currencySetting.code,
-          symbol: currencySetting.symbol
-        };
-      } else {
-        this.selectedCurrency = null;
-      }
-      this.applyFilters();
-    });
-
-    this.basicInfoForm.get('region')?.valueChanges.subscribe(value => {
-      this.selectedRegion = value;
-      this.loadMarketSpecificData(value);
-    });
-
-    // Category rates form
-    this.categoryRatesForm = this.formBuilder.group({});
-    if (this.hotel?.ageCategories) {
-      this.hotel.ageCategories.forEach(category => {
-        this.categoryRatesForm.addControl(
-          category.type,
-          this.formBuilder.control(this.ratesByCategory[category.type] || 0, [
-            Validators.required,
-            Validators.min(0)
-          ])
-        );
-      });
-    }
-
-    // Meal plans form
-    this.mealPlansForm = this.formBuilder.group({
-      selectedPlans: [[]]
-    });
-
-    // Special offers form
-    this.specialOffersForm = this.formBuilder.group({
-      offers: this.formBuilder.array([])
+    // Filter form
+    this.filterForm = this.formBuilder.group({
+      season: [''],
+      roomType: [''],
+      currency: ['']
     });
 
     // Rate form
     this.rateForm = this.formBuilder.group({
       seasonId: ['', Validators.required],
       roomTypeId: ['', Validators.required],
-      region: ['', Validators.required],
+      marketId: ['', Validators.required],
       baseRate: ['', [Validators.required, Validators.min(0)]],
       extraAdult: [0, Validators.min(0)],
       extraChild: [0, Validators.min(0)],
       singleOccupancy: [0, Validators.min(0)]
     });
 
+    // Rate modal form
+    this.initializeRateModalForm();
+  }
+
+  /**
+   * Initialize the rate modal form
+   */
+  private initializeRateModalForm(): void {
+    this.rateModalForm = this.formBuilder.group({
+      seasonId: ['', [Validators.required]],
+      roomTypeId: ['', [Validators.required]],
+      region: ['', [Validators.required]],
+      marketId: ['', [Validators.required]],
+      baseRate: ['', [Validators.required, Validators.min(0)]],
+      extraAdult: ['', [Validators.required, Validators.min(0)]],
+      extraChild: ['', [Validators.required, Validators.min(0)]],
+      singleOccupancy: [null, (control: AbstractControl) => {
+        const value = control.value;
+        if (value === null || value === undefined || value === '') {
+          return null; // Champ optionnel
+        }
+        return value >= 0 ? null : { min: { min: 0, actual: value } };
+      }]
+    });
+  
+    // Debug form state changes
+    this.rateModalForm.statusChanges.subscribe(status => {
+      console.log('Form Status:', status);
+      console.log('Form Values:', this.rateModalForm.value);
+      console.log('Form Valid:', this.rateModalForm.valid);
+      console.log('Form Errors:', this.rateModalForm.errors);
+      
+      // Log des erreurs spécifiques par champ
+      Object.keys(this.rateModalForm.controls).forEach(key => {
+        const control = this.rateModalForm.get(key);
+        if (control?.errors) {
+          console.log(`${key} errors:`, control.errors);
+        }
+      });
+    });
   }
 
   private subscribeToFormChanges() {
+    // Filter form changes
+    this.filterForm.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged((prev, curr) => 
+          prev.season === curr.season && 
+          prev.roomType === curr.roomType && 
+          prev.currency === curr.currency
+        )
+      )
+      .subscribe(() => this.applyFilters());
+
     // Basic Info Form changes
-    this.basicInfoForm.get('season')?.valueChanges.subscribe(value => {
-      this.selectedSeason = value;
-      this.applyFilters();
-    });
+    if (this.basicInfoForm) {
+      const seasonControl = this.basicInfoForm.get('season');
+      const roomTypeControl = this.basicInfoForm.get('roomType');
+      const currencyControl = this.basicInfoForm.get('currency');
 
-    this.basicInfoForm.get('roomType')?.valueChanges.subscribe(value => {
-      this.selectedRoomType = value;
-      this.applyFilters();
-    });
+      if (seasonControl) {
+        seasonControl.valueChanges.subscribe(value => {
+          this.selectedSeason = value;
+          this.applyFilters();
+        });
+      }
 
-    this.basicInfoForm.get('currency')?.valueChanges.subscribe(value => {
-      const currencySetting = this.currencySettings.find(c => c.code === value);
-      this.selectedCurrency = currencySetting ? {
-        code: currencySetting.code,
-        symbol: currencySetting.symbol
-      } : null;
-      this.applyFilters();
-    });
+      if (roomTypeControl) {
+        roomTypeControl.valueChanges.subscribe(value => {
+          this.selectedRoomType = value;
+          this.applyFilters();
+        });
+      }
 
-    this.basicInfoForm.get('region')?.valueChanges.subscribe(value => {
-      this.selectedRegion = value;
-      this.loadMarketSpecificData(value);
-    });
-
-    // Meal Plans Form changes
-    this.mealPlansForm.get('selectedPlans')?.valueChanges.subscribe(plans => {
-      this.selectedMealPlans = plans;
-      this.updateMealPlanRates();
-    });
+      if (currencyControl) {
+        currencyControl.valueChanges.subscribe(value => {
+          const currencySetting = this.currencySettings.find(c => c.code === value);
+          if (currencySetting) {
+            this.selectedCurrency = {
+              code: currencySetting.code,
+              symbol: currencySetting.symbol
+            };
+          } else {
+            this.selectedCurrency = null;
+          }
+          this.applyFilters();
+        });
+      }
+    }
   }
 
   private loadMarketSpecificData(region: string) {
@@ -497,44 +524,54 @@ export class RatesConfigComponent implements OnInit {
     );
   }
 
-  private loadSeasons(): void {
+  private async loadSeasons(): Promise<void> {
     if (!this.hotel?.id) {
       this.error = 'Hotel ID is required for loading seasons';
       return;
     }
-    this.seasons = this.hotelService.getSeasons(this.hotel.id);
+    try {
+      this.seasons = this.hotelService.getSeasons(this.hotel.id);
+      console.log('Loaded seasons:', this.seasons); // Debug log
+    } catch (error) {
+      console.error('Error loading seasons:', error);
+      this.handleError(error, 'Failed to load seasons');
+    }
   }
 
-  private loadRooms(): void {
+  private async loadRooms(): Promise<void> {
     if (!this.hotel?.id) {
       this.error = 'Hotel ID is required for loading rooms';
       return;
     }
-    this.rooms = this.hotelService.getRooms(this.hotel.id);
+    try {
+      this.rooms = this.hotelService.getRooms(this.hotel.id);
+      console.log('Loaded rooms:', this.rooms); // Debug log
+    } catch (error) {
+      console.error('Error loading rooms:', error);
+      this.handleError(error, 'Failed to load rooms');
+    }
   }
 
-  private loadCurrencies(): void {
-    // Load market groups first if not already loaded
-    this.marketGroups = this.hotelService.getMarketGroups();
+  private async loadCurrencies(): Promise<void> {
+    try {
+      // Load market groups first if not already loaded
+      this.marketGroups = this.hotelService.getMarketGroups();
 
-    // Get unique currencies from market groups
-    const uniqueCurrencies = new Set<string>();
-    this.marketGroups.forEach(group => {
-      group.markets.forEach(market => {
-        if (market.currency) {
-          uniqueCurrencies.add(market.currency);
-        }
+      // Get unique currencies from market groups
+      const uniqueCurrencies = new Set<string>();
+      this.marketGroups.forEach(group => {
+        group.markets.forEach(market => {
+          if (market.currency) {
+            uniqueCurrencies.add(market.currency);
+          }
+        });
       });
-    });
-    
-    // Update currencies array
-    this.currencies = Array.from(uniqueCurrencies);
-    
-    // Set default currency if available
-    if (this.currencies.includes(this.defaultCurrency)) {
-      this.filterForm.patchValue({ currency: this.defaultCurrency });
-    } else if (this.currencies.length > 0) {
-      this.filterForm.patchValue({ currency: this.currencies[0] });
+
+      // Update currencies array
+      this.currencies = Array.from(uniqueCurrencies);
+    } catch (error) {
+      console.error('Error loading currencies:', error);
+      this.handleError(error, 'Failed to load currencies');
     }
   }
 
@@ -564,8 +601,8 @@ export class RatesConfigComponent implements OnInit {
         this.filteredMarkets = this.marketGroups[0].markets;
       }
     } catch (error) {
-      this.error = 'Failed to load rates';
-      throw error;
+      console.error('Error loading rates:', error);
+      this.handleError(error, 'Failed to load rates');
     }
   }
 
@@ -752,76 +789,86 @@ export class RatesConfigComponent implements OnInit {
   }
 
   editRate(rate: RateConfiguration) {
-    const rateData = this.convertToRate(rate);
+    if (!rate.rates?.[0]) {
+      this.handleError(new Error('Invalid rate configuration'), 'Failed to edit rate');
+      return;
+    }
+  
+    const rateData = rate.rates[0];
     this.editingRate = rateData;
-    this.rateForm.patchValue({
-      seasonId: rateData.seasonId,
-      roomTypeId: rateData.roomTypeId,
-      region: rateData.marketId,
-      baseRate: rateData.baseRate,
-      extraAdult: rateData.extraAdult,
-      extraChild: rateData.extraChild
-    });
-    this.openRateModal();
-  }
-
-  updateRate(rateConfig: RateConfiguration) {
-    if (!rateConfig.rates[0]) return;
-    
-    const currentRate = rateConfig.rates[0];
-    const contract = this.activeContracts.find(c => c.id === currentRate.contractId);
-    
-    if (!contract) return;
-
-    const updatedRate: Rate = {
-      ...currentRate,
-      seasonId: rateConfig.season.id,
-      roomTypeId: rateConfig.roomType.id,
-      ageCategoryRates: this.ratesByCategory,
-      specialOffers: this.specialOffersList,
-      mealPlanId: this.selectedMealPlans[0]
+  
+    // Find the region for the market
+    const region = this.findRegionForMarket(rateData.marketId);
+    if (!region) {
+      this.handleError(new Error('Could not find region for market'), 'Failed to edit rate');
+      return;
+    }
+      
+    // Ensure all values are properly typed before setting
+    const formValues = {
+      seasonId: Number(rateData.seasonId),
+      roomTypeId: Number(rateData.roomTypeId),
+      region: region,
+      marketId: Number(rateData.marketId),
+      baseRate: Number(rateData.baseRate),
+      extraAdult: Number(rateData.extraAdult || 0),
+      extraChild: Number(rateData.extraChild || 0),
+      singleOccupancy: rateData.singleOccupancy !== undefined ? Number(rateData.singleOccupancy) : null
     };
+  
+    // Set form values
+    this.rateModalForm.patchValue(formValues);
+    this.originalValues = {...formValues}; // Store original values for comparison
+  
+    // Log form state for debugging
+    console.log('Form Values:', formValues);
+    console.log('Form Valid:', this.rateModalForm.valid);
+    console.log('Form Errors:', this.rateModalForm.errors);
+    
+    this.showRateModal = true;
+  }
+  
 
-    const index = contract.rates.findIndex(r => r.id === currentRate.id);
-    if (index !== -1) {
-      contract.rates[index] = updatedRate;
+  /**
+   * Update an existing rate
+   */
+  updateRate(rateConfig: RateConfiguration) {
+    if (!rateConfig.rates[0]) {
+      this.handleError(new Error('Invalid rate configuration'), 'Failed to update rate');
+      return;
     }
 
+    const contract = this.findContractForRate(rateConfig);
+    if (!contract) {
+      this.handleError(new Error('Contract not found'), 'Failed to update rate');
+      return;
+    }
+
+    // Update rate in contract
+    const rateIndex = contract.rates.findIndex(r => r.id === rateConfig.rates[0].id);
+    if (rateIndex === -1) {
+      this.handleError(new Error('Rate not found in contract'), 'Failed to update rate');
+      return;
+    }
+
+    contract.rates[rateIndex] = {
+      ...contract.rates[rateIndex],
+      ...rateConfig.rates[0]
+    };
+
+    // Update contract in service
     this.hotelService.updateContract(contract).subscribe({
       next: (updatedContract) => {
         if (updatedContract) {
           this.loadInitialData();
+          // Show success message
+          this.success = 'Rate updated successfully';
+          setTimeout(() => this.success = '', 3000);
         } else {
           this.handleError(new Error('Failed to update contract'), 'Failed to update rate');
         }
       },
       error: (error) => this.handleError(error, 'Failed to update rate')
-    });
-  }
-
-  addRate(rateConfig: RateConfiguration) {
-    if (!this.activeContracts.length) {
-      this.handleError(new Error('No active contracts found'), 'Failed to add rate');
-      return;
-    }
-
-    const contract = this.activeContracts[0];
-    const newRate = this.rateConfigToRate(rateConfig);
-    
-    // Ensure the rate has a valid contract ID
-    newRate.contractId = contract.id;
-    
-    contract.rates.push(newRate);
-
-    this.hotelService.updateContract(contract).subscribe({
-      next: (updatedContract) => {
-        if (updatedContract) {
-          this.loadInitialData();
-        } else {
-          this.handleError(new Error('Failed to update contract'), 'Failed to add rate');
-        }
-      },
-      error: (error) => this.handleError(error, 'Failed to add rate')
     });
   }
 
@@ -831,8 +878,12 @@ export class RatesConfigComponent implements OnInit {
     );
   }
 
+  /**
+   * Get the next available rate ID
+   */
   private getNextRateId(): number {
-    return Math.max(0, ...this.currentRates.map(r => r.rates[0]?.id || 0)) + 1;
+    const maxId = Math.max(...this.currentRates.map(r => Number(r.rates[0]?.id) || 0), 0);
+    return maxId + 1;
   }
 
   public getRoomName(roomId: number): string {
@@ -1016,196 +1067,430 @@ export class RatesConfigComponent implements OnInit {
     return rate.rates[0]?.id || index;
   }
 
-
-  private processContractRates(contracts: Contract[]): RateConfiguration[] {
-    if (!contracts || contracts.length === 0) return [];
-
-    const rateConfigurations: RateConfiguration[] = [];
-    
-    contracts.forEach(contract => {
-      if (contract.rates) {
-        contract.rates.forEach(rate => {
-          const season = this.seasons.find(s => s.id === rate.seasonId);
-          const roomType = this.rooms.find(r => r.id === rate.roomTypeId);
-          
-          if (season && roomType) {
-            const rateConfig: RateConfiguration = {
-              id: rate.id.toString(),
-              name: rate.name,
-              description: '',
-              startDate: new Date(contract.startDate),
-              endDate: new Date(contract.endDate),
-              roomType,
-              season,
-              rates: [rate],
-              seasonId: rate.seasonId,
-              roomTypeId: rate.roomTypeId,
-              marketId: rate.marketId,
-              baseRate: rate.baseRate,
-              extraAdult: rate.extraAdult || 0,
-              extraChild: rate.extraChild || 0,
-              singleOccupancy: rate.supplements?.singleOccupancy || 0,
-              currency: rate.currency,
-              markets: [],
-              regions: [],
-              contractId: contract.id,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            };
-            rateConfigurations.push(rateConfig);
-          }
-        });
-      }
+  private initializeRateForm() {
+    this.rateModalForm = this.formBuilder.group({
+      seasonId: [null, Validators.required],
+      roomTypeId: [null, Validators.required],
+      region: [null, Validators.required],
+      baseRate: [null, [Validators.required, Validators.min(0)]],
+      extraAdult: [0, Validators.min(0)],
+      extraChild: [0, Validators.min(0)],
+      singleOccupancy: [0, Validators.min(0)]
     });
-
-    return rateConfigurations;
   }
-  
-  public saveRateModal(formData: any) {
-    if (!this.hotel || !formData || this.rateModalForm.invalid) return;
 
-    const season = this.seasons.find(s => s.id === formData.seasonId);
-    const roomType = this.rooms.find(r => r.id === formData.roomTypeId);
+  public duplicateRate(rate: RateConfiguration) {
+    if (!rate.rates?.[0]) {
+      this.handleError(new Error('Invalid rate configuration'), 'Failed to duplicate rate');
+      return;
+    }
+  
+    const rateData = rate.rates[0];
+    this.editingRate = null; // Set to null since we're creating a new rate
+  
+    // Find the region for the market
+    const region = this.findRegionForMarket(rateData.marketId);
+    if (!region) {
+      this.handleError(new Error('Could not find region for market'), 'Failed to duplicate rate');
+      return;
+    }
+  
+    // Pre-fill form with existing rate data
+    const formValues = {
+      seasonId: Number(rateData.seasonId),
+      roomTypeId: Number(rateData.roomTypeId),
+      region: region,
+      marketId: Number(rateData.marketId),
+      baseRate: Number(rateData.baseRate),
+      extraAdult: Number(rateData.extraAdult || 0),
+      extraChild: Number(rateData.extraChild || 0),
+      singleOccupancy: Number(rateData.singleOccupancy || 0)
+    };
+  
+    this.rateModalForm.patchValue(formValues);
+    this.originalValues = {...formValues}; // Store original values for comparison
+  
+    this.showRateModal = true;
+  }
+
+  private hasFormChanges(): boolean {
+    if (!this.originalValues) return true;
     
-    if (!season || !roomType) {
-      this.handleError(new Error('Invalid season or room type'), 'Failed to save rate');
+    const currentValues = this.rateModalForm.value;
+    return Object.keys(this.originalValues).some(key => {
+      // Ignorer la comparaison si singleOccupancy est null ou undefined
+      if (key === 'singleOccupancy' && 
+          (this.originalValues[key] === null || this.originalValues[key] === undefined) && 
+          (currentValues[key] === null || currentValues[key] === undefined)) {
+        return false;
+      }
+      return this.originalValues[key] !== currentValues[key];
+    });
+  }
+
+  deleteRate(rate: RateConfiguration) {
+    if (!rate.rates?.[0]) {
+      this.handleError(new Error('Invalid rate configuration'), 'Failed to delete rate');
       return;
     }
 
-    const newRate: Rate = {
-      id: this.editingRate?.id || this.generateUniqueId(),
-      name: formData.name || this.generateRateName(roomType, season),
-      marketId: formData.marketId,
-      seasonId: formData.seasonId,
-      roomTypeId: formData.roomTypeId,
-      amount: formData.baseRate,
-      baseRate: formData.baseRate,
-      contractId: this.activeContracts[0]?.id,
-      currency: formData.currency || this.getCurrencyForMarket(formData.marketId),
-      extraAdult: formData.extraAdult || 0,
-      extraChild: formData.extraChild || 0,
-      supplements: {
-        extraAdult: formData.extraAdult || 0,
-        extraChild: formData.extraChild || 0,
-        singleOccupancy: formData.singleOccupancy || 0
-      },
-      singleOccupancy: formData.singleOccupancy || 0,
-      ageCategoryRates: {},
-      mealPlanId: this.selectedMealPlans[0]
-    };
-
-    const rateConfig: RateConfiguration = {
-      id: newRate.id.toString(),
-      name: newRate.name,
-      description: '',
-      roomType,
-      season,
-      rates: [newRate],
-      seasonId: newRate.seasonId,
-      roomTypeId: newRate.roomTypeId,
-      marketId: newRate.marketId,
-      baseRate: newRate.baseRate,
-      extraAdult: newRate.extraAdult,
-      extraChild: newRate.extraChild,
-      singleOccupancy: newRate.singleOccupancy,
-      currency: newRate.currency,
-      contractId: newRate.contractId,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    const existingRateIndex = this.currentRates.findIndex(rate => rate.id === rateConfig.id);
-
-    if (existingRateIndex >= 0) {
-      // Update existing rate
-      this.currentRates[existingRateIndex] = {
-        ...this.currentRates[existingRateIndex],
-        ...rateConfig
-      };
-    } else {
-      // Create new rate
-      this.currentRates.push(rateConfig);
+    const contract = this.findContractForRate(rate);
+    if (!contract) {
+      this.handleError(new Error('Contract not found'), 'Failed to delete rate');
+      return;
     }
 
-    this.applyFilters();
-    this.saveRatesToContract(rateConfig);
-    this.closeRateModal();
+    // Remove rate from contract
+    contract.rates = contract.rates.filter(r => r.id !== rate.rates[0].id);
+
+    // Update contract in service
+    this.hotelService.updateContract(contract).subscribe({
+      next: (updatedContract) => {
+        if (updatedContract) {
+          this.loadInitialData();
+          // Show success message
+          this.success = 'Rate deleted successfully';
+          setTimeout(() => this.success = '', 3000);
+        } else {
+          this.handleError(new Error('Failed to update contract'), 'Failed to delete rate');
+        }
+      },
+      error: (error) => this.handleError(error, 'Failed to delete rate')
+    });
   }
 
-  private saveRatesToContract(rateConfig: RateConfiguration) {
-    if (!this.hotel) return;
-    
-    const contract = this.activeContracts.find(c => c.id === rateConfig.contractId);
-    if (contract) {
-      if (!contract.rates) {
-        contract.rates = [];
-      }
-      
-      const rate: Rate = rateConfig.rates[0];
-      const existingRateIndex = contract.rates.findIndex(r => r.id === Number(rateConfig.id));
-      
-      if (existingRateIndex >= 0) {
-        contract.rates[existingRateIndex] = rate;
-      } else {
-        contract.rates.push(rate);
-      }
-      
-      // Update contract in service
-      this.hotelService.updateContract(contract).subscribe({
+  deleteCategory(category: AgeCategory) {
+    if (this.hotel && this.hotel.ageCategories) {
+      this.hotel.ageCategories = this.hotel.ageCategories.filter(c => c.id !== category.id);
+      this.hotelService.updateHotel(this.hotel).subscribe({
         next: () => {
-          // Optionally refresh rates
-          this.loadRates();
+          // Remove category from local array
+          this.categories = this.categories.filter(c => c.id !== category.id);
+          // Update rates that might reference this category
+          this.currentRates.forEach(rateConfig => {
+            rateConfig.rates.forEach(rate => {
+              if (rate.ageCategoryRates) {
+                delete rate.ageCategoryRates[category.id];
+              }
+            });
+          });
         },
-        error: (error) => this.handleError(error, 'Failed to save rate')
+        error: (error) => {
+          this.error = 'Failed to delete category';
+        }
       });
     }
+  }
+
+  private getCurrencyForMarket(marketId: number): string {
+    const market = this.marketGroups
+      .flatMap(group => group.markets)
+      .find(m => m.id === marketId);
+    return market?.currency || this.defaultCurrency;
+  }
+
+  private initializeCurrencies() {
+    // Get unique currencies from market groups
+    const uniqueCurrencies = new Set<string>();
+    this.marketGroups.forEach(group => {
+      group.markets.forEach(market => {
+        if (market.currency) {
+          uniqueCurrencies.add(market.currency);
+        }
+      });
+    });
+    
+    // Update currencies array
+    this.currencies = Array.from(uniqueCurrencies);
+    
+    // Set default currency if available
+    if (this.currencies.includes(this.defaultCurrency)) {
+      this.filterForm.patchValue({ currency: this.defaultCurrency });
+    } else if (this.currencies.length > 0) {
+      this.filterForm.patchValue({ currency: this.currencies[0] });
+    }
+  }
+  
+  private handleError(error: any, customMessage?: string) {
+    this.error = customMessage || error?.message || 'An error occurred';
   }
 
   private generateUniqueId(): number {
     return Math.floor(Math.random() * 1000000) + 1;
   }
 
-  private generateRateName(roomType: RoomType, season: Season): string {
-    return `${roomType.type} - ${season.name} Rate`;
+  private showModalMessage(message: string, isError: boolean = false) {
+    this.modalMessage = message;
+    this.modalError = isError;
   }
 
-  openRateModal(rate?: RateConfiguration) {
-    this.showRateModal = true;
-    
-    if (rate) {
-      // Editing existing rate
-      const marketGroup = this.marketGroups.find(g => g.markets.some(m => m.id === rate.marketId));
-      if (marketGroup) {
-        this.selectedRegion = marketGroup.code;
-        this.filteredMarkets = marketGroup.markets;
+  private clearModalMessage() {
+    this.modalMessage = null;
+    this.modalError = false;
+  }
+
+  public saveRateModal(formData: any) {
+    this.clearModalMessage();
+  
+    if (!this.rateModalForm.valid) {
+      const invalidControls = Object.keys(this.rateModalForm.controls)
+        .filter(key => this.rateModalForm.get(key)?.errors)
+        .map(key => `${key}: ${JSON.stringify(this.rateModalForm.get(key)?.errors)}`);
+      
+      console.log('Invalid controls:', invalidControls);
+      this.showModalMessage('Please fill in all required fields correctly', true);
+      return;
+    }
+  
+    // Vérifier les modifications pour la duplication
+    if (!this.editingRate && !this.hasFormChanges()) {
+      this.showModalMessage('You must modify at least one field when duplicating a rate', true);
+      return;
+    }
+  
+    // Pour l'édition, vérifier si des modifications ont été apportées
+    if (this.editingRate && !this.hasFormChanges()) {
+      this.showModalMessage('Please modify at least one field to save changes', true);
+      return;
+    }
+  
+    // Traiter singleOccupancy : garder null si non défini, sinon convertir en nombre
+    formData.singleOccupancy = formData.singleOccupancy !== null && formData.singleOccupancy !== undefined && formData.singleOccupancy !== '' 
+      ? Number(formData.singleOccupancy) 
+      : null;
+  
+    if (!this.hotel?.id) {
+      this.showModalMessage('Hotel ID is required', true);
+      return;
+    }
+  
+    try {
+      const selectedRegion = formData.region;
+      const marketGroup = this.marketGroups.find(group => group.code === selectedRegion);
+      
+      if (!marketGroup) {
+        this.showModalMessage('Selected region not found', true);
+        return;
       }
+  
+      if (this.editingRate) {
+        const roomType = this.rooms.find(r => r.id === Number(formData.roomTypeId))!;
+        const season = this.seasons.find(s => s.id === Number(formData.seasonId))!;
+        
+        const rateConfig: RateConfiguration = {
+          id: this.editingRate.id.toString(),
+          seasonId: Number(formData.seasonId),
+          roomTypeId: Number(formData.roomTypeId),
+          marketId: this.editingRate.marketId,
+          baseRate: Number(formData.baseRate),
+          extraAdult: Number(formData.extraAdult),
+          extraChild: Number(formData.extraChild),
+          singleOccupancy: formData.singleOccupancy,
+          roomType,
+          season,
+          name: this.generateRateName(roomType, season),
+          currency: this.editingRate.currency,
+          rates: [{
+            ...this.editingRate,
+            name: this.generateRateName(roomType, season),
+            seasonId: Number(formData.seasonId),
+            roomTypeId: Number(formData.roomTypeId),
+            baseRate: Number(formData.baseRate),
+            extraAdult: Number(formData.extraAdult),
+            extraChild: Number(formData.extraChild),
+            singleOccupancy: formData.singleOccupancy,
+            supplements: {
+              extraAdult: Number(formData.extraAdult),
+              extraChild: Number(formData.extraChild),
+              singleOccupancy: formData.singleOccupancy
+            }
+          }]
+        };
+        
+        this.updateRate(rateConfig);
+      } else {
+        // Pour l'ajout ou la duplication, on crée un nouveau rate pour chaque marché
+        marketGroup.markets.forEach(market => {
+          const roomType = this.rooms.find(r => r.id === Number(formData.roomTypeId))!;
+          const season = this.seasons.find(s => s.id === Number(formData.seasonId))!;
+          
+          const rateConfig: RateConfiguration = {
+            id: this.generateUniqueId().toString(),
+            seasonId: Number(formData.seasonId),
+            roomTypeId: Number(formData.roomTypeId),
+            marketId: market.id,
+            baseRate: Number(formData.baseRate),
+            extraAdult: Number(formData.extraAdult),
+            extraChild: Number(formData.extraChild),
+            singleOccupancy: formData.singleOccupancy,
+            roomType,
+            season,
+            name: this.generateRateName(roomType, season),
+            currency: market.currency,
+            rates: [{
+              id: this.getNextRateId(),
+              name: this.generateRateName(roomType, season),
+              marketId: market.id,
+              seasonId: Number(formData.seasonId),
+              roomTypeId: Number(formData.roomTypeId),
+              contractId: this.activeContracts[0]?.id || 0,
+              currency: market.currency,
+              amount: Number(formData.baseRate),
+              baseRate: Number(formData.baseRate),
+              extraAdult: Number(formData.extraAdult),
+              extraChild: Number(formData.extraChild),
+              singleOccupancy: formData.singleOccupancy,
+              supplements: {
+                extraAdult: Number(formData.extraAdult),
+                extraChild: Number(formData.extraChild),
+                singleOccupancy: formData.singleOccupancy
+              },
+              ageCategoryRates: {},
+              mealPlanId: this.selectedMealPlans[0],
+              specialOffers: []
+            }]
+          };
+          
+          this.addRate(rateConfig);
+        });
+  
+        // Refresh the rates list after adding
+        this.loadRates();
+      }
+  
+      this.closeRateModal();
+      this.success = this.editingRate ? 'Rate updated successfully' : 'Rate created successfully';
+      setTimeout(() => this.success = '', 3000);
+      
+    } catch (error) {
+      console.error('Error saving rate:', error);
+      this.showModalMessage('Failed to save rate', true);
+    }
+  }
+
+
+  /**
+   * Generate a descriptive name for the rate
+   */
+  private generateRateName(roomType: RoomType, season: Season): string {
+    return `${roomType.type} - ${season.name}`;
+  }
+
+  /**
+   * Add a new rate to a contract
+   */
+  addRate(rateConfig: RateConfiguration) {
+    if (!this.activeContracts.length) {
+      this.handleError(new Error('No active contracts found'), 'Failed to add rate');
+      return;
+    }
+
+    const contract = this.activeContracts[0];
+    const newRate = this.rateConfigToRate(rateConfig);
+    
+    // Ensure the rate has a valid contract ID
+    newRate.contractId = contract.id;
+    
+    contract.rates.push(newRate);
+
+    // Update contract in service
+    this.hotelService.updateContract(contract).subscribe({
+      next: (updatedContract) => {
+        if (updatedContract) {
+          this.loadInitialData();
+          // Show success message
+          this.success = 'Rate added successfully';
+          setTimeout(() => this.success = '', 3000);
+        } else {
+          this.handleError(new Error('Failed to update contract'), 'Failed to add rate');
+        }
+      },
+      error: (error) => this.handleError(error, 'Failed to add rate')
+    });
+  }
+
+  private rateConfigToRate(rateConfig: RateConfiguration): Rate {
+    const rate = rateConfig.rates[0] || {};
+    
+    return {
+      id: rate.id || this.getNextRateId(),
+      name: this.generateRateName(rateConfig.roomType, rateConfig.season),
+      marketId: rate.marketId,
+      amount: rateConfig.baseRate || 0,
+      baseRate: rateConfig.baseRate || 0,
+      seasonId: rateConfig.seasonId,
+      roomTypeId: rateConfig.roomTypeId,
+      contractId: rate.contractId || this.activeContracts[0]?.id || 0,
+      currency: rate.currency,
+      supplements: {
+        extraAdult: rate.supplements?.extraAdult || 0,
+        extraChild: rate.supplements?.extraChild || 0,
+        singleOccupancy: rate.supplements?.singleOccupancy || 0
+      },
+      extraAdult: rateConfig.extraAdult || 0,
+      extraChild: rateConfig.extraChild || 0,
+      singleOccupancy: rateConfig.singleOccupancy || 0,
+      ageCategoryRates: {},
+      mealPlanId: rate.mealPlanId,
+      specialOffers: rate.specialOffers || []
+    };
+  }
+
+  /**
+   * Open the rate modal for creating or editing a rate
+   */
+  openRateModal(rate?: RateConfiguration): void {
+    this.showRateModal = true;
+    this.editingRate = rate ? rate.rates[0] : null;
+
+    if (rate) {
+      // Find the region code for this rate's market
+      const region = this.findRegionForMarket(rate.marketId);
       
       this.rateModalForm.patchValue({
         seasonId: rate.seasonId,
         roomTypeId: rate.roomTypeId,
-        region: this.selectedRegion,
-        marketId: rate.marketId,
+        region: region,
         baseRate: rate.baseRate,
         extraAdult: rate.extraAdult,
-        extraChild: rate.extraChild
+        extraChild: rate.extraChild,
+        singleOccupancy: rate.singleOccupancy
       });
     } else {
-      // Creating new rate
       this.rateModalForm.reset();
-      this.selectedRegion = null;
-      this.filteredMarkets = [];
+      // Set default region if available
+      if (this.marketGroups.length > 0) {
+        this.rateModalForm.patchValue({
+          region: this.marketGroups[0].code
+        });
+      }
     }
   }
 
-  closeRateModal(event?: MouseEvent) {
-    // Only close if clicking backdrop or cancel button
-    if (!event || event.target === event.currentTarget) {
-      this.showRateModal = false;
-      this.editingRate = null;
-      this.rateModalForm.reset();
+  /**
+   * Find the region code for a given market ID
+   */
+  private findRegionForMarket(marketId: number): string | null {
+    for (const group of this.marketGroups) {
+      if (group.markets.some(m => m.id === marketId)) {
+        return group.code;
+      }
     }
+    return null;
+  }
+
+  /**
+   * Close the rate modal
+   */
+  public closeRateModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+    }
+    this.showRateModal = false;
+    this.editingRate = null;
+    this.originalValues = null;
+    this.clearModalMessage();
+    this.initializeRateForm(); // Reset form when closing
   }
 
   selectMarket(region: string): void {
@@ -1249,155 +1534,48 @@ export class RatesConfigComponent implements OnInit {
     });
   }
 
-  private handleError(error: any, customMessage?: string) {
-    this.error = customMessage || error?.message || 'An error occurred';
-  }
+  processContractRates(contracts: Contract[]): RateConfiguration[] {
+    if (!contracts || contracts.length === 0) return [];
 
-  private rateConfigToRate(rateConfig: RateConfiguration): Rate {
-    const rate = rateConfig.rates[0] || {};
+    const rateConfigurations: RateConfiguration[] = [];
     
-    return {
-      id: rate.id || this.getNextRateId(),
-      name: this.generateRateName(rateConfig.roomType, rateConfig.season),
-      marketId: rate.marketId,
-      amount: rateConfig.baseRate || 0,
-      baseRate: rateConfig.baseRate || 0,
-      seasonId: rateConfig.seasonId,
-      roomTypeId: rateConfig.roomTypeId,
-      contractId: rate.contractId || this.activeContracts[0]?.id || 0,
-      currency: rate.currency,
-      supplements: {
-        extraAdult: rate.supplements?.extraAdult || 0,
-        extraChild: rate.supplements?.extraChild || 0,
-        singleOccupancy: rate.supplements?.singleOccupancy || 0
-      },
-      extraAdult: rateConfig.extraAdult || 0,
-      extraChild: rateConfig.extraChild || 0,
-      singleOccupancy: rateConfig.singleOccupancy || 0,
-      ageCategoryRates: {},
-      mealPlanId: rate.mealPlanId,
-      specialOffers: rate.specialOffers || []
-    };
-  }
-
-  private convertToRate(rateConfig: RateConfiguration): Rate {
-    const rate = rateConfig.rates[0];
-    if (!rate) throw new Error('Invalid rate configuration');
-
-    return {
-      id: rate.id,
-      name: this.generateRateName(rateConfig.roomType, rateConfig.season),
-      marketId: rate.marketId,
-      seasonId: rateConfig.season.id,
-      roomTypeId: rateConfig.roomType.id,
-      amount: rate.baseRate,
-      baseRate: rate.baseRate,
-      contractId: rate.contractId || this.activeContracts[0]?.id || 0,
-      currency: rate.currency,
-      extraAdult: rate.supplements?.extraAdult || 0,
-      extraChild: rate.supplements?.extraChild || 0,
-      singleOccupancy: rate.supplements?.singleOccupancy || 0,
-      supplements: {
-        extraAdult: rate.supplements?.extraAdult || 0,
-        extraChild: rate.supplements?.extraChild || 0,
-        singleOccupancy: rate.supplements?.singleOccupancy || 0
-      },
-      ageCategoryRates: rate.ageCategoryRates || {},
-      mealPlanId: rate.mealPlanId,
-      specialOffers: rate.specialOffers || []
-    };
-  }
-
-  duplicateRate(rate: RateConfiguration) {
-    const newRate = { ...rate };
-    newRate.rates = newRate.rates.map(r => ({
-      ...r,
-      id: this.getNextRateId()
-    }));
-    this.openRateEditor(newRate);
-  }
-
-  deleteRate(rate: RateConfiguration) {
-    if (!rate.rates[0]) {
-      this.handleError(new Error('Invalid rate configuration'), 'Failed to delete rate');
-      return;
-    }
-
-    const contract = this.findContractForRate(rate);
-    if (contract) {
-      contract.rates = contract.rates.filter(r => r.id !== rate.rates[0].id);
-      
-      this.hotelService.updateContract(contract).subscribe({
-        next: (updatedContract) => {
-          if (updatedContract) {
-            // Remove rate from currentRates
-            const index = this.currentRates.findIndex(r => 
-              r.seasonId === rate.seasonId && 
-              r.roomTypeId === rate.roomTypeId &&
-              r.marketId === rate.marketId
-            );
-            if (index !== -1) {
-              this.currentRates.splice(index, 1);
-            }
-            this.applyFilters();
-          } else {
-            this.handleError(new Error('Failed to update contract'), 'Failed to delete rate');
+    contracts.forEach(contract => {
+      if (contract.rates) {
+        contract.rates.forEach(rate => {
+          const season = this.seasons.find(s => s.id === rate.seasonId);
+          const roomType = this.rooms.find(r => r.id === rate.roomTypeId);
+          
+          if (season && roomType) {
+            const rateConfig: RateConfiguration = {
+              id: rate.id.toString(),
+              name: rate.name,
+              description: '',
+              startDate: new Date(contract.startDate),
+              endDate: new Date(contract.endDate),
+              roomType,
+              season,
+              rates: [rate],
+              seasonId: rate.seasonId,
+              roomTypeId: rate.roomTypeId,
+              marketId: rate.marketId,
+              baseRate: rate.baseRate,
+              extraAdult: rate.extraAdult || 0,
+              extraChild: rate.extraChild || 0,
+              singleOccupancy: rate.supplements?.singleOccupancy || 0,
+              currency: rate.currency,
+              markets: [],
+              regions: [],
+              contractId: contract.id,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            rateConfigurations.push(rateConfig);
           }
-        },
-        error: (error) => this.handleError(error, 'Failed to delete rate')
-      });
-    }
-  }
-
-  deleteCategory(category: AgeCategory) {
-    if (this.hotel && this.hotel.ageCategories) {
-      this.hotel.ageCategories = this.hotel.ageCategories.filter(c => c.id !== category.id);
-      this.hotelService.updateHotel(this.hotel).subscribe({
-        next: () => {
-          // Remove category from local array
-          this.categories = this.categories.filter(c => c.id !== category.id);
-          // Update rates that might reference this category
-          this.currentRates.forEach(rateConfig => {
-            rateConfig.rates.forEach(rate => {
-              if (rate.ageCategoryRates) {
-                delete rate.ageCategoryRates[category.id];
-              }
-            });
-          });
-        },
-        error: (error) => {
-          this.handleError(error, 'Failed to delete category');
-        }
-      });
-    }
-  }
-
-  private getCurrencyForMarket(marketId: number): string {
-    const market = this.marketGroups
-      .flatMap(group => group.markets)
-      .find(m => m.id === marketId);
-    return market?.currency || this.defaultCurrency;
-  }
-
-  private initializeCurrencies() {
-    // Get unique currencies from market groups
-    const uniqueCurrencies = new Set<string>();
-    this.marketGroups.forEach(group => {
-      group.markets.forEach(market => {
-        if (market.currency) {
-          uniqueCurrencies.add(market.currency);
-        }
-      });
+        });
+      }
     });
-    
-    // Update currencies array
-    this.currencies = Array.from(uniqueCurrencies);
-    
-    // Set default currency if available
-    if (this.currencies.includes(this.defaultCurrency)) {
-      this.filterForm.patchValue({ currency: this.defaultCurrency });
-    } else if (this.currencies.length > 0) {
-      this.filterForm.patchValue({ currency: this.currencies[0] });
-    }
+
+    return rateConfigurations;
   }
 }

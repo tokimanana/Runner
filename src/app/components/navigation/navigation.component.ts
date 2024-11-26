@@ -18,7 +18,7 @@ interface TabItem {
     <nav class="nav-container">
       <div class="main-tabs">
         <div
-          *ngFor="let tab of mainTabs"
+          *ngFor="let tab of mainTabs; let tabIndex = index"
           class="tab-item"
           [class.active]="activeTab === tab.id"
           (click)="onTabClick(tab)"
@@ -104,7 +104,15 @@ export class NavigationComponent implements OnInit {
     offers: 'specialOffers'
   } as const;
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private hotelService: HotelService) {
+    this.hotelService.getActiveTab().subscribe(tab => {
+      this.activeTab = tab;
+    });
+    
+    // Initialize with default menu item
+    this.hotelService.setActiveTab(this.activeTab);
+    this.hotelService.setSelectedMenuItem(this.defaultMenuItems[this.activeTab]);
+  }
 
   ngOnInit() {
     // Subscribe to active tab changes
@@ -114,11 +122,19 @@ export class NavigationComponent implements OnInit {
     
     // Initialize with default menu item
     this.hotelService.setActiveTab(this.activeTab);
-    this.hotelService.setActiveMenuItem(this.defaultMenuItems[this.activeTab]);
+    this.hotelService.setSelectedMenuItem(this.defaultMenuItems[this.activeTab]);
   }
 
   onTabClick(tab: TabItem) {
     this.hotelService.setActiveTab(tab.id);
-    this.hotelService.setActiveMenuItem(this.defaultMenuItems[tab.id]);
+    this.hotelService.setSelectedMenuItem(this.defaultMenuItems[tab.id]);
+  }
+
+  onTabChange(tabIndex: number): void {
+    this.hotelService.setSelectedMenuItem(this.defaultMenuItems[tabIndex]);
+  }
+
+  setDefaultTab(tabIndex: number): void {
+    this.hotelService.setSelectedMenuItem(this.defaultMenuItems[tabIndex]);
   }
 }

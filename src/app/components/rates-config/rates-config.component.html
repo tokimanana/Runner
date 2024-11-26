@@ -13,6 +13,18 @@
     </div>
   </div>
 
+  <!-- Success Message -->
+  <div *ngIf="success" class="success-message">
+    <i class="material-icons">check_circle</i>
+    {{ success }}
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-message">
+    <i class="material-icons">error</i>
+    {{ error }}
+  </div>
+
   <!-- Loading State -->
   <div class="loading-container" *ngIf="isLoading">
     <div class="spinner"></div>
@@ -58,20 +70,14 @@
                 {{currency}}
               </option>
             </select>
-
-            <button type="button" class="btn-secondary" (click)="resetFilters()">
-              <i class="material-icons">clear</i>
-              Reset Filters
-            </button>
           </div>
+
+          <button type="button" mat-button (click)="resetFilters()">
+            <i class="material-icons">clear</i>
+            Reset Filters
+          </button>
         </form>
       </details>
-    </div>
-
-    <!-- Error State -->
-    <div *ngIf="error" class="error-container">
-      <p>{{ error }}</p>
-      <button mat-raised-button color="primary" (click)="loadInitialData()">Retry</button>
     </div>
 
     <!-- Rates Display -->
@@ -83,27 +89,19 @@
         </h3>
         
         <div class="rate-cards">
-          <div *ngFor="let rate of group.rates" class="rate-card">
+          <div *ngFor="let rate of group.rates; let i = index" class="rate-card">
             <div class="rate-header">
               <h3>{{rate.roomType.type}} - {{rate.season.name}}</h3>
               <div class="actions">
-                <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Rate actions">
-                  <mat-icon>more_vert</mat-icon>
+                <button type="button" mat-icon-button (click)="editRate(rate)" class="action-button edit-button" title="Edit Rate">
+                  <mat-icon>edit</mat-icon>
                 </button>
-                <mat-menu #menu="matMenu">
-                  <button mat-menu-item (click)="editRate(rate)">
-                    <mat-icon>edit</mat-icon>
-                    <span>Edit</span>
-                  </button>
-                  <button mat-menu-item (click)="duplicateRate(rate)">
-                    <mat-icon>content_copy</mat-icon>
-                    <span>Duplicate</span>
-                  </button>
-                  <button mat-menu-item (click)="deleteRate(rate)">
-                    <mat-icon>delete</mat-icon>
-                    <span>Delete</span>
-                  </button>
-                </mat-menu>
+                <button type="button" mat-icon-button (click)="duplicateRate(rate)" class="action-button duplicate-button" title="Duplicate Rate">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+                <button type="button" mat-icon-button (click)="deleteRate(rate)" class="action-button delete-button" title="Delete Rate">
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
             </div>
 
@@ -130,7 +128,7 @@
           <!-- Empty State -->
           <div *ngIf="group.rates.length === 0" class="empty-state">
             <mat-icon>hotel</mat-icon>
-            <p>No rates found. Add a new rate to get started.</p>
+            <p>No rates found for {{ group.currency }}. Add a new rate to get started.</p>
             <button mat-raised-button color="primary" (click)="openRateModal()">
               Add New Rate
             </button>
@@ -143,102 +141,85 @@
   <!-- Rate Modal -->
   <div class="modal" [class.show]="showRateModal" (click)="closeRateModal($event)">
     <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
-      <h2 id="modalTitle">{{ editingRate ? 'Edit' : 'Add' }} Rate</h2>
+      <h2 id="modalTitle">{{ modalTitle }}</h2>
       
-      <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
-        <div class="form-group">
-          <label>Season <span class="required">*</span></label>
-          <select formControlName="seasonId">
-            <option value="">Select a Season</option>
-            <option *ngFor="let season of seasons" [value]="season.id">
-              {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
-            </option>
-          </select>
-          <mat-error *ngIf="rateModalForm.get('seasonId')?.errors?.['required'] && rateModalForm.get('seasonId')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
+      <!-- Message Area -->
+      <div class="message-area" *ngIf="modalMessage">
+        <div [class]="'alert ' + (modalError ? 'alert-error' : 'alert-info')">
+          <i class="material-icons">{{ modalError ? 'error' : 'info' }}</i>
+          <span>{{ modalMessage }}</span>
         </div>
+      </div>
+      
+      <div class="modal-body">
+        <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
+          <!-- Main Info -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="season">Season</label>
+              <select id="season" formControlName="seasonId">
+                <option [ngValue]="null">Select Season</option>
+                <option *ngFor="let season of seasons" [value]="season.id">
+                  {{season.name}}
+                </option>
+              </select>
+            </div>
 
-        <div class="form-group">
-          <label>Room Type <span class="required">*</span></label>
-          <select formControlName="roomTypeId">
-            <option value="">Select a Room Type</option>
-            <option *ngFor="let room of rooms" [value]="room.id">
-              {{room.type}}
-            </option>
-          </select>
-          <mat-error *ngIf="rateModalForm.get('roomTypeId')?.errors?.['required'] && rateModalForm.get('roomTypeId')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+            <div class="form-group">
+              <label for="roomType">Room Type</label>
+              <select id="roomType" formControlName="roomTypeId">
+                <option [ngValue]="null">Select Room Type</option>
+                <option *ngFor="let room of rooms" [value]="room.id">
+                  {{room.type}}
+                </option>
+              </select>
+            </div>
+          </div>
 
-        <div class="form-group">
-          <label>Region <span class="required">*</span></label>
-          <select formControlName="region" (change)="onRegionChange($event)">
-            <option value="">Select a Region</option>
-            <option *ngFor="let group of marketGroups" [value]="group.code">
-              {{group.name}}
-            </option>
-          </select>
-          <mat-error *ngIf="rateModalForm.get('region')?.errors?.['required'] && rateModalForm.get('region')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+          <div class="form-group">
+            <label for="region">Region</label>
+            <select id="region" formControlName="region">
+              <option [ngValue]="null">Select Region</option>
+              <option *ngFor="let group of marketGroups" [value]="group.code">
+                {{group.name}} ({{group.markets.length}} markets)
+              </option>
+            </select>
+            <small class="help-text">Rate will be created for all markets in the selected region</small>
+          </div>
 
-        <div class="form-group">
-          <label>Market <span class="required">*</span></label>
-          <select formControlName="marketId" [attr.disabled]="!selectedRegion">
-            <option value="">Select a Market</option>
-            <option *ngFor="let market of filteredMarkets" [value]="market.id">
-              {{market.name}}
-            </option>
-          </select>
-          <mat-error *ngIf="rateModalForm.get('marketId')?.errors?.['required'] && rateModalForm.get('marketId')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+          <!-- Rate Info -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="baseRate">Base Rate</label>
+              <input type="number" id="baseRate" formControlName="baseRate" min="0" step="0.01">
+            </div>
 
-        <div class="form-group">
-          <label>Base Rate <span class="required">*</span></label>
-          <input type="number" formControlName="baseRate" min="0">
-          <mat-error *ngIf="rateModalForm.get('baseRate')?.errors?.['required'] && rateModalForm.get('baseRate')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-          <mat-error *ngIf="rateModalForm.get('baseRate')?.errors?.['min'] && rateModalForm.get('baseRate')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+            <div class="form-group">
+              <label for="singleOccupancy">Single Occupancy (Optional)</label>
+              <input type="number" id="singleOccupancy" formControlName="singleOccupancy" min="0" step="0.01">
+            </div>
+          </div>
 
-        <div class="form-group">
-          <label>Extra Adult Rate <span class="required">*</span></label>
-          <input type="number" formControlName="extraAdult" min="0">
-          <mat-error *ngIf="rateModalForm.get('extraAdult')?.errors?.['required'] && rateModalForm.get('extraAdult')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-          <mat-error *ngIf="rateModalForm.get('extraAdult')?.errors?.['min'] && rateModalForm.get('extraAdult')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="extraAdult">Extra Adult (Optional)</label>
+              <input type="number" id="extraAdult" formControlName="extraAdult" min="0" step="0.01">
+            </div>
 
-        <div class="form-group">
-          <label>Extra Child <span class="required">*</span></label>
-          <input type="number" formControlName="extraChild" min="0">
-          <mat-error *ngIf="rateModalForm.get('extraChild')?.errors?.['required'] && rateModalForm.get('extraChild')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-          <mat-error *ngIf="rateModalForm.get('extraChild')?.errors?.['min'] && rateModalForm.get('extraChild')?.touched">
-            <i class="material-icons">error</i>
-          </mat-error>
-        </div>
+            <div class="form-group">
+              <label for="extraChild">Extra Child (Optional)</label>
+              <input type="number" id="extraChild" formControlName="extraChild" min="0" step="0.01">
+            </div>
+          </div>
+        </form>
+      </div>
 
-        <div class="modal-actions">
-          <button mat-button type="button" (click)="closeRateModal()">Cancel</button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="!rateModalForm.valid || isLoading">
-            <span *ngIf="!isLoading">{{ editingRate ? 'Update' : 'Save' }}</span>
-            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
-          </button>
-        </div>
-      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeRateModal($event)">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="!rateModalForm.valid" (click)="saveRateModal(rateModalForm.value)">
+          {{ editingRate ? 'Update' : 'Create' }} Rate
+        </button>
+      </div>
     </div>
   </div>
 

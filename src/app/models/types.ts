@@ -2,9 +2,77 @@
 export interface Hotel {
   id: number;
   name: string;
+  address: string;
+  city: string;
+  country: string;
+  rating: number;
+  description: string;
   factSheet?: string;
   mealPlans?: MealPlan[];
-  ageCategories?: AgeCategory[];
+  ageCategories: AgeCategory[];
+  rooms: RoomType[];
+  amenities: string[];
+  policies: HotelPolicies;
+  images: string[];
+  contactInfo: ContactInfo;
+  dressCode?: string;
+  features?: HotelFeatures;
+}
+
+export interface HotelPolicies {
+  cancellation: string;
+  checkIn: string;
+  checkOut: string;
+  childPolicy: string;
+  petPolicy: string;
+  dressCode?: string;
+}
+
+export interface ContactInfo {
+  phone: string;
+  email: string;
+  website: string;
+  socialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+}
+
+export interface HotelFeatures {
+  restaurants?: Restaurant[];
+  spa?: SpaInfo;
+  activities?: Activity[];
+  meetings?: MeetingFacility[];
+}
+
+export interface Restaurant {
+  name: string;
+  cuisine: string;
+  dressCode: string;
+  openingHours: string;
+  description: string;
+}
+
+export interface SpaInfo {
+  name: string;
+  treatments: string[];
+  openingHours: string;
+  description: string;
+}
+
+export interface Activity {
+  name: string;
+  description: string;
+  schedule?: string;
+  pricing?: string;
+}
+
+export interface MeetingFacility {
+  name: string;
+  capacity: number;
+  size: number;
+  features: string[];
 }
 
 // Room management
@@ -109,17 +177,29 @@ export interface Season {
   isBlackout?: boolean;
 }
 
+export interface CancellationPolicy {
+  daysBeforeArrival: number;
+  charge: number;
+}
+
+export interface ContractTerms {
+  cancellationPolicy: CancellationPolicy[];
+  paymentTerms: string;
+  commission: number;
+}
+
 export interface Contract {
   id: number;
-  name: string;
+  hotelId: number;
   marketId: number;
   seasonId: number;
   roomTypeId: number;
+  name: string;
   startDate: string;
   endDate: string;
-  status: string;
-  rateType: string;
-  terms: string;
+  status: 'active' | 'draft' | 'expired';
+  rateType: 'public' | 'private';
+  terms: ContractTerms;
   validFrom: Date;
   validTo: Date;
   rates: Rate[];
@@ -157,11 +237,11 @@ export interface Rate {
   supplements: {
     extraAdult: number;
     extraChild: number;
-    singleOccupancy: number;
+    singleOccupancy: number | null;
   };
   extraAdult: number;
   extraChild: number;
-  singleOccupancy: number;
+  singleOccupancy: number | null;
   ageCategoryRates: {
     [key: string]: number;
   };

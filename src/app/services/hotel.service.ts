@@ -1,207 +1,28 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, map, Observable, of, tap, throwError } from 'rxjs';
-import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, Currency, AgeCategory, CurrencySetting, MarketGroup, Rate } from '../models/types';
-interface RoomType {
-  id: number;
-  type: string;
-  description: string;
-  location: string;
-  maxOccupancy: {
-    adults: number;
-    children: number;
-    infants: number;
-  };
-  amenities: string[];
-}
+import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, Currency, AgeCategory, CurrencySetting, MarketGroup, Rate, RoomType } from '../models/types';
+import { sampleData, currencySettings } from '../../data';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HotelService {
-  // Hotel data
-  private hotels: Hotel[] = [
-    { 
-      id: 1, 
-      name: 'Le Meridien Ile Maurice',
-      ageCategories: [
-        {
-          id: 1,
-          type: 'adult',
-          label: 'Adult',
-          minAge: 18,
-          maxAge: 999,
-          defaultRate: 100
-        },
-        {
-          id: 2,
-          type: 'teen',
-          label: 'Teen',
-          minAge: 13,
-          maxAge: 17,
-          defaultRate: 75
-        },
-        {
-          id: 3,
-          type: 'child',
-          label: 'Child',
-          minAge: 2,
-          maxAge: 12,
-          defaultRate: 50
-        },
-        {
-          id: 4,
-          type: 'infant',
-          label: 'Infant',
-          minAge: 0,
-          maxAge: 1,
-          defaultRate: 0
-        }
-      ],
-      mealPlans: [
-        {
-          id: 'bb-1',
-          type: 'BB',
-          name: 'Bed & Breakfast',
-          description: 'Daily breakfast at main restaurant',
-          includedMeals: ['Breakfast'],
-          defaultInclusions: [
-            'Breakfast Buffet at Main Restaurant',
-            'Continental Breakfast',
-            'Non-alcoholic Beverages during Breakfast',
-            'In-Room Coffee/Tea Making Facilities'
-          ],
-          restrictions: [
-            'Dinner and lunch not included',
-            'Room service breakfast at additional charge'
-          ]
-        },
-        {
-          id: 'hb-1',
-          type: 'HB',
-          name: 'Half Board',
-          description: 'Daily breakfast and dinner at main restaurant',
-          includedMeals: ['Breakfast', 'Dinner'],
-          defaultInclusions: [
-            'Breakfast Buffet at Main Restaurant',
-            'Dinner Buffet at Main Restaurant',
-            'Non-alcoholic Beverages during Meals',
-            'In-Room Coffee/Tea Making Facilities'
-          ],
-          restrictions: [
-            'Lunch not included',
-            'Premium beverages at additional charge',
-            'Specialty restaurants may incur additional charge'
-          ]
-        },
-        {
-          id: 'fb-1',
-          type: 'FB',
-          name: 'Full Board',
-          description: 'Daily breakfast, lunch and dinner at main restaurant',
-          includedMeals: ['Breakfast', 'Lunch', 'Dinner'],
-          defaultInclusions: [
-            'Breakfast Buffet at Main Restaurant',
-            'Lunch Buffet at Main Restaurant',
-            'Dinner Buffet at Main Restaurant',
-            'Non-alcoholic Beverages during Meals',
-            'In-Room Coffee/Tea Making Facilities'
-          ],
-          restrictions: [
-            'Premium beverages at additional charge',
-            'Specialty restaurants may incur additional charge'
-          ]
-        },
-        {
-          id: 'ai-1',
-          type: 'AI',
-          name: 'All Inclusive',
-          description: 'Comprehensive all-inclusive package with meals, drinks, and selected activities',
-          includedMeals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
-          defaultInclusions: [
-            'All Meals at Main Restaurant',
-            'Selected Alcoholic & Non-alcoholic Beverages',
-            'Mini Bar Refill (Daily)',
-            'Afternoon Tea & Snacks',
-            'Selected Water Sports Activities',
-            'Evening Entertainment'
-          ],
-          restrictions: [
-            'Premium spirits and wines at additional charge',
-            'Specialty restaurants may require reservation',
-            'Some water sports may require certification'
-          ]
-        }
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Sugar Beach Resort & Spa',
-      ageCategories: [
-        {
-          id: 1,
-          type: 'adult',
-          label: 'Adult',
-          minAge: 16,
-          maxAge: 999,
-          defaultRate: 120
-        },
-        {
-          id: 2,
-          type: 'child',
-          label: 'Child',
-          minAge: 2,
-          maxAge: 15,
-          defaultRate: 60
-        },
-        {
-          id: 3,
-          type: 'infant',
-          label: 'Infant',
-          minAge: 0,
-          maxAge: 1,
-          defaultRate: 0
-        }
-      ]
-    }
-  ];
-  
-  // Markets
-  private markets: Market[] = [
-    {
-      id: 1,
-      name: 'Europe',
-      code: 'EUR',
-      currency: 'EUR',
-      isActive: true,
-      region: 'Europe',
-      description: 'European Market'
-    },
-    {
-      id: 2,
-      name: 'United Kingdom',
-      code: 'UK',
-      currency: 'GBP',
-      isActive: true,
-      region: 'Europe',
-      description: 'UK Market'
-    },
-    {
-      id: 3,
-      name: 'United States',
-      code: 'US',
-      currency: 'USD',
-      isActive: true,
-      region: 'North America',
-      description: 'US Market'
-    }
-  ];
+  // Données statiques
+  private hotels: Hotel[] = sampleData.hotels as Hotel[];
+  private markets: Market[] = (sampleData.markets || []) as Market[];
+  private currencySettings: CurrencySetting[] = currencySettings;
+  public marketGroups: MarketGroup[] = (sampleData.marketGroups || []) as MarketGroup[];
 
-  // BehaviorSubjects for state management
+  // BehaviorSubjects pour les données dynamiques
   private selectedHotel = new BehaviorSubject<Hotel | null>(null);
   private selectedMenuItem = new BehaviorSubject<MenuItemId>('description');
   private activeTab = new BehaviorSubject<string>('general');
-  
-  // Maps for data storage
+  private currentMarkets = new BehaviorSubject<Market[]>([]);
+  private currentSeasons = new BehaviorSubject<Season[]>([]);
+  private currentRooms = new BehaviorSubject<RoomType[]>([]);
+  private currentContracts = new BehaviorSubject<Contract[]>([]);
+  private currentRates = new BehaviorSubject<Rate[]>([]);
+  private currentMealPlanRates = new BehaviorSubject<MarketMealPlanRate[]>([]);
   private marketsMap = new Map<number, Market[]>();
   private seasonsMap = new Map<number, Season[]>();
   private hotelDataMap = new Map<string, any>();
@@ -209,361 +30,150 @@ export class HotelService {
   private marketMealPlanRates = new Map<number, MarketMealPlanRate[]>();
   private contractsMap = new Map<number, Contract[]>();
   private rates: Rate[] = [];
-  
-  private currencySettings: CurrencySetting[] = [
-    {
-      id: 1,
-      code: 'EUR',
-      symbol: '€',
-      name: 'Euro',
-      isActive: true
-    },
-    {
-      id: 2,
-      code: 'GBP',
-      symbol: '£',
-      name: 'British Pound',
-      isActive: true
-    },
-    {
-      id: 3,
-      code: 'INR',
-      symbol: '₹',
-      name: 'Indian Rupee',
-      isActive: true
-    },
-    {
-      id: 4,
-      code: 'MUR',
-      symbol: 'Rs',
-      name: 'Mauritian Rupee',
-      isActive: true
-    }
-  ];
 
-  public marketGroups: MarketGroup[] = [
-    {
-      id: 1,
-      code: 'EUR',
-      name: 'Europe',
-      defaultCurrency: 'EUR',
-      markets: [
-        { 
-          id: 1, 
-          name: 'France', 
-          code: 'FR',
-          currency: 'EUR',
-          isActive: true,
-          region: 'Europe',
-          description: 'Major European market with strong focus on luxury travel and cultural experiences'
-        },
-        { 
-          id: 2, 
-          name: 'United Kingdom', 
-          code: 'UK',
-          currency: 'GBP',
-          isActive: true,
-          region: 'Europe',
-          description: 'Key market with high demand for premium accommodations and family packages'
-        }
-      ]
-    },
-    {
-      id: 2,
-      code: 'AFR',
-      name: 'Africa',
-      defaultCurrency: 'MUR',
-      markets: [
-        { 
-          id: 3, 
-          name: 'Mauritius', 
-          code: 'MU',
-          currency: 'MUR',
-          isActive: true,
-          region: 'Africa',
-          description: 'Local market with focus on domestic tourism and regional partnerships'
-        }
-      ]
-    },
-    {
-      id: 3,
-      code: 'ASIA',
-      name: 'Asia',
-      defaultCurrency: 'INR',
-      markets: [
-        { 
-          id: 4, 
-          name: 'India', 
-          code: 'IN',
-          currency: 'INR',
-          isActive: true,
-          region: 'Asia',
-          description: 'Growing market with increasing demand for luxury and destination weddings'
-        }
-      ]
-    }
-  ];
+  // Observables publics
+  public selectedHotel$ = this.selectedHotel.asObservable();
+  public selectedMenuItem$ = this.selectedMenuItem.asObservable();
+  public activeTab$ = this.activeTab.asObservable();
+  public currentMarkets$ = this.currentMarkets.asObservable();
+  public currentSeasons$ = this.currentSeasons.asObservable();
+  public currentRooms$ = this.currentRooms.asObservable();
+  public currentContracts$ = this.currentContracts.asObservable();
+  public currentRates$ = this.currentRates.asObservable();
+  public currentMealPlanRates$ = this.currentMealPlanRates.asObservable();
 
   constructor() {
-    // Initialize markets data with some example markets
-    this.marketsMap.set(1, [
-      { 
-        id: 1, 
-        name: 'France', 
-        code: 'FR',
-        currency: 'EUR',
-        isActive: true,
-        region: 'Europe',
-        description: 'Major European market with strong focus on luxury travel and cultural experiences'
-      },
-      { 
-        id: 2, 
-        name: 'United Kingdom', 
-        code: 'UK',
-        currency: 'GBP',
-        isActive: true,
-        region: 'Europe',
-        description: 'Key market with high demand for premium accommodations and family packages'
-      },
-      { 
-        id: 3, 
-        name: 'Mauritius', 
-        code: 'MU',
-        currency: 'MUR',
-        isActive: true,
-        region: 'Africa',
-        description: 'Local market with focus on domestic tourism and regional partnerships'
-      },
-      { 
-        id: 4, 
-        name: 'India', 
-        code: 'IN',
-        currency: 'INR',
-        isActive: true,
-        region: 'Asia',
-        description: 'Growing market with increasing demand for luxury and destination weddings'
-      }
-    ]);
-
-    // Initialize hotel data with descriptions and policies
-    this.hotelDataMap.set('1-description', 'Le Meridien Ile Maurice stands as a modern beachfront resort that combines luxury with local charm. Located along the pristine beach of Pointe aux Piments on the northwest coast of Mauritius, this elegant hotel offers breathtaking views of the Indian Ocean. The resort features contemporary rooms and suites, world-class dining options, and a range of leisure facilities including a spa, fitness center, and water sports activities.');
+    this.initializeData();
     
-    this.hotelDataMap.set('1-cancellation', 'Cancellation Policy:\n- Free cancellation up to 30 days before arrival\n- 50% charge for cancellations between 29-15 days before arrival\n- 100% charge for cancellations within 14 days of arrival or no-show');
-    
-    this.hotelDataMap.set('1-checkInOut', 'Check-in/Check-out Policy:\n- Check-in time: 2:00 PM\n- Check-out time: 11:00 AM\n- Early check-in and late check-out available upon request and subject to availability');
-
-    // Initialize seasons data with example seasons
-    this.seasonsMap.set(1, [
-      {
-        id: 1,
-        name: 'Summer 2024',
-        startDate: '2024-06-01',
-        endDate: '2024-08-31',
-        mlos: 1,
-        description: 'Peak summer season with warm weather'
-      },
-      {
-        id: 2,
-        name: 'Winter 2024',
-        startDate: '2024-12-01',
-        endDate: '2024-12-31',
-        mlos: 3,
-        description: 'Holiday season with festive activities',
-        isBlackout: false
+    // S'abonner aux changements d'hôtel pour mettre à jour les données
+    this.selectedHotel$.subscribe(hotel => {
+      if (hotel) {
+        this.updateHotelData(hotel.id);
+      } else {
+        this.resetHotelData();
       }
-    ]);
-
-    // Initialize rooms data with example rooms
-    this.roomsMap.set(1, [
-      {
-        id: 1,
-        type: 'Standard Room',
-        description: 'Comfortable room with garden view',
-        location: 'Main Building',
-        maxOccupancy: {
-          adults: 2,
-          children: 1,
-          infants: 1
-        },
-        amenities: ['Air Conditioning', 'TV', 'Mini Bar']
-      },
-      {
-        id: 2,
-        type: 'Deluxe Room',
-        description: 'Spacious room with ocean view',
-        location: 'Main Building',
-        maxOccupancy: {
-          adults: 2,
-          children: 2,
-          infants: 1
-        },
-        amenities: ['Air Conditioning', 'TV', 'Mini Bar', 'Balcony', 'Ocean View']
-      }
-    ]);
-
-    // Initialize contracts with example rates
-    this.contractsMap.set(1, [
-      {
-        id: 1,
-        name: 'Summer Contract 2024 - France',
-        marketId: 1, // France
-        seasonId: 1,
-        roomTypeId: 1,
-        startDate: '2024-06-01',
-        endDate: '2024-08-31',
-        status: 'active',
-        rateType: 'public',
-        terms: 'Standard terms and conditions apply',
-        validFrom: new Date('2024-06-01'),
-        validTo: new Date('2024-08-31'),
-        rates: [
-          {
-            id: 1,
-            name: 'Standard Room Summer Rate - France',
-            marketId: 1, // France
-            amount: 200,
-            seasonId: 1,
-            roomTypeId: 1,
-            contractId: 1,
-            baseRate: 200,
-            currency: 'EUR',
-            supplements: {
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: -30
-            },
-            extraAdult: 50,
-            extraChild: 25,
-            singleOccupancy: -30,
-            ageCategoryRates: {
-              adult: 200,
-              teen: 150,
-              child: 100,
-              infant: 0
-            },
-            specialOffers: []
-          }
-        ]
-      },
-      {
-        id: 2,
-        name: 'Winter Contract 2024 - UK',
-        marketId: 2, // UK
-        seasonId: 2,
-        roomTypeId: 1,
-        startDate: '2024-12-01',
-        endDate: '2024-12-31',
-        status: 'active',
-        rateType: 'public',
-        terms: 'Standard terms and conditions apply',
-        validFrom: new Date('2024-12-01'),
-        validTo: new Date('2024-12-31'),
-        rates: [
-          {
-            id: 2,
-            name: 'Standard Room Winter Rate - UK',
-            marketId: 2, // UK
-            amount: 250,
-            seasonId: 2,
-            roomTypeId: 1,
-            contractId: 2,
-            baseRate: 250,
-            currency: 'GBP',
-            supplements: {
-              extraAdult: 60,
-              extraChild: 30,
-              singleOccupancy: -35
-            },
-            extraAdult: 60,
-            extraChild: 30,
-            singleOccupancy: -35,
-            ageCategoryRates: {
-              adult: 250,
-              teen: 187.5,
-              child: 125,
-              infant: 0
-            },
-            specialOffers: []
-          }
-        ]
-      },
-      {
-        id: 3,
-        name: 'Summer Contract 2024 - India',
-        marketId: 4, // India
-        seasonId: 1,
-        roomTypeId: 2,
-        startDate: '2024-06-01',
-        endDate: '2024-08-31',
-        status: 'active',
-        rateType: 'public',
-        terms: 'Standard terms and conditions apply',
-        validFrom: new Date('2024-06-01'),
-        validTo: new Date('2024-08-31'),
-        rates: [
-          {
-            id: 3,
-            name: 'Deluxe Room Summer Rate - India',
-            marketId: 4, // India
-            amount: 25000,
-            seasonId: 1,
-            roomTypeId: 2,
-            contractId: 3,
-            baseRate: 25000,
-            currency: 'INR',
-            supplements: {
-              extraAdult: 5000,
-              extraChild: 2500,
-              singleOccupancy: -3000
-            },
-            extraAdult: 5000,
-            extraChild: 2500,
-            singleOccupancy: -3000,
-            ageCategoryRates: {
-              adult: 25000,
-              teen: 18750,
-              child: 12500,
-              infant: 0
-            },
-            specialOffers: []
-          }
-        ]
-      }
-    ]);
-
-    // Initialize currency settings with active currencies
-    this.currencySettings = [
-      {
-        id: 1,
-        code: 'EUR',
-        symbol: '€',
-        name: 'Euro',
-        isActive: true
-      },
-      {
-        id: 2,
-        code: 'GBP',
-        symbol: '£',
-        name: 'British Pound',
-        isActive: true
-      },
-      {
-        id: 3,
-        code: 'INR',
-        symbol: '₹',
-        name: 'Indian Rupee',
-        isActive: true
-      },
-      {
-        id: 4,
-        code: 'MUR',
-        symbol: 'Rs',
-        name: 'Mauritian Rupee',
-        isActive: true
-      }
-    ];
+    });
   }
-  
+
+  private initializeData(): void {
+    // Initialize markets data
+    if (sampleData.marketGroups?.[0]?.markets) {
+      this.marketsMap.set(1, sampleData.marketGroups[0].markets as Market[]);
+    }
+
+    // Initialize hotel data
+    if (sampleData.hotelData) {
+      Object.entries(sampleData.hotelData).forEach(([key, value]) => {
+        this.hotelDataMap.set(key, value);
+      });
+    }
+
+    // Initialize seasons data
+    if (sampleData.seasons) {
+      Object.entries(sampleData.seasons).forEach(([hotelId, seasons]) => {
+        this.seasonsMap.set(Number(hotelId), seasons as Season[]);
+      });
+    }
+
+    // Initialize rooms data
+    if (sampleData.rooms) {
+      Object.entries(sampleData.rooms).forEach(([hotelId, rooms]) => {
+        this.roomsMap.set(Number(hotelId), rooms as RoomType[]);
+      });
+    }
+
+    // Initialize contracts and rates
+    if (sampleData.contracts) {
+      Object.entries(sampleData.contracts).forEach(([hotelId, contracts]) => {
+        const typedContracts = contracts as Contract[];
+        this.contractsMap.set(Number(hotelId), typedContracts);
+        typedContracts.forEach(contract => {
+          if (contract.rates) {
+            this.rates.push(...contract.rates);
+          }
+        });
+      });
+    }
+
+    this.updateCurrencyStatuses();
+  }
+
+  private updateHotelData(hotelId: number): void {
+    // Mettre à jour les marchés
+    const markets = this.getMarketsForHotel(hotelId);
+    this.currentMarkets.next(markets);
+
+    // Mettre à jour les saisons
+    const seasons = this.getSeasonsForHotel(hotelId);
+    this.currentSeasons.next(seasons);
+
+    // Mettre à jour les chambres
+    const rooms = this.getRoomsForHotel(hotelId);
+    this.currentRooms.next(rooms);
+
+    // Mettre à jour les contrats
+    const contracts = this.getContractsForHotel(hotelId);
+    this.currentContracts.next(contracts);
+
+    // Mettre à jour les tarifs
+    const rates = this.getRatesForHotel(hotelId);
+    this.currentRates.next(rates);
+
+    // Mettre à jour les tarifs des formules repas
+    const mealPlanRates = this.getMealPlanRatesForHotel(hotelId);
+    this.currentMealPlanRates.next(mealPlanRates);
+
+    // Mettre à jour le statut des devises
+    this.updateCurrencyStatuses();
+  }
+
+  private resetHotelData(): void {
+    this.currentMarkets.next([]);
+    this.currentSeasons.next([]);
+    this.currentRooms.next([]);
+    this.currentContracts.next([]);
+    this.currentRates.next([]);
+    this.currentMealPlanRates.next([]);
+  }
+
+  // Méthodes d'accès aux données spécifiques à l'hôtel
+  private getMarketsForHotel(hotelId: number): Market[] {
+    return this.marketsMap.get(hotelId) || [];
+  }
+
+  private getSeasonsForHotel(hotelId: number): Season[] {
+    return this.seasonsMap.get(hotelId) || [];
+  }
+
+  private getRoomsForHotel(hotelId: number): RoomType[] {
+    return this.roomsMap.get(hotelId) || [];
+  }
+
+  private getContractsForHotel(hotelId: number): Contract[] {
+    return this.contractsMap.get(hotelId) || [];
+  }
+
+  private getRatesForHotel(hotelId: number): Rate[] {
+    return this.rates.filter(rate => rate.contractId === hotelId);
+  }
+
+  private getMealPlanRatesForHotel(hotelId: number): MarketMealPlanRate[] {
+    return this.marketMealPlanRates.get(hotelId) || [];
+  }
+
+  // Méthodes publiques modifiées pour utiliser les BehaviorSubjects
+  setSelectedHotel(hotel: Hotel | null): void {
+    this.selectedHotel.next(hotel);
+  }
+
+  setSelectedMenuItem(menuItem: MenuItemId): void {
+    this.selectedMenuItem.next(menuItem);
+  }
+
+  setActiveTab(tab: string): void {
+    this.activeTab.next(tab);
+  }
+
   getHotels(): Hotel[] {
     return this.hotels;
   }
@@ -600,7 +210,37 @@ export class HotelService {
     const newHotel: Hotel = {
       id: newId,
       name: name,
-      ageCategories: defaultAgeCategories
+      address: '',
+      city: '',
+      country: '',
+      rating: 0,
+      description: '',
+      ageCategories: defaultAgeCategories,
+      rooms: [],
+      amenities: [],
+      policies: {
+        cancellation: '',
+        checkIn: '',
+        checkOut: '',
+        childPolicy: '',
+        petPolicy: '',
+        dressCode: ''
+      },
+      images: [],
+      contactInfo: {
+        phone: '',
+        email: '',
+        website: ''
+      },
+      features: {
+        restaurants: [],
+        spa: {
+          name: '',
+          treatments: [],
+          openingHours: '',
+          description: ''
+        }
+      }
     };
     
     this.hotels.push(newHotel);
@@ -611,28 +251,12 @@ export class HotelService {
     return this.selectedHotel.asObservable();
   }
 
-  setSelectedHotel(hotel: Hotel): void {
-    this.selectedHotel.next(hotel);
-  }
-
   getSelectedMenuItem(): Observable<MenuItemId> {
     return this.selectedMenuItem.asObservable();
   }
 
-  setActiveMenuItem(menuItem: MenuItemId): void {
-    this.selectedMenuItem.next(menuItem);
-  }
-
   getActiveTab(): Observable<string> {
     return this.activeTab.asObservable();
-  }
-
-  setActiveTab(tab: string): void {
-    this.activeTab.next(tab);
-  }
-
-  getMarketsForHotel(hotelId: number): Market[] {
-    return this.marketsMap.get(hotelId) || [];
   }
 
   getMarkets(hotelId: number): Market[] {
@@ -708,6 +332,8 @@ export class HotelService {
       }
     }
 
+    this.updateCurrencyStatuses();
+
     return { success: true, message: 'Market created successfully', market: newMarket };
   }
 
@@ -720,11 +346,11 @@ export class HotelService {
   }
 
   getSeasons(hotelId: number): Season[] {
-    return this.seasonsMap.get(hotelId) || [];
+    return this.getSeasonsForHotel(hotelId);
   }
 
   addSeason(hotelId: number, season: Omit<Season, 'id'>): Season {
-    const seasons = this.getSeasons(hotelId);
+    const seasons = this.getSeasonsForHotel(hotelId);
     const newSeason: Season = {
       ...season,
       id: seasons.length + 1
@@ -762,14 +388,14 @@ export class HotelService {
   }
 
   addRoom(hotelId: number, room: Omit<RoomType, 'id'>): void {
-    const rooms = this.getRooms(hotelId);
+    const rooms = this.getRoomsForHotel(hotelId);
     const newRoom: RoomType = { ...room, id: rooms.length + 1 };
     rooms.push(newRoom);
     this.roomsMap.set(hotelId, rooms);
   }
 
   updateRoom(hotelId: number, room: RoomType): void {
-    const rooms = this.getRooms(hotelId);
+    const rooms = this.getRoomsForHotel(hotelId);
     const index = rooms.findIndex(r => r.id === room.id);
     if (index !== -1) {
       rooms[index] = room;
@@ -780,7 +406,7 @@ export class HotelService {
   }
 
   deleteRoom(hotelId: number, roomId: number): void {
-    const rooms = this.getRooms(hotelId);
+    const rooms = this.getRoomsForHotel(hotelId);
     const filteredRooms = rooms.filter(r => r.id !== roomId);
     if (filteredRooms.length === rooms.length) {
       throw new Error('Room not found');
@@ -824,12 +450,12 @@ export class HotelService {
   }
 
   deleteSeason(hotelId: number, seasonId: number): void {
-    const seasons = this.seasonsMap.get(hotelId) || [];
+    const seasons = this.getSeasonsForHotel(hotelId);
     this.seasonsMap.set(hotelId, seasons.filter(s => s.id !== seasonId));
   }
 
   updateSeason(hotelId: number, season: Season): void {
-    const seasons = this.seasonsMap.get(hotelId) || [];
+    const seasons = this.getSeasonsForHotel(hotelId);
     const index = seasons.findIndex(s => s.id === season.id);
     if (index >= 0) {
       seasons[index] = season;
@@ -934,7 +560,7 @@ export class HotelService {
         return throwError(() => new Error('Hotel not found'));
       }
       
-      const markets = this.marketsMap.get(hotelId) || [];
+      const markets = this.getMarketsForHotel(hotelId);
       // Add template logic here
       return of(template);
     } catch (error) {
@@ -994,10 +620,15 @@ export class HotelService {
   }): Observable<RateConfiguration[]> {
     return this.getContracts(hotelId).pipe(
       map(contracts => {
-        console.log('Found contracts:', contracts);
+        console.log('Found contracts:', contracts.map(c => ({
+          id: c.id,
+          name: c.name,
+          marketId: c.marketId,
+          ratesCount: c.rates?.length || 0
+        })));
         
-        const rooms = this.getRooms(hotelId);
-        const seasons = this.getSeasons(hotelId);
+        const rooms = this.getRoomsForHotel(hotelId);
+        const seasons = this.getSeasonsForHotel(hotelId);
         
         console.log('Available data:', {
           rooms: rooms.map(r => ({ id: r.id, type: r.type })),
@@ -1076,12 +707,12 @@ export class HotelService {
         baseRate: rateData.baseRate!,
         extraAdult: rateData.extraAdult!,
         extraChild: rateData.extraChild!,
-        singleOccupancy: 0, // Adding required singleOccupancy field
+        singleOccupancy: rateData.singleOccupancy ?? null, // Permettre la valeur null
         currency: this.getCurrencyForMarket(rateData.marketId!),
         supplements: {
           extraAdult: rateData.extraAdult!,
           extraChild: rateData.extraChild!,
-          singleOccupancy: 0
+          singleOccupancy: rateData.singleOccupancy ?? null // Permettre la valeur null
         },
         ageCategoryRates: {},
         contractId: 0, // You might want to update this based on your requirements
@@ -1109,12 +740,20 @@ export class HotelService {
         throw new Error('Rate not found');
       }
 
-      this.rates[index] = {
+      // Préserver la valeur de singleOccupancy
+      const updatedRate = {
         ...this.rates[index],
-        ...rate
+        ...rate,
+        singleOccupancy: rate.singleOccupancy ?? null, // Permettre la valeur null
+        supplements: {
+          ...this.rates[index].supplements,
+          ...rate.supplements,
+          singleOccupancy: rate.supplements?.singleOccupancy ?? null // Permettre la valeur null
+        }
       };
 
-      return this.rates[index];
+      this.rates[index] = updatedRate;
+      return updatedRate;
     } catch (error) {
       console.error('Error updating rate:', error);
       throw new Error('Failed to update rate');
@@ -1132,6 +771,7 @@ export class HotelService {
 
   updateMarketGroups(groups: MarketGroup[]): void {
     this.marketGroups = [...groups];
+    this.updateCurrencyStatuses();
   }
 
   getMarketGroups(): MarketGroup[] {
@@ -1150,6 +790,7 @@ export class HotelService {
       markets: []
     };
     this.marketGroups.push(newGroup);
+    this.updateCurrencyStatuses();
     return newGroup;
   }
 
@@ -1161,6 +802,7 @@ export class HotelService {
     // Preserve existing markets when updating
     const existingMarkets = this.marketGroups[index].markets;
     this.marketGroups[index] = { ...group, markets: existingMarkets };
+    this.updateCurrencyStatuses();
     return this.marketGroups[index];
   }
 
@@ -1173,6 +815,7 @@ export class HotelService {
       throw new Error('Cannot delete market group that contains markets');
     }
     this.marketGroups.splice(index, 1);
+    this.updateCurrencyStatuses();
   }
 
   validateMarketGroup(group: Partial<MarketGroup>): string | null {
@@ -1195,47 +838,8 @@ export class HotelService {
     return this.hotels.find(hotel => hotel.id === id);
   }
 
-  updateMarket(hotelId: number, marketId: number, marketData: Partial<Market>): { success: boolean; message: string; market?: Market } {
-    const markets = this.getMarketsForHotel(hotelId);
-    const index = markets.findIndex(m => m.id === marketId);
-    
-    if (index === -1) {
-      return { success: false, message: 'Market not found' };
-    }
-
-    // Simple validation
-    if (marketData.name && !marketData.name.trim()) {
-      return { success: false, message: 'Market name cannot be empty' };
-    }
-    if (marketData.currency && !marketData.currency.trim()) {
-      return { success: false, message: 'Currency cannot be empty' };
-    }
-
-    const updatedMarket: Market = {
-      ...markets[index],
-      ...marketData,
-      id: marketId,
-      code: marketData.name ? marketData.name.substring(0, 2).toUpperCase() : markets[index].code
-    };
-
-    markets[index] = updatedMarket;
-    this.marketsMap.set(hotelId, markets);
-
-    // Update market in market groups if needed
-    if (marketData.region) {
-      this.marketGroups.forEach(group => {
-        const marketIndex = group.markets?.findIndex(m => m.id === marketId);
-        if (marketIndex !== undefined && marketIndex !== -1) {
-          group.markets[marketIndex] = updatedMarket;
-        }
-      });
-    }
-
-    return { success: true, message: 'Market updated successfully', market: updatedMarket };
-  }
-
   getRooms(hotelId: number): RoomType[] {
-    return this.roomsMap.get(hotelId) || [];
+    return this.getRoomsForHotel(hotelId);
   }
 
   getCurrencySettings(): CurrencySetting[] {
@@ -1244,5 +848,80 @@ export class HotelService {
 
   updateCurrencySettings(settings: CurrencySetting[]): void {
     this.currencySettings = settings;
+    this.updateCurrencyStatuses();
+  }
+
+  deleteMarket(marketId: number): void {
+    // Supprimer le marché
+    this.markets = this.markets.filter(m => m.id !== marketId);
+    
+    // Mettre à jour les groupes de marchés
+    this.marketGroups = this.marketGroups.map(group => ({
+      ...group,
+      markets: group.markets.filter(m => m.id !== marketId)
+    }));
+
+    this.updateCurrencyStatuses();
+  }
+
+  addMarket(market: Market): void {
+    this.markets.push(market);
+    this.updateCurrencyStatuses();
+  }
+
+  updateMarket(market: Market): void {
+    const index = this.markets.findIndex(m => m.id === market.id);
+    if (index !== -1) {
+      this.markets[index] = market;
+      this.updateCurrencyStatuses();
+    }
+  }
+
+  toggleMarketStatus(marketId: number, isActive: boolean): void {
+    // Mettre à jour dans la liste des marchés
+    const marketIndex = this.markets.findIndex(m => m.id === marketId);
+    if (marketIndex !== -1) {
+      this.markets[marketIndex].isActive = isActive;
+    }
+
+    // Mettre à jour dans les groupes de marchés
+    this.marketGroups = this.marketGroups.map(group => ({
+      ...group,
+      markets: group.markets.map(m => 
+        m.id === marketId ? { ...m, isActive } : m
+      )
+    }));
+
+    this.updateCurrencyStatuses();
+  }
+
+  private updateCurrencyStatuses(): void {
+    // Créer un Set des devises utilisées dans les marchés
+    const usedCurrencies = new Set<string>();
+    
+    // Collecter toutes les devises des marchés
+    this.markets.forEach(market => {
+      if (market.isActive) {
+        usedCurrencies.add(market.currency);
+      }
+    });
+
+    // Collecter les devises des groupes de marchés
+    this.marketGroups.forEach(group => {
+      if (group.markets.some(m => m.isActive)) {
+        usedCurrencies.add(group.defaultCurrency);
+      }
+      group.markets.forEach(market => {
+        if (market.isActive) {
+          usedCurrencies.add(market.currency);
+        }
+      });
+    });
+
+    // Mettre à jour le statut des devises
+    this.currencySettings = this.currencySettings.map(currency => ({
+      ...currency,
+      isActive: usedCurrencies.has(currency.code)
+    }));
   }
 }

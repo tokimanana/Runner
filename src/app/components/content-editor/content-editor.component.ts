@@ -80,6 +80,6 @@ export class ContentEditorComponent implements OnInit {
   }
 
   onMenuItemClick(item: MenuItem): void {
-    this.hotelService.setActiveMenuItem(item.id);
+    this.hotelService.setSelectedMenuItem(item.id);
   }
 }
