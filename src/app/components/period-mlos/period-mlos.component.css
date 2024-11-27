@@ -1,0 +1,193 @@
+.period-container {
+  padding: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.seasons-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.season-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+}
+
+.season-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.season-title {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.season-description {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.periods-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.period-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 4px solid #0d6efd;
+}
+
+.period-card.blackout {
+  border-left-color: #dc3545;
+}
+
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.period-dates {
+  font-weight: 500;
+}
+
+.period-details {
+  display: grid;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.mlos-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mlos-label {
+  color: #666;
+}
+
+.mlos-value {
+  font-weight: 500;
+  color: #0d6efd;
+}
+
+.description {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.blackout-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #dc3545;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.checkbox-group {
+  margin-top: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Buttons */
+.add-btn, .edit-btn, .delete-btn, .save-btn, .cancel-btn, .add-period-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.add-btn, .add-period-btn {
+  background: #0d6efd;
+  color: white;
+}
+
+.edit-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.save-btn {
+  background: #198754;
+  color: white;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+}

@@ -230,6 +230,25 @@ select:focus {
   margin-left: 8px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.secondary-button {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.secondary-button:hover {
+  background-color: #e0e0e0;
+}
+
+.secondary-button i {
+  margin-right: 8px;
+}
+
 .header-actions button {
   min-width: 140px;
 }
@@ -258,15 +277,36 @@ select:focus {
 
 /* Form Fields */
 .form-field {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   width: 100%;
 }
 
 .form-field label {
   display: block;
   margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.5;
+  background-color: white;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.form-select.ng-invalid.ng-touched {
+  border-color: #dc3545;
 }
 
 .select-wrapper {
@@ -500,37 +540,7 @@ select:focus {
 /* Button Styles */
 .btn-primary,
 .btn-secondary {
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.btn-primary {
-  background: #1976d2;
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover {
-  background: #1565c0;
-}
-
-.btn-primary:disabled {
-  background: #90caf9;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.btn-secondary:hover {
-  background: #f5f5f5;
+  display: none;
 }
 
 /* Material Overrides */
@@ -606,6 +616,14 @@ select:focus {
   }
 }
 
+.validation-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -655,9 +673,14 @@ select:focus {
 
 /* Error Messages */
 .error-message {
-  color: #d32f2f;
-  font-size: 0.8em;
-  margin-top: 4px;
+  background-color: #fde7e7;
+      color: #dc3545;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
 }
 
 /* Required Field Indicators */
@@ -805,17 +828,14 @@ h2 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
 }
 
 .modal.show {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 1;
 }
 
 .modal-content {
@@ -930,7 +950,8 @@ h2 {
   gap: 16px;
 }
 
-.modal-actions {
+/* Material Design compatible styles */
+.modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -939,38 +960,27 @@ h2 {
   border-top: 1px solid #e0e0e0;
 }
 
-.btn-primary, .btn-secondary {
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background-color: #1976d2;
+.primary-button {
+  background-color: var(--primary-color);
   color: white;
-  border: none;
 }
 
-.btn-primary:hover {
-  background-color: #1565c0;
-}
-
-.btn-primary:disabled {
-  background-color: #90caf9;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
+.secondary-button {
   background-color: transparent;
-  color: #666;
-  border: 1px solid #ccc;
+  color: var(--primary-color);
 }
 
-.btn-secondary:hover {
-  background-color: #f5f5f5;
-  border-color: #999;
+.modal-message {
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.modal-message.error {
+  background-color: #ffebee;
+  color: #f44336;
+  border: 1px solid #ffcdd2;
 }
 
 /* Action Buttons */
@@ -1057,4 +1067,391 @@ h2 {
 
 .btn-secondary:hover {
   background-color: #e0e0e0;
+}
+
+/* Age Categories Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.categories-list {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.category-type {
+  font-weight: 500;
+}
+
+.age-range {
+  color: #666;
+}
+
+.category-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.empty-list {
+  text-align: center;
+  padding: 24px;
+  color: #666;
+}
+
+.category-form {
+  background: #f5f5f5;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.form-fields {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-field label {
+  font-weight: 500;
+}
+
+.form-field input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.required {
+  color: #f44336;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.alert-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.alert-error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Period Selection Styles */
+.periods-list {
+  margin: 10px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 8px;
+  background-color: #fff;
+}
+
+.period-item {
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+}
+
+.period-item:last-child {
+  border-bottom: none;
+}
+
+.period-item mat-checkbox {
+  width: 100%;
+}
+
+.period-info {
+  color: #666;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+.period-badge {
+  background-color: #ff4444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-left: 8px;
+}
+
+.helper-text {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Ensure checkbox is visible */
+::ng-deep .mat-checkbox-layout {
+  white-space: normal !important;
+}
+
+::ng-deep .mat-checkbox-inner-container {
+  margin-top: 4px !important;
+}
+
+.modal-message {
+  padding: 8px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.modal-message.error {
+  background-color: #ffebee;
+  color: #f44336;
+  border: 1px solid #ffcdd2;
+}
+
+.form-field .required {
+  color: #f44336;
+}
+
+.form-group input.ng-invalid.ng-touched,
+.form-group select.ng-invalid.ng-touched {
+  border-color: #f44336;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Rate Item Styles */
+.rate-item {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  transition: all 0.2s ease-in-out;
+  border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.rate-item:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.rate-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.rate-item-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.rate-item-title i {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.rate-item-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.rate-item-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.rate-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.rate-item-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.rate-item-value {
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.rate-item-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  gap: 4px;
+}
+
+.rate-item-badge.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.rate-item-badge.inactive {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.rate-item-price {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.rate-item-currency {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.rate-item-dates {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.rate-item-footer {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Form Field Styles */
+.form-field {
+  margin-bottom: 1.5rem;
+}
+
+.form-field mat-form-field {
+  width: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-form-field {
+  margin-top: 0.5rem;
+}
+
+::ng-deep .mat-form-field-wrapper {
+  margin-bottom: -1.25em;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding: 0.5em 0;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-flex {
+  margin-top: 0;
 }

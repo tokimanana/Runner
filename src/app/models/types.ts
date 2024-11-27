@@ -167,14 +167,21 @@ export interface Policy {
 }
 
 // Rate management
-export interface Season {
+export interface Period {
   id: number;
-  name: string;
   startDate: string;
   endDate: string;
   mlos: number;
-  description: string;
+  description?: string;
   isBlackout?: boolean;
+}
+
+export interface Season {
+  id: number;
+  name: string;
+  periods: Period[];
+  description?: string;
+  isActive: boolean;
 }
 
 export interface CancellationPolicy {
@@ -224,28 +231,40 @@ export interface SpecialOffer {
 }
 
 export interface Rate {
-  id: number;
-  name: string;
+  id?: number;
   marketId: number;
-  amount: number;
   seasonId: number;
   roomTypeId: number;
-  contractId: number;
+  contractId?: number;
   baseRate: number;
-  currency: string;
-  mealPlanId?: MealPlanType;
-  supplements: {
-    extraAdult: number;
-    extraChild: number;
-    singleOccupancy: number | null;
-  };
   extraAdult: number;
   extraChild: number;
   singleOccupancy: number | null;
-  ageCategoryRates: {
-    [key: string]: number;
-  };
-  specialOffers?: SpecialOffer[];
+  currency: string;
+  startDate?: string;
+  endDate?: string;
+  mlos?: number;
+  isBlackout?: boolean;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface RateConfiguration {
+  id?: string;
+  seasonId: number;
+  roomTypeId: number;
+  region: string;
+  baseRate: number;
+  extraAdult: number;
+  extraChild: number;
+  singleOccupancy: number | null;
+  currency?: string;
+  periods?: Period[];
+  ageCategoryRates?: { [key: number]: number };
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface MarketMealPlanRate {
@@ -254,32 +273,6 @@ export interface MarketMealPlanRate {
   mealPlanId: string;
   rate: number;
   currency: string;
-}
-
-// Rate configuration
-export interface RateConfiguration {
-  id?: string;
-  name: string;
-  description?: string;
-  startDate?: Date;
-  endDate?: Date;
-  roomType: RoomType;
-  season: Season;
-  rates: Rate[];
-  seasonId: number;
-  roomTypeId: number;
-  marketId: number;
-  baseRate: number;
-  extraAdult: number;
-  extraChild: number;
-  singleOccupancy: number;
-  currency: string;
-  markets?: string[];
-  regions?: string[];
-  contractId?: number;
-  isActive?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 // Market template

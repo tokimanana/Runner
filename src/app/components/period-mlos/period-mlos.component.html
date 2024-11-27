@@ -1,0 +1,152 @@
+<div class="period-container">
+  <div class="header-actions">
+    <h3>Seasons & Periods Management</h3>
+    <button (click)="addNewSeason()" class="add-btn">
+      <i class="material-icons">add</i> Add Season
+    </button>
+  </div>
+
+  <div class="seasons-list">
+    <div *ngFor="let season of seasons" class="season-card">
+      <div class="season-header">
+        <div class="season-title">
+          <h4>{{ season.name }}</h4>
+          <span class="season-description" *ngIf="season.description">
+            {{ season.description }}
+          </span>
+        </div>
+        <div class="actions">
+          <button (click)="addPeriodToSeason(season)" class="add-period-btn" title="Add Period">
+            <i class="material-icons">date_range</i>
+          </button>
+          <button (click)="editSeason(season)" class="edit-btn" title="Edit Season">
+            <i class="material-icons">edit</i>
+          </button>
+          <button (click)="deleteSeason(season)" class="delete-btn" title="Delete Season">
+            <i class="material-icons">delete</i>
+          </button>
+        </div>
+      </div>
+
+      <div class="periods-list">
+        <div *ngFor="let period of season.periods" class="period-card" [class.blackout]="period.isBlackout">
+          <div class="period-header">
+            <div class="period-dates">
+              {{ formatDate(period.startDate) }} - {{ formatDate(period.endDate) }}
+            </div>
+            <div class="actions">
+              <button (click)="editPeriod(season, period)" class="edit-btn">
+                <i class="material-icons">edit</i>
+              </button>
+              <button (click)="deletePeriod(season, period)" class="delete-btn">
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </div>
+
+          <div class="period-details">
+            <div class="mlos-info">
+              <span class="mlos-label">Minimum Stay:</span>
+              <span class="mlos-value">{{ period.mlos }} nights</span>
+            </div>
+            <p *ngIf="period.description" class="description">
+              {{ period.description }}
+            </p>
+            <div *ngIf="period.isBlackout" class="blackout-badge">
+              Blackout Period
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Season Form Modal -->
+  <app-modal [show]="showSeasonForm" (close)="cancelEdit()">
+    <h3>{{ editingSeason ? 'Edit Season' : 'Add New Season' }}</h3>
+    
+    <div class="form-group">
+      <label>Season Name:</label>
+      <input 
+        type="text" 
+        [(ngModel)]="seasonForm.name" 
+        class="form-input"
+        placeholder="e.g., Summer 2024, Winter 2024"
+      >
+    </div>
+
+    <div class="form-group">
+      <label>Description (Optional):</label>
+      <textarea 
+        [(ngModel)]="seasonForm.description" 
+        rows="3" 
+        class="form-input"
+        placeholder="Add any special notes or conditions..."
+      ></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button (click)="saveSeason()" class="save-btn">Save</button>
+      <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
+    </div>
+  </app-modal>
+
+  <!-- Period Form Modal -->
+  <app-modal [show]="showPeriodForm" (close)="cancelPeriodEdit()">
+    <h3>{{ editingPeriod ? 'Edit Period' : 'Add New Period' }}</h3>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Date:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="periodForm.startDate" 
+          class="form-input"
+        >
+      </div>
+      <div class="form-group">
+        <label>End Date:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="periodForm.endDate" 
+          class="form-input"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Minimum Length of Stay (Nights):</label>
+      <input 
+        type="number" 
+        [(ngModel)]="periodForm.mlos" 
+        class="form-input"
+        min="1"
+      >
+    </div>
+
+    <div class="form-group">
+      <label>Description (Optional):</label>
+      <textarea 
+        [(ngModel)]="periodForm.description" 
+        rows="3" 
+        class="form-input"
+        placeholder="Add any special notes or conditions..."
+      ></textarea>
+    </div>
+
+    <div class="form-group checkbox-group">
+      <label class="checkbox-label">
+        <input 
+          type="checkbox" 
+          [(ngModel)]="periodForm.isBlackout"
+        >
+        Mark as Blackout Period
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button (click)="savePeriod()" class="save-btn">Save</button>
+      <button (click)="cancelPeriodEdit()" class="cancel-btn">Cancel</button>
+    </div>
+  </app-modal>
+</div>

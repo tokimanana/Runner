@@ -98,108 +98,116 @@
   </div>
 
   <!-- Market Group Editor Modal -->
-  <div class="modal" [class.show]="showMarketGroupEditor" (click)="closeMarketGroupEditor()">
-    <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <h2 id="modalTitle">{{selectedMarketGroup ? 'Edit' : 'Add'}} Region</h2>
-        <button mat-icon-button (click)="closeMarketGroupEditor()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="regionName">Region Name <span class="required">*</span></label>
-          <input id="regionName" 
-                 type="text" 
-                 [(ngModel)]="newMarketGroup.name" 
-                 placeholder="e.g., Europe"
-                 (keydown.enter)="saveMarketGroup()" 
-                 (keydown.escape)="closeMarketGroupEditor()"
-                 required
-                 #firstInput>
-        </div>
-
-        <div class="form-group">
-          <label for="defaultCurrency">Default Currency <span class="required">*</span></label>
-          <select id="defaultCurrency"
-                  [(ngModel)]="newMarketGroup.defaultCurrency"
-                  required>
-            <option value="">Select a Currency</option>
-            <option *ngFor="let currency of currencySettings" 
-                    [value]="currency.code"
-                    [disabled]="!currency.isActive">
-              {{currency.name}} ({{currency.code}})
-            </option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button mat-button (click)="closeMarketGroupEditor()">Cancel</button>
-          <button mat-raised-button 
-                  color="primary" 
-                  (click)="saveMarketGroup()"
-                  [disabled]="!newMarketGroup.name || !newMarketGroup.defaultCurrency">
-            Save
-          </button>
-        </div>
-      </div>
+  <app-modal [show]="showMarketGroupEditor" (close)="closeMarketGroupEditor()">
+    <div class="modal-header">
+      <h2 id="modalTitle">{{selectedMarketGroup ? 'Edit' : 'Add'}} Region</h2>
+      <button mat-icon-button (click)="closeMarketGroupEditor()">
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
-  </div>
 
-  <!-- Market Editor Modal -->
-  <div class="modal" [class.show]="showMarketEditor" (click)="closeMarketEditor()">
-    <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <h2 id="modalTitle">{{selectedMarket ? 'Edit' : 'Add'}} Market</h2>
-        <button mat-icon-button (click)="closeMarketEditor()">
-          <mat-icon>close</mat-icon>
-        </button>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="regionName">Region Name <span class="required">*</span></label>
+        <input id="regionName" 
+               type="text" 
+               [(ngModel)]="newMarketGroup.name" 
+               placeholder="e.g., Europe"
+               (keydown.enter)="saveMarketGroup()" 
+               (keydown.escape)="closeMarketGroupEditor()"
+               required
+               #firstInput>
       </div>
 
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="marketName">Market Name</label>
-          <input id="marketName" 
-                 type="text" 
-                 [(ngModel)]="newMarket.name" 
-                 placeholder="e.g., France"
-                 (keydown.enter)="saveMarket()" 
-                 (keydown.escape)="closeMarketEditor()"
-                 #firstInput>
-        </div>
-
-        <div class="form-group">
-          <label for="marketDescription">Description</label>
-          <textarea id="marketDescription" 
-                    [(ngModel)]="newMarket.description" 
-                    placeholder="Market description..."
-                    rows="3"
-                    (keydown.escape)="closeMarketEditor()">
-          </textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="marketCurrency">Currency</label>
-          <select id="marketCurrency" 
-                  [(ngModel)]="newMarket.currency"
+      <div class="form-group">
+        <label for="defaultCurrency">Default Currency <span class="required">*</span></label>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Currency</mat-label>
+          <mat-select id="defaultCurrency"
+                  [(ngModel)]="newMarketGroup.defaultCurrency"
                   required
-                  class="form-control">
-            <option [ngValue]="null" disabled>Select a currency</option>
-            <option *ngFor="let currency of currencySettings" 
+                  name="defaultCurrency">
+            <mat-option *ngFor="let currency of currencySettings" 
                     [value]="currency.code"
                     [disabled]="!currency.isActive">
               {{currency.code}} ({{currency.symbol}})
-            </option>
-          </select>
-          <small class="form-text text-muted">Select the default currency for this market</small>
-        </div>
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="!newMarketGroup.defaultCurrency">Currency is required</mat-error>
+        </mat-form-field>
+        <small class="form-text text-muted">Select the default currency for this region</small>
+      </div>
 
-        <div class="modal-actions">
-          <button mat-button (click)="closeMarketEditor()">Cancel</button>
-          <button mat-raised-button color="primary" (click)="saveMarket()">Save</button>
-        </div>
+      <div class="modal-actions">
+        <button mat-button (click)="closeMarketGroupEditor()">Cancel</button>
+        <button mat-raised-button 
+                color="primary" 
+                (click)="saveMarketGroup()"
+                [disabled]="!newMarketGroup.name || !newMarketGroup.defaultCurrency">
+          Save
+        </button>
       </div>
     </div>
-  </div>
+  </app-modal>
+
+  <!-- Market Editor Modal -->
+  <app-modal [show]="showMarketEditor" (close)="closeMarketEditor()">
+    <div class="modal-header">
+      <h2 id="modalTitle">{{selectedMarket ? 'Edit' : 'Add'}} Market</h2>
+      <button mat-icon-button (click)="closeMarketEditor()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="marketName">Market Name</label>
+        <input id="marketName" 
+               type="text" 
+               [(ngModel)]="newMarket.name" 
+               placeholder="e.g., France"
+               (keydown.enter)="saveMarket()" 
+               (keydown.escape)="closeMarketEditor()"
+               #firstInput>
+      </div>
+
+      <div class="form-group">
+        <label for="marketDescription">Description</label>
+        <textarea id="marketDescription" 
+                  [(ngModel)]="newMarket.description" 
+                  placeholder="Market description..."
+                  rows="3"
+                  (keydown.escape)="closeMarketEditor()">
+        </textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="marketCurrency">Currency</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Currency</mat-label>
+          <mat-select id="marketCurrency" 
+                  [(ngModel)]="newMarket.currency"
+                  required
+                  name="currency">
+            <mat-option *ngFor="let currency of currencySettings" 
+                    [value]="currency.code"
+                    [disabled]="!currency.isActive">
+              {{currency.code}} ({{currency.symbol}})
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="!newMarket.currency">Currency is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-button (click)="closeMarketEditor()">Cancel</button>
+        <button mat-raised-button 
+                color="primary" 
+                (click)="saveMarket()"
+                [disabled]="!newMarket.name || !newMarket.currency">
+          Save
+        </button>
+      </div>
+    </div>
+  </app-modal>
 </div>

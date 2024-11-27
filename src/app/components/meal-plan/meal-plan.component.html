@@ -1,0 +1,149 @@
+<div class="meal-plans-container">
+  <div class="dashboard-header">
+    <div class="title-section">
+      <h2>Meal Plans</h2>
+      <p class="subtitle">Configure and manage meal plans for your hotel</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="openModal()">
+      <mat-icon>add</mat-icon>
+      Add Meal Plan
+    </button>
+  </div>
+
+  <div class="meal-plans-grid">
+    <div *ngFor="let plan of mealPlans" class="meal-plan-card" [attr.data-type]="plan.type">
+      <div class="card-header">
+        <div class="plan-info">
+          <span class="plan-type">{{ getPlanTypeLabel(plan.type) }}</span>
+        </div>
+        <div class="actions">
+          <button mat-icon-button (click)="openModal(plan)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteMealPlan(plan)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <p class="description">{{ plan.description }}</p>
+      
+      <div class="included-meals" *ngIf="plan.includedMeals.length">
+        <h4>Included Meals</h4>
+        <div class="meals-list">
+          <span *ngFor="let meal of plan.includedMeals" class="meal-tag">
+            {{ meal }}
+          </span>
+        </div>
+      </div>
+
+      <div class="default-inclusions" *ngIf="plan.defaultInclusions?.length">
+        <h4>Additional Features</h4>
+        <ul class="inclusions-list">
+          <li *ngFor="let inclusion of plan.defaultInclusions" class="inclusion-item">
+            {{ inclusion }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="restrictions" *ngIf="plan.restrictions?.length">
+        <h4>Restrictions</h4>
+        <ul class="restrictions-list">
+          <li *ngFor="let restriction of plan.restrictions" class="restriction-item">
+            {{ restriction }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Meal Plan Modal -->
+<app-modal [show]="showModal" (close)="closeModal()">
+  <div class="modal-header">
+    <h2>{{ isEditing ? 'Edit' : 'Add' }} Meal Plan</h2>
+    <button mat-icon-button (click)="closeModal()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form (ngSubmit)="saveMealPlan()">
+    <div class="form-group">
+      <label for="type">Plan Type *</label>
+      <select id="type" name="type" [(ngModel)]="mealPlanForm.type" required>
+        <option value="" disabled>Select a plan type</option>
+        <option *ngFor="let type of mealPlanTypes" [value]="type">
+          {{ getPlanTypeLabel(type) }}
+        </option>
+      </select>
+      <small class="help-text">Choose the type of meal plan you want to create</small>
+    </div>
+
+    <div class="form-group">
+      <label for="name">Plan Name *</label>
+      <input type="text" id="name" name="name" 
+             [(ngModel)]="mealPlanForm.name" required
+             placeholder="Enter plan name">
+      <small class="help-text">Give your meal plan a descriptive name</small>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" 
+                [(ngModel)]="mealPlanForm.description" rows="3"
+                placeholder="Describe the features and benefits of this meal plan"></textarea>
+      <small class="help-text">Provide details about what's included in this meal plan</small>
+    </div>
+
+    <div class="form-section">
+      <h3>Included Meals</h3>
+      <div class="meal-toggles">
+        <label class="meal-toggle" *ngFor="let meal of availableMeals">
+          <input type="checkbox" 
+                 [checked]="mealPlanForm.includedMeals.includes(meal)"
+                 (change)="toggleMeal(meal)">
+          {{ meal }}
+        </label>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Default Inclusions</h3>
+      <div class="inclusion-toggles">
+        <label class="inclusion-toggle" *ngFor="let inclusion of availableInclusions">
+          <input type="checkbox"
+                 [checked]="mealPlanForm.defaultInclusions.includes(inclusion)"
+                 (change)="toggleInclusion(inclusion)">
+          {{ inclusion }}
+        </label>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Restrictions</h3>
+      <div class="add-restriction">
+        <input type="text" [(ngModel)]="newRestriction" name="newRestriction" 
+               placeholder="Type a restriction and press Add">
+        <button type="button" mat-button color="primary" (click)="addRestriction(newRestriction)">
+          Add
+        </button>
+      </div>
+      <div class="restrictions-list" *ngIf="mealPlanForm.restrictions.length">
+        <div *ngFor="let restriction of mealPlanForm.restrictions; let i = index" 
+             class="restriction-item">
+          <span>{{ restriction }}</span>
+          <button type="button" mat-icon-button color="warn" (click)="removeRestriction(i)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" mat-button (click)="closeModal()">Cancel</button>
+      <button type="submit" mat-raised-button color="primary">
+        {{ isEditing ? 'Update' : 'Create' }} Plan
+      </button>
+    </div>
+  </form>
+</app-modal>

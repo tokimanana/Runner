@@ -99,33 +99,32 @@
 .market-name-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
 }
 
 .market-name {
-  font-size: 18px;
   font-weight: 500;
   color: #333;
 }
 
+.rate-indicator {
+  color: #4caf50;
+  font-size: 16px;
+}
+
 .status-indicator {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
+  padding: 4px 8px;
   border-radius: 16px;
   background: #f5f5f5;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.status-indicator:hover {
-  background: #eeeeee;
+  transition: all 0.2s;
 }
 
 .status-indicator.active {
-  background: #e3f2fd;
+  background: #e8f5e9;
 }
 
 .status-dot {
@@ -135,136 +134,61 @@
   background: #bdbdbd;
 }
 
-.status-indicator.active .status-dot {
-  background: #1976d2;
+.active .status-dot {
+  background: #4caf50;
 }
 
 .status-text {
-  font-size: 14px;
-  color: #666;
+  font-size: 12px;
+  color: #757575;
 }
 
-.status-indicator.active .status-text {
-  color: #1976d2;
+.active .status-text {
+  color: #2e7d32;
 }
 
 .status-toggle-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  color: inherit;
+  color: #757575;
+  font-size: 20px;
+}
+
+.active .status-toggle-icon {
+  color: #2e7d32;
 }
 
 .market-details {
-  padding: 0 16px;
+  padding: 0 16px 16px;
 }
 
 .market-currency {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .label {
-  font-size: 14px;
-  color: #666;
+  color: #757575;
+  font-size: 12px;
 }
 
 .market-description {
-  color: #666;
+  color: #757575;
   font-size: 14px;
-  line-height: 1.5;
   margin: 0;
 }
 
-mat-card-actions {
-  padding: 8px 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-mat-card-actions button {
-  min-width: 100px;
-}
-
-mat-card-actions button mat-icon {
-  margin-right: 8px;
-}
-
-.market-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
 .empty-markets {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  text-align: center;
   padding: 32px;
-  background: white;
-  border-radius: 4px;
-  color: #666;
+  color: #757575;
 }
 
 .empty-markets mat-icon {
   font-size: 48px;
   width: 48px;
   height: 48px;
-  color: #ccc;
-}
-
-/* Modal styles */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-.modal.show {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  z-index: 1001;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  color: #333;
-}
-
-.modal-body {
-  margin-bottom: 24px;
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
+  margin-bottom: 16px;
 }
 
 .form-group {
@@ -273,8 +197,9 @@ mat-card-actions button mat-icon {
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
   font-weight: 500;
+  color: #555;
 }
 
 .form-group input,
@@ -284,7 +209,6 @@ mat-card-actions button mat-icon {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.2s;
 }
 
 .form-group textarea {
@@ -292,198 +216,21 @@ mat-card-actions button mat-icon {
   min-height: 80px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #1976d2;
-}
-
-.form-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: white;
-  margin-bottom: 1rem;
-}
-
-.form-group select:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.form-group select option:disabled {
-  color: #999;
-  font-style: italic;
-}
-
 .required {
   color: #f44336;
-  margin-left: 4px;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+.form-text {
+  font-size: 12px;
+  margin-top: 4px;
 }
 
-button[mat-button] {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.text-muted {
+  color: #757575;
 }
 
-button[mat-raised-button] {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  background: #1976d2;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-button[mat-raised-button]:hover {
-  background: #1565c0;
-}
-
-button[mat-button]:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .modal-content {
-    margin: 16px;
-    max-width: calc(100% - 32px);
-  }
-}
-
-/* Material Overrides */
-mat-form-field {
+.full-width {
   width: 100%;
-}
-
-mat-expansion-panel-header {
-  height: auto !important;
-  padding: 16px !important;
-}
-
-mat-panel-title {
-  flex: 1;
-}
-
-mat-panel-description {
-  justify-content: flex-end;
-}
-
-/* Tab Styles */
-:host ::ng-deep .mat-tab-body-content {
-  padding: 20px;
-}
-
-:host ::ng-deep .mat-tab-label {
-  height: 48px;
-  padding: 0 24px;
-  cursor: pointer;
-  box-sizing: border-box;
-  opacity: 0.6;
-  min-width: 160px;
-  text-align: center;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  white-space: nowrap;
-  position: relative;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-::ng-deep .mat-tab-group .mat-tab-label-active {
-  background-color: #e3f2fd;
-  opacity: 1 !important;
-}
-
-::ng-deep .mat-tab-group .mat-tab-label {
-  min-width: 120px;
-}
-
-.active-tab {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Add a border bottom to the active tab */
-::ng-deep .mat-tab-group .mat-tab-label-active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: #1976d2;
-}
-
-/* Tab Styles */
-:host ::ng-deep .mdc-tab.mdc-tab--active {
-  background-color: #e3f2fd !important;
-  opacity: 1 !important;
-  position: relative;
-}
-
-:host ::ng-deep .mdc-tab {
-  min-width: 120px !important;
-  height: 48px !important;
-}
-
-:host ::ng-deep .mat-mdc-tab-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  margin-bottom: 24px;
-}
-
-:host ::ng-deep .mdc-tab.mdc-tab--active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: #1976d2 !important;
-}
-
-:host ::ng-deep .mdc-tab.mdc-tab--active .mdc-tab__text-label {
-  color: #1976d2 !important;
-}
-
-.active-tab {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .market-config-section {

@@ -1,328 +1,34 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ModalComponent } from '../modal/modal.component';
 import { HotelService } from '../../services/hotel.service';
-import { Hotel, Season } from '../../models/types';
+import { Season, Period, Hotel } from '../../models/types';
 
 @Component({
   selector: 'app-period-mlos',
+  templateUrl: './period-mlos.component.html',
+  styleUrls: ['./period-mlos.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="period-container">
-      <div class="header-actions">
-        <h3>Periods & Minimum Length of Stay</h3>
-        <button (click)="addNewSeason()" class="add-btn">
-          <i class="material-icons">add</i> Add Season
-        </button>
-      </div>
-
-      <div class="seasons-list">
-        <div *ngFor="let season of seasons" class="season-card" [class.blackout]="season.isBlackout">
-          <div class="season-header">
-            <div class="season-title">
-              <h4>{{ season.name }}</h4>
-              <span class="date-range">
-                {{ formatDate(season.startDate) }} - {{ formatDate(season.endDate) }}
-              </span>
-            </div>
-            <div class="actions">
-              <button (click)="editSeason(season)" class="edit-btn">
-                <i class="material-icons">edit</i>
-              </button>
-              <button (click)="deleteSeason(season)" class="delete-btn">
-                <i class="material-icons">delete</i>
-              </button>
-            </div>
-          </div>
-
-          <div class="season-details">
-            <div class="mlos-info">
-              <span class="mlos-label">Minimum Stay:</span>
-              <span class="mlos-value">{{ season.mlos }} nights</span>
-            </div>
-            <p *ngIf="season.description" class="description">
-              {{ season.description }}
-            </p>
-            <div *ngIf="season.isBlackout" class="blackout-badge">
-              Blackout Period
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Season Form Modal -->
-      <div *ngIf="showSeasonForm" class="modal">
-        <div class="modal-content">
-          <h3>{{ editingSeason ? 'Edit Season' : 'Add New Season' }}</h3>
-          
-          <div class="form-group">
-            <label>Season Name:</label>
-            <input 
-              type="text" 
-              [(ngModel)]="seasonForm.name" 
-              class="form-input"
-              placeholder="e.g., Peak Season, Low Season"
-            >
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Start Date:</label>
-              <input 
-                type="date" 
-                [(ngModel)]="seasonForm.startDate" 
-                class="form-input"
-              >
-            </div>
-            <div class="form-group">
-              <label>End Date:</label>
-              <input 
-                type="date" 
-                [(ngModel)]="seasonForm.endDate" 
-                class="form-input"
-              >
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Minimum Length of Stay (Nights):</label>
-            <input 
-              type="number" 
-              [(ngModel)]="seasonForm.mlos" 
-              class="form-input"
-              min="1"
-            >
-          </div>
-
-          <div class="form-group">
-            <label>Description (Optional):</label>
-            <textarea 
-              [(ngModel)]="seasonForm.description" 
-              rows="3" 
-              class="form-input"
-              placeholder="Add any special notes or conditions..."
-            ></textarea>
-          </div>
-
-          <div class="form-group checkbox-group">
-            <label class="checkbox-label">
-              <input 
-                type="checkbox" 
-                [(ngModel)]="seasonForm.isBlackout"
-              >
-              Mark as Blackout Period
-            </label>
-          </div>
-
-          <div class="modal-actions">
-            <button (click)="saveSeason()" class="save-btn">Save</button>
-            <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .period-container {
-      padding: 1rem;
-    }
-
-    .header-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .seasons-list {
-      display: grid;
-      gap: 1.5rem;
-    }
-
-    .season-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 1.5rem;
-      border-left: 4px solid #0d6efd;
-    }
-
-    .season-card.blackout {
-      border-left-color: #dc3545;
-    }
-
-    .season-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
-    }
-
-    .season-title {
-      display: grid;
-      gap: 0.5rem;
-    }
-
-    .date-range {
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .season-details {
-      display: grid;
-      gap: 1rem;
-      position: relative;
-    }
-
-    .mlos-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .mlos-label {
-      color: #666;
-    }
-
-    .mlos-value {
-      font-weight: 500;
-      color: #0d6efd;
-    }
-
-    .description {
-      color: #666;
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-
-    .blackout-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: #dc3545;
-      color: white;
-      padding: 0.25rem 0.75rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-    }
-
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-
-    .checkbox-group {
-      margin-top: 1rem;
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-
-    .add-btn, .edit-btn, .delete-btn, .save-btn, .cancel-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .add-btn {
-      background: #0d6efd;
-      color: white;
-    }
-
-    .edit-btn {
-      background: #6c757d;
-      color: white;
-    }
-
-    .delete-btn {
-      background: #dc3545;
-      color: white;
-    }
-
-    .save-btn {
-      background: #198754;
-      color: white;
-    }
-
-    .cancel-btn {
-      background: #6c757d;
-      color: white;
-    }
-  `]
+  imports: [CommonModule, FormsModule, ModalComponent]
 })
 export class PeriodMlosComponent implements OnInit {
   @Input() hotel!: Hotel;
   seasons: Season[] = [];
   showSeasonForm = false;
+  showPeriodForm = false;
   editingSeason: Season | null = null;
-  
-  seasonForm: Omit<Season, 'id'> = {
+  editingPeriod: Period | null = null;
+  currentSeason: Season | null = null;
+
+  seasonForm: Partial<Season> = {
     name: '',
+    description: '',
+    isActive: true,
+    periods: []
+  };
+
+  periodForm: Partial<Period> = {
     startDate: '',
     endDate: '',
     mlos: 1,
@@ -332,85 +38,213 @@ export class PeriodMlosComponent implements OnInit {
 
   constructor(private hotelService: HotelService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
+    this.loadSeasons();
+  }
+
+  loadSeasons(): void {
     if (this.hotel) {
-      this.seasons = this.hotelService.getSeasons(this.hotel.id);
+      this.hotelService.currentSeasons$.subscribe(seasons => {
+        this.seasons = seasons;
+      });
     }
   }
 
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  }
-
-  addNewSeason() {
+  // Season CRUD operations
+  addNewSeason(): void {
     this.editingSeason = null;
     this.seasonForm = {
       name: '',
+      description: '',
+      isActive: true,
+      periods: []
+    };
+    this.showSeasonForm = true;
+  }
+
+  editSeason(season: Season): void {
+    this.editingSeason = season;
+    this.seasonForm = { ...season };
+    this.showSeasonForm = true;
+  }
+
+  saveSeason(): void {
+    if (!this.seasonForm.name) {
+      alert('Season name is required');
+      return;
+    }
+
+    if (this.editingSeason) {
+      // Update existing season
+      const index = this.seasons.findIndex(s => s.id === this.editingSeason!.id);
+      if (index !== -1) {
+        this.seasons[index] = {
+          ...this.editingSeason,
+          ...this.seasonForm,
+          periods: this.editingSeason.periods
+        } as Season;
+      }
+    } else {
+      // Add new season
+      const newSeason: Season = {
+        id: Math.max(0, ...this.seasons.map(s => s.id)) + 1,
+        name: this.seasonForm.name!,
+        description: this.seasonForm.description,
+        isActive: this.seasonForm.isActive!,
+        periods: []
+      };
+      this.seasons.push(newSeason);
+    }
+
+    this.closeSeasonForm();
+    this.updateSeasons();
+  }
+
+  deleteSeason(season: Season): void {
+    if (confirm(`Are you sure you want to delete the season "${season.name}"?`)) {
+      this.seasons = this.seasons.filter(s => s.id !== season.id);
+      this.updateSeasons();
+    }
+  }
+
+  // Period CRUD operations
+  addPeriodToSeason(season: Season): void {
+    this.editingPeriod = null;
+    this.currentSeason = season;
+    this.periodForm = {
       startDate: '',
       endDate: '',
       mlos: 1,
       description: '',
       isBlackout: false
     };
-    this.showSeasonForm = true;
+    this.showPeriodForm = true;
   }
 
-  editSeason(season: Season) {
-    this.editingSeason = season;
-    this.seasonForm = {
-      name: season.name,
-      startDate: season.startDate,
-      endDate: season.endDate,
-      mlos: season.mlos,
-      description: season.description,
-      isBlackout: season.isBlackout
-    };
-    this.showSeasonForm = true;
+  editPeriod(season: Season, period: Period): void {
+    this.editingPeriod = period;
+    this.currentSeason = season;
+    this.periodForm = { ...period };
+    this.showPeriodForm = true;
   }
 
-  deleteSeason(season: Season) {
-    if (confirm('Are you sure you want to delete this season?')) {
-      this.hotelService.deleteSeason(this.hotel.id, season.id);
-      this.seasons = this.hotelService.getSeasons(this.hotel.id);
+  savePeriod(): void {
+    if (!this.periodForm.startDate || !this.periodForm.endDate) {
+      alert('Start and end dates are required');
+      return;
     }
-  }
 
-  saveSeason(): void {
-    if (!this.hotel || !this.validateDates()) return;
+    if (new Date(this.periodForm.startDate) > new Date(this.periodForm.endDate)) {
+      alert('Start date must be before end date');
+      return;
+    }
 
-    const seasonData: Season = {
-      id: this.editingSeason?.id || 0,
-      name: this.seasonForm.name,
-      startDate: this.seasonForm.startDate,
-      endDate: this.seasonForm.endDate,
-      mlos: this.seasonForm.mlos,
-      description: this.seasonForm.description || '',  
-      isBlackout: this.seasonForm.isBlackout || false
+    if (!this.currentSeason) {
+      alert('No season selected');
+      return;
+    }
+
+    // Check for date overlaps with existing periods
+    const overlappingPeriod = this.currentSeason.periods.find(p => {
+      if (this.editingPeriod && p.id === this.editingPeriod.id) return false;
+      const start = new Date(p.startDate);
+      const end = new Date(p.endDate);
+      const newStart = new Date(this.periodForm.startDate!);
+      const newEnd = new Date(this.periodForm.endDate!);
+      return (newStart <= end && newEnd >= start);
+    });
+
+    if (overlappingPeriod) {
+      alert('This period overlaps with an existing period');
+      return;
+    }
+
+    const periodData: Period = {
+      id: this.editingPeriod ? this.editingPeriod.id : Math.random(),
+      startDate: this.periodForm.startDate,
+      endDate: this.periodForm.endDate,
+      mlos: this.periodForm.mlos || 1,
+      description: this.periodForm.description,
+      isBlackout: this.periodForm.isBlackout
     };
 
-    if (this.editingSeason) {
-      this.hotelService.updateSeason(this.hotel.id, seasonData);
+    const seasonIndex = this.seasons.findIndex(s => s.id === this.currentSeason!.id);
+    if (seasonIndex === -1) return;
+
+    if (this.editingPeriod) {
+      // Update existing period
+      const periodIndex = this.seasons[seasonIndex].periods.findIndex(
+        p => p.id === this.editingPeriod!.id
+      );
+      if (periodIndex !== -1) {
+        this.seasons[seasonIndex].periods[periodIndex] = periodData;
+      }
     } else {
-      this.hotelService.addSeason(this.hotel.id, seasonData);
+      // Add new period
+      this.seasons[seasonIndex].periods.push(periodData);
     }
 
-    this.seasons = this.hotelService.getSeasons(this.hotel.id);
-    this.showSeasonForm = false;
-    this.editingSeason = null;
+    this.closePeriodForm();
+    this.updateSeasons();
   }
 
-  cancelEdit() {
-    this.showSeasonForm = false;
-    this.editingSeason = null;
+  deletePeriod(season: Season, period: Period): void {
+    if (confirm('Are you sure you want to delete this period?')) {
+      const seasonIndex = this.seasons.findIndex(s => s.id === season.id);
+      if (seasonIndex !== -1) {
+        this.seasons[seasonIndex].periods = this.seasons[seasonIndex].periods.filter(
+          p => p.id !== period.id
+        );
+        this.updateSeasons();
+      }
+    }
   }
 
-  private validateDates(): boolean {
-    const start = new Date(this.seasonForm.startDate);
-    const end = new Date(this.seasonForm.endDate);
-    return end >= start;
+  // Helper methods
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  closeSeasonForm(): void {
+    this.showSeasonForm = false;
+    this.editingSeason = null;
+    this.seasonForm = {
+      name: '',
+      description: '',
+      isActive: true,
+      periods: []
+    };
+  }
+
+  closePeriodForm(): void {
+    this.showPeriodForm = false;
+    this.editingPeriod = null;
+    this.currentSeason = null;
+    this.periodForm = {
+      startDate: '',
+      endDate: '',
+      mlos: 1,
+      description: '',
+      isBlackout: false
+    };
+  }
+
+  private updateSeasons(): void {
+    if (this.hotel) {
+      // Update the seasons in the service
+      this.hotelService.updateSeasons(this.hotel.id, this.seasons);
+    }
+  }
+
+  cancelEdit(): void {
+    this.closeSeasonForm();
+  }
+
+  cancelPeriodEdit(): void {
+    this.closePeriodForm();
   }
 }

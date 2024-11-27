@@ -2,6 +2,25 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, Currency, AgeCategory, CurrencySetting, MarketGroup, Rate, RoomType } from '../models/types';
 import { sampleData, currencySettings } from '../../data';
+import { HttpClient } from '@angular/common/http';
+
+interface DataMealPlan {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+}
+
+interface MealPlansData {
+  [key: string]: DataMealPlan[];
+}
+
+interface DataMealPlan {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -30,6 +49,7 @@ export class HotelService {
   private marketMealPlanRates = new Map<number, MarketMealPlanRate[]>();
   private contractsMap = new Map<number, Contract[]>();
   private rates: Rate[] = [];
+  private apiUrl = 'https://example.com/api'; // Replace with your API URL
 
   // Observables publics
   public selectedHotel$ = this.selectedHotel.asObservable();
@@ -42,7 +62,7 @@ export class HotelService {
   public currentRates$ = this.currentRates.asObservable();
   public currentMealPlanRates$ = this.currentMealPlanRates.asObservable();
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.initializeData();
     
     // S'abonner aux changements d'hôtel pour mettre à jour les données
@@ -61,17 +81,28 @@ export class HotelService {
       this.marketsMap.set(1, sampleData.marketGroups[0].markets as Market[]);
     }
 
+    // Initialize seasons data
+    if (sampleData.seasons) {
+      Object.entries(sampleData.seasons).forEach(([hotelId, seasons]) => {
+        const updatedSeasons = (seasons as any[]).map(season => ({
+          ...season,
+          periods: season.periods || [{
+            id: Math.random(),
+            startDate: season.startDate,
+            endDate: season.endDate,
+            mlos: season.mlos,
+            description: season.description,
+            isBlackout: season.isBlackout
+          }]
+        }));
+        this.seasonsMap.set(Number(hotelId), updatedSeasons as Season[]);
+      });
+    }
+
     // Initialize hotel data
     if (sampleData.hotelData) {
       Object.entries(sampleData.hotelData).forEach(([key, value]) => {
         this.hotelDataMap.set(key, value);
-      });
-    }
-
-    // Initialize seasons data
-    if (sampleData.seasons) {
-      Object.entries(sampleData.seasons).forEach(([hotelId, seasons]) => {
-        this.seasonsMap.set(Number(hotelId), seasons as Season[]);
       });
     }
 
@@ -154,7 +185,15 @@ export class HotelService {
   }
 
   private getRatesForHotel(hotelId: number): Rate[] {
-    return this.rates.filter(rate => rate.contractId === hotelId);
+    // Get contracts for this hotel
+    const hotelContracts = this.getContractsForHotel(hotelId);
+    // Filter out any contracts without IDs and get the IDs
+    const contractIds = hotelContracts
+      .filter((contract): contract is Contract & { id: number } => contract.id !== undefined)
+      .map(contract => contract.id);
+    
+    // Filter rates that belong to any of the hotel's contracts
+    return this.rates.filter(rate => rate.contractId !== undefined && contractIds.includes(rate.contractId));
   }
 
   private getMealPlanRatesForHotel(hotelId: number): MarketMealPlanRate[] {
@@ -337,12 +376,9 @@ export class HotelService {
     return { success: true, message: 'Market created successfully', market: newMarket };
   }
 
-  getMealPlans(hotelId: string): Observable<MealPlan[]> {
-    const hotel = this.hotels.find(h => h.id.toString() === hotelId);
-    if (hotel?.mealPlans) {
-      return of(hotel.mealPlans);
-    }
-    return of([]);
+  getMealPlans(hotelId: string): Observable<DataMealPlan[]> {
+    const mealPlansData = sampleData.mealPlans as MealPlansData;
+    return of(mealPlansData[hotelId] || []);
   }
 
   getSeasons(hotelId: number): Season[] {
@@ -463,6 +499,11 @@ export class HotelService {
     }
   }
 
+  updateSeasons(hotelId: number, seasons: Season[]): void {
+    this.seasonsMap.set(hotelId, seasons);
+    this.currentSeasons.next(seasons);
+  }
+
   getHotelPolicies(hotelId: number): {cancellation: string, checkInOut: string} {
     return {
       cancellation: this.hotelDataMap.get(`${hotelId}-cancellation`) || '',
@@ -508,23 +549,28 @@ export class HotelService {
   }
 
   getContracts(hotelId: number): Observable<Contract[]> {
-    console.log('Getting contracts for hotel:', hotelId);
     const contracts = this.contractsMap.get(hotelId) || [];
-    console.log('Found contracts:', contracts.map(c => ({
-      id: c.id,
-      name: c.name,
-      marketId: c.marketId,
-      rates: c.rates?.map(r => ({
+    return of(contracts.map(contract => ({
+      ...contract,
+      rates: contract.rates?.map(r => ({
         id: r.id,
-        name: r.name,
         marketId: r.marketId,
         seasonId: r.seasonId,
         roomTypeId: r.roomTypeId,
-        amount: r.amount,
-        currency: r.currency
+        baseRate: r.baseRate,
+        extraAdult: r.extraAdult,
+        extraChild: r.extraChild,
+        singleOccupancy: r.singleOccupancy,
+        currency: r.currency,
+        startDate: r.startDate,
+        endDate: r.endDate,
+        mlos: r.mlos,
+        isBlackout: r.isBlackout,
+        isActive: r.isActive,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt
       }))
     })));
-    return of(contracts);
   }
 
   addContract(hotelId: number, contract: Contract): Observable<Contract> {
@@ -532,6 +578,11 @@ export class HotelService {
       tap(contracts => {
         contracts.push(contract);
         this.contractsMap.set(hotelId, contracts);
+        // Update rates when contract is added
+        if (contract.rates) {
+          const updatedRates = [...this.currentRates.value, ...contract.rates];
+          this.currentRates.next(updatedRates);
+        }
       }),
       map(() => contract),
       catchError(() => throwError(() => new Error('Failed to add contract')))
@@ -547,6 +598,17 @@ export class HotelService {
         }
         contracts[index] = contract;
         this.contractsMap.set(1, contracts);
+        
+        // Update rates when contract is updated
+        if (contract.rates) {
+          const currentRates = this.currentRates.value;
+          const updatedRates = currentRates.filter(r => 
+            !contract.rates?.some(cr => cr.id === r.id)
+          );
+          updatedRates.push(...contract.rates);
+          this.currentRates.next(updatedRates);
+        }
+        
         return contract;
       }),
       catchError(error => throwError(() => error))
@@ -613,119 +675,134 @@ export class HotelService {
     return of(hotel);
   }
 
-  getRates(hotelId: number, filters: { 
-    seasonId: number | null; 
-    roomTypeId: number | null; 
-    currency: Currency | null 
-  }): Observable<RateConfiguration[]> {
-    return this.getContracts(hotelId).pipe(
-      map(contracts => {
-        console.log('Found contracts:', contracts.map(c => ({
-          id: c.id,
-          name: c.name,
-          marketId: c.marketId,
-          ratesCount: c.rates?.length || 0
-        })));
-        
-        const rooms = this.getRoomsForHotel(hotelId);
-        const seasons = this.getSeasonsForHotel(hotelId);
-        
-        console.log('Available data:', {
-          rooms: rooms.map(r => ({ id: r.id, type: r.type })),
-          seasons: seasons.map(s => ({ id: s.id, name: s.name })),
-          contracts: contracts.map(c => ({
-            id: c.id,
-            name: c.name,
-            marketId: c.marketId,
-            ratesCount: c.rates?.length || 0
-          }))
-        });
-        
-        // Convert rates to RateConfigurations
-        const configurations = contracts.reduce<RateConfiguration[]>((accumulator, contract) => {
-          if (!contract?.rates?.length) {
-            console.log('No rates found for contract:', contract.id);
-            return accumulator;
-          }
+  public async getRates(
+    hotelId: number,
+    filters?: {
+      seasonId?: number;
+      roomTypeId?: number;
+      marketId?: number;
+      currency?: string;
+    }
+  ): Promise<Rate[]> {
+    try {
+      // If we're in development mode, return mock data
+      if (!this.apiUrl.startsWith('http')) {
+        return this.getMockRates(hotelId, filters);
+      }
 
-          const rateConfigs = contract.rates
-            .map(rate => {
-              const roomType = rooms.find(r => r.id === rate.roomTypeId);
-              const season = seasons.find(s => s.id === rate.seasonId);
+      // Call the real API
+      const response = await this.http.get<Rate[]>(
+        `${this.apiUrl}/hotels/${hotelId}/rates`,
+        { params: filters as any }
+      ).toPromise();
+      
+      return response || [];
+    } catch (error) {
+      console.error('Error getting rates:', error);
+      throw error;
+    }
+  }
 
-              if (!roomType || !season) {
-                console.log('Missing room type or season for rate:', {
-                  rateId: rate.id,
-                  roomTypeId: rate.roomTypeId,
-                  seasonId: rate.seasonId
-                });
-                return null;
-              }
+  public async saveRates(rates: Rate[]): Promise<void> {
+    try {
+      // Group rates by market for better organization
+      const ratesByMarket = rates.reduce((acc, rate) => {
+        if (!acc[rate.marketId]) {
+          acc[rate.marketId] = [];
+        }
+        acc[rate.marketId].push(rate);
+        return acc;
+      }, {} as { [key: number]: Rate[] });
 
-              return {
-                roomType,
-                season,
-                rates: [rate]
-              };
-            })
-            .filter(config => config !== null) as RateConfiguration[];
-          
-          return [...accumulator, ...rateConfigs];
-        }, []);
+      // Save rates for each market
+      const savePromises = Object.values(ratesByMarket).map(marketRates => 
+        this.http.post<void>(`${this.apiUrl}/rates/bulk`, marketRates).toPromise()
+      );
 
-        // Apply filters
-        return configurations.filter(config => {
-          if (filters.seasonId && config.season.id !== filters.seasonId) {
-            return false;
-          }
-          if (filters.roomTypeId && config.roomType.id !== filters.roomTypeId) {
-            return false;
-          }
-          return true;
-        });
-      }),
-      catchError(error => {
-        console.error('Error in getRates:', error);
-        return throwError(() => error);
-      })
-    );
+      await Promise.all(savePromises);
+      
+      // Update local rates cache
+      this.rates = [...this.rates, ...rates];
+    } catch (error) {
+      console.error('Error saving rates:', error);
+      throw error;
+    }
+  }
+
+  private getMockRates(
+    hotelId: number,
+    filters?: {
+      seasonId?: number;
+      roomTypeId?: number;
+      marketId?: number;
+      currency?: string;
+    }
+  ): Rate[] {
+    let filteredRates = this.rates;
+
+    if (filters) {
+      filteredRates = filteredRates.filter(rate => {
+        if (filters.seasonId && rate.seasonId !== filters.seasonId) {
+          return false;
+        }
+        if (filters.roomTypeId && rate.roomTypeId !== filters.roomTypeId) {
+          return false;
+        }
+        if (filters.marketId && rate.marketId !== filters.marketId) {
+          return false;
+        }
+        if (filters.currency && rate.currency !== filters.currency) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    return filteredRates;
   }
 
   async saveRate(rateData: Partial<Rate>): Promise<Rate> {
     try {
       // For now, we'll simulate an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // In a real application, this would be an API call
-      const newRate: Rate = {
-        id: Math.floor(Math.random() * 1000000) + 1,
-        name: `Rate ${Math.floor(Math.random() * 1000)}`, // Generate a default name
-        ...rateData,
-        seasonId: rateData.seasonId!,
-        roomTypeId: rateData.roomTypeId!,
-        marketId: rateData.marketId!,
-        baseRate: rateData.baseRate!,
-        extraAdult: rateData.extraAdult!,
-        extraChild: rateData.extraChild!,
-        singleOccupancy: rateData.singleOccupancy ?? null, // Permettre la valeur null
-        currency: this.getCurrencyForMarket(rateData.marketId!),
-        supplements: {
+      const index = this.rates.findIndex(r => r.id === rateData.id);
+      
+      if (index === -1) {
+        // Create new rate
+        const newRate: Rate = {
+          id: this.rates.length + 1,
+          marketId: rateData.marketId!,
+          seasonId: rateData.seasonId!,
+          roomTypeId: rateData.roomTypeId!,
+          baseRate: rateData.baseRate!,
           extraAdult: rateData.extraAdult!,
           extraChild: rateData.extraChild!,
-          singleOccupancy: rateData.singleOccupancy ?? null // Permettre la valeur null
-        },
-        ageCategoryRates: {},
-        contractId: 0, // You might want to update this based on your requirements
-        amount: rateData.baseRate! // Setting amount same as baseRate initially
-      };
-
-      // Add the new rate to the rates array
-      this.rates.push(newRate);
-
-      return newRate;
+          singleOccupancy: rateData.singleOccupancy || null,
+          currency: rateData.currency!,
+          startDate: rateData.startDate,
+          endDate: rateData.endDate,
+          mlos: rateData.mlos,
+          isBlackout: rateData.isBlackout,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        this.rates.push(newRate);
+        return newRate;
+      } else {
+        // Update existing rate
+        const updatedRate: Rate = {
+          ...this.rates[index],
+          ...rateData,
+          updatedAt: new Date()
+        };
+        
+        this.rates[index] = updatedRate;
+        return updatedRate;
+      }
     } catch (error) {
       console.error('Error saving rate:', error);
-      throw new Error('Failed to save rate');
+      throw error;
     }
   }
 
@@ -740,33 +817,45 @@ export class HotelService {
         throw new Error('Rate not found');
       }
 
-      // Préserver la valeur de singleOccupancy
-      const updatedRate = {
+      // Update the rate with new values
+      this.rates[index] = {
         ...this.rates[index],
         ...rate,
-        singleOccupancy: rate.singleOccupancy ?? null, // Permettre la valeur null
-        supplements: {
-          ...this.rates[index].supplements,
-          ...rate.supplements,
-          singleOccupancy: rate.supplements?.singleOccupancy ?? null // Permettre la valeur null
-        }
+        singleOccupancy: rate.singleOccupancy ?? null,
+        updatedAt: new Date()
       };
 
-      this.rates[index] = updatedRate;
-      return updatedRate;
+      return this.rates[index];
     } catch (error) {
       console.error('Error updating rate:', error);
       throw new Error('Failed to update rate');
     }
   }
 
-  private getCurrencyForMarket(marketId: number): string {
-    const market = this.markets.find(m => m.id === marketId);
-    return market?.currency || 'EUR'; // Default to EUR if market not found
-  }
-
-  getAllRates(): Rate[] {
-    return this.rates;
+  getAllRates(): Observable<Rate[]> {
+    // Use a default hotel ID or get it from a service
+    return this.getContracts(1).pipe(
+      map(contracts => contracts.flatMap(contract => 
+        (contract.rates || []).map(r => ({
+          id: r.id,
+          marketId: r.marketId,
+          seasonId: r.seasonId,
+          roomTypeId: r.roomTypeId,
+          baseRate: r.baseRate,
+          extraAdult: r.extraAdult,
+          extraChild: r.extraChild,
+          singleOccupancy: r.singleOccupancy,
+          currency: r.currency,
+          startDate: r.startDate,
+          endDate: r.endDate,
+          mlos: r.mlos,
+          isBlackout: r.isBlackout,
+          isActive: r.isActive,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt
+        }))
+      ))
+    );
   }
 
   updateMarketGroups(groups: MarketGroup[]): void {

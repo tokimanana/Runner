@@ -55,12 +55,18 @@ export interface BedConfig {
 export interface Season {
   id: number;
   name: string;
+  description?: string;
+  isActive: boolean;
+  periods: Period[];
+}
+
+export interface Period {
+  id: number;
   startDate: string;
   endDate: string;
-  description?: string;
   mlos: number;
-  isBlackout: boolean;
-  isActive: boolean;
+  description?: string;
+  isBlackout?: boolean;
 }
 
 export interface Contract {
@@ -218,7 +224,7 @@ export const sampleData = {
       rooms: [
         {
           id: 1,
-          type: "standard",
+          type: "Standard",
           name: "Standard Sea View",
           description: "Comfortable room with sea view",
           location: "Main Building",
@@ -231,13 +237,13 @@ export const sampleData = {
           size: 25,
           images: ["room1.jpg", "room1-2.jpg"],
           bedConfiguration: [
-            { type: "double", count: 1 },
-            { type: "single", count: 1 }
+            { type: "Double", count: 1 },
+            { type: "Single", count: 1 }
           ]
         },
         {
           id: 2,
-          type: "deluxe",
+          type: "Deluxe",
           name: "Deluxe Ocean View",
           description: "Luxurious room with panoramic ocean view",
           location: "Main Building",
@@ -250,8 +256,8 @@ export const sampleData = {
           size: 35,
           images: ["deluxe1.jpg", "deluxe2.jpg"],
           bedConfiguration: [
-            { type: "king", count: 1 },
-            { type: "sofa", count: 1 }
+            { type: "King", count: 1 },
+            { type: "Sofa", count: 1 }
           ]
         }
       ],
@@ -342,7 +348,7 @@ export const sampleData = {
       rooms: [
         {
           id: 1,
-          type: "superior",
+          type: "Superior",
           name: "Superior Ocean View",
           description: "Elegant room with direct ocean view",
           location: "Main Wing",
@@ -355,7 +361,7 @@ export const sampleData = {
           size: 30,
           images: ["superior1.jpg", "superior2.jpg"],
           bedConfiguration: [
-            { type: "king", count: 1 }
+            { type: "King", count: 1 }
           ]
         }
       ],
@@ -494,34 +500,95 @@ export const sampleData = {
       {
         id: 1,
         name: "Summer 2024",
-        startDate: "2024-06-01",
-        endDate: "2024-08-31",
         description: "Peak summer season",
-        mlos: 1,
-        isBlackout: false,
-        isActive: true
+        isActive: true,
+        periods: [
+          {
+            id: 1,
+            startDate: "2024-06-01",
+            endDate: "2024-07-15",
+            mlos: 3,
+            description: "Early Summer Period"
+          },
+          {
+            id: 2,
+            startDate: "2024-07-16",
+            endDate: "2024-08-31",
+            mlos: 5,
+            description: "Peak Summer Period",
+            isBlackout: false
+          },
+          {
+            id: 3,
+            startDate: "2024-08-15",
+            endDate: "2024-08-20",
+            mlos: 7,
+            description: "Summer Festival Period",
+            isBlackout: true
+          }
+        ]
       },
       {
         id: 2,
         name: "Winter 2024",
-        startDate: "2024-12-01",
-        endDate: "2025-02-28",
         description: "Winter holiday season",
-        mlos: 2,
-        isBlackout: false,
-        isActive: true
+        isActive: true,
+        periods: [
+          {
+            id: 4,
+            startDate: "2024-12-01",
+            endDate: "2024-12-19",
+            mlos: 2,
+            description: "Early Winter Period"
+          },
+          {
+            id: 5,
+            startDate: "2024-12-20",
+            endDate: "2025-01-05",
+            mlos: 7,
+            description: "Christmas and New Year Period",
+            isBlackout: false
+          },
+          {
+            id: 6,
+            startDate: "2025-01-06",
+            endDate: "2025-02-28",
+            mlos: 3,
+            description: "Winter Sports Period"
+          }
+        ]
       }
     ],
     "2": [
       {
-        id: 1,
-        name: "High Season 2024",
-        startDate: "2024-07-01",
-        endDate: "2024-09-30",
+        id: 3,
+        name: "Summer 2024 - Mauritius",
         description: "Peak tourist season",
-        mlos: 3,
-        isBlackout: false,
-        isActive: true
+        isActive: true,
+        periods: [
+          {
+            id: 7,
+            startDate: "2024-07-01",
+            endDate: "2024-08-15",
+            mlos: 4,
+            description: "Early Peak Season"
+          },
+          {
+            id: 8,
+            startDate: "2024-08-16",
+            endDate: "2024-09-30",
+            mlos: 5,
+            description: "Late Summer Period"
+          },
+          {
+            id: 9,
+            startDate: "2024-12-20",
+            endDate: "2025-01-10",
+            mlos: 7,
+            description: "Holiday Period",
+            isBlackout: true
+          }
+        ]
       }
     ]
   },
@@ -649,7 +716,7 @@ export const sampleData = {
     "1": [
       {
         id: 1,
-        type: "standard",
+        type: "Standard",
         name: "Standard Sea View",
         description: "Comfortable room with sea view",
         location: "Main Building",
@@ -662,13 +729,13 @@ export const sampleData = {
         size: 25,
         images: ["room1.jpg", "room1-2.jpg"],
         bedConfiguration: [
-          { type: "double", count: 1 },
-          { type: "single", count: 1 }
+          { type: "Double", count: 1 },
+          { type: "Single", count: 1 }
         ]
       },
       {
         id: 2,
-        type: "deluxe",
+        type: "Deluxe",
         name: "Deluxe Ocean View",
         description: "Luxurious room with panoramic ocean view",
         location: "Main Building",
@@ -681,15 +748,15 @@ export const sampleData = {
         size: 35,
         images: ["deluxe1.jpg", "deluxe2.jpg"],
         bedConfiguration: [
-          { type: "king", count: 1 },
-          { type: "sofa", count: 1 }
+          { type: "King", count: 1 },
+          { type: "Sofa", count: 1 }
         ]
       }
     ],
     "2": [
       {
         id: 1,
-        type: "superior",
+        type: "Superior",
         name: "Superior Ocean View",
         description: "Elegant room with direct ocean view",
         location: "Main Wing",
@@ -702,7 +769,7 @@ export const sampleData = {
         size: 30,
         images: ["superior1.jpg", "superior2.jpg"],
         bedConfiguration: [
-          { type: "king", count: 1 }
+          { type: "King", count: 1 }
         ]
       }
     ]
@@ -756,7 +823,79 @@ export const sampleData = {
       decimals: 2,
       isActive: false
     }
-  ]
+  ],
+  mealPlans: {
+    "1": [
+      {
+        id: 1,
+        name: "Room Only",
+        code: "RO",
+        description: "No meals included"
+      },
+      {
+        id: 2,
+        name: "Bed & Breakfast",
+        code: "BB",
+        description: "Breakfast included"
+      },
+      {
+        id: 3,
+        name: "Half Board",
+        code: "HB",
+        description: "Breakfast and dinner included"
+      },
+      {
+        id: 4,
+        name: "Full Board",
+        code: "FB",
+        description: "All meals included"
+      },
+      {
+        id: 5,
+        name: "All Inclusive",
+        code: "AI",
+        description: "All meals and selected drinks included"
+      }
+    ],
+    "2": [
+      {
+        id: 1,
+        name: "Room Only",
+        code: "RO",
+        description: "Accommodation only"
+      },
+      {
+        id: 2,
+        name: "Bed & Breakfast",
+        code: "BB",
+        description: "Includes breakfast buffet"
+      },
+      {
+        id: 3,
+        name: "Half Board",
+        code: "HB",
+        description: "Breakfast and dinner at main restaurant"
+      },
+      {
+        id: 4,
+        name: "Full Board",
+        code: "FB",
+        description: "All meals at main restaurant"
+      },
+      {
+        id: 5,
+        name: "All Inclusive",
+        code: "AI",
+        description: "All meals, snacks and selected beverages"
+      },
+      {
+        id: 6,
+        name: "Premium All Inclusive",
+        code: "PAI",
+        description: "All inclusive plus premium drinks and services"
+      }
+    ]
+  }
 };
 
 // Constantes

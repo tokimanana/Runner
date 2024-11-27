@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ModalComponent } from '../modal/modal.component';
 
 import { HotelService } from '../../services/hotel.service';
 import { CurrencySetting, Hotel } from '../../models/types';
@@ -26,7 +27,8 @@ import { CurrencySetting, Hotel } from '../../models/types';
     MatButtonModule,
     MatIconModule,
     MatTableModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ModalComponent
   ]
 })
 export class CurrencyComponent implements OnInit {

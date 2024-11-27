@@ -1,6 +1,7 @@
 import { Component, ElementRef, Input, OnInit, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,12 +10,15 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { RouterModule } from '@angular/router'; // Added import
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { HotelService } from '../../services/hotel.service';
 import { Market, Hotel, CurrencySetting, MarketGroup, Rate } from '../../models/types';
+import { ModalComponent } from "../modal/modal.component";
 
 @Component({
   selector: 'app-market-config',
@@ -24,6 +28,7 @@ import { Market, Hotel, CurrencySetting, MarketGroup, Rate } from '../../models/
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -32,8 +37,12 @@ import { Market, Hotel, CurrencySetting, MarketGroup, Rate } from '../../models/
     MatSlideToggleModule,
     MatMenuModule,
     MatDialogModule,
-    RouterModule // Added import
-  ]
+    MatSelectModule,
+    MatFormFieldModule,
+    RouterModule // Added import,
+    ,
+    ModalComponent
+]
 })
 export class MarketConfigComponent implements OnInit, OnChanges {
   @Input() hotel!: Hotel;
@@ -107,7 +116,7 @@ export class MarketConfigComponent implements OnInit, OnChanges {
       console.log('Extracted rates:', this.rates.map(r => ({
         id: r.id,
         marketId: r.marketId,
-        amount: r.amount,
+        baseRate: r.baseRate,
         currency: r.currency
       })));
       
@@ -132,7 +141,7 @@ export class MarketConfigComponent implements OnInit, OnChanges {
               rateCount: marketRates.length,
               rates: marketRates.map(r => ({
                 id: r.id,
-                amount: r.amount,
+                baseRate: r.baseRate,
                 currency: r.currency
               }))
             });
@@ -151,7 +160,7 @@ export class MarketConfigComponent implements OnInit, OnChanges {
               hasRate,
               matchingRates: this.rates.filter(r => r.marketId === id).map(r => ({
                 id: r.id,
-                amount: r.amount,
+                baseRate: r.baseRate,
                 currency: r.currency
               }))
             }
@@ -323,7 +332,7 @@ export class MarketConfigComponent implements OnInit, OnChanges {
         rateCount: marketRates.length,
         rates: marketRates.map(r => ({
           id: r.id,
-          amount: r.amount,
+          baseRate: r.baseRate,
           currency: r.currency
         }))
       });
@@ -421,5 +430,44 @@ export class MarketConfigComponent implements OnInit, OnChanges {
       currencySetting.isActive = false;
       this.hotelService.updateCurrencySettings(this.currencySettings);
     }
+  }
+
+  mapRateToDisplay(r: Rate) {
+    return {
+      id: r.id,
+      marketId: r.marketId,
+      seasonId: r.seasonId,
+      roomTypeId: r.roomTypeId,
+      baseRate: r.baseRate,
+      extraAdult: r.extraAdult,
+      extraChild: r.extraChild,
+      singleOccupancy: r.singleOccupancy,
+      currency: r.currency,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      mlos: r.mlos,
+      isBlackout: r.isBlackout,
+      isActive: r.isActive
+    };
+  }
+
+  updateRate(rate: Rate) {
+    const index = this.rates.findIndex(r => r.id === rate.id);
+    if (index !== -1) {
+      this.rates[index] = {
+        ...rate,
+        updatedAt: new Date()
+      };
+    }
+  }
+
+  duplicateRate(rate: Rate) {
+    const newRate: Rate = {
+      ...rate,
+      id: undefined, // Let the backend assign a new ID
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.rates.push(newRate);
   }
 }

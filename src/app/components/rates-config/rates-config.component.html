@@ -6,10 +6,16 @@
         <i class="material-icons">payments</i>
         Rate Configuration
       </div>
-      <button mat-raised-button color="primary" (click)="openRateModal()">
-        <i class="material-icons">add</i>
-        Add New Rate
-      </button>
+      <div class="header-actions">
+        <button mat-raised-button class="secondary-button" (click)="openAgeCategoryModal()">
+          <i class="material-icons">people</i>
+          Age Categories
+        </button>
+        <button mat-raised-button color="primary" (click)="openRateModal()">
+          <i class="material-icons">add</i>
+          Add New Rate
+        </button>
+      </div>
     </div>
   </div>
 
@@ -19,8 +25,8 @@
     {{ success }}
   </div>
 
-  <!-- Error Message -->
-  <div *ngIf="error" class="error-message">
+  <!-- Error Message - Only show when modal is not open -->
+  <div *ngIf="error && !showRateModal" class="error-message">
     <i class="material-icons">error</i>
     {{ error }}
   </div>
@@ -44,32 +50,41 @@
         <form [formGroup]="filterForm" class="filters-form">
           <div class="filter-field">
             <label>Season</label>
-            <select formControlName="seasonId">
-              <option [value]="null">All Seasons</option>
-              <option *ngFor="let season of seasons" [value]="season.id">
-                {{season.name}} ({{formatDateRange(season.startDate, season.endDate)}})
-              </option>
-            </select>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Season</mat-label>
+              <mat-select formControlName="seasonId" class="form-select">
+                <mat-option [value]="null">All Seasons</mat-option>
+                <mat-option *ngFor="let season of seasons" [value]="season.id">
+                  {{season.name}} ({{season.periods.length > 0 ? formatDateRange(season.periods[0].startDate, season.periods[0].endDate) : 'No periods'}})
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <div class="filter-field">
             <label>Room Type</label>
-            <select formControlName="roomTypeId">
-              <option [value]="null">All Room Types</option>
-              <option *ngFor="let room of rooms" [value]="room.id">
-                {{room.type}}
-              </option>
-            </select>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Room Type</mat-label>
+              <mat-select formControlName="roomTypeId" class="form-select">
+                <mat-option [value]="null">All Room Types</mat-option>
+                <mat-option *ngFor="let room of rooms" [value]="room.id">
+                  {{room.type}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <div class="filter-field">
             <label>Currency</label>
-            <select formControlName="currency">
-              <option value="All">All Currencies</option>
-              <option *ngFor="let currency of currencies" [value]="currency">
-                {{currency}}
-              </option>
-            </select>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Currency</mat-label>
+              <mat-select formControlName="currency" class="form-select">
+                <mat-option value="All">All Currencies</mat-option>
+                <mat-option *ngFor="let currency of currencies" [value]="currency">
+                  {{currency}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
 
           <button type="button" mat-button (click)="resetFilters()">
@@ -82,56 +97,41 @@
 
     <!-- Rates Display -->
     <div class="rates-container">
-      <div *ngFor="let group of getRatesGroupedByCurrency()" class="currency-group">
-        <h3 class="currency-header">
-          <i class="material-icons">payments</i>
-          {{ group.currency }} Rates ({{ group.rates.length }})
-        </h3>
-        
-        <div class="rate-cards">
-          <div *ngFor="let rate of group.rates; let i = index" class="rate-card">
-            <div class="rate-header">
-              <h3>{{rate.roomType.type}} - {{rate.season.name}}</h3>
-              <div class="actions">
-                <button type="button" mat-icon-button (click)="editRate(rate)" class="action-button edit-button" title="Edit Rate">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button type="button" mat-icon-button (click)="duplicateRate(rate)" class="action-button duplicate-button" title="Duplicate Rate">
-                  <mat-icon>content_copy</mat-icon>
-                </button>
-                <button type="button" mat-icon-button (click)="deleteRate(rate)" class="action-button delete-button" title="Delete Rate">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="rate-details">
-              <div class="detail-row">
-                <span class="label">Base Rate:</span>
-                <span class="value">{{rate.rates[0].baseRate | number:'1.2-2'}} {{ group.currency }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Extra Adult:</span>
-                <span class="value">{{rate.rates[0].supplements.extraAdult | number:'1.2-2'}} {{ group.currency }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Extra Child:</span>
-                <span class="value">{{rate.rates[0].supplements.extraChild | number:'1.2-2'}} {{ group.currency }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Single Occupancy:</span>
-                <span class="value">{{rate.rates[0].supplements.singleOccupancy | number:'1.2-2'}} {{ group.currency }}</span>
-              </div>
+      <div class="rate-list">
+        <div *ngFor="let rate of rateConfigurations" class="rate-item">
+          <div class="rate-header">
+            <!-- Get room type and season names from service -->
+            <h3>{{getRoomName(rate.roomTypeId)}} - {{getSeasonName(rate.seasonId)}}</h3>
+            <div class="actions">
+              <button mat-icon-button (click)="editRate(rate)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button (click)="deleteRate(rate)">
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           </div>
-
-          <!-- Empty State -->
-          <div *ngIf="group.rates.length === 0" class="empty-state">
-            <mat-icon>hotel</mat-icon>
-            <p>No rates found for {{ group.currency }}. Add a new rate to get started.</p>
-            <button mat-raised-button color="primary" (click)="openRateModal()">
-              Add New Rate
-            </button>
+          <div class="rate-details">
+            <div class="detail-row">
+              <span class="label">Base Rate:</span>
+              <span class="value">{{rate.baseRate | number:'1.2-2'}} {{rate.currency}}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Extra Adult:</span>
+              <span class="value">{{rate.extraAdult | number:'1.2-2'}} {{rate.currency}}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Extra Child:</span>
+              <span class="value">{{rate.extraChild | number:'1.2-2'}} {{rate.currency}}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Single Occupancy:</span>
+              <span class="value">{{rate.singleOccupancy | number:'1.2-2'}} {{rate.currency}}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Region:</span>
+              <span class="value">{{rate.region}}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -139,155 +139,148 @@
   </div>
 
   <!-- Rate Modal -->
-  <div class="modal" [class.show]="showRateModal" (click)="closeRateModal($event)">
-    <div class="modal-content" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="modalTitle">
+  <app-modal [show]="showRateModal" (close)="closeRateModal()">
+    <div class="modal-header">
       <h2 id="modalTitle">{{ modalTitle }}</h2>
-      
-      <!-- Message Area -->
-      <div class="message-area" *ngIf="modalMessage">
-        <div [class]="'alert ' + (modalError ? 'alert-error' : 'alert-info')">
-          <i class="material-icons">{{ modalError ? 'error' : 'info' }}</i>
-          <span>{{ modalMessage }}</span>
-        </div>
+      <button mat-icon-button (click)="closeRateModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
+      <!-- Modal Message -->
+      <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'">
+        <i class="material-icons">{{ modalError ? 'error' : 'check_circle' }}</i>
+        {{ modalMessage }}
       </div>
       
-      <div class="modal-body">
-        <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
-          <!-- Main Info -->
+      <!-- Season Selection with Period Info -->
+      <div class="form-field">
+        <label for="seasonId">Season</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Season</mat-label>
+          <mat-select id="seasonId" formControlName="seasonId" (selectionChange)="onSeasonChange($event)">
+            <mat-option *ngFor="let season of seasons" [value]="season.id">
+              {{ season.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="rateModalForm.get('seasonId')?.errors?.['required'] && rateModalForm.get('seasonId')?.touched">
+            Season is required
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <!-- Period Selection -->
+      <div class="form-field" *ngIf="selectedSeason">
+        <label>Periods</label>
+        <div class="periods-list">
+          <div *ngFor="let period of selectedSeason.periods" class="period-item">
+            <mat-checkbox color="primary" [formControlName]="'period_' + period.id">
+              {{ formatDateRange(period.startDate, period.endDate) }}
+              <span class="period-info" *ngIf="period.mlos">
+                (Min. stay: {{ period.mlos }} nights)
+              </span>
+              <span class="period-badge" *ngIf="period.isBlackout">Blackout</span>
+            </mat-checkbox>
+          </div>
+        </div>
+        <small class="helper-text">Select specific periods or leave unchecked to apply to entire season</small>
+      </div>
+
+      <!-- Main Info -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="roomType">Room Type</label>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Room Type</mat-label>
+            <mat-select id="roomType" formControlName="roomTypeId">
+              <mat-option *ngFor="let room of rooms" [value]="room.id">
+                {{room.type}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="baseRate">Base Rate</label>
+          <input type="number" id="baseRate" formControlName="baseRate" min="0" step="0.01">
+          <div class="validation-error" *ngIf="rateModalForm.get('baseRate')?.errors?.['required'] && rateModalForm.get('baseRate')?.touched">
+            Base rate is required
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-button type="button" (click)="closeRateModal()">Cancel</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!rateModalForm.valid">Save</button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Age Categories Modal -->
+  <app-modal [show]="showAgeCategoryModal" (close)="closeAgeCategoryModal()">
+    <div class="modal-header">
+      <h2>Age Categories</h2>
+      <button mat-icon-button (click)="closeAgeCategoryModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="age-categories-content">
+      <div class="age-categories-list">
+        <div *ngFor="let category of ageCategories" class="age-category-item">
+          <div class="category-info">
+            <span class="category-name">{{category.type}}</span>
+            <span class="age-range">{{category.minAge}} - {{category.maxAge}} years</span>
+          </div>
+          <div class="category-actions">
+            <button mat-icon-button color="primary" (click)="editCategory(category)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteCategory(category)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="age-category-form">
+        <h3>{{editingCategory ? 'Edit' : 'Add'}} Age Category</h3>
+        <form [formGroup]="categoryForm" (ngSubmit)="saveAgeCategory()">
+          <div class="form-group">
+            <label for="categoryType">Category Type</label>
+            <input type="text" id="categoryType" formControlName="type">
+          </div>
+
+          <div class="form-group">
+            <label for="categoryLabel">Category Label</label>
+            <input type="text" id="categoryLabel" formControlName="label">
+          </div>
+
           <div class="form-row">
             <div class="form-group">
-              <label for="season">Season</label>
-              <select id="season" formControlName="seasonId">
-                <option [ngValue]="null">Select Season</option>
-                <option *ngFor="let season of seasons" [value]="season.id">
-                  {{season.name}}
-                </option>
-              </select>
+              <label for="minAge">Minimum Age</label>
+              <input type="number" id="minAge" formControlName="minAge" min="0">
             </div>
-
             <div class="form-group">
-              <label for="roomType">Room Type</label>
-              <select id="roomType" formControlName="roomTypeId">
-                <option [ngValue]="null">Select Room Type</option>
-                <option *ngFor="let room of rooms" [value]="room.id">
-                  {{room.type}}
-                </option>
-              </select>
+              <label for="maxAge">Maximum Age</label>
+              <input type="number" id="maxAge" formControlName="maxAge" min="0">
             </div>
           </div>
 
           <div class="form-group">
-            <label for="region">Region</label>
-            <select id="region" formControlName="region">
-              <option [ngValue]="null">Select Region</option>
-              <option *ngFor="let group of marketGroups" [value]="group.code">
-                {{group.name}} ({{group.markets.length}} markets)
-              </option>
-            </select>
-            <small class="help-text">Rate will be created for all markets in the selected region</small>
+            <label for="defaultRate">Default Rate</label>
+            <input type="number" id="defaultRate" formControlName="defaultRate" min="0" step="0.01">
           </div>
 
-          <!-- Rate Info -->
-          <div class="form-row">
-            <div class="form-group">
-              <label for="baseRate">Base Rate</label>
-              <input type="number" id="baseRate" formControlName="baseRate" min="0" step="0.01">
-            </div>
-
-            <div class="form-group">
-              <label for="singleOccupancy">Single Occupancy (Optional)</label>
-              <input type="number" id="singleOccupancy" formControlName="singleOccupancy" min="0" step="0.01">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="extraAdult">Extra Adult (Optional)</label>
-              <input type="number" id="extraAdult" formControlName="extraAdult" min="0" step="0.01">
-            </div>
-
-            <div class="form-group">
-              <label for="extraChild">Extra Child (Optional)</label>
-              <input type="number" id="extraChild" formControlName="extraChild" min="0" step="0.01">
-            </div>
+          <div class="modal-actions">
+            <button mat-button type="button" (click)="cancelCategoryEdit()">Cancel</button>
+            <button mat-raised-button color="primary" type="submit">Save</button>
           </div>
         </form>
       </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-secondary" (click)="closeRateModal($event)">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="!rateModalForm.valid" (click)="saveRateModal(rateModalForm.value)">
-          {{ editingRate ? 'Update' : 'Create' }} Rate
-        </button>
-      </div>
     </div>
-  </div>
-
-  <!-- Age Categories Modal -->
-  <div class="modal" *ngIf="showAgeCategoryEditor && hotel">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Configure Age Categories</h2>
-        <button mat-button (click)="closeAgeCategoryEditor()">
-          <i class="material-icons">close</i>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="categories-list">
-          <div class="section-header">
-            <h3>Age Categories</h3>
-            <button mat-raised-button color="primary" (click)="showCategoryForm = true">
-              <i class="material-icons">add</i>
-              Add Category
-            </button>
-          </div>
-
-          <div class="list">
-            <div *ngFor="let category of hotel.ageCategories" class="list-item">
-              <div class="category-item">
-                <span class="category-type">{{category.type}}</span>
-                <span class="age-range">{{getAgeRange(category)}}</span>
-                <div class="category-actions">
-                  <button mat-icon-button (click)="editCategory(category)">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="deleteCategory(category)">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="category-form" *ngIf="showCategoryForm">
-          <h3>{{editingCategory ? 'Edit' : 'Add'}} Category</h3>
-          <div class="form-fields">
-            <div class="form-field">
-              <label>Category Type <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="newCategory.type" required>
-            </div>
-
-            <div class="form-field">
-              <label>Minimum Age <span class="required">*</span></label>
-              <input type="number" [(ngModel)]="newCategory.minAge" required min="0">
-            </div>
-
-            <div class="form-field">
-              <label>Maximum Age <span class="required">*</span></label>
-              <input type="number" [(ngModel)]="newCategory.maxAge" required min="0">
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button mat-button (click)="cancelCategoryEdit()">Cancel</button>
-            <button mat-raised-button color="primary" (click)="saveCategory()">
-              {{editingCategory ? 'Update' : 'Add'}} Category
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </app-modal>
 </div>
