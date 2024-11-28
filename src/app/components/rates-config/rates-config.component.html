@@ -20,13 +20,13 @@
   </div>
 
   <!-- Success Message -->
-  <div *ngIf="success" class="success-message">
+  <div *ngIf="success" class="success-message" role="alert">
     <i class="material-icons">check_circle</i>
     {{ success }}
   </div>
 
   <!-- Error Message - Only show when modal is not open -->
-  <div *ngIf="error && !showRateModal" class="error-message">
+  <div *ngIf="error && !showRateModal" class="error-message" role="alert">
     <i class="material-icons">error</i>
     {{ error }}
   </div>
@@ -47,25 +47,29 @@
           <small>Filter rates by season, room type, and currency</small>
         </summary>
 
-        <form [formGroup]="filterForm" class="filters-form">
+        <form [formGroup]="filterForm" class="filters-form" role="search">
           <div class="filter-field">
-            <label>Season</label>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Select Season</mat-label>
-              <mat-select formControlName="seasonId" class="form-select">
+              <mat-label>Season</mat-label>
+              <mat-select id="seasonFilter" name="seasonFilter" formControlName="seasonId" class="form-select season-select" aria-label="Filter by season">
                 <mat-option [value]="null">All Seasons</mat-option>
                 <mat-option *ngFor="let season of seasons" [value]="season.id">
-                  {{season.name}} ({{season.periods.length > 0 ? formatDateRange(season.periods[0].startDate, season.periods[0].endDate) : 'No periods'}})
+                  <span class="season-name">{{season.name}}</span>
+                  <span class="season-period">
+                    {{formatDateRange(
+                      season.startDate || season.periods?.[0]?.startDate || '',
+                      season.endDate || season.periods?.[0]?.endDate || ''
+                    )}}
+                  </span>
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
 
           <div class="filter-field">
-            <label>Room Type</label>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Select Room Type</mat-label>
-              <mat-select formControlName="roomTypeId" class="form-select">
+              <mat-label>Room Type</mat-label>
+              <mat-select id="roomTypeFilter" name="roomTypeFilter" formControlName="roomTypeId" class="form-select" aria-label="Filter by room type">
                 <mat-option [value]="null">All Room Types</mat-option>
                 <mat-option *ngFor="let room of rooms" [value]="room.id">
                   {{room.type}}
@@ -75,10 +79,9 @@
           </div>
 
           <div class="filter-field">
-            <label>Currency</label>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Select Currency</mat-label>
-              <mat-select formControlName="currency" class="form-select">
+              <mat-label>Currency</mat-label>
+              <mat-select id="currencyFilter" name="currencyFilter" formControlName="currency" class="form-select" aria-label="Filter by currency">
                 <mat-option value="All">All Currencies</mat-option>
                 <mat-option *ngFor="let currency of currencies" [value]="currency">
                   {{currency}}
@@ -98,7 +101,7 @@
     <!-- Rates Display -->
     <div class="rates-container">
       <div class="rate-list">
-        <div *ngFor="let rate of rateConfigurations" class="rate-item">
+        <div *ngFor="let rate of filteredRates" class="rate-item">
           <div class="rate-header">
             <!-- Get room type and season names from service -->
             <h3>{{getRoomName(rate.roomTypeId)}} - {{getSeasonName(rate.seasonId)}}</h3>
@@ -147,19 +150,18 @@
       </button>
     </div>
 
-    <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)">
+    <form [formGroup]="rateModalForm" (ngSubmit)="saveRateModal(rateModalForm.value)" class="rate-form" role="form">
       <!-- Modal Message -->
-      <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'">
+      <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'" role="alert">
         <i class="material-icons">{{ modalError ? 'error' : 'check_circle' }}</i>
         {{ modalMessage }}
       </div>
       
-      <!-- Season Selection with Period Info -->
+      <!-- Season Selection -->
       <div class="form-field">
-        <label for="seasonId">Season</label>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Select Season</mat-label>
-          <mat-select id="seasonId" formControlName="seasonId" (selectionChange)="onSeasonChange($event)">
+          <mat-label>Season</mat-label>
+          <mat-select id="seasonSelect" name="seasonSelect" formControlName="seasonId" (selectionChange)="onSeasonChange($event)" required aria-required="true">
             <mat-option *ngFor="let season of seasons" [value]="season.id">
               {{ season.name }}
             </mat-option>
@@ -172,49 +174,126 @@
 
       <!-- Period Selection -->
       <div class="form-field" *ngIf="selectedSeason">
-        <label>Periods</label>
-        <div class="periods-list">
-          <div *ngFor="let period of selectedSeason.periods" class="period-item">
-            <mat-checkbox color="primary" [formControlName]="'period_' + period.id">
-              {{ formatDateRange(period.startDate, period.endDate) }}
-              <span class="period-info" *ngIf="period.mlos">
-                (Min. stay: {{ period.mlos }} nights)
-              </span>
-              <span class="period-badge" *ngIf="period.isBlackout">Blackout</span>
-            </mat-checkbox>
+        <fieldset>
+          <legend>Periods</legend>
+          <div class="periods-list">
+            <div *ngFor="let period of selectedSeason.periods; let i = index" class="period-item">
+              <mat-checkbox [id]="'period_' + period.id" 
+                          [formControlName]="'period_' + period.id"
+                          color="primary">
+                <span class="period-label">{{ formatDateRange(period.startDate, period.endDate) }}</span>
+                <span class="period-info" *ngIf="period.mlos">
+                  (Min. stay: {{ period.mlos }} nights)
+                </span>
+                <span class="period-badge" *ngIf="period.isBlackout">Blackout</span>
+              </mat-checkbox>
+            </div>
           </div>
-        </div>
-        <small class="helper-text">Select specific periods or leave unchecked to apply to entire season</small>
+          <small class="helper-text" id="periodsHelp">Select specific periods or leave unchecked to apply to entire season</small>
+        </fieldset>
       </div>
 
-      <!-- Main Info -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="roomType">Room Type</label>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Select Room Type</mat-label>
-            <mat-select id="roomType" formControlName="roomTypeId">
-              <mat-option *ngFor="let room of rooms" [value]="room.id">
-                {{room.type}}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
+      <!-- Room Type Selection -->
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Room Type</mat-label>
+          <mat-select id="roomTypeSelect" name="roomTypeSelect" formControlName="roomTypeId" required aria-required="true">
+            <mat-option *ngFor="let room of rooms" [value]="room.id">
+              {{room.type}}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="rateModalForm.get('roomTypeId')?.errors?.['required'] && rateModalForm.get('roomTypeId')?.touched">
+            Room type is required
+          </mat-error>
+        </mat-form-field>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="baseRate">Base Rate</label>
-          <input type="number" id="baseRate" formControlName="baseRate" min="0" step="0.01">
-          <div class="validation-error" *ngIf="rateModalForm.get('baseRate')?.errors?.['required'] && rateModalForm.get('baseRate')?.touched">
+      <!-- Region Selection -->
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Region</mat-label>
+          <mat-select id="regionSelect" name="regionSelect" formControlName="region" required aria-required="true">
+            <mat-option *ngFor="let group of marketGroups" [value]="group.region">
+              {{group.region}}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="rateModalForm.get('region')?.errors?.['required'] && rateModalForm.get('region')?.touched">
+            Region is required
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <!-- Rate Fields -->
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Base Rate</mat-label>
+          <input matInput
+                 type="number"
+                 id="baseRate"
+                 name="baseRate"
+                 formControlName="baseRate"
+                 min="0"
+                 step="0.01"
+                 required
+                 aria-required="true">
+          <mat-error *ngIf="rateModalForm.get('baseRate')?.errors?.['required'] && rateModalForm.get('baseRate')?.touched">
             Base rate is required
-          </div>
-        </div>
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Extra Adult Rate</mat-label>
+          <input matInput
+                 type="number"
+                 id="extraAdult"
+                 name="extraAdult"
+                 formControlName="extraAdult"
+                 min="0"
+                 step="0.01"
+                 required
+                 aria-required="true">
+          <mat-error *ngIf="rateModalForm.get('extraAdult')?.errors?.['required'] && rateModalForm.get('extraAdult')?.touched">
+            Extra adult rate is required
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Extra Child Rate</mat-label>
+          <input matInput
+                 type="number"
+                 id="extraChild"
+                 name="extraChild"
+                 formControlName="extraChild"
+                 min="0"
+                 step="0.01"
+                 required
+                 aria-required="true">
+          <mat-error *ngIf="rateModalForm.get('extraChild')?.errors?.['required'] && rateModalForm.get('extraChild')?.touched">
+            Extra child rate is required
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-field">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Single Occupancy Rate</mat-label>
+          <input matInput
+                 type="number"
+                 id="singleOccupancy"
+                 name="singleOccupancy"
+                 formControlName="singleOccupancy"
+                 min="0"
+                 step="0.01">
+        </mat-form-field>
       </div>
 
       <div class="modal-actions">
         <button mat-button type="button" (click)="closeRateModal()">Cancel</button>
-        <button mat-raised-button color="primary" type="submit" [disabled]="!rateModalForm.valid">Save</button>
+        <button mat-raised-button color="primary" type="submit">Save</button>
       </div>
     </form>
   </app-modal>
@@ -227,15 +306,32 @@
         <mat-icon>close</mat-icon>
       </button>
     </div>
-
+  
     <div class="age-categories-content">
+      <!-- Modal Message -->
+      <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'" role="alert">
+        <i class="material-icons">{{ modalError ? 'error' : 'check_circle' }}</i>
+        {{ modalMessage }}
+      </div>
+  
       <div class="age-categories-list">
+        <div class="categories-header">
+          <h3>Current Categories</h3>
+          <button mat-raised-button color="primary" (click)="addNewCategory()" *ngIf="!showCategoryForm">
+            <mat-icon>add</mat-icon>
+            Add Category
+          </button>
+        </div>
+        
         <div *ngFor="let category of ageCategories" class="age-category-item">
           <div class="category-info">
-            <span class="category-name">{{category.type}}</span>
-            <span class="age-range">{{category.minAge}} - {{category.maxAge}} years</span>
+            <mat-icon>{{getCategoryIcon(category.type)}}</mat-icon>
+            <div class="category-details">
+              <span class="category-name">{{category.label}}</span>
+              <span class="age-range">{{getAgeRange(category)}}</span>
+            </div>
           </div>
-          <div class="category-actions">
+          <div class="category-actions" *ngIf="!showCategoryForm">
             <button mat-icon-button color="primary" (click)="editCategory(category)">
               <mat-icon>edit</mat-icon>
             </button>
@@ -245,42 +341,69 @@
           </div>
         </div>
       </div>
-
-      <div class="age-category-form">
+  
+      <!-- Age Category Form - Only show when adding/editing -->
+      <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" role="form">
         <h3>{{editingCategory ? 'Edit' : 'Add'}} Age Category</h3>
-        <form [formGroup]="categoryForm" (ngSubmit)="saveAgeCategory()">
+        <div class="form-group">
+          <mat-form-field appearance="outline">
+            <mat-label>Category Type</mat-label>
+            <mat-select id="categoryType" name="categoryType" formControlName="type" required aria-required="true">
+              <mat-option *ngFor="let type of categoryTypes" [value]="type.value">
+                <mat-icon>{{type.icon}}</mat-icon>
+                {{type.label}}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="categoryForm.get('type')?.errors?.['required'] && categoryForm.get('type')?.touched">
+              Category type is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-group">
+          <mat-form-field appearance="outline">
+            <mat-label>Category Label</mat-label>
+            <input matInput 
+                   id="categoryLabel" 
+                   name="categoryLabel" 
+                   formControlName="label" 
+                   placeholder="e.g., Adult, Child, Infant"
+                   required
+                   aria-required="true">
+            <mat-error *ngIf="categoryForm.get('label')?.errors?.['required'] && categoryForm.get('label')?.touched">
+              Category label is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
-            <label for="categoryType">Category Type</label>
-            <input type="text" id="categoryType" formControlName="type">
+            <mat-form-field appearance="outline">
+              <mat-label>Minimum Age</mat-label>
+              <input matInput type="number" id="minAge" name="minAge" formControlName="minAge" min="0" max="100" required aria-required="true">
+              <mat-error *ngIf="categoryForm.get('minAge')?.errors?.['required'] && categoryForm.get('minAge')?.touched">
+                Minimum age is required
+              </mat-error>
+            </mat-form-field>
           </div>
-
           <div class="form-group">
-            <label for="categoryLabel">Category Label</label>
-            <input type="text" id="categoryLabel" formControlName="label">
+            <mat-form-field appearance="outline">
+              <mat-label>Maximum Age</mat-label>
+              <input matInput type="number" id="maxAge" name="maxAge" formControlName="maxAge" min="0" max="100" required aria-required="true">
+              <mat-error *ngIf="categoryForm.get('maxAge')?.errors?.['required'] && categoryForm.get('maxAge')?.touched">
+                Maximum age is required
+              </mat-error>
+            </mat-form-field>
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="minAge">Minimum Age</label>
-              <input type="number" id="minAge" formControlName="minAge" min="0">
-            </div>
-            <div class="form-group">
-              <label for="maxAge">Maximum Age</label>
-              <input type="number" id="maxAge" formControlName="maxAge" min="0">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="defaultRate">Default Rate</label>
-            <input type="number" id="defaultRate" formControlName="defaultRate" min="0" step="0.01">
-          </div>
-
-          <div class="modal-actions">
-            <button mat-button type="button" (click)="cancelCategoryEdit()">Cancel</button>
-            <button mat-raised-button color="primary" type="submit">Save</button>
-          </div>
-        </form>
-      </div>
+        <div class="modal-actions">
+          <button mat-button type="button" (click)="cancelCategoryEdit()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="!categoryForm.valid">
+            {{editingCategory ? 'Update' : 'Add'}} Category
+          </button>
+        </div>
+      </form>
     </div>
   </app-modal>
 </div>

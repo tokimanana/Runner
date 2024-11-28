@@ -1,0 +1,95 @@
+<div class="policies-container" *ngIf="hotel">
+  <!-- Cancellation Policy Section -->
+  <div class="policy-section">
+    <div class="section-header">
+      <h3>Cancellation Policy</h3>
+      <button class="edit-btn" (click)="openPolicyModal('cancellation')">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+    </div>
+    <div class="description-section">
+      <ng-container *ngIf="policies; else noPoliciesCancellation">
+        <div [innerHTML]="policies.cancellation || 'No cancellation policy set'"></div>
+      </ng-container>
+      <ng-template #noPoliciesCancellation>
+        <p>No policies available</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Check-In/Out Policy Section -->
+  <div class="policy-section">
+    <div class="section-header">
+      <h3>Check-In/Out Policy</h3>
+      <button class="edit-btn" (click)="openPolicyModal('checkInOut')">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+    </div>
+    <div class="description-section">
+      <ng-container *ngIf="policies; else noPoliciesCheckInOut">
+        <div *ngIf="policies.checkIn || policies.checkOut; else noCheckInOutPolicy">
+          <p *ngIf="policies.checkIn">Check-in: {{policies.checkIn}}</p>
+          <p *ngIf="policies.checkOut">Check-out: {{policies.checkOut}}</p>
+        </div>
+        <ng-template #noCheckInOutPolicy>
+          <p>No check-in/out policy set</p>
+        </ng-template>
+      </ng-container>
+      <ng-template #noPoliciesCheckInOut>
+        <p>No policies available</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Policy Templates Section -->
+  <div class="policy-templates">
+    <h3>Quick Templates</h3>
+    <div class="template-buttons">
+      <button (click)="applyTemplate('cancellation', 'standard')" class="template-btn">
+        Standard Cancellation
+      </button>
+      <button (click)="applyTemplate('cancellation', 'flexible')" class="template-btn">
+        Flexible Cancellation
+      </button>
+      <button (click)="applyTemplate('checkInOut', 'standard')" class="template-btn">
+        Standard Check-In/Out
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Message when no hotel is selected -->
+<div *ngIf="!hotel" class="policy-section">
+  <p>Please select a hotel to view and edit policies.</p>
+</div>
+
+<!-- Modal Component -->
+<app-modal [show]="showModal" (close)="handleModalCancel()">
+  <div class="modal-content">
+    <h2>{{modalTitle}}</h2>
+    <form (ngSubmit)="handleModalSubmit(modalForm.value)" #modalForm="ngForm">
+      <div class="form-group" *ngFor="let field of modalFormFields">
+        <label [for]="field.name">{{field.label}}</label>
+        <textarea *ngIf="field.type === 'textarea'"
+          [id]="field.name"
+          [name]="field.name"
+          [rows]="field.rows || 5"
+          class="form-control"
+          [(ngModel)]="modalInitialValues[field.name]"
+          [required]="field.required">
+        </textarea>
+        <input *ngIf="field.type !== 'textarea'"
+          [type]="field.type"
+          [id]="field.name"
+          [name]="field.name"
+          class="form-control"
+          [(ngModel)]="modalInitialValues[field.name]"
+          [required]="field.required">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</app-modal>

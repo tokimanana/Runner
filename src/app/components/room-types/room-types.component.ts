@@ -21,14 +21,18 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   
   roomForm: Omit<RoomType, 'id'> = {
     type: '',
+    name: '',
     description: '',
     location: '',
     maxOccupancy: {
-      adults: 1,
+      adults: 0,
       children: 0,
       infants: 0
     },
-    amenities: []
+    amenities: [],
+    size: 0,
+    images: [],
+    bedConfiguration: []
   };
 
   constructor(private hotelService: HotelService) {}
@@ -40,7 +44,7 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['hotel'] && !changes['hotel'].firstChange) {
+    if (changes['hotel']) {
       const hotel = changes['hotel'].currentValue;
       if (hotel) {
         this.loadRooms(hotel);
@@ -55,7 +59,9 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private loadRooms(hotel: Hotel) {
-    this.rooms = this.hotelService.getRooms(hotel.id);
+    this.hotelService.currentRooms$.subscribe(rooms => {
+      this.rooms = rooms;
+    });
   }
 
   private resetRooms() {
@@ -64,17 +70,7 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
 
   addNewRoom() {
     this.editingRoom = null;
-    this.roomForm = {
-      type: '',
-      description: '',
-      location: '',
-      maxOccupancy: {
-        adults: 1,
-        children: 0,
-        infants: 0
-      },
-      amenities: []
-    };
+    this.resetRoomForm();
     this.showRoomForm = true;
   }
 
@@ -82,14 +78,18 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
     this.editingRoom = room;
     this.roomForm = {
       type: room.type || '',
+      name: room.name || '',
       description: room.description || '',
       location: room.location || '',
       maxOccupancy: {
-        adults: room.maxOccupancy?.adults || 1,
+        adults: room.maxOccupancy?.adults || 0,
         children: room.maxOccupancy?.children || 0,
         infants: room.maxOccupancy?.infants || 0
       },
-      amenities: Array.isArray(room.amenities) ? [...room.amenities] : []
+      amenities: Array.isArray(room.amenities) ? [...room.amenities] : [],
+      size: room.size || 0,
+      images: Array.isArray(room.images) ? [...room.images] : [],
+      bedConfiguration: Array.isArray(room.bedConfiguration) ? [...room.bedConfiguration] : []
     };
     this.showRoomForm = true;
   }
@@ -130,5 +130,23 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   cancelEdit() {
     this.showRoomForm = false;
     this.editingRoom = null;
+  }
+
+  resetRoomForm() {
+    this.roomForm = {
+      type: '',
+      name: '',
+      description: '',
+      location: '',
+      maxOccupancy: {
+        adults: 0,
+        children: 0,
+        infants: 0
+      },
+      amenities: [],
+      size: 0,
+      images: [],
+      bedConfiguration: []
+    };
   }
 }

@@ -129,19 +129,13 @@ export class PeriodMlosComponent implements OnInit {
   }
 
   savePeriod(): void {
-    if (!this.periodForm.startDate || !this.periodForm.endDate) {
-      alert('Start and end dates are required');
-      return;
-    }
-
-    if (new Date(this.periodForm.startDate) > new Date(this.periodForm.endDate)) {
-      alert('Start date must be before end date');
-      return;
-    }
-
     if (!this.currentSeason) {
       alert('No season selected');
       return;
+    }
+
+    if (!this.currentSeason.periods) {
+      this.currentSeason.periods = [];
     }
 
     // Check for date overlaps with existing periods
@@ -161,8 +155,8 @@ export class PeriodMlosComponent implements OnInit {
 
     const periodData: Period = {
       id: this.editingPeriod ? this.editingPeriod.id : Math.random(),
-      startDate: this.periodForm.startDate,
-      endDate: this.periodForm.endDate,
+      startDate: this.periodForm.startDate!,
+      endDate: this.periodForm.endDate!,
       mlos: this.periodForm.mlos || 1,
       description: this.periodForm.description,
       isBlackout: this.periodForm.isBlackout
@@ -171,17 +165,22 @@ export class PeriodMlosComponent implements OnInit {
     const seasonIndex = this.seasons.findIndex(s => s.id === this.currentSeason!.id);
     if (seasonIndex === -1) return;
 
+    // Initialize periods array if it doesn't exist
+    if (!this.seasons[seasonIndex].periods) {
+      this.seasons[seasonIndex].periods = [];
+    }
+
     if (this.editingPeriod) {
       // Update existing period
-      const periodIndex = this.seasons[seasonIndex].periods.findIndex(
+      const periodIndex = this.seasons[seasonIndex].periods!.findIndex(
         p => p.id === this.editingPeriod!.id
       );
       if (periodIndex !== -1) {
-        this.seasons[seasonIndex].periods[periodIndex] = periodData;
+        this.seasons[seasonIndex].periods![periodIndex] = periodData;
       }
     } else {
       // Add new period
-      this.seasons[seasonIndex].periods.push(periodData);
+      this.seasons[seasonIndex].periods!.push(periodData);
     }
 
     this.closePeriodForm();
@@ -191,12 +190,18 @@ export class PeriodMlosComponent implements OnInit {
   deletePeriod(season: Season, period: Period): void {
     if (confirm('Are you sure you want to delete this period?')) {
       const seasonIndex = this.seasons.findIndex(s => s.id === season.id);
-      if (seasonIndex !== -1) {
-        this.seasons[seasonIndex].periods = this.seasons[seasonIndex].periods.filter(
-          p => p.id !== period.id
-        );
-        this.updateSeasons();
+      if (seasonIndex === -1) return;
+
+      // Initialize periods array if it doesn't exist
+      if (!this.seasons[seasonIndex].periods) {
+        this.seasons[seasonIndex].periods = [];
+        return; // Nothing to delete if periods array doesn't exist
       }
+
+      this.seasons[seasonIndex].periods = this.seasons[seasonIndex].periods!.filter(
+        p => p.id !== period.id
+      );
+      this.updateSeasons();
     }
   }
 

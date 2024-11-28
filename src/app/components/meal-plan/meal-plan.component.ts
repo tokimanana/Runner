@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,7 +20,7 @@ import { ModalComponent } from '../modal/modal.component';
   templateUrl: './meal-plan.component.html',
   styleUrls: ['./meal-plan.component.scss']
 })
-export class MealPlanComponent implements OnInit {
+export class MealPlanComponent implements OnInit, OnChanges {
   @Input() hotel!: Hotel;
   
   mealPlans: MealPlan[] = [];
@@ -43,6 +43,7 @@ export class MealPlanComponent implements OnInit {
   mealPlanForm: MealPlan = this.getEmptyMealPlan();
 
   readonly planTypeLabels: Record<MealPlanType, string> = {
+    'RO': 'Room Only',
     'BB': 'Bed & Breakfast',
     'BB+': 'Bed & Breakfast Plus',
     'HB': 'Half Board',
@@ -50,13 +51,22 @@ export class MealPlanComponent implements OnInit {
     'FB': 'Full Board',
     'FB+': 'Full Board Plus',
     'AI': 'All Inclusive',
-    'AI+': 'All Inclusive Plus'
+    'AI+': 'All Inclusive Plus',
+    'UAI': 'Ultra All Inclusive'
   };
 
   constructor(private hotelService: HotelService) {}
 
   ngOnInit(): void {
-    this.loadMealPlans();
+    if (this.hotel) {
+      this.loadMealPlans();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['hotel']) {
+      this.loadMealPlans();
+    }
   }
 
   private getEmptyMealPlan(): MealPlan {
@@ -71,19 +81,27 @@ export class MealPlanComponent implements OnInit {
     };
   }
 
-  loadMealPlans(): void {
+  private loadMealPlans(): void {
     if (this.hotel) {
-      this.hotelService.getMealPlans(this.hotel.id.toString()).subscribe(mealPlans => {
-        this.mealPlans = mealPlans.map(plan => ({
-          id: plan.id.toString(),
-          type: plan.code as MealPlanType,
-          name: plan.name,
-          description: plan.description,
-          includedMeals: this.getIncludedMeals(plan.code),
-          defaultInclusions: [],
-          restrictions: []
-        } as MealPlan));
+      this.hotelService.getMealPlans(this.hotel.id.toString()).subscribe({
+        next: (mealPlans) => {
+          this.mealPlans = mealPlans.map(plan => ({
+            id: plan.id.toString(),
+            type: plan.code as MealPlanType,
+            name: plan.name,
+            description: plan.description,
+            includedMeals: this.getIncludedMeals(plan.code),
+            defaultInclusions: [],
+            restrictions: []
+          }));
+        },
+        error: (error) => {
+          console.error('Error loading meal plans:', error);
+          this.mealPlans = [];
+        }
       });
+    } else {
+      this.mealPlans = [];
     }
   }
 

@@ -1,0 +1,98 @@
+<!-- Main Container -->
+<div class="description-container" *ngIf="hotel">
+    <!-- Hotel Description Section -->
+    <div class="description-section">
+      <div class="section-header">
+        <h3>Hotel Description</h3>
+        <button class="edit-btn" (click)="openDescriptionModal()">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+      </div>
+      <div class="content-section">
+        <div [innerHTML]="description || 'No description available'"></div>
+      </div>
+    </div>
+  
+    <!-- Dress Code Section -->
+    <div class="description-section">
+      <div class="section-header">
+        <h3>Dress Code</h3>
+        <button class="edit-btn" (click)="openDressCodeModal()">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+      </div>
+      <div class="content-section">
+        <div [innerHTML]="dressCode || 'No dress code specified'"></div>
+      </div>
+    </div>
+  
+    <!-- Fact Sheet Section -->
+    <div class="description-section">
+      <div class="section-header">
+        <h3>Fact Sheet</h3>
+      </div>
+      <div class="content-section">
+        <ngx-file-drop
+          [multiple]="false"
+          (onFileDrop)="onFileDropped($event)"
+          accept="application/pdf"
+        >
+          <ng-template ngx-file-drop-content-tmp>
+            <div class="upload-area">
+              <i class="fas fa-file-upload"></i>
+              <p>Drop PDF file here or click to upload</p>
+            </div>
+          </ng-template>
+        </ngx-file-drop>
+  
+        <div *ngIf="currentFactSheet" class="current-file">
+          <p>Current file: {{ currentFactSheet }}</p>
+          <div class="file-actions">
+            <button (click)="viewFactSheet()" class="action-btn view-btn">
+              <i class="fas fa-eye"></i> View
+            </button>
+            <button (click)="removeFactSheet()" class="action-btn remove-btn">
+              <i class="fas fa-trash"></i> Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- No Hotel Selected Message -->
+  <div *ngIf="!hotel" class="description-section">
+    <p>Please select a hotel to view and edit descriptions.</p>
+  </div>
+  
+  <!-- Modal Component -->
+  <app-modal 
+    *ngIf="showModal" 
+    [show]="showModal" 
+    (close)="handleModalCancel()"
+  >
+    <div class="modal-content">
+      <h2>{{ modalTitle }}</h2>
+      <form (ngSubmit)="handleModalSubmit(modalForm.value)" #modalForm="ngForm">
+        <div class="form-group">
+          <label [for]="currentEditMode">{{ modalTitle }}</label>
+          <textarea
+            [id]="currentEditMode"
+            [name]="currentEditMode"
+            class="form-control"
+            rows="10"
+            [(ngModel)]="modalInitialValues[currentEditMode]"
+            required
+          ></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="!modalForm.valid">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </app-modal>

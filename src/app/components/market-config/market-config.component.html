@@ -35,25 +35,25 @@
 
       <mat-card-content>
         <div class="markets-grid">
-          <mat-card *ngFor="let market of group.markets" 
+          <mat-card *ngFor="let marketId of group.markets" 
                     class="market-card" 
-                    [class.has-rate]="hasRate(market)" 
-                    [matTooltip]="hasRate(market) ? 'Ce marché a des rates configurés' : 'Aucun rate configuré pour ce marché'">
+                    [class.has-rate]="hasRate(marketId)" 
+                    [matTooltip]="hasRate(marketId) ? 'Ce marché a des rates configurés' : 'Aucun rate configuré pour ce marché'">
             <div class="market-header">
               <div class="market-title">
                 <mat-icon class="market-icon">location_city</mat-icon>
                 <div class="market-info">
                   <div class="market-name-row">
-                    <span class="market-name">{{market.name}}</span>
-                    <mat-icon *ngIf="hasRate(market)" class="rate-indicator">check_circle</mat-icon>
+                    <span class="market-name">{{getMarketName(marketId)}}</span>
+                    <mat-icon *ngIf="hasRate(marketId)" class="rate-indicator">check_circle</mat-icon>
                   </div>
                   <div class="status-indicator" 
-                       [class.active]="market.isActive" 
-                       (click)="toggleMarketStatus(market)" 
-                       [matTooltip]="market.isActive ? 'Cliquer pour désactiver' : 'Cliquer pour activer'">
+                       [class.active]="isMarketActive(marketId)" 
+                       (click)="toggleMarketStatus(marketId)" 
+                       [matTooltip]="isMarketActive(marketId) ? 'Cliquer pour désactiver' : 'Cliquer pour activer'">
                     <span class="status-dot"></span>
-                    <span class="status-text">{{ market.isActive ? 'Actif' : 'Inactif' }}</span>
-                    <mat-icon class="status-toggle-icon">{{market.isActive ? 'toggle_on' : 'toggle_off'}}</mat-icon>
+                    <span class="status-text">{{ isMarketActive(marketId) ? 'Actif' : 'Inactif' }}</span>
+                    <mat-icon class="status-toggle-icon">{{isMarketActive(marketId) ? 'toggle_on' : 'toggle_off'}}</mat-icon>
                   </div>
                 </div>
               </div>
@@ -63,20 +63,20 @@
               <div class="market-details">
                 <div class="market-currency">
                   <span class="label">Currency:</span>
-                  <mat-chip>{{market.currency}}</mat-chip>
+                  <mat-chip>{{getMarketCurrency(marketId)}}</mat-chip>
                 </div>
-                <p *ngIf="market.description" class="market-description">
-                  {{market.description}}
+                <p *ngIf="getMarketDescription(marketId)" class="market-description">
+                  {{getMarketDescription(marketId)}}
                 </p>
               </div>
             </mat-card-content>
 
             <mat-card-actions align="end">
-              <button mat-button color="primary" (click)="openMarketEditor(market, group)">
+              <button mat-button color="primary" (click)="openMarketEditor(marketId, group)">
                 <mat-icon>edit</mat-icon>
                 <span>Edit</span>
               </button>
-              <button mat-button color="warn" (click)="deleteMarket(market, group)">
+              <button mat-button color="warn" (click)="deleteMarket(marketId, group)">
                 <mat-icon>delete</mat-icon>
                 <span>Delete</span>
               </button>

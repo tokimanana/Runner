@@ -17,10 +17,7 @@ import { ContentEditorComponent } from './components/content-editor/content-edit
         </div>
         <app-navigation></app-navigation>
       </header>
-      
-      <main class="main-content">
-        <app-content-editor></app-content-editor>
-      </main>
+      <app-content-editor></app-content-editor>
     </div>
   `,
   styles: [`
@@ -52,15 +49,6 @@ import { ContentEditorComponent } from './components/content-editor/content-edit
       margin-bottom: 1rem;
       font-size: 1.75rem;
       font-weight: 600;
-    }
-
-    .main-content {
-      flex: 1;
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      padding: 1.5rem;
-      border: 1px solid #f0f0f0;
     }
 
     @media (max-width: 768px) {

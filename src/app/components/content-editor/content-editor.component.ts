@@ -34,7 +34,7 @@ import { CurrencyComponent } from '../currency/currency.component';
 })
 export class ContentEditorComponent implements OnInit {
   selectedHotel: Hotel | null = null;
-  currentMenuItem: MenuItemId = 'description';
+  currentMenuItem: MenuItemId = 'description';  // Default to description
   activeTab = 'general';
 
   menuItems: { [key: string]: MenuItem[] } = {
@@ -67,7 +67,8 @@ export class ContentEditorComponent implements OnInit {
     });
 
     this.hotelService.getSelectedMenuItem().subscribe(menuItem => {
-      this.currentMenuItem = menuItem;
+      // Always ensure we have a valid menu item
+      this.currentMenuItem = menuItem || 'description';
     });
 
     this.hotelService.getActiveTab().subscribe(tab => {
