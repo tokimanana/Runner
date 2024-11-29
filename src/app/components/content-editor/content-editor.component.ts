@@ -12,6 +12,7 @@ import { PeriodMlosComponent } from '../period-mlos/period-mlos.component';
 import { RatesConfigComponent } from '../rates-config/rates-config.component';
 import { MarketConfigComponent } from '../market-config/market-config.component';
 import { CurrencyComponent } from '../currency/currency.component';
+import { SpecialOffersComponent } from '../special-offers/special-offers.component';
 
 @Component({
   selector: 'app-content-editor',
@@ -27,7 +28,8 @@ import { CurrencyComponent } from '../currency/currency.component';
     PeriodMlosComponent,
     RatesConfigComponent,
     MarketConfigComponent,
-    CurrencyComponent
+    CurrencyComponent,
+    SpecialOffersComponent
   ],
   templateUrl: './content-editor.component.html',
   styleUrls: ['./content-editor.component.css']

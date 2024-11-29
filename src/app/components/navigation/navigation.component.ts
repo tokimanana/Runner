@@ -91,8 +91,8 @@ export class NavigationComponent implements OnInit {
   mainTabs: TabItem[] = [
     { id: 'general', label: 'General Information', icon: 'dashboard' },
     { id: 'rates', label: 'Rates', icon: 'tune' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
-    { id: 'offers', label: 'Offers', icon: 'local_offer' }
+    { id: 'offers', label: 'Offers', icon: 'local_offer' },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' }
   ];
 
   activeTab = 'general';

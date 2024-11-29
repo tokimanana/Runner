@@ -1,0 +1,49 @@
+<div class="offer-list-container">
+  <div class="header">
+    <h2>Special Offers</h2>
+    <button class="create-button" (click)="openOfferForm()">
+      Create New Offer
+    </button>
+  </div>
+
+  <app-offer-form *ngIf="isFormVisible"></app-offer-form>
+
+  <div class="offers-grid" *ngIf="offers.length > 0; else noOffers">
+    <div class="offer-card" *ngFor="let offer of offers">
+      <div class="offer-header">
+        <h3>{{ offer.name }}</h3>
+        <div class="offer-actions">
+          <button class="edit-button" (click)="openOfferForm(offer)">Edit</button>
+          <button class="delete-button" (click)="deleteOffer(offer.id)">Delete</button>
+        </div>
+      </div>
+      
+      <div class="offer-details">
+        <p>{{ offer.description }}</p>
+        <div class="discount-values">
+          <div *ngFor="let discount of offer.discountValues" class="discount-value">
+            <span class="nights">{{ discount.nights }} nights:</span>
+            <span class="value">
+              {{ offer.discountType === 'percentage' ? discount.value + '%' : '$' + discount.value }}
+            </span>
+          </div>
+        </div>
+        <div class="dates">
+          <span>Valid: {{ offer.startDate | date }} - {{ offer.endDate | date }}</span>
+        </div>
+        <div class="conditions" *ngIf="offer.conditions?.length">
+          <h4>Conditions:</h4>
+          <ul>
+            <li *ngFor="let condition of offer.conditions">{{ condition }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noOffers>
+    <div class="no-offers">
+      <p>No special offers available. Create your first offer!</p>
+    </div>
+  </ng-template>
+</div>

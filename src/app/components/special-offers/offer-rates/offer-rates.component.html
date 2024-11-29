@@ -1,0 +1,82 @@
+<div class="offer-rates-container">
+  <div class="header">
+    <h2>Apply Offers to Rates</h2>
+    <div class="rate-selector">
+      <label for="rateSelect">Select Rate:</label>
+      <select 
+        id="rateSelect" 
+        (change)="onRateSelect($any($event.target).value)"
+        [value]="selectedRateId || ''">
+        <option value="">Select a rate</option>
+        <option *ngFor="let rate of rates" [value]="rate.id">
+          {{ getRateName(rate) }} - {{ rate.baseRate }} {{ rate.currency }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content" *ngIf="selectedRateId; else selectRate">
+    <div class="available-offers">
+      <h3>Available Offers</h3>
+      <div class="offers-grid">
+        <div 
+          class="offer-card" 
+          *ngFor="let offer of offers"
+          [class.applied]="isOfferApplied(offer.id)">
+          <div class="offer-header">
+            <div class="title-section">
+              <h4>{{ offer.name }}</h4>
+              <span class="code">{{ offer.code }}</span>
+            </div>
+            <button 
+              [disabled]="isOfferApplied(offer.id)"
+              (click)="applyOffer(offer)"
+              class="apply-button">
+              {{ isOfferApplied(offer.id) ? 'Applied' : 'Apply' }}
+            </button>
+          </div>
+          <p>{{ offer.description }}</p>
+          <div class="discount-values">
+            <div *ngFor="let discount of offer.discountValues" class="discount-value">
+              <div class="discount-info">
+                <span class="nights">{{ discount.nights }} nights</span>
+                <span class="dates" *ngIf="discount.startDate && discount.endDate">
+                  Valid {{ discount.startDate | date }} to {{ discount.endDate | date }}
+                </span>
+              </div>
+              <span class="value">
+                {{ discount.value }}{{ offer.discountType === 'percentage' ? '%' : ' off' }}
+              </span>
+            </div>
+          </div>
+          <div class="dates">
+            <span>Valid: {{ offer.startDate | date }} - {{ offer.endDate | date }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="applied-offers" *ngIf="appliedOffers.length">
+      <h3>Applied Offers</h3>
+      <div class="applied-offers-list">
+        <div class="applied-offer" *ngFor="let offer of appliedOffers">
+          <div class="offer-info">
+            <span class="name">{{ offer.name }}</span>
+            <span class="code">({{ offer.code }})</span>
+          </div>
+          <button 
+            class="remove-button"
+            (click)="removeOffer(offer.id)">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #selectRate>
+    <div class="select-rate-message">
+      <p>Please select a rate to manage its offers</p>
+    </div>
+  </ng-template>
+</div>

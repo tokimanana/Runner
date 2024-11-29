@@ -64,6 +64,7 @@ interface RateFilters {
 })
 export class RatesConfigComponent implements OnInit {
   @Input() hotel: Hotel | null = null;
+  selectedHotel: Hotel | null = null;  // Ajouter cette ligne
   filterForm: FormGroup;
   
   marketTemplates: MarketTemplate[] = [];
@@ -185,6 +186,7 @@ export class RatesConfigComponent implements OnInit {
       .subscribe(hotel => {
         console.log('Selected hotel in rates config:', hotel);
         this.hotel = hotel;
+        this.selectedHotel = hotel;  // Ajouter cette ligne
         if (hotel) {
           this.isLoading = true;
           this.initializeForms();
@@ -925,11 +927,57 @@ export class RatesConfigComponent implements OnInit {
   }
 
   private findContractForRate(rateConfig: RateConfiguration): Contract | undefined {
-    if (!rateConfig.id) return undefined;
+    // Si on a une région, on cherche d'abord le contrat qui contient le taux
+    if (rateConfig.id) {
+      const rateId = Number(rateConfig.id);
+      if (!isNaN(rateId)) {
+        const contractWithRate = this.activeContracts.find(contract => 
+          contract.rates.some(r => r.id === rateId)
+        );
+        
+        if (contractWithRate) {
+          return contractWithRate;
+        }
+      }
+    }
     
-    return this.activeContracts.find(contract => 
-      contract.rates.some(r => r.id === Number(rateConfig.id))
-    );
+    // Si on n'a pas trouvé par ID, on cherche par région
+    if (rateConfig.region) {
+      return this.findContractForRegion(rateConfig.region);
+    }
+    
+    return undefined;
+  }
+
+  private findContractForRegion(region: string): Contract | undefined {
+    if (!region) {
+      console.warn('No region provided to findContractForRegion');
+      return undefined;
+    }
+
+    // Ajout de logs pour le débogage
+    console.log('Finding contract for region:', region);
+    console.log('Available contracts:', this.activeContracts);
+    console.log('Market groups:', this.marketGroups);
+
+    // Trouver tous les contrats pour cette région
+    const matchingContracts = this.activeContracts.filter(contract => {
+      const marketGroup = this.marketGroups.find(g => g.markets.includes(contract.marketId));
+      return marketGroup?.region === region;
+    });
+
+    console.log('Matching contracts for region:', matchingContracts);
+
+    // Si on a plusieurs contrats, prendre celui avec les dates les plus récentes
+    if (matchingContracts.length > 1) {
+      return matchingContracts.reduce((latest, current) => {
+        const latestDate = new Date(latest.startDate);
+        const currentDate = new Date(current.startDate);
+        return currentDate > latestDate ? current : latest;
+      });
+    }
+
+    return matchingContracts[0];
   }
 
   private getNextRateId(): number {
@@ -1250,30 +1298,50 @@ export class RatesConfigComponent implements OnInit {
     if (!season?.periods || season.periods.length === 0) {
       throw new Error('Season has no defined periods');
     }
+
+    if (!market) {
+      throw new Error(`Market not found for region: ${rateConfig.region}`);
+    }
+
+    if (!roomType) {
+      throw new Error(`Room type not found with ID: ${rateConfig.roomTypeId}`);
+    }
   
+    // Ensure all numeric fields are properly converted
+    const rateId = rateConfig.id ? Number(rateConfig.id) : 0;
+    const marketId = Number(market.id);
+    const seasonId = Number(rateConfig.seasonId);
+    const roomTypeId = Number(rateConfig.roomTypeId);
+    const contractId = contract?.id || 0;
+
+    // Validate numeric conversions
+    if ([rateId, marketId, seasonId, roomTypeId].some(isNaN)) {
+      throw new Error('Invalid numeric value in rate configuration');
+    }
+
     return {
-      id: rateConfig.id ? parseInt(rateConfig.id) : 0,
+      id: rateId,
       name: this.generateRateName(roomType, season),
-      marketId: parseInt(market?.id.toString() || '0'),
-      seasonId: parseInt(rateConfig.seasonId.toString()),
-      roomTypeId: parseInt(rateConfig.roomTypeId.toString()),
-      contractId: contract?.id || 0,
+      marketId,
+      seasonId,
+      roomTypeId,
+      contractId,
       currency: rateConfig.currency || this.defaultCurrency,
-      amount: rateConfig.baseRate,
-      baseRate: rateConfig.baseRate,
-      extraAdult: rateConfig.extraAdult,
-      extraChild: rateConfig.extraChild,
-      singleOccupancy: rateConfig.singleOccupancy,
+      amount: Number(rateConfig.baseRate),
+      baseRate: Number(rateConfig.baseRate),
+      extraAdult: Number(rateConfig.extraAdult),
+      extraChild: Number(rateConfig.extraChild),
+      singleOccupancy: rateConfig.singleOccupancy != null ? Number(rateConfig.singleOccupancy) : null,
       supplements: {
-        extraAdult: rateConfig.extraAdult,
-        extraChild: rateConfig.extraChild,
+        extraAdult: Number(rateConfig.extraAdult),
+        extraChild: Number(rateConfig.extraChild),
         singleOccupancy: rateConfig.singleOccupancy
       },
       ageCategoryRates: rateConfig.ageCategoryRates || {},
-      specialOffers: [], // Initialize with empty array if not provided
-      isActive: rateConfig.isActive,
+      specialOffers: [], // Rate type requires specialOffers, but RateConfiguration doesn't have it
+      isActive: Boolean(rateConfig.isActive),
       createdAt: rateConfig.createdAt ? new Date(rateConfig.createdAt) : new Date(),
-      updatedAt: new Date() // Now returns a Date object instead of string
+      updatedAt: new Date()
     };
   }
 
@@ -1364,7 +1432,12 @@ export class RatesConfigComponent implements OnInit {
   /**
    * Update an existing rate
    */
-  updateRate(rateConfig: RateConfiguration) {
+  async updateRate(rateConfig: RateConfiguration) {
+    if (!this.selectedHotel?.id) {
+      this.handleError(new Error('No hotel selected'));
+      return;
+    }
+
     // Validate periods
     const season = this.seasons.find(s => s.id === rateConfig.seasonId);
     if (!season?.periods || season.periods.length === 0) {
@@ -1372,95 +1445,121 @@ export class RatesConfigComponent implements OnInit {
       return;
     }
 
-    if (!rateConfig) {
-      this.handleError(new Error('Invalid rate configuration'), 'Failed to update rate');
-      return;
-    }
-
-    const contract = this.findContractForRate(rateConfig);
+    const contract = this.findContractForRegion(rateConfig.region);
     if (!contract) {
       this.handleError(new Error('Contract not found'), 'Failed to update rate');
       return;
     }
 
-    // Update rate in contract
-    const rateIndex = contract.rates.findIndex(r => r.id === Number(rateConfig.id));
-    if (rateIndex === -1) {
-      this.handleError(new Error('Rate not found in contract'), 'Failed to update rate');
-      return;
+    try {
+      // Update rate in contract
+      const rateId = Number(rateConfig.id);
+      if (isNaN(rateId)) {
+        throw new Error('Invalid rate ID');
+      }
+
+      // Ajout de logs pour le débogage
+      console.log('Updating rate:', {
+        rateId,
+        contract,
+        rateConfig
+      });
+
+      const rateIndex = contract.rates.findIndex(r => r.id === rateId);
+      if (rateIndex === -1) {
+        console.error('Rate not found:', { 
+          rateId, 
+          contractRates: contract.rates,
+          region: rateConfig.region,
+          contract: contract
+        });
+        throw new Error('Rate not found in contract');
+      }
+
+      // Update the rate in the contract
+      contract.rates[rateIndex] = this.rateConfigToRate(rateConfig);
+
+      // Update the contract
+      await firstValueFrom(this.hotelService.updateContract(this.selectedHotel.id, contract));
+
+      // Refresh display
+      await this.refreshRatesDisplay();
+
+      this.showModalMessage('Rate updated successfully');
+      this.closeRateModal();
+    } catch (error) {
+      this.handleError(error, 'Failed to update rate');
+      await this.refreshRatesDisplay();
     }
+  }
 
-    // Convert RateConfiguration to Rate before merging
-    const updatedRate = this.rateConfigToRate(rateConfig);
-  
-    // Create a new contract object to trigger change detection
-    const updatedContract = {
-      ...contract,
-      rates: [...contract.rates]
-    };
-  
-    // Update the rate in the new contract
-    updatedContract.rates[rateIndex] = updatedRate;
-
-    console.log('Updating rate:', {
-      originalRate: contract.rates[rateIndex],
-      updatedRate: updatedRate,
-      changes: {
-        baseRate: contract.rates[rateIndex].baseRate !== updatedRate.baseRate,
-        extraAdult: contract.rates[rateIndex].extraAdult !== updatedRate.extraAdult,
-        extraChild: contract.rates[rateIndex].extraChild !== updatedRate.extraChild,
-        singleOccupancy: contract.rates[rateIndex].singleOccupancy !== updatedRate.singleOccupancy
-      }
-    });
-
-    // Close modal before making the update
-    this.closeRateModal();
-
-    // Update contract in service
-    this.hotelService.updateContract(updatedContract).subscribe({
-      next: async (returnedContract) => {
-        if (returnedContract) {
-          try {
-            // Find the index of the old contract and replace it with a new object
-            const contractIndex = this.activeContracts.findIndex(c => c.id === returnedContract.id);
-            if (contractIndex !== -1) {
-              this.activeContracts = [
-                ...this.activeContracts.slice(0, contractIndex),
-                returnedContract,
-                ...this.activeContracts.slice(contractIndex + 1)
-              ];
-            }
-            
-            // Ensure rates are reloaded and filtered before showing success message
-            await this.loadRates();
-            await this.applyFilters();
-            
-            console.log('Rate update complete:', {
-              contractId: returnedContract.id,
-              rateId: updatedRate.id,
-              updatedFields: {
-                baseRate: updatedRate.baseRate,
-                extraAdult: updatedRate.extraAdult,
-                extraChild: updatedRate.extraChild,
-                singleOccupancy: updatedRate.singleOccupancy
-              }
-            });
-            
-            // Show success message after everything is updated
-            this.showModalMessage('Rate updated successfully');
-          } catch (error) {
-            console.error('Error refreshing rates after update:', error);
-            this.handleError(error, 'Rate was saved but there was an error refreshing the display');
-          }
+  // Save the rate modal form
+  async saveRateModal(formValue: any): Promise<void> {
+    if (this.rateModalForm.valid) {
+      try {
+        if (!this.selectedHotel?.id) {
+          throw new Error('No hotel selected');
         }
-      },
-      error: (error) => {
-        console.error('Failed to update rate:', error);
-        this.handleError(error, 'Failed to update rate');
-        // Reopen the modal if update failed
-        this.openRateModal(rateConfig);
+
+        const rateConfig = this.prepareRateConfig(formValue);
+
+        if (this.editingRate) {
+          // Update existing rate
+          rateConfig.id = this.editingRate.id;
+          await this.updateRate(rateConfig);
+        } else {
+          // Create new rate
+          const contract = this.findContractForRegion(rateConfig.region);
+          if (!contract) {
+            throw new Error('Contract not found');
+          }
+
+          // Generate new rate ID
+          const newRate = this.rateConfigToRate(rateConfig);
+          newRate.id = this.getNextRateId();
+
+          // Add rate to contract
+          contract.rates.push(newRate);
+
+          // Update contract
+          await firstValueFrom(this.hotelService.updateContract(this.selectedHotel.id, contract));
+
+          // Refresh display
+          await this.refreshRatesDisplay();
+
+          this.showModalMessage('Rate added successfully');
+          this.closeRateModal();
+        }
+      } catch (error) {
+        this.handleError(error, 'Failed to save rate');
+        await this.refreshRatesDisplay();
       }
-    });
+    } else {
+      // Mark all invalid fields as touched
+      Object.keys(this.rateModalForm.controls).forEach(key => {
+        const control = this.rateModalForm.get(key);
+        control?.markAsTouched();
+      });
+      this.showModalMessage('Please fill in all required fields correctly', true);
+    }
+  }
+
+  private prepareRateConfig(formValue: any): RateConfiguration {
+    return {
+      ...formValue,
+      seasonId: Number(formValue.seasonId),
+      roomTypeId: Number(formValue.roomTypeId),
+      baseRate: Number(formValue.baseRate),
+      extraAdult: Number(formValue.extraAdult),
+      extraChild: Number(formValue.extraChild),
+      singleOccupancy: formValue.singleOccupancy ? Number(formValue.singleOccupancy) : null,
+      contractId: this.findContractForRegion(formValue.region)?.id
+    };
+  }
+
+  private async refreshRatesDisplay() {
+    await this.loadRates();
+    this.applyFilters();
   }
 
   editCategory(category: AgeCategory) {
@@ -1581,19 +1680,47 @@ export class RatesConfigComponent implements OnInit {
   }
 
   private showModalMessage(message: string, isError: boolean = false) {
-    // Add the message to the queue
-    setTimeout(() => {
+    // Clear any existing message first
+    this.clearModalMessage();
+    
+    // Set the message state based on context
+    if (this.showRateModal) {
+      // Modal messages
       this.modalMessage = message;
-      // Clear the message after 3 seconds
-      setTimeout(() => {
-        this.modalMessage = null;
-      }, 3000);
-    }, 100); // Small delay to ensure UI is ready
+      this.modalError = isError;
+    } else {
+      // Page messages
+      if (isError) {
+        this.error = message;
+        this.success = '';
+      } else {
+        this.success = message;
+        this.error = null;
+      }
+    }
+    
+    // Clear the message after 3 seconds
+    setTimeout(() => {
+      if (this.showRateModal) {
+        // Only clear if this is still the same modal message
+        if (this.modalMessage === message) {
+          this.clearModalMessage();
+        }
+      } else {
+        // Clear page messages
+        if (this.success === message || this.error === message) {
+          this.clearModalMessage();
+        }
+      }
+    }, 3000);
   }
 
   private clearModalMessage() {
+    // Clear both modal and page messages
     this.modalMessage = null;
     this.modalError = false;
+    this.success = '';
+    this.error = null;
   }
 
   private handleContractUpdate(updatedContract: any) {
@@ -1610,62 +1737,38 @@ export class RatesConfigComponent implements OnInit {
   async deleteRate(rate: RateConfiguration) {
     if (!rate.id) return;
     
-    // Update both arrays
-    this.currentRates = this.currentRates.filter(r => r.id !== Number(rate.id));
-    this.rateConfigurations = this.rateConfigurations.filter(r => r.id !== rate.id);
+    if (!this.selectedHotel?.id) {
+      this.handleError(new Error('No hotel selected'));
+      return;
+    }
     
     const contract = this.findContractForRate(rate);
     if (!contract) return;
 
     try {
+      // Supprimer le tarif du contrat
       contract.rates = contract.rates.filter(r => r.id !== Number(rate.id));
-      await firstValueFrom(this.hotelService.updateContract(contract));
+      
+      // Mettre à jour le contrat
+      await firstValueFrom(this.hotelService.updateContract(this.selectedHotel.id, contract));
+      
+      // Mettre à jour les listes locales
+      this.currentRates = this.currentRates.filter(r => r.id !== Number(rate.id));
+      this.rateConfigurations = this.rateConfigurations.filter(r => r.id !== rate.id);
+      this.filteredRates = this.filteredRates.filter(r => r.id !== rate.id);
+      
+      // Recharger les tarifs pour s'assurer que tout est synchronisé
+      await this.loadRates();
+      
+      // Appliquer les filtres actuels aux données mises à jour
+      this.applyFilters();
+      
       this.showModalMessage('Rate deleted successfully');
     } catch (error) {
       this.handleError(error, 'Failed to delete rate');
       // Revert the local change if the server update fails
       await this.loadRates();
-    }
-  }
-
-  // Save the rate modal form
-  saveRateModal(formValue: any): void {
-    if (this.rateModalForm.valid) {
-      const rateConfig: RateConfiguration = {
-        id: this.editingRate?.id || this.getNextRateId().toString(),
-        seasonId: formValue.seasonId,
-        roomTypeId: formValue.roomTypeId,
-        region: formValue.region,
-        baseRate: formValue.baseRate,
-        extraAdult: formValue.extraAdult,
-        extraChild: formValue.extraChild,
-        singleOccupancy: formValue.singleOccupancy,
-        currency: this.defaultCurrency // Using default currency for now
-      };
-
-      if (this.editingRate) {
-        // Update existing rate
-        const index = this.rateConfigurations.findIndex(r => r.id === this.editingRate!.id);
-        if (index !== -1) {
-          this.rateConfigurations[index] = rateConfig;
-        }
-      } else {
-        // Add new rate
-        this.rateConfigurations.push(rateConfig);
-      }
-
-      // Close modal and reset form
-      this.showRateModal = false;
-      this.editingRate = null;
-      this.rateModalForm.reset();
-      this.showModalMessage('Rate saved successfully');
-    } else {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.rateModalForm.controls).forEach(key => {
-        const control = this.rateModalForm.get(key);
-        control?.markAsTouched();
-      });
-      this.showModalMessage('Please fill in all required fields correctly', true);
+      this.applyFilters();
     }
   }
 }

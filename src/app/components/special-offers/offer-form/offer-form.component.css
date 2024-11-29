@@ -1,0 +1,174 @@
+.offer-form {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.step-content {
+  padding: 24px 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.form-row mat-form-field {
+  flex: 1;
+}
+
+.form-section {
+  margin: 32px 0;
+  position: relative;
+}
+
+.form-section h3 {
+  margin: 0 0 8px;
+  color: #1976d2;
+  font-size: 18px;
+}
+
+.section-hint {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+/* Discount Values */
+.discount-values-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.discount-value-card {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+}
+
+.discount-value-card mat-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.discount-value-inputs {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.date-range {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Conditions */
+.conditions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.condition-card {
+  background: #f8f9fa;
+}
+
+.condition-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.condition-card mat-form-field {
+  flex: 1;
+}
+
+/* Blackout Dates */
+.blackout-dates-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.blackout-date-card {
+  background: #f8f9fa;
+  flex: 0 0 calc(33.33% - 8px);
+}
+
+.blackout-date-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.blackout-date-card mat-form-field {
+  flex: 1;
+}
+
+/* Buttons */
+.add-button {
+  margin-top: 8px;
+}
+
+.remove-button {
+  flex-shrink: 0;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Form Header */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-header h2 {
+  margin: 0;
+  color: #1976d2;
+  font-size: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .date-range {
+    flex-direction: column;
+  }
+  
+  .blackout-date-card {
+    flex: 0 0 100%;
+  }
+}
+
+/* Error messages can be added here */
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+
+textarea {
+  min-height: 100px;
+}

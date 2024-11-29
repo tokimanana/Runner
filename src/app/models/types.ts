@@ -18,8 +18,9 @@ export interface Hotel {
   images: string[];
   description: string;
   contactInfo: ContactInfo;
-  mealPlans?: MealPlan[];  // Add optional mealPlans field
-  factSheet?: string;      // Add optional factSheet field
+  mealPlans?: MealPlan[];
+  factSheet?: string;
+  specialOffers?: SpecialOffer[];
 }
 
 export interface HotelPolicies {
@@ -172,15 +173,31 @@ export interface CancellationPolicy {
 }
 
 // Special offers
+export interface DiscountValue {
+  nights: number;      // Number of nights
+  value: number;       // Discount value for these nights
+  startDate?: string;  // Optional start date for this specific discount
+  endDate?: string;    // Optional end date for this specific discount
+}
+
 export interface SpecialOffer {
   id: number;
+  code: string;
   name: string;
+  type: 'combinable' | 'cumulative';
   description: string;
   discountType: 'percentage' | 'fixed';
-  discountValue: number;
+  discountValues: DiscountValue[];
   startDate: string;
   endDate: string;
   conditions?: string[];
+  minimumNights?: number;
+  maximumNights?: number;
+  blackoutDates?: string[];
+  bookingWindow?: {
+    start: string;   // When booking can start
+    end: string;     // When booking must be made by
+  };
 }
 
 // Market management

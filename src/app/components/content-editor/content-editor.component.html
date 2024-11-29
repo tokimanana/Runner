@@ -70,10 +70,9 @@
           <p>Coming Soon</p>
         </div>
 
-        <div *ngSwitchCase="'specialOffers'" class="placeholder-content">
-          <h3>Special Offers</h3>
-          <p>Coming Soon</p>
-        </div>
+        <app-special-offers
+          *ngSwitchCase="'specialOffers'"
+        ></app-special-offers>
       </div>
     </div>
   </div>

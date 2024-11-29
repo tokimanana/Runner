@@ -92,7 +92,6 @@ export class HotelService {
   private roomsMap = new Map<number, RoomType[]>();
   private marketMealPlanRates = new Map<number, MarketMealPlanRate[]>();
   private contractsMap = new Map<number, Contract[]>();
-  private rates: Rate[] = [];
   private apiUrl = 'https://example.com/api'; // Replace with your API URL
   private marketGroupsSubject = new BehaviorSubject<MarketGroup[]>([]);
   private marketTemplates: MarketTemplate[] = [];
@@ -170,7 +169,6 @@ export class HotelService {
       this.contractsMap.set(hotel.id, hotelContracts);
       hotelContracts.forEach(contract => {
         if (contract.rates) {
-          this.rates.push(...contract.rates);
         }
       });
 
@@ -258,7 +256,7 @@ export class HotelService {
         console.log(`Loaded ${contracts.length} contracts`);
         
         // Update rates
-        const rates = this.getRatesForHotel(hotel.id);
+        const rates = this.getRatesFromContracts(hotel.id);
         this.currentRates.next(rates);
         console.log(`Loaded ${rates.length} rates`);
         
@@ -298,7 +296,7 @@ export class HotelService {
       const contracts = this.getContractsForHotel(hotelId);
       
       // Extract all rates from contracts
-      const rates = contracts.flatMap(contract => contract.rates || []);
+      const rates = this.getRatesFromContracts(hotelId);
       console.log(`Found ${rates.length} rates for hotel ${hotelId}`);
       
       // Update the current rates
@@ -877,45 +875,82 @@ export class HotelService {
     return of(hotelContracts);
   }
 
+  getContractsForHotelAsObservable(hotelId: number): Observable<Contract[]> {
+    return of(this.getContractsForHotel(hotelId));
+  }
+
   addContract(hotelId: number, contract: Contract): Observable<Contract> {
-    return this.getContracts(hotelId).pipe(
-      tap(contracts => {
+    return this.getContractsForHotelAsObservable(hotelId).pipe(
+      tap((contracts: Contract[]) => {
+        // Ensure contract has a unique ID
+        contract.id = Math.max(0, ...contracts.map(c => c.id)) + 1;
+        
+        // Initialize rates array if undefined
+        if (!contract.rates) {
+          contract.rates = [];
+        }
+
+        // Add contract to both contractsMap and sampleData
         contracts.push(contract);
         this.contractsMap.set(hotelId, contracts);
-        // Update rates when contract is added
-        if (contract.rates) {
-          const updatedRates = [...this.currentRates.value, ...contract.rates];
-          this.currentRates.next(updatedRates);
+        
+        // Ensure hotel exists in sampleData.contracts
+        if (!sampleData.contracts[hotelId]) {
+          sampleData.contracts[hotelId] = [];
         }
+        sampleData.contracts[hotelId].push(contract);
+
+        // Update rates when contract is added
+        const updatedRates = this.getRatesFromContracts(hotelId);
+        this.currentRates.next(updatedRates);
+        
+        console.log('Contract added successfully:', {
+          hotelId,
+          contractId: contract.id,
+          ratesCount: contract.rates.length
+        });
       }),
       map(() => contract),
-      catchError(() => throwError(() => new Error('Failed to add contract')))
+      catchError(error => {
+        console.error('Failed to add contract:', error);
+        return throwError(() => new Error('Failed to add contract'));
+      })
     );
   }
 
-  updateContract(contract: Contract): Observable<Contract> {
-    return this.getContracts(1).pipe(
+  updateContract(hotelId: number, contract: Contract): Observable<Contract> {
+    return this.getContractsForHotelAsObservable(hotelId).pipe(
       map((contracts: Contract[]) => {
         const index = contracts.findIndex(c => c.id === contract.id);
         if (index === -1) {
-          throw new Error('Contract not found');
+          throw new Error(`Contract ${contract.id} not found`);
         }
+
+        // Update contract in both contractsMap and sampleData
         contracts[index] = contract;
-        this.contractsMap.set(1, contracts);
+        this.contractsMap.set(hotelId, contracts);
         
-        // Update rates when contract is updated
-        if (contract.rates) {
-          const currentRates = this.currentRates.value;
-          const updatedRates = currentRates.filter(r => 
-            !contract.rates?.some(cr => cr.id === r.id)
-          );
-          updatedRates.push(...contract.rates);
-          this.currentRates.next(updatedRates);
+        const sampleDataIndex = sampleData.contracts[hotelId]?.findIndex(c => c.id === contract.id);
+        if (sampleDataIndex !== undefined && sampleDataIndex !== -1) {
+          sampleData.contracts[hotelId][sampleDataIndex] = contract;
         }
+
+        // Update rates
+        const updatedRates = this.getRatesFromContracts(hotelId);
+        this.currentRates.next(updatedRates);
+        
+        console.log('Contract updated successfully:', {
+          hotelId,
+          contractId: contract.id,
+          ratesCount: contract.rates?.length ?? 0
+        });
         
         return contract;
       }),
-      catchError(error => throwError(() => error))
+      catchError(error => {
+        console.error('Failed to update contract:', error);
+        return throwError(() => new Error('Failed to update contract'));
+      })
     );
   }
 
@@ -992,7 +1027,7 @@ export class HotelService {
       const contracts = this.getContractsForHotel(hotelId);
       
       // Extract all rates from contracts
-      let rates = contracts.flatMap(contract => contract.rates || []);
+      let rates = this.getRatesFromContracts(hotelId);
 
       // Apply filters if provided
       if (filters) {
@@ -1020,194 +1055,62 @@ export class HotelService {
     }
   }
 
-  private getRatesForHotel(hotelId: number, filters?: {
-    seasonId?: number;
-    roomTypeId?: number;
-    marketId?: number;
-    currency?: string;
-  }): Rate[] {
-    // Get rates from hotel contracts
+  private getRatesFromContracts(hotelId: number): Rate[] {
     const hotelContracts = sampleData.contracts[hotelId] || [];
-    let rates = hotelContracts.flatMap(contract => contract.rates || []);
-
-    // Apply filters if provided
-    if (filters) {
-      rates = rates.filter(rate => {
-        if (filters.seasonId && rate.seasonId !== filters.seasonId) {
-          return false;
-        }
-        if (filters.roomTypeId && rate.roomTypeId !== filters.roomTypeId) {
-          return false;
-        }
-        if (filters.marketId && rate.marketId !== filters.marketId) {
-          return false;
-        }
-        if (filters.currency && rate.currency !== filters.currency) {
-          return false;
-        }
-        return true;
-      });
-    }
-
-    return rates;
-  }
-
-  async saveRates(rates: Rate[]): Promise<void> {
-    if (!rates.length) {
-      return Promise.resolve();
-    }
-
-    // Get hotelId from the first rate's contract
-    const firstContract = this.getContractForRate(rates[0].contractId);
-    if (!firstContract) {
-      return Promise.reject(new Error('Could not find contract for first rate'));
-    }
-    const hotelId = firstContract.hotelId;
-
-    const validRates: Rate[] = [];
-
-    for (const rate of rates) {
-      const contract = this.getContractForRate(rate.contractId);
-      if (!contract) {
-        console.warn(`Rate ${rate.id} references non-existent contract ${rate.contractId}`);
-        continue;
-      }
-
-      // Set hotelId from contract if not already set
-      rate.hotelId = contract.hotelId;
-
-      if (this.validateRate(rate, contract)) {
-        validRates.push(rate);
-      }
-    }
-
-    if (validRates.length === 0) {
-      return Promise.reject(new Error('No valid rates to save. All rates had validation errors.'));
-    }
-
-    // Update only valid rates
-    this.rates = this.rates.filter(r => {
-      const rateContract = this.getContractForRate(r.contractId);
-      return rateContract?.hotelId !== hotelId || 
-        validRates.some(vr => vr.id === r.id);
-    });
-    this.rates.push(...validRates);
-    
-    // Update the rates subject
-    this.currentRates.next(validRates);
-    
-    return Promise.resolve();
-  }
-
-  async saveRate(rateData: Partial<Rate>): Promise<Rate> {
-    try {
-      const selectedHotel = this.selectedHotel.getValue();
-      if (!selectedHotel) {
-        throw new Error('No hotel selected');
-      }
-
-      // Validate room type
-      const availableRooms = this.getRoomsForHotel(selectedHotel.id);
-      const roomExists = availableRooms.some(room => room.id === rateData.roomTypeId);
-      if (!roomExists) {
-        const availableRoomNames = availableRooms.map(room => `${room.id} (${room.name})`).join(', ');
-        throw new Error(
-          `Invalid room type ID: ${rateData.roomTypeId}. ` +
-          `Available room types are: ${availableRoomNames}`
-        );
-      }
-
-      // For now, we'll simulate an API call
-      const index = this.rates.findIndex(r => r.id === rateData.id);
-      
-      if (index === -1) {
-        // Create new rate
-        const newRate: Rate = {
-          id: this.rates.length + 1,
-          name: `Rate ${this.rates.length + 1}`,
-          marketId: rateData.marketId!,
-          seasonId: rateData.seasonId!,
-          roomTypeId: rateData.roomTypeId!,
-          contractId: rateData.contractId!,
-          currency: rateData.currency!,
-          amount: rateData.baseRate!, // Using baseRate as amount if not specified
-          baseRate: rateData.baseRate!,
-          extraAdult: rateData.extraAdult!,
-          extraChild: rateData.extraChild!,
-          singleOccupancy: rateData.singleOccupancy || null,
-          supplements: {
-            extraAdult: rateData.extraAdult!,
-            extraChild: rateData.extraChild!,
-            singleOccupancy: rateData.singleOccupancy || null
-          },
-          ageCategoryRates: rateData.ageCategoryRates || {},
-          mealPlanId: rateData.mealPlanId,
-          specialOffers: rateData.specialOffers || [],
-          startDate: rateData.startDate,
-          endDate: rateData.endDate,
-          mlos: rateData.mlos,
-          isBlackout: rateData.isBlackout,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        this.rates.push(newRate);
-        return newRate;
-      } else {
-        // Update existing rate
-        const updatedRate: Rate = {
-          ...this.rates[index],
-          ...rateData,
-          singleOccupancy: rateData.singleOccupancy ?? null,
-          updatedAt: new Date()
-        };
-        
-        this.rates[index] = updatedRate;
-        return updatedRate;
-      }
-    } catch (error) {
-      console.error('Error saving rate:', error);
-      throw error;
-    }
+    return hotelContracts.flatMap(contract => 
+      (contract.rates || []).map(rate => ({
+        ...rate,
+        contractId: contract.id
+      }))
+    );
   }
 
   async updateRate(rate: Rate): Promise<Rate> {
     try {
-      const selectedHotel = this.selectedHotel.getValue();
-      if (!selectedHotel) {
-        throw new Error('No hotel selected');
+      // Get the contract for this rate
+      const contract = this.getContractForRate(rate.contractId);
+      if (!contract) {
+        throw new Error(`Contract not found for rate ${rate.id}`);
       }
 
-      // Validate room type
-      const availableRooms = this.getRoomsForHotel(selectedHotel.id);
-      const roomExists = availableRooms.some(room => room.id === rate.roomTypeId);
-      if (!roomExists) {
-        const availableRoomNames = availableRooms.map(room => `${room.id} (${room.name})`).join(', ');
-        throw new Error(
-          `Invalid room type ID: ${rate.roomTypeId}. ` +
-          `Available room types are: ${availableRoomNames}`
-        );
+      // Validate the rate against contract
+      if (!this.validateRate(rate, contract)) {
+        throw new Error('Rate validation failed');
       }
 
-      // For now, we'll simulate an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Find and update the rate in our local array
-      const index = this.rates.findIndex(r => r.id === rate.id);
-      if (index === -1) {
-        throw new Error('Rate not found');
+      // Update rate in the contract
+      const rateIndex = contract.rates?.findIndex(r => r.id === rate.id);
+      if (rateIndex === undefined || rateIndex === -1 || !contract.rates) {
+        throw new Error(`Rate ${rate.id} not found in contract ${contract.id}`);
       }
 
-      // Update the rate with new values
-      this.rates[index] = {
-        ...this.rates[index],
+      // Update the rate
+      contract.rates[rateIndex] = {
+        ...contract.rates[rateIndex],
         ...rate,
         singleOccupancy: rate.singleOccupancy ?? null,
         updatedAt: new Date()
       };
 
-      return this.rates[index];
+      // Update contract in sampleData
+      const hotelContracts = sampleData.contracts[contract.hotelId] || [];
+      const contractIndex = hotelContracts.findIndex(c => c.id === contract.id);
+      if (contractIndex !== -1) {
+        hotelContracts[contractIndex] = contract;
+        sampleData.contracts[contract.hotelId] = hotelContracts;
+      }
+
+      // Update currentRates BehaviorSubject with all rates from contracts
+      const allRates = this.getRatesFromContracts(contract.hotelId);
+      this.currentRates.next(allRates);
+
+      console.log('Rate updated successfully:', {
+        rateId: rate.id,
+        contractId: contract.id,
+        hotelId: contract.hotelId
+      });
+
+      return contract.rates[rateIndex];
     } catch (error) {
       console.error('Error updating rate:', error);
       throw error;
@@ -1458,5 +1361,26 @@ export class HotelService {
     }
 
     return true;
+  }
+
+  // Get special offers for a specific hotel
+  getSpecialOffersForHotel(hotelId: number): SpecialOffer[] {
+    const hotel = this.hotels.find(h => h.id === hotelId);
+    return hotel?.specialOffers || [];
+  }
+
+  // Update special offers for a specific hotel
+  updateSpecialOffersForHotel(hotelId: number, offers: SpecialOffer[]): void {
+    const hotelIndex = this.hotels.findIndex(h => h.id === hotelId);
+    if (hotelIndex !== -1) {
+      this.hotels[hotelIndex] = {
+        ...this.hotels[hotelIndex],
+        specialOffers: offers
+      };
+      // Update the selected hotel if it's the current one
+      if (this.selectedHotel.value?.id === hotelId) {
+        this.selectedHotel.next(this.hotels[hotelIndex]);
+      }
+    }
   }
 }
