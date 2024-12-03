@@ -5,6 +5,7 @@ import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, Men
 import { sampleData, currencySettings } from '../../data';
 import { HttpClient } from '@angular/common/http';
 import { RoomConfigurationService } from './room-configuration.service';
+import { CurrencyService } from './currency.service';
 
 // Local interfaces
 interface DataMealPlan {
@@ -61,7 +62,6 @@ export class HotelService {
   // Données statiques
   private hotels: Hotel[] = sampleData.hotels as Hotel[];
   private markets: Market[] = (sampleData.markets || []) as Market[];
-  private currencySettings: CurrencySetting[] = currencySettings;
   private marketGroups: MarketGroup[] = (sampleData.marketGroups || []);
 
   // BehaviorSubjects pour les données dynamiques
@@ -96,6 +96,7 @@ export class HotelService {
   private apiUrl = 'https://example.com/api'; // Replace with your API URL
   private marketGroupsSubject = new BehaviorSubject<MarketGroup[]>([]);
   private marketTemplates: MarketTemplate[] = [];
+  private currencySettingsSubject = new BehaviorSubject<CurrencySetting[]>([]);
 
   // Observables publics
   public selectedHotel$ = this.selectedHotel.asObservable();
@@ -110,12 +111,16 @@ export class HotelService {
 
   constructor(
     private http: HttpClient,
-    private roomConfigService: RoomConfigurationService
+    private roomConfigService: RoomConfigurationService,
+    private currencyService: CurrencyService
   ) {
-    this.initializeData();
+    this.loadInitialData();
     
     // Initialize market groups subject
     this.marketGroupsSubject.next(this.marketGroups);
+    
+    // Initialize currency settings subject
+    this.currencySettingsSubject.next(this.currencyService.getCurrentCurrencySettings());
     
     // Don't automatically select first hotel
     this.selectedHotel.next(null);
@@ -154,7 +159,7 @@ export class HotelService {
       });
   }
 
-  private initializeData(): void {
+  private loadInitialData(): void {
     // Initialize markets data
     if (sampleData.marketGroups?.[0]) {
       // Store the market IDs
@@ -1103,93 +1108,33 @@ export class HotelService {
     return this.hotels.find(hotel => hotel.id === id);
   }
 
-  getCurrencySettings(): CurrencySetting[] {
-    // Return all currency settings with active state set to false initially
-    return this.currencySettings.map(cs => ({
-      ...cs,
-      active: false
-    }));
+  getCurrencySettings(): Observable<CurrencySetting[]> {
+    return this.currencySettingsSubject.asObservable();
+  }
+
+  getCurrentCurrencySettings(): CurrencySetting[] {
+    return this.currencyService.getCurrentCurrencySettings();
+  }
+
+  deleteCurrency(currency: CurrencySetting): void {
+    this.currencyService.deleteCurrency(currency);
+    // Update the subject with new currency settings
+    this.currencySettingsSubject.next(this.currencyService.getCurrentCurrencySettings());
   }
 
   updateCurrencySettings(settings: CurrencySetting[]): void {
-    this.currencySettings = settings;
-    this.updateCurrencyStatuses();
-  }
-
-  deleteMarket(marketId: number): void {
-    // Remove market from all groups
-    this.marketGroups = this.marketGroups.map(group => ({
-      ...group,
-      markets: group.markets.filter(id => id !== marketId)
-    }));
-
-    // Remove from markets array
-    this.markets = this.markets.filter(m => m.id !== marketId);
-
-    // Remove from all hotel market maps
-    this.hotels.forEach(hotel => {
-      const hotelMarkets = this.marketsMap.get(hotel.id);
-      if (hotelMarkets) {
-        this.marketsMap.set(
-          hotel.id,
-          hotelMarkets.filter(m => m.id !== marketId)
-        );
-      }
-    });
-
-    // Update subscribers
-    this.marketGroupsSubject.next(this.marketGroups);
-    this.currentMarkets.next(this.getMarketsForHotel(this.selectedHotel.value?.id || 0));
-  }
-
-  addMarket(market: Market): void {
-    this.markets.push(market);
-    this.updateCurrencyStatuses();
-  }
-
-  updateMarket(market: Market): void {
-    const index = this.markets.findIndex(m => m.id === market.id);
-    if (index !== -1) {
-      this.markets[index] = market;
-      this.updateCurrencyStatuses();
-    }
-  }
-
-  toggleMarketStatus(marketId: number, isActive: boolean): void {
-    // Update market status
-    this.markets = this.markets.map(m =>
-      m.id === marketId ? { ...m, isActive } : m
-    );
-
-    // Update currency statuses
-    this.updateCurrencyStatuses();
-
-    // Notify subscribers
-    const currentHotelId = this.selectedHotel.value?.id || 0;
-    this.currentMarkets.next(this.getMarketsForHotel(currentHotelId));
+    // This method should no longer be used directly
+    console.warn('Deprecated: Use CurrencyService methods instead');
+    // Still update the subject for backwards compatibility
+    this.currencySettingsSubject.next(settings);
   }
 
   private updateCurrencyStatuses(): void {
-    const usedCurrencies = new Set<string>();
-
-    // Check currencies in market groups
-    this.marketGroups.forEach(group => {
-      // Get actual Market objects from market IDs
-      const groupMarkets = this.markets.filter(m => group.markets.includes(m.id));
-      if (groupMarkets.some(m => m.isActive)) {
-        groupMarkets.forEach(market => {
-          if (market.isActive) {
-            usedCurrencies.add(market.currency);
-          }
-        });
-      }
-    });
-
-    // Update currency settings
-    this.currencySettings = this.currencySettings.map(setting => ({
-      ...setting,
-      isActive: usedCurrencies.has(setting.code)
-    }));
+    // Get active markets
+    const activeMarkets = this.markets.filter(market => market.isActive);
+    
+    // Update currency statuses in CurrencyService
+    this.currencyService.updateCurrencyStatuses(activeMarkets);
   }
 
   private getMealPlansForHotel(hotelId: number): MealPlan[] {
@@ -1271,5 +1216,62 @@ export class HotelService {
         this.selectedHotel.next(this.hotels[hotelIndex]);
       }
     }
+  }
+
+  addMarket(market: Market): void {
+    // Add to markets array
+    this.markets.push(market);
+    
+    // Update currency statuses since market list changed
+    this.updateCurrencyStatuses();
+    
+    // Notify subscribers
+    this.currentMarkets.next(this.getMarketsForHotel(this.selectedHotel.value?.id || 0));
+  }
+
+  updateMarket(market: Market): void {
+    const index = this.markets.findIndex(m => m.id === market.id);
+    if (index !== -1) {
+      // Update market
+      this.markets[index] = market;
+      
+      // Update currency statuses since market may have changed currency
+      this.updateCurrencyStatuses();
+      
+      // Notify subscribers
+      this.currentMarkets.next(this.getMarketsForHotel(this.selectedHotel.value?.id || 0));
+    }
+  }
+
+  deleteMarket(marketId: number): void {
+    // Remove market from all groups
+    this.marketGroups = this.marketGroups.map(group => ({
+      ...group,
+      markets: group.markets.filter(id => id !== marketId)
+    }));
+
+    // Remove from markets array
+    this.markets = this.markets.filter(m => m.id !== marketId);
+
+    // Update subscribers
+    this.marketGroupsSubject.next(this.marketGroups);
+    this.currentMarkets.next(this.getMarketsForHotel(this.selectedHotel.value?.id || 0));
+
+    // Update currency statuses since market list changed
+    this.updateCurrencyStatuses();
+  }
+
+  toggleMarketStatus(marketId: number, isActive: boolean): void {
+    // Update market status
+    this.markets = this.markets.map(m =>
+      m.id === marketId ? { ...m, isActive } : m
+    );
+
+    // Update currency statuses since market status changed
+    this.updateCurrencyStatuses();
+
+    // Notify subscribers
+    const currentHotelId = this.selectedHotel.value?.id || 0;
+    this.currentMarkets.next(this.getMarketsForHotel(currentHotelId));
   }
 }

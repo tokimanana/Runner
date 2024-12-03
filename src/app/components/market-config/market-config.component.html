@@ -128,8 +128,7 @@
                   required
                   name="defaultCurrency">
             <mat-option *ngFor="let currency of currencySettings" 
-                    [value]="currency.code"
-                    [disabled]="!currency.isActive">
+                    [value]="currency.code">
               {{currency.code}} ({{currency.symbol}})
             </mat-option>
           </mat-select>
@@ -182,21 +181,11 @@
       </div>
 
       <div class="form-group">
-        <label for="marketCurrency">Currency</label>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Select Currency</mat-label>
-          <mat-select id="marketCurrency" 
-                  [(ngModel)]="newMarket.currency"
-                  required
-                  name="currency">
-            <mat-option *ngFor="let currency of currencySettings" 
-                    [value]="currency.code"
-                    [disabled]="!currency.isActive">
-              {{currency.code}} ({{currency.symbol}})
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="!newMarket.currency">Currency is required</mat-error>
-        </mat-form-field>
+        <label>Currency</label>
+        <div class="currency-info">
+          <mat-chip>{{selectedMarketGroup?.defaultCurrency}}</mat-chip>
+          <small class="text-muted">Using region's default currency</small>
+        </div>
       </div>
 
       <div class="modal-actions">

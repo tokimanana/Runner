@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ModalComponent } from '../modal/modal.component';
+import { Subscription } from 'rxjs';
 
 import { HotelService } from '../../services/hotel.service';
 import { CurrencySetting, Hotel } from '../../models/types';
@@ -31,7 +32,7 @@ import { CurrencySetting, Hotel } from '../../models/types';
     ModalComponent
   ]
 })
-export class CurrencyComponent implements OnInit {
+export class CurrencyComponent implements OnInit, OnDestroy {
   @Input() hotel!: Hotel;
   
   currencySettings: CurrencySetting[] = [];
@@ -44,29 +45,46 @@ export class CurrencyComponent implements OnInit {
     name: '',
     isActive: true
   };
+  private subscription: Subscription;
 
   @ViewChild('firstInput') firstInput!: ElementRef;
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private hotelService: HotelService) {
+    this.subscription = this.hotelService.getCurrencySettings().subscribe(settings => {
+      this.currencySettings = settings;
+    });
+  }
 
   ngOnInit(): void {
     this.loadCurrencySettings();
   }
 
+  ngOnDestroy(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
+
   loadCurrencySettings(): void {
-    this.currencySettings = this.hotelService.getCurrencySettings();
+    this.currencySettings = this.hotelService.getCurrentCurrencySettings();
   }
 
   openCurrencyEditor(currency?: CurrencySetting): void {
-    this.selectedCurrency = currency || null;
     if (currency) {
+      // Cannot edit active currencies
+      if (currency.isActive) {
+        alert('Cannot edit an active currency. Remove it from all markets first.');
+        return;
+      }
+      this.selectedCurrency = currency;
       this.newCurrency = { ...currency };
     } else {
+      this.selectedCurrency = null;
       this.newCurrency = {
         code: '',
         symbol: '',
         name: '',
-        isActive: true
+        isActive: false
       };
     }
     this.showCurrencyEditor = true;
@@ -160,30 +178,14 @@ export class CurrencyComponent implements OnInit {
   }
 
   deleteCurrency(currency: CurrencySetting): void {
-    try {
-      // Prevent deleting the last active currency
-      if (currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {
-        throw new Error('Cannot delete the last active currency');
+    if (confirm(`Are you sure you want to delete ${currency.name}?`)) {
+      try {
+        this.hotelService.deleteCurrency(currency);
+        // No need to manually update currencySettings as it will be updated through the subscription
+      } catch (error) {
+        console.error('Failed to delete currency:', error);
+        alert(error instanceof Error ? error.message : 'Failed to delete currency');
       }
-
-      if (!confirm(`Are you sure you want to delete ${currency.name}?`)) {
-        return;
-      }
-
-      const index = this.currencySettings.findIndex(c => c.code === currency.code);
-      if (index === -1) {
-        throw new Error('Currency not found');
-      }
-
-      this.currencySettings = [
-        ...this.currencySettings.slice(0, index),
-        ...this.currencySettings.slice(index + 1)
-      ];
-      
-      this.hotelService.updateCurrencySettings([...this.currencySettings]);
-    } catch (error) {
-      console.error('Failed to delete currency:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete currency');
     }
   }
 }
