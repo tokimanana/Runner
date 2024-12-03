@@ -1,9 +1,10 @@
 import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HotelService } from '../../services/hotel.service';
+import { RoomConfigurationService } from '../../services/room-configuration.service';
 import { Hotel, RoomType } from '../../models/types';
 import { ModalComponent } from '../modal/modal.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-room-types',
@@ -18,6 +19,7 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   showRoomForm = false;
   editingRoom: RoomType | null = null;
   newAmenity = '';
+  private roomSubscription?: Subscription;
   
   roomForm: Omit<RoomType, 'id'> = {
     type: '',
@@ -35,7 +37,7 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
     bedConfiguration: []
   };
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private roomConfigService: RoomConfigurationService) {}
 
   ngOnInit() {
     if (this.hotel) {
@@ -55,23 +57,30 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnDestroy() {
-    // Cleanup if needed
+    if (this.roomSubscription) {
+      this.roomSubscription.unsubscribe();
+    }
   }
 
   private loadRooms(hotel: Hotel) {
-    this.hotelService.currentRooms$.subscribe(rooms => {
-      this.rooms = rooms;
-    });
+    this.roomSubscription?.unsubscribe();
+    this.roomSubscription = this.roomConfigService.getRooms(hotel.id)
+      .subscribe(rooms => {
+        this.rooms = rooms;
+        console.log(`Loaded ${rooms.length} rooms for hotel ${hotel.id}`);
+      });
   }
 
   private resetRooms() {
     this.rooms = [];
+    console.log('Reset rooms');
   }
 
   addNewRoom() {
     this.editingRoom = null;
     this.resetRoomForm();
     this.showRoomForm = true;
+    console.log('Preparing to add new room');
   }
 
   editRoom(room: RoomType) {
@@ -92,12 +101,12 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
       bedConfiguration: Array.isArray(room.bedConfiguration) ? [...room.bedConfiguration] : []
     };
     this.showRoomForm = true;
+    console.log('Editing room:', room.id);
   }
   
   deleteRoom(room: RoomType) {
     if (confirm('Are you sure you want to delete this room type?')) {
-      this.hotelService.deleteRoom(this.hotel!.id, room.id);
-      this.rooms = this.hotelService.getRooms(this.hotel!.id);
+      this.roomConfigService.deleteRoom(this.hotel!.id, room.id);
     }
   }
 
@@ -113,16 +122,22 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   saveRoom() {
+    if (!this.hotel) return;
+    
+    if (!this.roomConfigService.validateRoomConfiguration(this.roomForm)) {
+      alert('Please fill in all required fields correctly. Room must have a name, type, and at least one adult occupancy.');
+      return;
+    }
+
     if (this.editingRoom) {
-      this.hotelService.updateRoom(this.hotel!.id, {
+      this.roomConfigService.updateRoom(this.hotel.id, {
         ...this.roomForm,
         id: this.editingRoom.id
       });
     } else {
-      this.hotelService.addRoom(this.hotel!.id, this.roomForm);
+      this.roomConfigService.addRoom(this.hotel.id, this.roomForm);
     }
     
-    this.rooms = this.hotelService.getRooms(this.hotel!.id);
     this.showRoomForm = false;
     this.editingRoom = null;
   }

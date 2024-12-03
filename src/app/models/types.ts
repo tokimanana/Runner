@@ -222,7 +222,7 @@ export interface MarketGroup {
 }
 
 // Age category management
-export interface AgeCategory {
+export interface  AgeCategory {
   id: number;
   type: 'adult' | 'child' | 'infant' | 'teen';
   label: string;

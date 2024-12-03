@@ -4,6 +4,7 @@ import { distinctUntilChanged } from 'rxjs/operators';
 import { Hotel, Market, Season, Contract, RateConfiguration, MarketTemplate, MenuItemId, MealPlan, HotelDataKey, MarketMealPlanRate, AgeCategory, CurrencySetting, MarketGroup, Rate, RoomType, HotelPolicies, Period, SpecialOffer, MealPlanType, HotelCapacity, RoomInventory, MenuItem } from '../models/types';
 import { sampleData, currencySettings } from '../../data';
 import { HttpClient } from '@angular/common/http';
+import { RoomConfigurationService } from './room-configuration.service';
 
 // Local interfaces
 interface DataMealPlan {
@@ -107,7 +108,10 @@ export class HotelService {
   public currentRates$ = this.currentRates.asObservable();
   public currentMealPlanRates$ = this.currentMealPlanRates.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private roomConfigService: RoomConfigurationService
+  ) {
     this.initializeData();
     
     // Initialize market groups subject
@@ -132,7 +136,9 @@ export class HotelService {
           // Batch updates to prevent circular dependencies
           const updates = () => {
             this.updateHotelData(hotel);
-            this.currentRooms.next(this.getRoomsForHotel(hotel.id));
+            this.roomConfigService.getRooms(hotel.id).subscribe(rooms => {
+              this.currentRooms.next(rooms);
+            });
             this.currentMarkets.next(this.getMarketsForHotel(hotel.id));
             this.currentSeasons.next(this.getSeasonsForHotel(hotel.id));
             this.currentContracts.next(contracts);
@@ -431,26 +437,15 @@ export class HotelService {
     return hotelSeasons;
   }
 
+  // Delegate room operations to RoomConfigurationService
   private getRoomsForHotel(hotelId: number): RoomType[] {
-    // First try to get from the map
-    let rooms = this.roomsMap.get(hotelId) || [];
-    
-    // If no rooms in map, try to get from the hotel object
-    if (rooms.length === 0) {
-      const hotel = this.hotels.find(h => h.id === hotelId);
-      if (hotel?.rooms) {
-        rooms = hotel.rooms;
-        // Update the map for future use
-        this.roomsMap.set(hotelId, rooms);
-      }
-    }
-
-    // Log available rooms for debugging
-    console.log(`Available rooms for hotel ${hotelId}:`, 
-      rooms.map(r => ({ id: r.id, type: r.type }))
-    );
-    
+    let rooms: RoomType[] = [];
+    this.roomConfigService.getRooms(hotelId).subscribe(r => rooms = r);
     return rooms;
+  }
+
+  getRooms(hotelId: number): RoomType[] {
+    return this.getRoomsForHotel(hotelId);
   }
 
   private getMealPlanRatesForHotel(hotelId: number): MarketMealPlanRate[] {
@@ -561,94 +556,6 @@ export class HotelService {
     return this.getMarketsForHotel(hotelId);
   }
 
-  private validateMarket(market: Partial<Market>, marketGroup: MarketGroup | undefined, existingMarkets: Market[]): string | null {
-    if (!market.name?.trim()) {
-      return 'Market name is required';
-    }
-    if (!market.currency?.trim()) {
-      return 'Currency is required';
-    }
-    if (!market.region?.trim()) {
-      return 'Region is required';
-    }
-    if (!marketGroup) {
-      return 'Invalid region selected';
-    }
-
-    // Check for duplicate market names or codes in the same region
-    const duplicateName = existingMarkets.find(
-      m => m.name.toLowerCase() === market.name?.toLowerCase() && m.region === market.region
-    );
-    if (duplicateName) {
-      return `Market with name "${market.name}" already exists in ${market.region}`;
-    }
-
-    const duplicateCode = existingMarkets.find(
-      m => m.code.toLowerCase() === market.code?.toLowerCase() && m.region === market.region
-    );
-    if (duplicateCode) {
-      return `Market with code "${market.code}" already exists in ${market.region}`;
-    }
-
-    return null;
-  }
-
-  addMarketToHotel(hotelId: number, marketData: Partial<Market>): { success: boolean; message: string; market?: Market } {
-    const hotel = this.hotels.find(h => h.id === hotelId);
-    if (!hotel) {
-      return { success: false, message: 'Hotel not found' };
-    }
-
-    // Find the market group for this region
-    const marketGroup = this.marketGroups.find(g => g.region === marketData.region);
-    
-    // Validate the market data
-    const validationError = this.validateMarket(marketData, marketGroup, this.markets);
-    if (validationError) {
-      return { success: false, message: validationError };
-    }
-
-    // Create new market
-    const newMarket: Market = {
-      id: Math.max(0, ...this.markets.map(m => m.id)) + 1,
-      name: marketData.name!,
-      code: marketData.code!,
-      currency: marketData.currency!,
-      region: marketData.region!,
-      description: marketData.description,
-      isActive: true
-    };
-
-    // Add to markets array
-    this.markets.push(newMarket);
-
-    // Add to market group if it exists
-    if (marketGroup) {
-      marketGroup.markets.push(newMarket.id);
-    } else {
-      // Create new market group if none exists for this region
-      this.addMarketGroup({
-        name: `${marketData.region} Markets`,
-        region: marketData.region!,
-        markets: [newMarket.id],
-        defaultCurrency: marketData.currency || 'USD', // Provide a default value
-        description: `Market group for ${marketData.region}`,
-        isActive: true
-      });
-    }
-
-    // Update the markets map for this hotel
-    const currentMarkets = this.marketsMap.get(hotelId) || [];
-    currentMarkets.push(newMarket);
-    this.marketsMap.set(hotelId, currentMarkets);
-
-    // Notify subscribers
-    this.currentMarkets.next(this.getMarketsForHotel(hotelId));
-    this.marketGroupsSubject.next(this.marketGroups);
-
-    return { success: true, message: 'Market added successfully', market: newMarket };
-  }
-
   getMealPlans(hotelId: string): Observable<DataMealPlan[]> {
     const hotel = this.hotels.find(h => h.id.toString() === hotelId);
     if (!hotel || !hotel.mealPlans) {
@@ -701,31 +608,17 @@ export class HotelService {
     return this.saveHotelData(hotelId, 'factSheet', factSheet ?? null);
   }
 
+  // Delegate room operations to RoomConfigurationService
   addRoom(hotelId: number, room: Omit<RoomType, 'id'>): void {
-    const rooms = this.getRoomsForHotel(hotelId);
-    const newRoom: RoomType = { ...room, id: rooms.length + 1 };
-    rooms.push(newRoom);
-    this.roomsMap.set(hotelId, rooms);
+    this.roomConfigService.addRoom(hotelId, room);
   }
 
   updateRoom(hotelId: number, room: RoomType): void {
-    const rooms = this.getRoomsForHotel(hotelId);
-    const index = rooms.findIndex(r => r.id === room.id);
-    if (index !== -1) {
-      rooms[index] = room;
-      this.roomsMap.set(hotelId, rooms);
-    } else {
-      throw new Error('Room not found');
-    }
+    this.roomConfigService.updateRoom(hotelId, room);
   }
 
   deleteRoom(hotelId: number, roomId: number): void {
-    const rooms = this.getRoomsForHotel(hotelId);
-    const filteredRooms = rooms.filter(r => r.id !== roomId);
-    if (filteredRooms.length === rooms.length) {
-      throw new Error('Room not found');
-    }
-    this.roomsMap.set(hotelId, filteredRooms);
+    this.roomConfigService.deleteRoom(hotelId, roomId);
   }
 
   deleteMealPlan(hotelId: string, planId: string): Observable<void> {
@@ -1208,10 +1101,6 @@ export class HotelService {
 
   getHotel(id: number): Hotel | undefined {
     return this.hotels.find(hotel => hotel.id === id);
-  }
-
-  getRooms(hotelId: number): RoomType[] {
-    return this.getRoomsForHotel(hotelId);
   }
 
   getCurrencySettings(): CurrencySetting[] {

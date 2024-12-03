@@ -1883,5 +1883,6 @@ export const currencySettings: CurrencySetting[] = [
   { id: 1, code: 'EUR', symbol: '€', name: 'Euro', decimals: 2, isActive: false },
   { id: 2, code: 'USD', symbol: '$', name: 'US Dollar', decimals: 2, isActive: false },
   { id: 3, code: 'GBP', symbol: '£', name: 'British Pound', decimals: 2, isActive: false },
-  { id: 4, code: 'MUR', symbol: 'Rs', name: 'Mauritian Rupee', decimals: 2, isActive: false }
+  { id: 4, code: 'MUR', symbol: 'Rs', name: 'Mauritian Rupee', decimals: 2, isActive: false },
+  { id: 5, code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', decimals: 2, isActive: false }
 ];
