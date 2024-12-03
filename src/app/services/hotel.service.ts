@@ -97,6 +97,7 @@ export class HotelService {
   private marketGroupsSubject = new BehaviorSubject<MarketGroup[]>([]);
   private marketTemplates: MarketTemplate[] = [];
   private currencySettingsSubject = new BehaviorSubject<CurrencySetting[]>([]);
+  private ageCategories = new BehaviorSubject<AgeCategory[]>([]);
 
   // Observables publics
   public selectedHotel$ = this.selectedHotel.asObservable();
@@ -121,7 +122,10 @@ export class HotelService {
     
     // Initialize currency settings subject
     this.currencySettingsSubject.next(this.currencyService.getCurrentCurrencySettings());
-    
+
+    // Initialize age categories
+    this.ageCategories.next([]);
+
     // Don't automatically select first hotel
     this.selectedHotel.next(null);
     this.selectedMenuItem.next(null);
@@ -479,26 +483,32 @@ export class HotelService {
       {
         id: 1,
         type: 'adult',
+        name: 'Adult',
         label: 'Adult',
         minAge: 18,
         maxAge: 999,
-        defaultRate: 100
+        defaultRate: 100,
+        isActive: true
       },
       {
         id: 2,
         type: 'child',
+        name: 'Child',
         label: 'Child',
         minAge: 2,
         maxAge: 17,
-        defaultRate: 50
+        defaultRate: 50,
+        isActive: true
       },
       {
         id: 3,
         type: 'infant',
+        name: 'Infant',
         label: 'Infant',
         minAge: 0,
         maxAge: 1,
-        defaultRate: 0
+        defaultRate: 0,
+        isActive: true
       }
     ];
 
@@ -1273,5 +1283,64 @@ export class HotelService {
     // Notify subscribers
     const currentHotelId = this.selectedHotel.value?.id || 0;
     this.currentMarkets.next(this.getMarketsForHotel(currentHotelId));
+  }
+
+  // Age Category Management
+  getAgeCategories(): Observable<AgeCategory[]> {
+    return this.ageCategories.asObservable();
+  }
+
+  getCurrentAgeCategories(): AgeCategory[] {
+    return this.ageCategories.getValue();
+  }
+
+  addAgeCategory(category: AgeCategory): void {
+    const currentCategories = this.getCurrentAgeCategories();
+    this.ageCategories.next([...currentCategories, category]);
+  }
+
+  updateAgeCategory(updatedCategory: AgeCategory): void {
+    const currentCategories = this.getCurrentAgeCategories();
+    const index = currentCategories.findIndex(c => c.id === updatedCategory.id);
+    if (index !== -1) {
+      currentCategories[index] = updatedCategory;
+      this.ageCategories.next([...currentCategories]);
+    }
+  }
+
+  deleteAgeCategory(categoryId: number): void {
+    const currentCategories = this.getCurrentAgeCategories();
+    this.ageCategories.next(currentCategories.filter(c => c.id !== categoryId));
+  }
+
+  validateAgeCategory(category: Partial<AgeCategory>, existingCategories: AgeCategory[] = []): string | null {
+    if (!category.name?.trim()) {
+      return 'Name is required';
+    }
+
+    if (category.minAge === undefined || category.maxAge === undefined) {
+      return 'Both minimum and maximum ages are required';
+    }
+
+    if (category.minAge < 0) {
+      return 'Minimum age cannot be negative';
+    }
+
+    if (category.maxAge < category.minAge) {
+      return 'Maximum age must be greater than or equal to minimum age';
+    }
+
+    const otherCategories = existingCategories.filter(c => c.id !== category.id);
+    for (const existing of otherCategories) {
+      if (
+        (category.minAge >= existing.minAge && category.minAge <= existing.maxAge) ||
+        (category.maxAge >= existing.minAge && category.maxAge <= existing.maxAge) ||
+        (category.minAge <= existing.minAge && category.maxAge >= existing.maxAge)
+      ) {
+        return 'Age ranges cannot overlap with existing categories';
+      }
+    }
+
+    return null;
   }
 }

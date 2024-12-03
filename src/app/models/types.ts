@@ -222,13 +222,16 @@ export interface MarketGroup {
 }
 
 // Age category management
-export interface  AgeCategory {
+export interface AgeCategory {
   id: number;
+  name: string;
   type: 'adult' | 'child' | 'infant' | 'teen';
   label: string;
   minAge: number;
   maxAge: number;
   defaultRate: number;
+  description?: string;
+  isActive: boolean;
 }
 
 // Currency management
@@ -312,6 +315,7 @@ export type HotelDataKey =
 // Menu item types
 export type MenuItemId = 
   | 'description'
+  | 'age-categories'
   | 'policies'
   | 'capacity'
   | 'mealPlan'

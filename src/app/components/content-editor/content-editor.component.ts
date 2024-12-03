@@ -9,10 +9,11 @@ import { PoliciesComponent } from '../policies/policies.component';
 import { RoomTypesComponent } from '../room-types/room-types.component';
 import { MealPlanComponent } from '../meal-plan/meal-plan.component';
 import { PeriodMlosComponent } from '../period-mlos/period-mlos.component';
-import { RatesConfigComponent } from '../rates-config/rates-config.component';
+
 import { MarketConfigComponent } from '../market-config/market-config.component';
 import { CurrencyComponent } from '../currency/currency.component';
 import { SpecialOffersComponent } from '../special-offers/special-offers.component';
+import { AgeCategoryComponent } from "../age-category/age-category.component";
 
 @Component({
   selector: 'app-content-editor',
@@ -26,11 +27,11 @@ import { SpecialOffersComponent } from '../special-offers/special-offers.compone
     RoomTypesComponent,
     MealPlanComponent,
     PeriodMlosComponent,
-    RatesConfigComponent,
     MarketConfigComponent,
     CurrencyComponent,
-    SpecialOffersComponent
-  ],
+    SpecialOffersComponent,
+    AgeCategoryComponent
+],
   templateUrl: './content-editor.component.html',
   styleUrls: ['./content-editor.component.css']
 })
@@ -47,17 +48,16 @@ export class ContentEditorComponent implements OnInit {
       { id: 'mealPlan', icon: 'restaurant', label: 'Meal Plan' }
     ],
     rates: [
+      { id: 'age-categories', icon: 'people', label: 'Age Categories' },
       { id: 'currency', icon: 'currency_exchange', label: 'Currency Settings' },
       { id: 'periodAndMlos', icon: 'calendar_today', label: 'Period and MLOS' },
-      { id: 'markets', icon: 'public', label: 'Markets' },
-      { id: 'ratesConfig', icon: 'tune', label: 'Pricing Configuration' },
-      { id: 'rateSeasons', icon: 'date_range', label: 'Seasonal Rates' }
+      { id: 'markets', icon: 'public', label: 'Markets' }
     ],
     inventory: [
       { id: 'roomInventory', icon: 'hotel', label: 'Room Inventory' }
     ],
     offers: [
-      { id: 'specialOffers', icon: 'star', label: 'Special Offers' }
+      { id: 'specialOffers', icon: 'local_offer', label: 'Special Offers' }
     ]
   };
 

@@ -99,7 +99,7 @@ export class NavigationComponent implements OnInit {
 
   private defaultMenuItems: { [key: string]: MenuItemId } = {
     general: 'description',
-    rates: 'currency',
+    rates: 'age-categories',
     inventory: 'roomInventory',
     offers: 'specialOffers'
   } as const;

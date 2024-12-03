@@ -29,7 +29,7 @@ export class MealPlanComponent implements OnInit, OnChanges {
   selectedMealPlan: MealPlan | null = null;
   newRestriction = '';
   
-  readonly mealPlanTypes: MealPlanType[] = ['BB', 'BB+', 'HB', 'HB+', 'FB', 'FB+', 'AI', 'AI+'];
+  readonly mealPlanTypes: MealPlanType[] = ['RO', 'BB', 'BB+', 'HB', 'HB+', 'FB', 'FB+', 'AI', 'AI+'];
   readonly availableMeals = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
   readonly availableInclusions = [
     'Welcome Drink',
