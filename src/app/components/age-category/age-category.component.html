@@ -1,122 +1,116 @@
-<div class="age-category-container">
-  <div class="header">
-    <h2>Age Categories Configuration</h2>
-    <div class="header-actions">
-      <button mat-raised-button color="primary" (click)="openEditor()">
-        <mat-icon>add</mat-icon>
-        Add Age Category
-      </button>
-    </div>
+<div class="age-categories-content">
+  <!-- Modal Message -->
+  <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'" role="alert">
+    <mat-icon>{{ modalError ? 'error' : 'check_circle' }}</mat-icon>
+    {{ modalMessage }}
   </div>
 
-  <div class="categories-grid">
-    <mat-card *ngFor="let category of ageCategories" class="category-card">
-      <mat-card-header>
-        <div class="category-title">
-          <mat-icon>person</mat-icon>
-          <mat-card-title>{{category.name}}</mat-card-title>
-        </div>
-        <div class="category-actions">
-          <button mat-icon-button color="primary" (click)="openEditor(category)" 
-                  matTooltip="Edit category">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="deleteCategory(category)" 
-                  matTooltip="Delete category">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="category-details">
-          <div class="age-range">
-            <span class="label">Age Range:</span>
-            <span>{{category.minAge}} - {{category.maxAge}} years</span>
-          </div>
-          <p *ngIf="category.description" class="description">
-            {{category.description}}
-          </p>
-          <div class="status-indicator" [class.active]="category.isActive">
-            <span class="status-dot"></span>
-            <span class="status-text">{{ category.isActive ? 'Active' : 'Inactive' }}</span>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Empty state when no categories -->
-    <div *ngIf="ageCategories.length === 0" class="empty-categories">
-      <mat-icon>info</mat-icon>
-      <p>No age categories defined</p>
-      <button mat-stroked-button color="primary" (click)="openEditor()">
+  <div class="age-categories-list">
+    <div class="categories-header">
+      <h3>Age Categories</h3>
+      <button mat-raised-button color="primary" (click)="addNewCategory()" *ngIf="!showCategoryForm">
         <mat-icon>add</mat-icon>
         Add Category
       </button>
     </div>
-  </div>
-
-  <!-- Age Category Editor Modal -->
-  <app-modal [show]="showEditor" (close)="closeEditor()">
-    <div class="modal-header">
-      <h2>{{selectedCategory ? 'Edit' : 'Add'}} Age Category</h2>
-      <button mat-icon-button (click)="closeEditor()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div class="form-group">
-        <label for="categoryName">Category Name <span class="required">*</span></label>
-        <input id="categoryName" 
-               type="text" 
-               [(ngModel)]="newCategory.name" 
-               placeholder="e.g., Child"
-               required>
+    
+    <div *ngFor="let category of categories" class="age-category-item">
+      <div class="category-info">
+        <mat-icon>{{ getCategoryIcon(category.type) }}</mat-icon>
+        <div class="category-details">
+          <span class="category-name">{{ category.name }}</span>
+          <span class="age-range">{{ category.minAge }} - {{ category.maxAge === 200 ? '+' : category.maxAge }} years</span>
+        </div>
       </div>
-
-      <div class="form-group">
-        <label for="minAge">Minimum Age <span class="required">*</span></label>
-        <input id="minAge" 
-               type="number" 
-               [(ngModel)]="newCategory.minAge" 
-               min="0"
-               required>
-      </div>
-
-      <div class="form-group">
-        <label for="maxAge">Maximum Age <span class="required">*</span></label>
-        <input id="maxAge" 
-               type="number" 
-               [(ngModel)]="newCategory.maxAge" 
-               min="0"
-               required>
-      </div>
-
-      <div class="form-group">
-        <label for="description">Description</label>
-        <textarea id="description" 
-                  [(ngModel)]="newCategory.description" 
-                  placeholder="Category description..."
-                  rows="3">
-        </textarea>
-      </div>
-
-      <div class="form-group">
-        <mat-checkbox [(ngModel)]="newCategory.isActive">
-          Active
-        </mat-checkbox>
-      </div>
-
-      <div class="modal-actions">
-        <button mat-button (click)="closeEditor()">Cancel</button>
-        <button mat-raised-button 
-                color="primary" 
-                (click)="saveCategory()"
-                [disabled]="!newCategory.name || newCategory.minAge === undefined || newCategory.maxAge === undefined">
-          Save
+      <div class="category-actions" *ngIf="!showCategoryForm">
+        <button mat-icon-button color="primary" (click)="editCategory(category)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteCategory(category)">
+          <mat-icon>delete</mat-icon>
         </button>
       </div>
     </div>
-  </app-modal>
+  </div>
+
+  <!-- Age Category Form -->
+  <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" *ngIf="showCategoryForm" role="form">
+    <h3>{{ editingCategory ? 'Edit' : 'Add' }} Age Category</h3>
+    
+    <div class="form-group">
+      <mat-form-field appearance="outline">
+        <mat-label>Category Type</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-option *ngFor="let type of categoryTypes" [value]="type.value">
+            <mat-icon>{{ type.icon }}</mat-icon>
+            <span>{{ type.label }}</span>
+          </mat-option>
+        </mat-select>
+        <mat-error *ngIf="categoryForm.get('type')?.errors?.['required'] && categoryForm.get('type')?.touched">
+          Category type is required
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-group">
+      <mat-form-field appearance="outline">
+        <mat-label>Category Label</mat-label>
+        <input matInput formControlName="label" placeholder="e.g., Adult, Child, Infant" required>
+        <mat-error *ngIf="categoryForm.get('label')?.errors?.['required'] && categoryForm.get('label')?.touched">
+          Category label is required
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <mat-form-field appearance="outline">
+          <mat-label>Minimum Age</mat-label>
+          <input matInput type="number" formControlName="minAge" min="0" max="100" required>
+          <mat-error *ngIf="categoryForm.get('minAge')?.errors?.['required'] && categoryForm.get('minAge')?.touched">
+            Minimum age is required
+          </mat-error>
+          <mat-error *ngIf="categoryForm.get('minAge')?.errors?.['min'] || categoryForm.get('minAge')?.errors?.['max']">
+            Age must be between 0 and 100
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <mat-form-field appearance="outline">
+          <mat-label>Maximum Age</mat-label>
+          <input matInput type="number" formControlName="maxAge" min="0" max="100" required>
+          <mat-error *ngIf="categoryForm.get('maxAge')?.errors?.['required'] && categoryForm.get('maxAge')?.touched">
+            Maximum age is required
+          </mat-error>
+          <mat-error *ngIf="categoryForm.get('maxAge')?.errors?.['min'] || categoryForm.get('maxAge')?.errors?.['max']">
+            Age must be between 0 and 100
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <mat-form-field appearance="outline">
+        <mat-label>Default Rate (%)</mat-label>
+        <input matInput type="number" formControlName="defaultRate" min="0" max="100" required>
+        <mat-error *ngIf="categoryForm.get('defaultRate')?.errors?.['required'] && categoryForm.get('defaultRate')?.touched">
+          Default rate is required
+        </mat-error>
+        <mat-error *ngIf="categoryForm.get('defaultRate')?.errors?.['min'] || categoryForm.get('defaultRate')?.errors?.['max']">
+          Rate must be between 0 and 100
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-group">
+      <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
+    </div>
+
+    <div class="modal-actions">
+      <button mat-button type="button" (click)="cancelCategoryEdit()">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="categoryForm.invalid">
+        {{ editingCategory ? 'Update' : 'Add' }} Category
+      </button>
+    </div>
+  </form>
 </div>

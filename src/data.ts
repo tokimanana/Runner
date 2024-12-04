@@ -253,6 +253,125 @@ export const defaultSeasons: Season[] = [
   }
 ];
 
+// Add seasons for Maldives Paradise Resort
+export const maldivesSeasons: Season[] = [
+  {
+    id: 1,
+    name: 'Peak Season',
+    description: 'December to April - Dry Season',
+    isActive: true,
+    periods: [
+      {
+        id: 1,
+        startDate: '2023-12-01',
+        endDate: '2023-12-22',
+        mlos: 3,
+        isBlackout: false
+      },
+      {
+        id: 2,
+        startDate: '2023-12-23',
+        endDate: '2024-01-05',
+        mlos: 7,
+        isBlackout: false,
+        description: 'Christmas and New Year Period'
+      },
+      {
+        id: 3,
+        startDate: '2024-01-06',
+        endDate: '2024-02-09',
+        mlos: 3,
+        isBlackout: false
+      },
+      {
+        id: 4,
+        startDate: '2024-02-10',
+        endDate: '2024-02-24',
+        mlos: 5,
+        isBlackout: false,
+        description: 'Chinese New Year Period'
+      },
+      {
+        id: 5,
+        startDate: '2024-02-25',
+        endDate: '2024-04-30',
+        mlos: 3,
+        isBlackout: false
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Low Season',
+    description: 'May to July - Early Monsoon',
+    isActive: true,
+    periods: [
+      {
+        id: 6,
+        startDate: '2024-05-01',
+        endDate: '2024-05-31',
+        mlos: 2,
+        isBlackout: false,
+        description: 'Early Monsoon Special'
+      },
+      {
+        id: 7,
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        mlos: 3,
+        isBlackout: false,
+        description: 'June Promotion'
+      },
+      {
+        id: 8,
+        startDate: '2024-07-01',
+        endDate: '2024-07-31',
+        mlos: 2,
+        isBlackout: false
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: 'Shoulder Season',
+    description: 'August to November - Late Monsoon',
+    isActive: true,
+    periods: [
+      {
+        id: 9,
+        startDate: '2024-08-01',
+        endDate: '2024-09-15',
+        mlos: 2,
+        isBlackout: false,
+        description: 'Summer Special'
+      },
+      {
+        id: 10,
+        startDate: '2024-09-16',
+        endDate: '2024-10-31',
+        mlos: 3,
+        isBlackout: false,
+        description: 'Fall Promotion'
+      },
+      {
+        id: 11,
+        startDate: '2024-11-01',
+        endDate: '2024-11-15',
+        mlos: 2,
+        isBlackout: false
+      },
+      {
+        id: 12,
+        startDate: '2024-11-16',
+        endDate: '2024-11-30',
+        mlos: 3,
+        isBlackout: false,
+        description: 'Pre-Peak Season'
+      }
+    ]
+  }
+];
+
 // Meal plan definitions
 export const defaultMealPlans: MealPlanData[] = [
   {
@@ -275,7 +394,7 @@ export const defaultMealPlans: MealPlanData[] = [
   }
 ];
 
-// Age Categories with defaultRate as required by AgeCategory interface
+// Age Categories
 export const ageCategories: AgeCategory[] = [
   {
     id: 1,
@@ -284,8 +403,8 @@ export const ageCategories: AgeCategory[] = [
     label: 'Adult (12+)',
     minAge: 12,
     maxAge: 100,
-    defaultRate: 100,
     description: 'Standard adult rate',
+    defaultRate: 0,
     isActive: true
   },
   {
@@ -295,8 +414,8 @@ export const ageCategories: AgeCategory[] = [
     label: 'Child (2-11)',
     minAge: 2,
     maxAge: 11,
-    defaultRate: 50,
     description: 'Standard child rate',
+    defaultRate: 0,
     isActive: true
   },
   {
@@ -306,8 +425,8 @@ export const ageCategories: AgeCategory[] = [
     label: 'Infant (0-1)',
     minAge: 0,
     maxAge: 1,
-    defaultRate: 0,
     description: 'Standard infant rate',
+    defaultRate: 0,
     isActive: true
   }
 ];
@@ -532,274 +651,505 @@ export const defaultRooms: RoomType[] = [
 ];
 
 // Update hotel structure
-export const hotels: Hotel[] = [
+export const HOTELS: Hotel[] = [
   {
     id: 1,
-    name: "Grand Hotel Riviera",
-    address: "58 Boulevard de la Croisette",
-    city: "Nice",
-    country: "France",
+    name: 'Grand Hotel Riveria',
+    address: 'Via Regina Giovanna, 23',
+    city: 'Amalfi',
+    country: 'Italy',
+    description: 'Perched on the stunning Amalfi Coast, the Grand Hotel Riveria is a luxurious sanctuary offering breathtaking views of the Mediterranean Sea. This historic property combines classic Italian elegance with modern luxury, featuring world-class dining, a premium spa, and impeccable service. Each room and suite is meticulously designed to provide the ultimate comfort while capturing the essence of coastal Italian living.',
     rating: 5,
-    ageCategories: ageCategories,
-    rooms: [
+    checkInTime: '16:00',
+    checkOutTime: '10:00',
+    policies: {
+      cancellation: 'Free cancellation up to 30 days prior to arrival. Cancellations within 30 days will incur a charge of one night\'s stay. Cancellations within 7 days or no-shows will be charged the full stay amount. Special events and holidays (Easter, Christmas, New Year\'s Eve) require full prepayment and are non-refundable.',
+      checkIn: 'Check-in time starts from 16:00. Early check-in available from 13:00 subject to availability and additional charge of €100. Private transfer from Naples Airport available on request.',
+      checkOut: 'Check-out time is 10:00. Late check-out until 15:00 available at 50% of daily rate, subject to availability. Luggage storage available for early arrivals and late departures.',
+      childPolicy: 'Children of all ages are welcome. Children under 6 stay free when using existing bedding. Baby cots available upon request for €25 per night. Children\'s activities and babysitting services available at additional charge.',
+      petPolicy: 'Small pets (up to 5kg) are welcome with prior arrangement. Additional cleaning fee of €50 per stay applies. Pet amenities provided. Pets not allowed in restaurants or spa areas.',
+      dressCode: 'Elegant Mediterranean resort attire required. For restaurants: Breakfast - Smart casual, no beachwear. Lunch - Smart casual, collared shirts for gentlemen. Dinner - Formal attire (jackets required for gentlemen, cocktail attire for ladies). No shorts, flip-flops, or sportswear in restaurants or public areas after 18:00. La Terrazza restaurant requires formal evening attire at all times.'
+    },
+    ageCategories: [
       {
         id: 1,
-        type: "Standard",
-        name: "Standard Sea View",
-        description: "Comfortable room with sea view",
-        location: "Main Building",
-        maxOccupancy: {
-          adults: 2,
-          children: 1,
-          infants: 1
-        },
-        amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Sea View", "Balcony"],
-        size: 25,
-        images: ["room1.jpg", "room1-2.jpg"],
-        bedConfiguration: [
-          { type: "Double", count: 1 },
-          { type: "Single", count: 1 }
-        ]
+        name: 'Infant',
+        label: 'Infant',
+        minAge: 0,
+        maxAge: 2,
+        type: 'infant',
+        description: 'Infants stay in existing bedding',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        name: 'Child',
+        label: 'Child',
+        minAge: 3,
+        maxAge: 11,
+        type: 'child',
+        description: 'Children sharing with adults',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        name: 'Teen',
+        label: 'Teen',
+        minAge: 12,
+        maxAge: 17,
+        type: 'teen',
+        description: 'Teens sharing with adults',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 4,
+        name: 'Adult',
+        label: 'Adult',
+        minAge: 18,
+        maxAge: 200,
+        type: 'adult',
+        description: 'Standard adult accommodation',
+        defaultRate: 0,
+        isActive: true
       }
     ],
-    amenities: ["Pool", "Spa", "Restaurant", "Beach Access", "Fitness Center", "Kids Club"],
-    checkInTime: "14:00",
-    checkOutTime: "11:00",
-    policies: {
-      cancellation: "Free cancellation up to 30 days before arrival",
-      checkIn: "From 14:00",
-      checkOut: "Until 11:00",
-      childPolicy: "Children of all ages welcome",
-      petPolicy: "Small pets allowed (max 5kg)",
-      dressCode: "Smart casual attire required in restaurants"
-    },
     features: {
       restaurants: [
         {
-          name: "L'Azur",
-          cuisine: "Mediterranean",
-          dressCode: "Smart Casual",
-          openingHours: "19:00 - 22:30",
-          description: "Fine dining restaurant with Mediterranean cuisine"
+          name: 'La Terrazza',
+          cuisine: 'Mediterranean Fine Dining',
+          dressCode: 'Smart Elegant - Jacket required for gentlemen, evening wear for ladies',
+          openingHours: '19:00 - 23:00',
+          description: 'Michelin-starred restaurant offering innovative Mediterranean cuisine with panoramic sea views. Advance reservations required.'
+        },
+        {
+          name: 'Il Giardino',
+          cuisine: 'Traditional Italian',
+          dressCode: 'Smart Casual - Collared shirts required for gentlemen',
+          openingHours: '12:00 - 15:00, 19:00 - 22:30',
+          description: 'Authentic Italian cuisine served in a romantic garden setting. Features wood-fired pizza and homemade pasta.'
+        },
+        {
+          name: 'Pool Bar & Grill',
+          cuisine: 'International Light Dining',
+          dressCode: 'Resort Casual - Cover-ups required',
+          openingHours: '10:00 - 18:00',
+          description: 'Casual poolside dining offering light meals, salads, and refreshing cocktails.'
         }
       ],
       spa: {
-        name: "Riviera Wellness",
-        treatments: ["Massages", "Facials", "Body Treatments", "Hydrotherapy"],
-        openingHours: "09:00 - 20:00",
-        description: "Luxury spa offering a range of treatments"
+        name: 'Riveria Wellness & Spa',
+        treatments: [
+          'Signature Mediterranean Massages',
+          'Anti-aging Facial Treatments',
+          'Couples Treatments',
+          'Hydrotherapy',
+          'Beauty Salon Services',
+          'Traditional Italian Wellness Rituals'
+        ],
+        openingHours: '09:00 - 20:00',
+        description: 'A sanctuary of wellness offering traditional and innovative treatments using premium local ingredients. Features thermal pools, meditation garden, and state-of-the-art fitness center.'
       }
     },
-    images: ["hotel1.jpg", "hotel2.jpg"],
-    description: "Perched on the stunning French Riviera, the Grand Hotel Riviera offers breathtaking views of the Mediterranean Sea.",
     contactInfo: {
-      phone: "+33 1 23 45 67 89",
-      email: "contact@grandhotelriviera.com",
-      website: "www.grandhotelriviera.com"
-    }
-  },
-  {
-    id: 2,
-    name: "Constance Prince Maurice",
-    address: "Choisy Road, Poste de Flacq",
-    city: "Poste de Flacq",
-    country: "Mauritius",
-    rating: 5,
-    ageCategories: ageCategories,
+      phone: '+39 089 831 888',
+      email: 'info@grandhotelriveria.com',
+      website: 'www.grandhotelriveria.com'
+    },
+    images: [
+      'hotel-exterior.jpg',
+      'lobby.jpg',
+      'restaurant.jpg',
+      'pool.jpg',
+      'spa.jpg'
+    ],
+    amenities: [
+      'Swimming Pool',
+      'Spa',
+      'Fine Dining',
+      'Beach Access',
+      'Fitness Center',
+      'Tennis Court',
+      'Yacht Charter',
+      'Helicopter Pad',
+      'Business Center',
+      'Concierge Service'
+    ],
     rooms: [
       {
         id: 1,
-        type: "Junior Suite",
-        name: "Junior Suite",
-        description: "Elegant 70m² suite with terrace or balcony overlooking the tropical gardens. Features a spacious sitting area and modern amenities.",
-        location: "Main Wing",
+        type: 'classic',
+        name: 'Classic Room',
+        description: 'Elegant room with garden view',
+        location: 'Garden Wing',
         maxOccupancy: {
           adults: 2,
           children: 1,
           infants: 1
         },
-        amenities: [
-          "Free WiFi",
-          "Air Conditioning",
-          "LCD TV",
-          "Apple Mac Mini",
-          "Mini Bar",
-          "Nespresso Machine",
-          "Walk-in Wardrobe",
-          "Bathroom with Bathtub",
-          "Separate Shower",
-          "Double Vanity",
-          "Private Terrace/Balcony"
-        ],
-        size: 70,
-        images: ["junior-suite-1.jpg", "junior-suite-2.jpg"],
+        size: 30,
+        amenities: ['King Bed', 'En-suite Bathroom', 'Mini Bar', 'Safe', 'Wi-Fi'],
+        images: ['classic-room-1.jpg', 'classic-room-2.jpg'],
         bedConfiguration: [
-          { type: "King", count: 1 }
+          { type: 'King', count: 1 }
         ]
       },
       {
         id: 2,
-        type: "Beach Villa",
-        name: "Beach Villa with Private Pool",
-        description: "Luxurious 130m² villa directly on the beach with private heated pool, outdoor dining area and stunning ocean views.",
-        location: "Beachfront",
+        type: 'deluxe',
+        name: 'Deluxe Sea View',
+        description: 'Spacious room with Mediterranean views',
+        location: 'Sea Wing',
+        maxOccupancy: {
+          adults: 2,
+          children: 1,
+          infants: 1
+        },
+        size: 35,
+        amenities: ['King Bed', 'Balcony', 'Lounge Area', 'Premium Toiletries', 'Wi-Fi'],
+        images: ['deluxe-room-1.jpg', 'deluxe-room-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 }
+        ]
+      },
+      {
+        id: 3,
+        type: 'junior-suite',
+        name: 'Junior Suite',
+        description: 'Luxurious suite with separate living area',
+        location: 'Main Wing',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 45,
+        amenities: ['King Bed', 'Living Room', 'Walk-in Closet', 'Premium Bar', 'Wi-Fi'],
+        images: ['junior-suite-1.jpg', 'junior-suite-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Sofa Bed', count: 1 }
+        ]
+      },
+      {
+        id: 4,
+        type: 'executive-suite',
+        name: 'Executive Suite',
+        description: 'Premium suite with panoramic sea views',
+        location: 'Top Floor',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 60,
+        amenities: ['King Bed', 'Living Room', 'Dining Area', 'Private Terrace', 'Butler Service'],
+        images: ['executive-suite-1.jpg', 'executive-suite-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Sofa Bed', count: 1 }
+        ]
+      }
+    ],
+    mealPlans: [
+      {
+        id: 'MP-BB-01',
+        type: 'BB',
+        name: 'Bed & Breakfast',
+        description: 'Daily gourmet breakfast at main restaurant',
+        includedMeals: ['Breakfast'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Made-to-order eggs and specialties',
+          'Fresh juices and smoothies',
+          'Premium coffee and tea selection'
+        ],
+        restrictions: []
+      },
+      {
+        id: 'MP-HB-01',
+        type: 'HB',
+        name: 'Half Board',
+        description: 'Breakfast and dinner included',
+        includedMeals: ['Breakfast', 'Dinner'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Three-course dinner at choice of restaurants',
+          'Complimentary water with meals',
+          'Weekly themed dinner events'
+        ],
+        restrictions: ['Excluding premium restaurants']
+      },
+      {
+        id: 'MP-FB-01',
+        type: 'FB',
+        name: 'Full Board',
+        description: 'All daily meals included',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Three-course lunch',
+          'Three-course dinner',
+          'Soft drinks with meals',
+          'Access to all restaurants'
+        ],
+        restrictions: ['Excluding premium beverages']
+      },
+      {
+        id: 'MP-AI-01',
+        type: 'AI',
+        name: 'All Inclusive Premium',
+        description: 'Complete luxury dining experience',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
+        defaultInclusions: [
+          'All meals and snacks',
+          'Premium alcoholic beverages',
+          'Mini bar included',
+          'Room service included',
+          'Special dining events',
+          'Cooking classes'
+        ],
+        restrictions: []
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Maldives Paradise Resort',
+    address: 'Maafushi Island',
+    city: 'Male',
+    country: 'Maldives',
+    description: 'Nestled in the pristine waters of the Maldives, this exclusive island resort offers an unparalleled luxury experience. Featuring overwater villas, world-class dining, and direct access to vibrant coral reefs, the resort combines natural beauty with exceptional service. Each villa is a private sanctuary, whether perched over turquoise lagoons or nestled along powder-soft beaches. The resort\'s commitment to sustainability and marine conservation makes it a perfect choice for environmentally conscious travelers seeking luxury in paradise.',
+    rating: 5,
+    checkInTime: '13:00',
+    checkOutTime: '12:00',
+    policies: {
+      cancellation: 'Free cancellation up to 60 days prior to arrival. Cancellations 45-60 days before arrival incur 25% charge. Cancellations 30-45 days before arrival incur 50% charge. Cancellations within 30 days or no-shows incur full stay charge. Peak season (December 20 - January 10, Chinese New Year, Easter) requires full prepayment 90 days prior and is non-refundable.',
+      checkIn: 'Check-in from 13:00. Seaplane transfers must be arranged at least 72 hours prior to arrival. Meet & greet service at Male International Airport included. Early check-in subject to availability and resort transfer schedules. Welcome drink and cold towel service provided upon arrival.',
+      checkOut: 'Check-out by 12:00. Late check-out until 18:00 at 50% of nightly rate, subject to availability. Complimentary access to facilities and lunch for guests with late flights. Departure lounge with shower facilities available.',
+      childPolicy: 'Children of all ages welcome. Special amenities and activities provided. Children under 12 stay and eat free from children\'s menu when dining with parents. Kids Club available for ages 4-12. Babysitting services with 24-hour notice. Special teen activities program available.',
+      petPolicy: 'No pets allowed due to island ecosystem preservation policy, seaplane transfer restrictions, and to protect the delicate marine environment.',
+      dressCode: 'Relaxed tropical resort attire encouraged. Dining venues: Breakfast/Lunch - Resort casual with appropriate cover-ups, no wet swimwear. Dinner - Smart casual (collared shirts for gentlemen, no sleeveless shirts). Ocean View and Sunset Grill restaurants require smart casual attire for dinner. Barefoot dining encouraged at beach venues. No swimwear in indoor restaurants and facilities. Traditional Maldivian attire welcomed and appreciated.'
+    },
+    ageCategories: [
+      {
+        id: 1,
+        name: 'Infant',
+        label: 'Infant',
+        minAge: 0,
+        maxAge: 2,
+        type: 'infant',
+        description: 'Infants with baby cot available',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        name: 'Child',
+        label: 'Child',
+        minAge: 3,
+        maxAge: 12,
+        type: 'child',
+        description: 'Children with special amenities',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        name: 'Teen',
+        label: 'Teen',
+        minAge: 13,
+        maxAge: 17,
+        type: 'teen',
+        description: 'Teens with special activities',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 4,
+        name: 'Adult',
+        label: 'Adult',
+        minAge: 18,
+        maxAge: 200,
+        type: 'adult',
+        description: 'Standard adult accommodation',
+        defaultRate: 0,
+        isActive: true
+      }
+    ],
+    features: {
+      restaurants: [
+        {
+          name: 'Ocean View',
+          cuisine: 'International',
+          dressCode: 'Smart Casual - No beachwear or uncovered swimwear',
+          openingHours: '06:30 - 23:00',
+          description: 'All-day dining venue offering international cuisine with Asian influences. Features live cooking stations and themed dinner nights.'
+        },
+        {
+          name: 'Sunset Grill',
+          cuisine: 'Fresh Seafood & Grills',
+          dressCode: 'Smart Casual - Covered beachwear for lunch, smart casual for dinner',
+          openingHours: '19:00 - 22:30',
+          description: 'Overwater restaurant specializing in fresh seafood and premium grills. Stunning sunset views and wine pairing available.'
+        },
+        {
+          name: 'Teppanyaki',
+          cuisine: 'Japanese',
+          dressCode: 'Smart Casual - No beachwear',
+          openingHours: '19:00 - 22:30',
+          description: 'Interactive dining experience featuring skilled teppanyaki chefs and premium ingredients.'
+        },
+        {
+          name: 'Beach Club',
+          cuisine: 'Mediterranean & Light Fare',
+          dressCode: 'Resort Casual - Beachwear acceptable during day',
+          openingHours: '10:00 - 18:00',
+          description: 'Relaxed beachside venue offering light meals, wood-fired pizzas, and refreshing cocktails.'
+        }
+      ],
+      spa: {
+        name: 'Overwater Spa & Wellness',
+        treatments: [
+          'Traditional Maldivian Treatments',
+          'Ayurvedic Therapies',
+          'Couple\'s Rituals',
+          'Yoga and Meditation',
+          'Beauty Treatments',
+          'Holistic Healing Sessions'
+        ],
+        openingHours: '09:00 - 21:00',
+        description: 'Overwater treatment pavilions offering holistic wellness experiences. Features yoga sessions at sunrise, meditation classes, and traditional healing treatments using local ingredients.'
+      }
+    },
+    contactInfo: {
+      phone: '+960 400 6000',
+      email: 'reservations@maldivesparadise.com',
+      website: 'www.maldivesparadise.com'
+    },
+    images: [
+      'aerial-view.jpg',
+      'water-villa.jpg',
+      'beach.jpg',
+      'restaurant.jpg',
+      'spa.jpg'
+    ],
+    amenities: [
+      'Private Beach',
+      'Overwater Spa',
+      'Water Sports Center',
+      'Diving Center',
+      'Multiple Restaurants',
+      'Infinity Pool',
+      'Kids Club',
+      'Sunset Lounge',
+      'Marine Biology Center',
+      'Yoga Pavilion'
+    ],
+    rooms: [
+      {
+        id: 1,
+        type: 'beach-villa',
+        name: 'Beach Villa',
+        description: 'Spacious villa with direct beach access',
+        location: 'Beachfront',
         maxOccupancy: {
           adults: 3,
           children: 2,
           infants: 1
         },
-        amenities: [
-          "Private Heated Pool",
-          "Direct Beach Access",
-          "Free WiFi",
-          "Air Conditioning",
-          "65-inch LCD TV",
-          "Apple Mac Mini",
-          "Premium Mini Bar",
-          "Nespresso Machine",
-          "Wine Cooler",
-          "Walk-in Wardrobe",
-          "Outdoor Shower",
-          "Indoor Rain Shower",
-          "Luxury Bathroom",
-          "Private Garden",
-          "Butler Service"
-        ],
-        size: 130,
-        images: ["beach-villa-1.jpg", "beach-villa-2.jpg"],
+        size: 125,
+        amenities: ['King Bed', 'Private Pool', 'Outdoor Shower', 'Terrace', 'Butler Service'],
+        images: ['beach-villa-1.jpg', 'beach-villa-2.jpg'],
         bedConfiguration: [
-          { type: "King", count: 1 },
-          { type: "Sofa Bed", count: 1 }
-        ]
-      }
-    ],
-    amenities: [
-      "2 Championship Golf Courses",
-      "U Spa by Constance",
-      "Infinity Pool",
-      "Private Beach",
-      "Tennis Courts",
-      "Water Sports Center",
-      "Kids Club",
-      "Wine Cellar",
-      "Fitness Center",
-      "Yoga Pavilion",
-      "Library",
-      "Helipad"
-    ],
-    checkInTime: "14:00",
-    checkOutTime: "12:00",
-    policies: {
-      cancellation: "Free cancellation up to 30 days before arrival for non-peak seasons. Special cancellation policies apply for peak seasons.",
-      checkIn: "From 14:00",
-      checkOut: "Until 12:00",
-      childPolicy: "Children of all ages are welcome. One child under 12 years stays free when using existing bedding. Baby cots available on request.",
-      petPolicy: "No pets allowed",
-      dressCode: "Smart casual required in all restaurants. No beachwear at dinner."
-    },
-    features: {
-      restaurants: [
-        {
-          name: "L'Archipel",
-          cuisine: "International",
-          dressCode: "Smart Casual",
-          openingHours: "07:00 - 22:30",
-          description: "Main restaurant offering breakfast and themed dinner buffets with live cooking stations. Stunning views over the pool and ocean."
-        },
-        {
-          name: "Le Barachois",
-          cuisine: "Seafood",
-          dressCode: "Smart Elegant",
-          openingHours: "19:00 - 22:30",
-          description: "Unique floating restaurant comprising five decks, located amongst the natural fish reserve, serving fresh seafood and Mauritian specialties."
-        },
-        {
-          name: "Asian",
-          cuisine: "Asian Fusion",
-          dressCode: "Smart Casual",
-          openingHours: "19:00 - 22:30",
-          description: "Contemporary Asian cuisine including sushi, sashimi and other Asian specialties with lagoon views."
-        }
-      ],
-      spa: {
-        name: "U Spa by Constance",
-        treatments: [
-          "Signature Massages",
-          "Couples Treatments",
-          "Ayurvedic Treatments",
-          "Facials",
-          "Body Wraps",
-          "Hot Stone Therapy",
-          "Yoga Sessions",
-          "Meditation Classes"
-        ],
-        openingHours: "09:00 - 20:00",
-        description: "Luxurious spa offering holistic treatments using natural products. Features couples treatment rooms, heated pool, steam room, and relaxation areas."
-      }
-    },
-    images: [
-      "hotel-aerial.jpg",
-      "beach-view.jpg",
-      "pool-sunset.jpg",
-      "restaurant-floating.jpg",
-      "spa-treatment.jpg"
-    ],
-    description: "Set along a pristine private beach on the northeast coast of Mauritius, Constance Prince Maurice epitomizes tropical luxury. This intimate suites and villas resort combines traditional Mauritian style with modern luxury, offering exceptional service and world-class facilities including a natural fish reserve, floating restaurant, and two 18-hole championship golf courses.",
-    contactInfo: {
-      phone: "+230 402 3636",
-      email: "contact@princemaurice.com",
-      website: "www.constanceprincemaurice.com"
-    },
-    mealPlans: [
-      {
-        id: "RO",
-        type: "RO",
-        name: "Room Only",
-        description: "Accommodation only without any meals included",
-        includedMeals: [],
-        defaultInclusions: [
-          "Access to fitness center",
-          "Free WiFi",
-          "Water sports (non-motorized)"
-        ],
-        restrictions: [
-          "All meals will be charged as per consumption",
-          "Room service charges apply"
+          { type: 'King', count: 1 },
+          { type: 'Day Bed', count: 1 }
         ]
       },
       {
-        id: "BB",
-        type: "BB",
-        name: "Bed & Breakfast",
-        description: "Includes daily breakfast at L'Archipel restaurant",
-        includedMeals: ["Breakfast"],
+        id: 2,
+        type: 'water-villa',
+        name: 'Water Villa',
+        description: 'Overwater villa with ocean views',
+        location: 'Lagoon',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 110,
+        amenities: ['King Bed', 'Glass Floor', 'Private Deck', 'Ocean Access', 'Mini Bar'],
+        images: ['water-villa-1.jpg', 'water-villa-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 }
+        ]
+      },
+      {
+        id: 3,
+        type: 'sunset-villa',
+        name: 'Sunset Water Villa',
+        description: 'Premium overwater villa with sunset views',
+        location: 'Sunset Side',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 140,
+        amenities: ['King Bed', 'Infinity Pool', 'Sunset Deck', 'Butler Service', 'Premium Bar'],
+        images: ['sunset-villa-1.jpg', 'sunset-villa-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Day Bed', count: 1 }
+        ]
+      }
+    ],
+    mealPlans: [
+      {
+        id: 'MP-BB-02',
+        type: 'BB',
+        name: 'Breakfast Experience',
+        description: 'Daily breakfast at main restaurant or in-villa dining',
+        includedMeals: ['Breakfast'],
         defaultInclusions: [
-          "Welcome drink",
-          "Daily breakfast buffet",
-          "Access to fitness center",
-          "Free WiFi",
-          "Water sports (non-motorized)"
+          'International breakfast buffet',
+          'In-villa breakfast option',
+          'Premium beverages',
+          'Fresh tropical fruits'
         ],
         restrictions: []
       },
       {
-        id: "HB",
-        type: "HB",
-        name: "Half Board",
-        description: "Includes daily breakfast and dinner at selected restaurants",
-        includedMeals: ["Breakfast", "Dinner"],
+        id: 'MP-HB-02',
+        type: 'HB',
+        name: 'Dine Around Half Board',
+        description: 'Breakfast and dinner at selected restaurants',
+        includedMeals: ['Breakfast', 'Dinner'],
         defaultInclusions: [
-          "Welcome drink",
-          "Daily breakfast buffet",
-          "Daily dinner at selected restaurants",
-          "Access to fitness center",
-          "Free WiFi",
-          "Water sports (non-motorized)"
+          'Breakfast at any restaurant',
+          'Dinner at selected restaurants',
+          'Non-alcoholic beverages',
+          'Theme night access'
         ],
-        restrictions: [
-          "Excluding drinks at dinner",
-          "Some menu items may carry supplements"
-        ]
+        restrictions: ['Excluding specialty restaurants']
+      },
+      {
+        id: 'MP-AI-02',
+        type: 'AI',
+        name: 'Ultimate All Inclusive',
+        description: 'Complete resort experience',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
+        defaultInclusions: [
+          'All meals at any restaurant',
+          'Premium drinks package',
+          'Mini bar included',
+          'Water sports activities',
+          'Spa treatments'
+        ],
+        restrictions: []
       }
     ]
   }
@@ -807,7 +1157,7 @@ export const hotels: Hotel[] = [
 
 // Sample data structure
 export const sampleData: SampleDataType = {
-  hotels: hotels,
+  hotels: HOTELS,
   markets: defaultMarkets,
   contracts: {
     1: defaultContracts
@@ -815,7 +1165,10 @@ export const sampleData: SampleDataType = {
   hotelData: {
     "1-description": "Perched on the stunning French Riviera, the Grand Hotel Riviera offers breathtaking views of the Mediterranean Sea. This five-star establishment combines classic French elegance with modern luxury.",
     "1-cancellation": "Free cancellation up to 30 days before arrival. Cancellations made within 30 days of arrival are subject to penalties.",
-    "1-checkInOut": "Check-in: 14:00, Check-out: 11:00"
+    "1-checkInOut": "Check-in: 14:00, Check-out: 11:00",
+    "2-description": "Nestled in the heart of the Maldives, Paradise Resort offers an unparalleled luxury experience with overwater villas and pristine beaches. Experience world-class service in a tropical paradise.",
+    "2-cancellation": "Free cancellation up to 45 days before arrival. Cancellations within 45 days are subject to a fee based on the booking value.",
+    "2-checkInOut": "Check-in: 15:00, Check-out: 12:00"
   },
   currencySettings: currencySettings,
   mealPlans: {
@@ -842,7 +1195,8 @@ export const sampleData: SampleDataType = {
   },
   marketGroups: defaultMarketGroups,
   seasons: {
-    1: defaultSeasons
+    1: defaultSeasons,
+    2: maldivesSeasons
   },
   specialOffers: {
     1: defaultSpecialOffers
@@ -853,7 +1207,7 @@ export const sampleData: SampleDataType = {
 // Export everything as a single object for easier imports
 export const data = {
   sampleData,
-  hotels,
+  hotels: HOTELS,
   defaultMarkets,
   defaultContracts,
   currencySettings,

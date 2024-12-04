@@ -1,143 +1,253 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { HotelService } from '../../services/hotel.service';
 import { AgeCategory, Hotel } from '../../models/types';
 import { Subscription } from 'rxjs';
-import { ModalComponent } from '../modal/modal.component';
 
 @Component({
   selector: 'app-age-category',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
     MatInputModule,
     MatCheckboxModule,
     MatTooltipModule,
-    ModalComponent
+    MatSelectModule,
+    MatSlideToggleModule
   ],
   templateUrl: './age-category.component.html',
   styleUrls: ['./age-category.component.css']
 })
 export class AgeCategoryComponent implements OnInit, OnDestroy {
   @Input() hotel!: Hotel;
-  ageCategories: AgeCategory[] = [];
-  showEditor = false;
-  selectedCategory: AgeCategory | null = null;
-  newCategory: Partial<AgeCategory> = {};
+  
+  // Form and UI state
+  categoryForm: FormGroup;
+  showCategoryForm = false;
+  editingCategory: AgeCategory | null = null;
+  modalMessage = '';
+  modalError = false;
+  categories: AgeCategory[] = [];
+
+  // Category types with icons
+  categoryTypes = [
+    { value: 'adult', label: 'Adult', icon: 'person' },
+    { value: 'teen', label: 'Teen', icon: 'face' },
+    { value: 'child', label: 'Child', icon: 'child_care' },
+    { value: 'infant', label: 'Infant', icon: 'baby_changing_station' }
+  ];
+
   private subscriptions: Subscription[] = [];
 
-  constructor(private hotelService: HotelService) {
-    this.subscriptions.push(
-      this.hotelService.getAgeCategories().subscribe(categories => {
-        this.ageCategories = categories;
-      })
-    );
+  constructor(
+    private formBuilder: FormBuilder,
+    private hotelService: HotelService
+  ) {
+    this.categoryForm = this.createCategoryForm();
+  }
+
+  getCategoryIcon(type: string): string {
+    const categoryType = this.categoryTypes.find(ct => ct.value === type);
+    return categoryType?.icon || 'category';
   }
 
   ngOnInit(): void {
-    this.loadAgeCategories();
+    // Subscribe to selected hotel changes
+    this.subscriptions.push(
+      this.hotelService.selectedHotel$.subscribe(hotel => {
+        if (hotel) {
+          this.categories = hotel.ageCategories || [];
+          console.log('Loaded age categories for hotel:', hotel.name);
+        } else {
+          this.categories = [];
+          console.log('No hotel selected, cleared age categories');
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  private loadAgeCategories(): void {
-    this.hotelService.getAgeCategories().subscribe(
-      categories => {
-        this.ageCategories = categories;
-      },
-      error => {
-        console.error('Error loading age categories:', error);
-        this.ageCategories = [];
-      }
-    );
+  private createCategoryForm(): FormGroup {
+    return this.formBuilder.group({
+      type: ['adult', Validators.required],
+      label: ['', Validators.required],
+      minAge: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      maxAge: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      defaultRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      isActive: [true]
+    }, {
+      validators: this.ageRangeValidator
+    });
   }
 
-  openEditor(category?: AgeCategory): void {
-    if (category) {
-      this.selectedCategory = category;
-      this.newCategory = { ...category };
-    } else {
-      this.selectedCategory = null;
-      this.newCategory = {
-        name: '',
-        type: 'adult',
-        label: '',
-        minAge: undefined,
-        maxAge: undefined,
-        defaultRate: 0,
-        description: '',
-        isActive: true
-      };
+  private ageRangeValidator(group: FormGroup): { [key: string]: boolean } | null {
+    const minAge = group.get('minAge')?.value;
+    const maxAge = group.get('maxAge')?.value;
+    
+    if (minAge === null || maxAge === null) {
+      return null;
     }
-    this.showEditor = true;
+
+    return minAge >= maxAge ? { invalidAgeRange: true } : null;
   }
 
-  closeEditor(): void {
-    this.showEditor = false;
-    this.selectedCategory = null;
-    this.newCategory = {};
+  private loadCategories(): void {
+    if (!this.hotel?.id) return;
+
+    this.categories = this.hotel.ageCategories || [];
   }
 
-  saveCategory(): void {
-    if (!this.newCategory.name || this.newCategory.minAge === undefined || this.newCategory.maxAge === undefined) {
-      alert('Name, minimum age, and maximum age are required');
-      return;
-    }
+  addNewCategory(): void {
+    this.editingCategory = null;
+    this.categoryForm.reset({
+      type: 'adult',
+      isActive: true,
+      defaultRate: 0,
+      minAge: 0,
+      maxAge: 0
+    });
+    this.showCategoryForm = true;
+  }
 
-    if (this.newCategory.minAge > this.newCategory.maxAge) {
-      alert('Minimum age cannot be greater than maximum age');
-      return;
-    }
-
-    try {
-      const categoryData: AgeCategory = {
-        id: this.selectedCategory?.id || Math.max(0, ...this.ageCategories.map(c => c.id)) + 1,
-        name: this.newCategory.name,
-        type: this.newCategory.type || 'adult',
-        label: this.newCategory.label || this.newCategory.name,
-        minAge: this.newCategory.minAge,
-        maxAge: this.newCategory.maxAge,
-        defaultRate: this.newCategory.defaultRate || 0,
-        description: this.newCategory.description || '',
-        isActive: this.newCategory.isActive ?? true
-      };
-
-      if (this.selectedCategory) {
-        this.hotelService.updateAgeCategory(categoryData);
-      } else {
-        this.hotelService.addAgeCategory(categoryData);
-      }
-
-      this.closeEditor();
-      this.loadAgeCategories();
-    } catch (error) {
-      console.error('Failed to save age category:', error);
-      alert(error instanceof Error ? error.message : 'Failed to save age category');
-    }
+  editCategory(category: AgeCategory): void {
+    this.editingCategory = category;
+    this.categoryForm.patchValue({
+      type: category.type,
+      label: category.label,
+      minAge: category.minAge,
+      maxAge: category.maxAge,
+      defaultRate: category.defaultRate,
+      isActive: category.isActive ?? true
+    });
+    this.showCategoryForm = true;
   }
 
   deleteCategory(category: AgeCategory): void {
-    if (confirm(`Are you sure you want to delete ${category.name}?`)) {
-      try {
-        this.hotelService.deleteAgeCategory(category.id);
-        this.loadAgeCategories();
-      } catch (error) {
-        console.error('Failed to delete age category:', error);
-        alert(error instanceof Error ? error.message : 'Failed to delete age category');
+    // Get current hotel using the public method
+    this.hotelService.getSelectedHotel().subscribe(currentHotel => {
+      if (!currentHotel) {
+        this.showError('No hotel selected');
+        return;
       }
+
+      const updatedCategories = this.categories.filter(c => c.id !== category.id);
+      
+      this.hotelService.updateHotelAgeCategories(currentHotel.id, updatedCategories)
+        .subscribe({
+          next: (updatedHotel) => {
+            this.categories = updatedHotel.ageCategories || [];
+            this.showSuccess('Age category deleted successfully');
+          },
+          error: (error) => {
+            console.error('Error deleting age category:', error);
+            this.showError('Failed to delete age category');
+          }
+        });
+    });
+  }
+
+  saveCategory(): void {
+    if (this.categoryForm.valid) {
+      const formValue = this.categoryForm.value;
+      const category: AgeCategory = {
+        id: this.editingCategory ? this.editingCategory.id : this.categories.length + 1,
+        name: formValue.name,
+        type: formValue.type,
+        label: formValue.name,
+        minAge: formValue.minAge,
+        maxAge: formValue.maxAge,
+        description: formValue.description,
+        defaultRate: 0,
+        isActive: formValue.isActive
+      };
+
+      // Get current hotel using the public method
+      this.hotelService.getSelectedHotel().subscribe(currentHotel => {
+        if (!currentHotel) {
+          this.showError('No hotel selected');
+          return;
+        }
+
+        // Update categories array
+        let updatedCategories: AgeCategory[];
+        if (this.editingCategory) {
+          updatedCategories = this.categories.map(c => 
+            c.id === category.id ? category : c
+          );
+        } else {
+          updatedCategories = [...this.categories, category];
+        }
+
+        // Update hotel's age categories
+        this.hotelService.updateHotelAgeCategories(currentHotel.id, updatedCategories)
+          .subscribe({
+            next: (updatedHotel) => {
+              this.categories = updatedHotel.ageCategories || [];
+              this.showSuccess(`Age category ${this.editingCategory ? 'updated' : 'added'} successfully`);
+              this.resetForm();
+            },
+            error: (error) => {
+              console.error('Error saving age category:', error);
+              this.showError('Failed to save age category');
+            }
+          });
+      });
+    } else {
+      this.showError('Please fill in all required fields correctly');
     }
+  }
+
+  cancelCategoryEdit(): void {
+    this.showCategoryForm = false;
+    this.editingCategory = null;
+    this.categoryForm.reset();
+    this.modalMessage = '';
+  }
+
+  onTypeChange(): void {
+    // Add any specific logic needed when type changes
+  }
+
+  private getNextCategoryId(): number {
+    return this.hotel?.ageCategories?.length ? 
+      Math.max(...this.hotel.ageCategories.map(c => c.id)) + 1 : 1;
+  }
+
+  private showSuccess(message: string): void {
+    this.modalError = false;
+    this.modalMessage = message;
+    setTimeout(() => this.modalMessage = '', 3000);
+  }
+
+  private showError(message: string): void {
+    this.modalError = true;
+    this.modalMessage = message;
+    setTimeout(() => this.modalMessage = '', 3000);
+  }
+
+  private resetForm(): void {
+    this.categoryForm.reset({
+      type: 'adult',
+      isActive: true,
+      defaultRate: 0,
+      minAge: 0,
+      maxAge: 0
+    });
   }
 }

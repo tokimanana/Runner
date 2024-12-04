@@ -46,18 +46,31 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private loadHotelData() {
+    if (!this.hotel) return;
+
+    // Subscribe to description
     this.subscriptions.push(
-      this.hotelService.getHotelData<string>(this.hotel!.id, 'description').subscribe(
+      this.hotelService.getHotelData<string>(this.hotel.id, 'description').subscribe(
         description => {
           this.description = description || '';
+          console.log('Description loaded:', this.description);
         }
-      ),
-      this.hotelService.getHotelData<string>(this.hotel!.id, 'dressCode').subscribe(
-        dressCode => {
-          this.dressCode = dressCode || '';
+      )
+    );
+
+    // Subscribe to policies
+    this.subscriptions.push(
+      this.hotelService.getHotelPolicies().subscribe(
+        policies => {
+          this.dressCode = policies?.dressCode || '';
+          console.log('Dress code loaded:', this.dressCode);
         }
-      ),
-      this.hotelService.getHotelData<string>(this.hotel!.id, 'factSheet').subscribe(
+      )
+    );
+
+    // Subscribe to fact sheet
+    this.subscriptions.push(
+      this.hotelService.getHotelData<string>(this.hotel.id, 'factSheet').subscribe(
         factSheet => {
           this.currentFactSheet = factSheet || '';
         }

@@ -247,59 +247,44 @@ export class HotelService {
 
   private updateHotelData(hotel: Hotel): void {
     try {
-      console.log('Updating hotel data for hotel:', hotel);
-      
-      if (hotel) {
-        // Update rooms
-        const rooms = this.getRoomsForHotel(hotel.id);
-        this.currentRooms.next(rooms);
-        console.log(`Loaded ${rooms.length} rooms`);
-        
-        // Update markets from market groups
-        const markets = this.getMarketsForHotel(hotel.id);
-        this.currentMarkets.next(markets);
-        console.log(`Loaded ${markets.length} markets`);
-        
-        // Update seasons
-        const seasons = this.getSeasonsForHotel(hotel.id);
-        this.currentSeasons.next(seasons);
-        console.log(`Loaded ${seasons.length} seasons`);
-        
-        // Update contracts
-        const contracts = this.getContractsForHotel(hotel.id);
-        this.currentContracts.next(contracts);
-        console.log(`Loaded ${contracts.length} contracts`);
-        
-        // Update rates
-        const rates = this.getRatesFromContracts(hotel.id);
-        this.currentRates.next(rates);
-        console.log(`Loaded ${rates.length} rates`);
-        
-        // Update meal plans
-        const mealPlans = this.getMealPlansForHotel(hotel.id);
-        this.hotelMealPlans.next(mealPlans);
-        console.log(`Loaded ${mealPlans.length} meal plans`);
+      console.log('Updating hotel data for:', hotel.name);
 
-        // Update hotel description
-        const description = sampleData.hotelData[`${hotel.id}-description`] || '';
-        this.hotelDescription.next(description);
-        console.log('Loaded hotel description');
+      // Update selected hotel
+      this.selectedHotel.next(hotel);
+      console.log('Selected hotel updated');
 
-        // Update hotel policies
-        const policies: HotelPolicies = {
-          cancellation: sampleData.hotelData[`${hotel.id}-cancellation`] || '',
-          checkIn: 'From 14:00',
-          checkOut: 'Until 11:00',
-          childPolicy: 'Children of all ages welcome',
-          petPolicy: 'No pets allowed',
-          dressCode: 'Smart casual attire is required in all restaurants and public areas after 6:00 PM'
-        };
-        this.hotelPolicies.next(policies);
-        console.log('Loaded hotel policies');
+      // Update rooms
+      const rooms = hotel.rooms || [];
+      this.currentRooms.next(rooms);
+      console.log(`Loaded ${rooms.length} rooms`);
 
+      // Update meal plans
+      const mealPlans = hotel.mealPlans || [];
+      this.hotelMealPlans.next(mealPlans);
+      console.log(`Loaded ${mealPlans.length} meal plans`);
+
+      // Update hotel description from hotel object
+      this.hotelDescription.next(hotel.description || '');
+      console.log('Loaded hotel description:', hotel.description);
+
+      // Update hotel policies using actual hotel policies
+      if (hotel.policies) {
+        this.hotelPolicies.next(hotel.policies);
+        console.log('Loaded hotel policies:', hotel.policies);
       } else {
-        console.warn('No hotel provided to updateHotelData');
+        // Fallback to empty policies if none exist
+        const emptyPolicies: HotelPolicies = {
+          cancellation: '',
+          checkIn: '',
+          checkOut: '',
+          childPolicy: '',
+          petPolicy: '',
+          dressCode: ''
+        };
+        this.hotelPolicies.next(emptyPolicies);
+        console.warn('No policies found for hotel, using empty policies');
       }
+
     } catch (error) {
       console.error('Error updating hotel data:', error);
     }
@@ -602,6 +587,18 @@ export class HotelService {
 
   // Generic method to get hotel data
   getHotelData<T>(hotelId: number, key: HotelDataKey): Observable<T | null> {
+    // For description, use the selectedHotel observable
+    if (key === 'description') {
+      return this.selectedHotel.pipe(
+        map(hotel => (hotel?.description || null) as T),
+        catchError(error => {
+          console.error(`Error getting hotel ${key}:`, error);
+          return of(null);
+        })
+      );
+    }
+
+    // For other data types, use existing logic
     const value = this.hotelDataMap.get(`${hotelId}-${key}`) as T || null;
     return of(value);
   }
@@ -709,7 +706,12 @@ export class HotelService {
   }
 
   getHotelPolicies(): Observable<HotelPolicies | null> {
-    return this.hotelPolicies.asObservable();
+    return this.hotelPolicies.asObservable().pipe(
+      catchError(error => {
+        console.error('Error getting hotel policies:', error);
+        return of(null);
+      })
+    );
   }
 
   // Private helper to get current policies value
