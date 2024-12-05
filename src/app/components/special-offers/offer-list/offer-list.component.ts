@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SpecialOffer } from '../../../models/types';
+import { SpecialOffer, Hotel } from '../../../models/types';
 import { SpecialOffersService } from '../special-offers.service';
 import { OfferFormComponent } from '../offer-form/offer-form.component';
 
@@ -12,6 +12,7 @@ import { OfferFormComponent } from '../offer-form/offer-form.component';
   imports: [CommonModule, OfferFormComponent]
 })
 export class OfferListComponent implements OnInit {
+  @Input() hotel!: Hotel;
   offers: SpecialOffer[] = [];
   isFormVisible = false;
 
@@ -29,6 +30,10 @@ export class OfferListComponent implements OnInit {
 
   openOfferForm(offer?: SpecialOffer) {
     this.offersService.openForm(offer);
+  }
+
+  closeOfferForm() {
+    this.offersService.closeForm();
   }
 
   deleteOffer(offerId: number) {

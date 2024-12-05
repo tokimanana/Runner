@@ -159,7 +159,9 @@ export class PeriodMlosComponent implements OnInit {
       endDate: this.periodForm.endDate!,
       mlos: this.periodForm.mlos || 1,
       description: this.periodForm.description,
-      isBlackout: this.periodForm.isBlackout
+      isBlackout: this.periodForm.isBlackout,
+      seasonId: this.currentSeason.id,
+      name: this.editingPeriod ? this.editingPeriod.name : ''
     };
 
     const seasonIndex = this.seasons.findIndex(s => s.id === this.currentSeason!.id);

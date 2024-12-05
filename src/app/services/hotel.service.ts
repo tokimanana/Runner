@@ -98,6 +98,38 @@ export class HotelService {
   private marketTemplates: MarketTemplate[] = [];
   private currencySettingsSubject = new BehaviorSubject<CurrencySetting[]>([]);
   private ageCategories = new BehaviorSubject<AgeCategory[]>([]);
+  private defaultMenuItems: { [key: string]: MenuItemId } = {
+    general: 'description',
+    configuration: 'age-categories',
+    contracts: 'contract',
+    inventory: 'roomInventory',
+    offers: 'specialOffers'
+  } as const;
+
+  public menuItems: { [key: string]: MenuItem[] } = {
+    general: [
+      { id: 'description', icon: 'description', label: 'Description' },
+      { id: 'policies', icon: 'policy', label: 'Policies' },
+      { id: 'capacity', icon: 'hotel', label: 'Capacity' }
+    ],
+    configuration: [
+      { id: 'age-categories', icon: 'people', label: 'Age Categories' },
+      { id: 'currency', icon: 'monetization_on', label: 'Currency' },
+      { id: 'periodAndMlos', icon: 'date_range', label: 'Periods & MLOS' },
+      { id: 'markets', icon: 'public', label: 'Markets' }
+    ],
+    contracts: [
+      { id: 'contract', icon: 'receipt_long', label: 'Contract Management' },
+      { id: 'ratesConfig', icon: 'settings', label: 'Rate Configuration' },
+      { id: 'rateSeasons', icon: 'calendar_today', label: 'Rate Seasons' }
+    ],
+    inventory: [
+      { id: 'roomInventory', icon: 'inventory_2', label: 'Room Inventory' }
+    ],
+    offers: [
+      { id: 'specialOffers', icon: 'local_offer', label: 'Special Offers' }
+    ]
+  };
 
   // Observables publics
   public selectedHotel$ = this.selectedHotel.asObservable();
@@ -192,6 +224,8 @@ export class HotelService {
         const seasons = sampleData.seasons[hotel.id].map(seasonData => {
           const defaultPeriod = {
             id: Math.random(),
+            seasonId: seasonData.id,
+            name: `${seasonData.name} Period`,
             startDate: '',
             endDate: '',
             mlos: 0,
@@ -459,8 +493,8 @@ export class HotelService {
     this.activeTab.next(tab);
   }
 
-  getHotels(): Hotel[] {
-    return this.hotels;
+  getHotels(): Observable<Hotel[]> {
+    return of(this.hotels);
   }
 
   addHotel(name: string): Hotel {
@@ -1344,5 +1378,18 @@ export class HotelService {
     }
 
     return null;
+  }
+
+  getMenuItemsForTab(tab: string): MenuItem[] {
+    return this.menuItems[tab] || [];
+  }
+
+  getHotelName(hotelId: number): string {
+    const hotel = this.hotels.find(h => h.id === hotelId);
+    return hotel ? hotel.name : '';
+  }
+
+  getRoomTypes(hotelId: number): Observable<RoomType[]> {
+    return of(this.getRoomsForHotel(hotelId));
   }
 }

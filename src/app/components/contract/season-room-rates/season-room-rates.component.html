@@ -1,0 +1,85 @@
+<div class="season-rates-container">
+  <div class="rates-header">
+    <h3>Season Rates Configuration</h3>
+    <div class="season-info" *ngIf="season">
+      <span class="season-name">{{ season.name }}</span>
+      <span class="season-dates">{{ season.startDate | date }} - {{ season.endDate | date }}</span>
+    </div>
+  </div>
+
+  <!-- Room Type Selection -->
+  <mat-form-field appearance="outline" class="room-type-select">
+    <mat-label>Select Room Type</mat-label>
+    <mat-select (selectionChange)="onRoomTypeSelect($event.value)">
+      <mat-option *ngFor="let roomType of roomTypes" [value]="roomType">
+        {{ roomType.name }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Period Rates Configuration -->
+  <div class="period-rates" *ngIf="selectedRoomType">
+    <mat-accordion>
+      <mat-expansion-panel *ngFor="let period of periods">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            {{ period.name }}
+          </mat-panel-title>
+          <mat-panel-description>
+            {{ period.startDate | date }} - {{ period.endDate | date }}
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <!-- Rate Form -->
+        <form [formGroup]="rateForm" (ngSubmit)="saveRates()" class="rate-form">
+          <div class="base-rates">
+            <h4>Base Rates</h4>
+            <div class="rate-inputs">
+              <mat-form-field appearance="outline">
+                <mat-label>Single Rate</mat-label>
+                <input matInput type="number" formControlName="singleRate">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Double Rate</mat-label>
+                <input matInput type="number" formControlName="doubleRate">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Triple Rate</mat-label>
+                <input matInput type="number" formControlName="tripleRate">
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="supplement-rates">
+            <h4>Supplement Rates</h4>
+            <div class="rate-inputs">
+              <mat-form-field appearance="outline">
+                <mat-label>Child Rate</mat-label>
+                <input matInput type="number" formControlName="childRate">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Extra Bed Rate</mat-label>
+                <input matInput type="number" formControlName="extraBedRate">
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="rateForm.reset()">Reset</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!rateForm.valid">
+              Save Rates
+            </button>
+          </div>
+        </form>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+
+  <!-- No Room Type Selected Message -->
+  <div class="no-selection" *ngIf="!selectedRoomType">
+    <p>Please select a room type to configure rates</p>
+  </div>
+</div>

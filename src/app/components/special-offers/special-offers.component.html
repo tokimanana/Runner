@@ -18,8 +18,14 @@
   </div>
 
   <div class="tab-content">
-    <app-offer-list *ngIf="activeTab === 'offers'"></app-offer-list>
-    <app-offer-rates *ngIf="activeTab === 'rates'"></app-offer-rates>
+    <app-offer-list 
+      *ngIf="activeTab === 'offers'"
+      [hotel]="hotel"
+    ></app-offer-list>
+    <app-offer-rates 
+      *ngIf="activeTab === 'rates'"
+      [hotel]="hotel"
+    ></app-offer-rates>
     <div *ngIf="activeTab === 'examples'" class="examples-container">
       <h2>Applied Offers Examples</h2>
       

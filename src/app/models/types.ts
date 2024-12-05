@@ -61,20 +61,21 @@ export interface Spa {
 // Room management
 export interface RoomType {
   id: number;
-  type: string;
   name: string;
-  description: string;
-  location: string;
+  description?: string;
   maxOccupancy: {
     adults: number;
     children: number;
     infants: number;
   };
+  type?: string;
+  location?: string;
   amenities: string[];
-  size: number;
-  images: string[];
-  bedConfiguration: BedConfig[];
-  rates?: Rate[];
+  size?: number;
+  images?: string[];
+  bedConfiguration?: BedConfig[];
+  isVilla?: boolean;
+  baseOccupancy?: number;
 }
 
 export interface BedConfig {
@@ -84,52 +85,69 @@ export interface BedConfig {
 
 // Rate management
 export interface Rate {
-  id: number;
-  name: string;
-  marketId: number;
-  seasonId: number;
+  villaRate?: any;
+  id?: number;
+  periodId: number;
   roomTypeId: number;
+  rateType: 'per_pax' | 'per_villa';
+  marketId?: number;
+  seasonId?: number;
   contractId: number;
-  hotelId?: number;  // Optional since it can be derived from contract
-  currency: string;
-  amount: number;
-  baseRate: number;
-  extraAdult: number;
-  extraChild: number;
-  singleOccupancy: number | null;
+  hotelId?: number;
+  currency?: string;
+  amount?: number;
+  baseRate?: number;
+  extraAdult?: number;
+  extraChild?: number;
+  singleOccupancy?: number | null;
+  specialOffers?: SpecialOffer[];
+  occupancyRates?: {
+    single?: {
+      adult: number;
+      child: number;
+    };
+    double?: {
+      adult: number;
+      child: number;
+    };
+    triple?: {
+      adult: number;
+      child: number;
+    };
+    quadruple?: {
+      adult: number;
+      child: number;
+    };
+    quintuple?: {
+      adult: number;
+      child: number;
+    };
+  };
+  updatedAt?: Date;
+  name?: string;
+  isActive?: boolean;
   supplements: {
     extraAdult: number;
     extraChild: number;
-    singleOccupancy: number | null;
-    mealPlan?: {
-      [key in MealPlanType]?: number;
+    singleOccupancy: number;
+    mealPlan: {
+        BB: number;
+        HB: number;
+        FB: number;
     };
-  };
-  minimumStay?: number;
-  maximumStay?: number;
-  restrictions?: {
-    closedToArrival: string[];
-    closedToDeparture: string[];
-    minimumStayThrough: string[];
-  };
-  ageCategoryRates: Record<string, number>;
-  mealPlanId?: string;
-  specialOffers: SpecialOffer[];
+  }
   startDate?: string;
   endDate?: string;
-  mlos?: number;
-  isBlackout?: boolean;
-  isActive?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 export interface Period {
   id: number;
+  seasonId: number;
+  name: string;
   startDate: string;
   endDate: string;
-  mlos: number;
   description?: string;
+  mlos: number;
   isBlackout?: boolean;
 }
 
@@ -144,20 +162,45 @@ export interface Season {
 }
 
 // Contract management
-export interface Contract {
-  id: number;
-  hotelId: number;
-  marketId: number;
-  seasonId: number;
-  name: string;
+export interface ContractPeriodRate {
+  periodId: number;
   startDate: string;
   endDate: string;
-  status: 'active' | 'draft' | 'expired';
-  rateType: 'public' | 'private';
-  terms: ContractTerms;
-  validFrom: Date;
-  validTo: Date;
-  rates: Rate[];  // Each rate can specify its own roomTypeId
+  roomTypeId: number;
+  rateType: 'per_pax' | 'per_unit';
+  baseRates: {
+    single?: number;    // Used for per_pax rates
+    double?: number;    // Used for per_pax rates
+    triple?: number;    // Used for per_pax rates
+    quad?: number;      // Used for per_pax rates
+    quint?: number;     // Used for per_pax rates
+    unitRate?: number;  // Used for per_unit rates (flat room rate)
+  };
+  supplements: {
+    extraAdult: number;
+    child: number;  // can be 0 for FOC (Free of Charge)
+    infant: number;
+  };
+  mealPlanRates: {
+    mealPlanType: MealPlanType;
+    roomRates?: {
+      single: { adult: number; child: number; infant: number; };
+      double: { adult: number; child: number; infant: number; };
+      triple: { adult: number; child: number; infant: number; };
+      quad: { adult: number; child: number; infant: number; };
+      quint: { adult: number; child: number; infant: number; };
+    };
+    rates?: {
+      adult: number;
+      child: number;
+      infant: number;
+    };
+  }[];
+}
+
+export interface CancellationPolicy {
+  daysBeforeArrival: number;
+  charge: number;
 }
 
 export interface ContractTerms {
@@ -165,11 +208,33 @@ export interface ContractTerms {
   paymentTerms: string;
   commission: number;
   specialConditions?: string[];
+  mealPlanTerms?: {
+    restrictions?: string[];
+    inclusions?: string[];
+    exclusions?: string[];
+  };
 }
 
-export interface CancellationPolicy {
-  daysBeforeArrival: number;
-  charge: number;
+export interface Contract {
+  id: number;
+  hotelId: number;
+  marketId: number;
+  seasonId: number;
+  name: string;
+  status: 'active' | 'draft' | 'expired';
+  validFrom: string;
+  validTo: string;
+  terms: ContractTerms;
+  periodRates: ContractPeriodRate[];
+  // For backward compatibility
+  rates?: Rate[];
+  mealPlanConfig?: {
+    defaultMealPlan: MealPlanType;
+    includedMealPlans: MealPlanType[];
+    supplements: {
+      [key in MealPlanType]?: number;
+    };
+  };
 }
 
 // Special offers
@@ -325,7 +390,8 @@ export type MenuItemId =
   | 'ratesConfig'
   | 'rateSeasons'
   | 'roomInventory'
-  | 'specialOffers';
+  | 'specialOffers'
+  | 'contract';
 
 export interface MenuItem {
   id: MenuItemId;
@@ -408,4 +474,28 @@ export interface RoomInventory {
   bookedRooms: number;
   blockedRooms: number;
   status: 'available' | 'limited' | 'full';
+}
+
+// Rate calculation interfaces
+export interface RoomOccupancy {
+  adults: number;
+  children: number;
+  infants: number;
+}
+
+export interface RateBreakdownItem {
+  amount: number;
+  description: string;
+}
+
+export interface RateCalculationResult {
+  baseRate: number;
+  supplementsTotal: number;
+  mealPlanTotal: number;
+  total: number;
+  breakdown: {
+    base: RateBreakdownItem;
+    supplements: RateBreakdownItem[];
+    mealPlan: RateBreakdownItem[];
+  };
 }

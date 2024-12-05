@@ -45,24 +45,26 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     name: '',
     isActive: true
   };
-  private subscription: Subscription;
+  private subscriptions: Subscription[] = [];
+  modalMessage = '';
+  modalError = false;
 
   @ViewChild('firstInput') firstInput!: ElementRef;
 
-  constructor(private hotelService: HotelService) {
-    this.subscription = this.hotelService.getCurrencySettings().subscribe(settings => {
-      this.currencySettings = settings;
-    });
-  }
+  constructor(private hotelService: HotelService) {}
 
   ngOnInit(): void {
-    this.loadCurrencySettings();
+    // Subscribe to currency settings changes
+    this.subscriptions.push(
+      this.hotelService.getCurrencySettings().subscribe(settings => {
+        this.currencySettings = settings;
+        console.log('Currency settings updated:', settings.length, 'currencies');
+      })
+    );
   }
 
   ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   loadCurrencySettings(): void {
@@ -73,7 +75,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     if (currency) {
       // Cannot edit active currencies
       if (currency.isActive) {
-        alert('Cannot edit an active currency. Remove it from all markets first.');
+        this.showError('Cannot edit an active currency. Remove it from all markets first.');
         return;
       }
       this.selectedCurrency = currency;
@@ -97,17 +99,6 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     });
   }
 
-  closeCurrencyEditor(): void {
-    this.showCurrencyEditor = false;
-    this.selectedCurrency = null;
-    this.newCurrency = {
-      code: '',
-      symbol: '',
-      name: '',
-      isActive: true
-    };
-  }
-
   saveCurrency(): void {
     try {
       // Validate required fields
@@ -120,72 +111,89 @@ export class CurrencyComponent implements OnInit, OnDestroy {
         throw new Error('Currency code must be 3 uppercase letters');
       }
 
+      let updatedSettings: CurrencySetting[];
       if (this.selectedCurrency) {
         // Update existing currency
-        const index = this.currencySettings.findIndex(c => c.code === this.selectedCurrency?.code);
-        if (index === -1) {
-          throw new Error('Currency not found');
-        }
-        this.currencySettings = [
-          ...this.currencySettings.slice(0, index),
-          { ...this.newCurrency as CurrencySetting },
-          ...this.currencySettings.slice(index + 1)
-        ];
+        updatedSettings = this.currencySettings.map(c => 
+          c.id === this.selectedCurrency?.id ? { ...this.newCurrency, id: c.id } as CurrencySetting : c
+        );
       } else {
-        // Check for duplicate currency code
-        if (this.currencySettings.some(c => c.code === this.newCurrency.code)) {
-          throw new Error('Currency code already exists');
-        }
         // Add new currency with generated ID
         const newId = Math.max(...this.currencySettings.map(c => c.id ?? 0), 0) + 1;
-        this.currencySettings = [
-          ...this.currencySettings,
-          { ...this.newCurrency, id: newId } as CurrencySetting
-        ];
+        const newCurrency = { ...this.newCurrency, id: newId } as CurrencySetting;
+        updatedSettings = [...this.currencySettings, newCurrency];
       }
-      
-      this.hotelService.updateCurrencySettings([...this.currencySettings]);
+
+      this.hotelService.updateCurrencySettings(updatedSettings);
+      this.showSuccess(`Currency ${this.selectedCurrency ? 'updated' : 'added'} successfully`);
       this.closeCurrencyEditor();
     } catch (error) {
-      console.error('Failed to save currency:', error);
-      alert(error instanceof Error ? error.message : 'Failed to save currency');
+      console.error('Error saving currency:', error);
+      this.showError(error instanceof Error ? error.message : 'Failed to save currency');
     }
+  }
+
+  deleteCurrency(currency: CurrencySetting): void {
+    if (currency.isActive) {
+      this.showError('Cannot delete an active currency. Remove it from all markets first.');
+      return;
+    }
+
+    const updatedSettings = this.currencySettings.filter(c => c.id !== currency.id);
+    this.hotelService.updateCurrencySettings(updatedSettings);
+    this.showSuccess('Currency deleted successfully');
   }
 
   updateCurrencyStatus(currency: CurrencySetting): void {
     try {
       // Prevent deactivating the last active currency
-      if (currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {
-        throw new Error('At least one currency must remain active');
+      if (!currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {
+        throw new Error('Cannot deactivate the last active currency');
       }
 
-      const index = this.currencySettings.findIndex(c => c.code === currency.code);
+      const index = this.currencySettings.findIndex(c => c.id === currency.id);
       if (index === -1) {
         throw new Error('Currency not found');
       }
 
-      this.currencySettings = [
+      const updatedSettings = [
         ...this.currencySettings.slice(0, index),
         { ...currency, isActive: !currency.isActive },
         ...this.currencySettings.slice(index + 1)
       ];
 
-      this.hotelService.updateCurrencySettings([...this.currencySettings]);
+      this.hotelService.updateCurrencySettings(updatedSettings);
+      this.showSuccess(`Currency ${currency.isActive ? 'deactivated' : 'activated'} successfully`);
     } catch (error) {
-      console.error('Failed to update currency status:', error);
-      alert(error instanceof Error ? error.message : 'Failed to update currency status');
+      console.error('Error updating currency status:', error);
+      this.showError(error instanceof Error ? error.message : 'Failed to update currency status');
     }
   }
 
-  deleteCurrency(currency: CurrencySetting): void {
-    if (confirm(`Are you sure you want to delete ${currency.name}?`)) {
-      try {
-        this.hotelService.deleteCurrency(currency);
-        // No need to manually update currencySettings as it will be updated through the subscription
-      } catch (error) {
-        console.error('Failed to delete currency:', error);
-        alert(error instanceof Error ? error.message : 'Failed to delete currency');
-      }
-    }
+  private showSuccess(message: string): void {
+    this.modalMessage = message;
+    this.modalError = false;
+    setTimeout(() => {
+      this.modalMessage = '';
+    }, 3000);
+  }
+
+  private showError(message: string): void {
+    this.modalMessage = message;
+    this.modalError = true;
+    setTimeout(() => {
+      this.modalMessage = '';
+    }, 3000);
+  }
+
+  closeCurrencyEditor(): void {
+    this.showCurrencyEditor = false;
+    this.selectedCurrency = null;
+    this.newCurrency = {
+      code: '',
+      symbol: '',
+      name: '',
+      isActive: false
+    };
   }
 }

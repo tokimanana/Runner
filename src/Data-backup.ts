@@ -1,1993 +1,1351 @@
 import { 
-    Hotel, 
-    Market, 
-    MarketGroup,
-    CurrencySetting,
-    Season,
-    Contract,
-    MealPlan,
-    MarketMealPlanRate,
-    AgeCategory,
-    Rate,
-    RoomType,
-    Period,
-    SpecialOffer,
-    HotelPolicies,
-    HotelCapacity,
-    RoomInventory,
-    MealPlanType
-  } from './app/models/types';
-  
-  // Données d'exemple
-  // Type definitions for sample data
-  interface HotelDataRecord {
-    [key: `${number}-description`]: string;
-    [key: `${number}-cancellation`]: string;
-    [key: `${number}-checkInOut`]: string;
+  Hotel, 
+  Market, 
+  MarketGroup,
+  CurrencySetting,
+  Season,
+  Contract,
+  MealPlan,
+  MarketMealPlanRate,
+  AgeCategory,
+  Rate,
+  RoomType,
+  Period,
+  SpecialOffer,
+  HotelPolicies,
+  HotelCapacity,
+  RoomInventory,
+  MealPlanType,
+  ContractTerms,
+  Restaurant,
+  Spa
+} from './app/models/types';
+
+// Type definitions for sample data
+interface HotelDataRecord {
+  [key: `${number}-description`]: string;
+  [key: `${number}-cancellation`]: string;
+  [key: `${number}-checkInOut`]: string;
+}
+
+interface MealPlanData {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+}
+
+interface SampleDataType {
+  hotels: Hotel[];
+  markets: Market[];
+  contracts: {
+    [key: number]: Contract[];
+  };
+  hotelData: HotelDataRecord;
+  currencySettings: CurrencySetting[];
+  mealPlans: {
+    [key: number]: MealPlanData[];
+  };
+  marketGroups: MarketGroup[];
+  seasons: {
+    [key: number]: Season[];
+  };
+  specialOffers: {
+    [key: number]: SpecialOffer[];
+  };
+  rates: Rate[];
+}
+
+// Constants
+export const MEAL_PLAN_TYPES: MealPlanType[] = [
+  'RO',   // Room Only
+  'BB',   // Bed & Breakfast
+  'HB',   // Half Board
+  'FB',   // Full Board
+  'AI',   // All Inclusive
+  'UAI'   // Ultra All Inclusive
+];
+
+// Currency settings
+export const currencySettings: CurrencySetting[] = [
+  { 
+    id: 1, 
+    code: 'EUR', 
+    symbol: '€', 
+    name: 'Euro',
+    decimals: 2,
+    isActive: true
+  },
+  { 
+    id: 2, 
+    code: 'USD', 
+    symbol: '$', 
+    name: 'US Dollar',
+    decimals: 2,
+    isActive: true
+  },
+  { 
+    id: 3, 
+    code: 'GBP', 
+    symbol: '£', 
+    name: 'British Pound',
+    decimals: 2,
+    isActive: true
+  },
+  { 
+    id: 4, 
+    code: 'MUR', 
+    symbol: 'Rs', 
+    name: 'Mauritian Rupee',
+    decimals: 2,
+    isActive: true
+  },
+  { 
+    id: 5, 
+    code: 'CHF', 
+    symbol: 'CHF', 
+    name: 'Swiss Franc',
+    decimals: 2,
+    isActive: true
   }
-  
-  interface MealPlanData {
-    id: number;
-    name: string;
-    code: string;
-    description: string;
+];
+
+// Market definitions and generation
+export const defaultMarkets: Market[] = [
+  {
+    id: 1,
+    name: "France",
+    code: "FR",
+    isActive: true,
+    currency: "EUR",
+    region: "Europe",
+    description: "French market including overseas territories"
+  },
+  {
+    id: 2,
+    name: "United Kingdom",
+    code: "UK",
+    isActive: true,
+    currency: "GBP",
+    region: "Europe",
+    description: "UK and Ireland market"
+  },
+  {
+    id: 3,
+    name: "Germany",
+    code: "DE",
+    isActive: true,
+    currency: "EUR",
+    region: "Europe",
+    description: "German-speaking market"
+  },
+  {
+    id: 4,
+    name: "United States",
+    code: "US",
+    isActive: true,
+    currency: "USD",
+    region: "North America",
+    description: "US market"
+  },
+  {
+    id: 5,
+    name: "Canada",
+    code: "CA",
+    isActive: true,
+    currency: "USD",
+    region: "North America",
+    description: "Canadian market"
+  },
+  {
+    id: 6,
+    name: "Japan",
+    code: "JP",
+    isActive: true,
+    currency: "USD",
+    region: "Asia",
+    description: "Japanese market"
+  },
+  {
+    id: 7,
+    name: "China",
+    code: "CN",
+    isActive: true,
+    currency: "USD",
+    region: "Asia",
+    description: "Chinese market"
   }
-  
-  interface SampleDataType {
-    hotels: Hotel[];
-    markets: Market[];
-    contracts: {
-      [key: number]: Contract[];
-    };
-    hotelData: HotelDataRecord;
-    currencySettings: CurrencySetting[];
-    mealPlans: {
-      [key: number]: MealPlanData[];
-    };
-    marketGroups: MarketGroup[];
-    seasons: {
-      [key: number]: Season[];
-    };
-    specialOffers: {
-      [key: number]: SpecialOffer[];
-    };
-    rates: Rate[];
+];
+
+// Market Groups
+export const defaultMarketGroups: MarketGroup[] = [
+  {
+    id: 1,
+    name: 'European Markets',
+    region: 'Europe',
+    markets: [1, 2, 3],
+    defaultCurrency: 'EUR',
+    description: 'Markets in the European region',
+    isActive: true
+  },
+  {
+    id: 2,
+    name: 'North American Markets',
+    region: 'North America',
+    markets: [4, 5],
+    defaultCurrency: 'USD',
+    description: 'Markets in North America',
+    isActive: true
+  },
+  {
+    id: 3,
+    name: 'Asian Markets',
+    region: 'Asia',
+    markets: [6, 7],
+    defaultCurrency: 'USD',
+    description: 'Markets in the Asian region',
+    isActive: true
   }
-  
-  export const sampleData: SampleDataType = {
-    hotels: [
+];
+
+// Seasons with string dates instead of Date objects
+export const defaultSeasons: Season[] = [
+  {
+    id: 1,
+    name: "Summer 2024",
+    description: "Peak summer season",
+    isActive: true,
+    periods: [
       {
         id: 1,
-        name: "Grand Hotel Riviera",
-        address: "58 Boulevard de la Croisette",
-        city: "Nice",
-        country: "France",
-        rating: 5,
-        specialOffers: [
-          {
-            id: 1,
-            code: "SUMMER2024",
-            name: "Summer Early Bird",
-            type: "combinable",
-            description: "Book early for summer 2024 and save up to 25%",
-            discountType: "percentage",
-            discountValues: [
-              { nights: 3, value: 15, startDate: "2024-06-01", endDate: "2024-08-31" },
-              { nights: 5, value: 20, startDate: "2024-06-01", endDate: "2024-08-31" },
-              { nights: 7, value: 25, startDate: "2024-06-01", endDate: "2024-08-31" }
-            ],
-            startDate: "2024-01-01",
-            endDate: "2024-05-31",
-            conditions: [
-              "Valid for all room types",
-              "Non-refundable",
-              "Full prepayment required"
-            ],
-            minimumNights: 3,
-            maximumNights: 14,
-            blackoutDates: ["2024-07-14", "2024-07-15"],
-            bookingWindow: {
-              start: "2024-01-01",
-              end: "2024-05-31"
-            }
-          },
-          {
-            id: 2,
-            code: "FAMILY2024",
-            name: "Family Package",
-            type: "cumulative",
-            description: "Special rates for families with children",
-            discountType: "fixed",
-            discountValues: [
-              { nights: 4, value: 100, startDate: "2024-04-01", endDate: "2024-10-31" },
-              { nights: 7, value: 200, startDate: "2024-04-01", endDate: "2024-10-31" }
-            ],
-            startDate: "2024-04-01",
-            endDate: "2024-10-31",
-            conditions: [
-              "Valid for family rooms only",
-              "Includes free meals for children under 12",
-              "Free access to kids club"
-            ],
-            minimumNights: 4,
-            bookingWindow: {
-              start: "2024-01-01",
-              end: "2024-09-30"
-            }
-          }
-        ],
-        ageCategories: [
-          {
-            id: 1,
-            name: 'Adult',
-            type: 'adult',
-            label: 'Adult (12+)',
-            minAge: 12,
-            maxAge: 100,
-            defaultRate: 100,
-            description: 'Standard adult rate',
-            isActive: true
-          },
-          {
-            id: 2,
-            name: 'Child',
-            type: 'child',
-            label: 'Child (2-11)',
-            minAge: 2,
-            maxAge: 11,
-            defaultRate: 50,
-            description: 'Standard child rate',
-            isActive: true
-          },
-          {
-            id: 3,
-            name: 'Infant',
-            type: 'infant',
-            label: 'Infant (0-1)',
-            minAge: 0,
-            maxAge: 1,
-            defaultRate: 0,
-            description: 'Standard infant rate',
-            isActive: true
-          }
-        ],
-        rooms: [
-          {
-            id: 1,
-            type: "Standard",
-            name: "Standard Sea View",
-            description: "Comfortable room with sea view",
-            location: "Main Building",
-            maxOccupancy: {
-              adults: 2,
-              children: 1,
-              infants: 1
-            },
-            amenities: ["WiFi", "Air Conditioning", "Mini Bar"],
-            size: 25,
-            images: ["room1.jpg", "room1-2.jpg"],
-            bedConfiguration: [
-              { type: "Double", count: 1 },
-              { type: "Single", count: 1 }
-            ]
-          },
-          {
-            id: 2,
-            type: "Deluxe",
-            name: "Deluxe Ocean View",
-            description: "Luxurious room with panoramic ocean view",
-            location: "Main Building",
-            maxOccupancy: {
-              adults: 3,
-              children: 2,
-              infants: 1
-            },
-            amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Ocean View", "Balcony"],
-            size: 35,
-            images: ["deluxe1.jpg", "deluxe2.jpg"],
-            bedConfiguration: [
-              { type: "King", count: 1 },
-              { type: "Sofa", count: 1 }
-            ]
-          }
-        ],
-        amenities: ["Pool", "Spa", "Restaurant", "Beach Access"],
-        checkInTime: "14:00",
-        checkOutTime: "11:00",
-        policies: {
-          cancellation: "Free cancellation up to 30 days before arrival",
-          checkIn: "From 14:00",
-          checkOut: "Until 11:00",
-          childPolicy: "Children of all ages welcome",
-          petPolicy: "No pets allowed",
-          dressCode: "Smart casual attire is required in all restaurants and public areas after 6:00 PM. Beachwear is not permitted in restaurants and bars."
-        },
-        features: {
-          restaurants: [
-            {
-              name: "L'Azur",
-              cuisine: "Mediterranean Fine Dining",
-              dressCode: "Smart Elegant - Gentlemen are required to wear long trousers and closed shoes. No shorts, t-shirts, or sandals.",
-              openingHours: "19:00 - 22:30",
-              description: "Our signature restaurant offering refined Mediterranean cuisine with panoramic sea views."
-            },
-            {
-              name: "La Terrasse",
-              cuisine: "French Bistro",
-              dressCode: "Smart Casual - No beachwear or sports attire.",
-              openingHours: "12:00 - 15:00, 19:00 - 22:00",
-              description: "Casual dining venue serving classic French dishes on a beautiful terrace."
-            }
-          ],
-          spa: {
-            name: "Riviera Wellness",
-            treatments: ["Massages", "Facials", "Body Treatments", "Hydrotherapy"],
-            openingHours: "09:00 - 20:00",
-            description: "A haven of tranquility offering traditional and innovative treatments."
-          }
-        },
-        images: ["hotel1.jpg", "hotel1-2.jpg"],
-        description: "Perched on the stunning French Riviera, the Grand Hotel Riviera is a masterpiece of luxury and elegance. This five-star establishment offers breathtaking views of the Mediterranean Sea from its privileged location in Nice. The hotel seamlessly blends classic French architecture with modern amenities, featuring meticulously designed rooms and suites, each offering a unique perspective of the azure coastline. Our world-class restaurants serve exquisite Mediterranean and French cuisine, while our spa provides the ultimate relaxation experience. With direct beach access, a stunning infinity pool, and proximity to Nice's vibrant cultural attractions, the Grand Hotel Riviera represents the pinnacle of French Riviera hospitality.",
-        contactInfo: {
-          phone: "+33 1 23 45 67 89",
-          email: "contact@grandhotelriviera.com",
-          website: "www.grandhotelriviera.com"
-        }
+        seasonId: 1,
+        name: "Early Summer",
+        startDate: "2024-05-01",
+        endDate: "2024-06-14",
+        mlos: 3,
+        description: "Early summer period with moderate rates"
       },
       {
         id: 2,
-        name: "Le Meridien Ile Maurice",
-        address: "Village Hall Lane, Pointe Aux Piments",
-        city: "Pointe Aux Piments",
-        country: "Mauritius",
-        rating: 5,
-        ageCategories: [
-          {
-            id: 1,
-            name: 'Adult',
-            type: 'adult',
-            label: 'Adult (12+)',
-            minAge: 12,
-            maxAge: 100,
-            defaultRate: 100,
-            description: 'Standard adult rate',
-            isActive: true
-          },
-          {
-            id: 2,
-            name: 'Child',
-            type: 'child',
-            label: 'Child (2-11)',
-            minAge: 2,
-            maxAge: 11,
-            defaultRate: 50,
-            description: 'Standard child rate',
-            isActive: true
-          },
-          {
-            id: 3,
-            name: 'Infant',
-            type: 'infant',
-            label: 'Infant (0-1)',
-            minAge: 0,
-            maxAge: 1,
-            defaultRate: 0,
-            description: 'Standard infant rate',
-            isActive: true
-          }
-        ],
-        rooms: [
-          {
-            id: 1,
-            type: "Deluxe",
-            name: "Deluxe Ocean View",
-            description: "Elegant room with stunning ocean views and modern amenities",
-            location: "Main Building",
-            maxOccupancy: {
-              adults: 2,
-              children: 1,
-              infants: 1
-            },
-            amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Ocean View", "Private Balcony"],
-            size: 30,
-            images: ["deluxe-room1.jpg", "deluxe-room2.jpg"],
-            bedConfiguration: [
-              { type: "King", count: 1 }
-            ]
-          },
-          {
-            id: 2,
-            type: "Premium",
-            name: "Premium Ocean View",
-            description: "Spacious premium room with panoramic ocean views",
-            location: "Main Building",
-            maxOccupancy: {
-              adults: 3,
-              children: 1,
-              infants: 1
-            },
-            amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Ocean View", "Private Balcony", "Lounge Access"],
-            size: 35,
-            images: ["premium-room1.jpg", "premium-room2.jpg"],
-            bedConfiguration: [
-              { type: "King", count: 1 },
-              { type: "Sofa Bed", count: 1 }
-            ]
-          },
-          {
-            id: 3,
-            type: "Suite",
-            name: "Royal Suite",
-            description: "Luxurious suite with separate living area and premium ocean views",
-            location: "Main Building",
-            maxOccupancy: {
-              adults: 3,
-              children: 2,
-              infants: 1
-            },
-            amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Ocean View", "Private Balcony", "Lounge Access", "Butler Service"],
-            size: 45,
-            images: ["suite-room1.jpg", "suite-room2.jpg"],
-            bedConfiguration: [
-              { type: "King", count: 1 },
-              { type: "Sofa Bed", count: 1 }
-            ]
-          }
-        ],
-        amenities: ["Pool", "Spa", "Beach Access", "Water Sports", "Kids Club", "Fitness Center"],
-        checkInTime: "14:00",
-        checkOutTime: "11:00",
-        policies: {
-          cancellation: "Free cancellation up to 45 days before arrival",
-          checkIn: "From 15:00",
-          checkOut: "Until 11:00",
-          childPolicy: "Children of all ages welcome. Free kids club for ages 4-12",
-          petPolicy: "No pets allowed",
-          dressCode: "Resort casual attire is accepted throughout the day. Smart casual required in all restaurants for dinner. No wet clothing in restaurants and bars."
-        },
-        features: {
-          restaurants: [
-            {
-              name: "La Faya",
-              cuisine: "Contemporary Mauritian",
-              dressCode: "Smart Casual - Closed shoes and collared shirts required for dinner. No shorts or beachwear.",
-              openingHours: "19:00 - 22:30",
-              description: "Fine dining restaurant showcasing modern interpretations of Mauritian cuisine."
-            },
-            {
-              name: "Shells",
-              cuisine: "Seafood",
-              dressCode: "Resort Casual - No wet attire or uncovered swimwear.",
-              openingHours: "12:00 - 15:00, 18:30 - 22:00",
-              description: "Beachfront seafood restaurant offering the freshest local catch."
-            }
-          ],
-          spa: {
-            name: "Le Spa",
-            treatments: ["Ayurvedic Treatments", "Couples Massages", "Beauty Treatments", "Yoga Sessions"],
-            openingHours: "09:00 - 19:00",
-            description: "A serene sanctuary combining ancient wisdom with modern techniques."
-          }
-        },
-        images: ["meridien1.jpg", "meridien2.jpg", "meridien3.jpg"],
-        description: "Nestled along the pristine shores of Pointe aux Piments, Le Meridien Ile Maurice embodies the essence of tropical luxury. This beachfront paradise combines contemporary elegance with authentic Mauritian charm, offering an unparalleled resort experience. Set against the backdrop of the crystal-clear Indian Ocean, the resort features extensive tropical gardens, a world-class spa, and one of the island's finest water sports centers. Our diverse dining venues showcase both local and international cuisines, while our specially designed Kids' Club ensures memorable experiences for our younger guests. Whether you're seeking romantic seclusion, family adventure, or cultural immersion, Le Meridien Ile Maurice provides the perfect setting for an unforgettable island getaway.",
-        contactInfo: {
-          phone: "+230 204 3333",
-          email: "reservations@meridien-mauritius.com",
-          website: "www.marriott.com/meridien-mauritius"
-        }
-      }
-    ],
-    markets: [
-      {
-        id: 1,
-        name: "France",
-        code: "FR",
-        isActive: true,
-        currency: "EUR",
-        region: "Europe",
-        description: "French market"
-      },
-      {
-        id: 2,
-        name: "United Kingdom",
-        code: "UK",
-        isActive: true,
-        currency: "GBP",
-        region: "Europe",
-        description: "UK market"
+        seasonId: 1,
+        name: "Peak Summer",
+        startDate: "2024-06-15",
+        endDate: "2024-09-15",
+        mlos: 5,
+        description: "Peak summer period with premium rates"
       },
       {
         id: 3,
-        name: "Germany",
-        code: "DE",
-        isActive: true,
-        currency: "EUR",
-        region: "Europe",
-        description: "German market"
+        seasonId: 1,
+        name: "Late Summer",
+        startDate: "2024-09-16",
+        endDate: "2024-10-31",
+        mlos: 3,
+        description: "Late summer period with moderate rates"
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: "Winter 2024",
+    description: "Winter season",
+    isActive: true,
+    periods: [
+      {
+        id: 1,
+        seasonId: 2,
+        name: "Christmas Period",
+        startDate: "2024-12-01",
+        endDate: "2024-12-31",
+        mlos: 4,
+        description: "Christmas period with special rates"
+      }
+    ]
+  }
+];
+
+// Add seasons for Maldives Paradise Resort
+export const maldivesSeasons: Season[] = [
+  {
+    id: 1,
+    name: 'Peak Season',
+    description: 'December to April - Dry Season',
+    isActive: true,
+    periods: [
+      {
+        id: 1,
+        seasonId: 1,
+        name: 'Early Peak Season',
+        startDate: '2023-12-01',
+        endDate: '2023-12-22',
+        mlos: 3,
+        isBlackout: false
+      },
+      {
+        id: 2,
+        seasonId: 1,
+        name: 'Christmas and New Year Period',
+        startDate: '2023-12-23',
+        endDate: '2024-01-05',
+        mlos: 7,
+        isBlackout: false,
+        description: 'Christmas and New Year Period'
+      },
+      {
+        id: 3,
+        seasonId: 1,
+        name: 'Late Peak Season',
+        startDate: '2024-01-06',
+        endDate: '2024-02-09',
+        mlos: 3,
+        isBlackout: false
       },
       {
         id: 4,
-        name: "Switzerland",
-        code: "CH",
-        isActive: true,
-        currency: "CHF",
-        region: "Europe",
-        description: "Swiss market"
+        seasonId: 1,
+        name: 'Chinese New Year Period',
+        startDate: '2024-02-10',
+        endDate: '2024-02-24',
+        mlos: 5,
+        isBlackout: false,
+        description: 'Chinese New Year Period'
+      },
+      {
+        id: 5,
+        seasonId: 1,
+        name: 'Late Peak Season',
+        startDate: '2024-02-25',
+        endDate: '2024-04-30',
+        mlos: 3,
+        isBlackout: false
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Low Season',
+    description: 'May to July - Early Monsoon',
+    isActive: true,
+    periods: [
+      {
+        id: 6,
+        seasonId: 2,
+        name: 'Early Low Season',
+        startDate: '2024-05-01',
+        endDate: '2024-05-31',
+        mlos: 2,
+        isBlackout: false,
+        description: 'Early Low Season'
+      },
+      {
+        id: 7,
+        seasonId: 2,
+        name: 'June Promotion',
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        mlos: 3,
+        isBlackout: false,
+        description: 'June Promotion'
+      },
+      {
+        id: 8,
+        seasonId: 2,
+        name: 'Late Low Season',
+        startDate: '2024-07-01',
+        endDate: '2024-07-31',
+        mlos: 2,
+        isBlackout: false
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: 'Shoulder Season',
+    description: 'August to November - Late Monsoon',
+    isActive: true,
+    periods: [
+      {
+        id: 9,
+        seasonId: 3,
+        name: 'Early Shoulder Season',
+        startDate: '2024-08-01',
+        endDate: '2024-09-15',
+        mlos: 2,
+        isBlackout : false,
+        description: 'Early Shoulder Season'
+      },
+      {
+        id: 10,
+        seasonId: 3,
+        name: 'Fall Promotion',
+        startDate: '2024-09-16',
+        endDate: '2024-10-31',
+        mlos: 3,
+        isBlackout: false,
+        description: 'Fall Promotion'
+      },
+      {
+        id: 11,
+        seasonId: 3,
+        name: 'Late Shoulder Season',
+        startDate: '2024-11-01',
+        endDate: '2024-11-15',
+        mlos: 2,
+        isBlackout: false
+      },
+      {
+        id: 12,
+        seasonId: 3,
+        name: 'Pre-Peak Season',
+        startDate: '2024-11-16',
+        endDate: '2024-11-30',
+        mlos: 3,
+        isBlackout: false,
+        description: 'Pre-Peak Season'
+      }
+    ]
+  }
+];
+
+// Meal plan definitions
+export const defaultMealPlans: MealPlanData[] = [
+  {
+    id: 1,
+    name: "Bed & Breakfast",
+    code: "BB",
+    description: "Includes breakfast daily"
+  },
+  {
+    id: 2,
+    name: "Half Board",
+    code: "HB",
+    description: "Includes breakfast and dinner daily"
+  },
+  {
+    id: 3,
+    name: "Full Board",
+    code: "FB",
+    description: "Includes breakfast, lunch and dinner daily"
+  }
+];
+
+// Age Categories
+export const ageCategories: AgeCategory[] = [
+  {
+    id: 1,
+    name: 'Adult',
+    type: 'adult',
+    label: 'Adult',
+    minAge: 12,
+    maxAge: 100,
+    description: 'Standard adult rate',
+    defaultRate: 0,
+    isActive: true
+  },
+  {
+    id: 2,
+    name: 'Child',
+    type: 'child',
+    label: 'Child',
+    minAge: 2,
+    maxAge: 11,
+    description: 'Standard child rate',
+    defaultRate: 0,
+    isActive: true
+  },
+  {
+    id: 3,
+    name: 'Infant',
+    type: 'infant',
+    label: 'Infant',
+    minAge: 0,
+    maxAge: 1,
+    description: 'Standard infant rate',
+    defaultRate: 0,
+    isActive: true
+  }
+];
+
+// Special offers
+export const defaultSpecialOffers: SpecialOffer[] = [
+  {
+    id: 1,
+    code: "SUMMER2024",
+    name: "Summer Early Booking",
+    type: "combinable",
+    description: "Early booking discount for summer 2024",
+    discountType: "percentage",
+    discountValues: [
+      {
+        nights: 7,
+        value: 15,
+        startDate: "2024-06-01",
+        endDate: "2024-08-31"
       }
     ],
-    contracts: {
-      1: [
-        {
-          id: 1,
-          hotelId: 1,
-          marketId: 1,
-          seasonId: 1,
-          name: "Standard Rate Contract",
-          startDate: "2024-05-01",
-          endDate: "2024-10-31",
-          status: "active",
-          rateType: "public",
-          terms: {
-            cancellationPolicy: [
-              {
-                daysBeforeArrival: 7,
-                charge: 50
-              }
-            ],
-            paymentTerms: "30 days",
-            commission: 10,
-            specialConditions: []
-          },
-          validFrom: new Date("2024-05-01"),
-          validTo: new Date("2024-10-31"),
-          rates: [
-            {
-              id: 1,
-              name: "Standard Room BB Rate",
-              marketId: 1,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 1,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 200,
-              baseRate: 200,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 150,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 150,
-                mealPlan: {
-                  BB: 0,
-                  HB: 30,
-                  FB: 50
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 5,
-              name: "Standard Room HB Rate",
-              marketId: 1,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 1,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 230,
-              baseRate: 230,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 180,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 180,
-                mealPlan: {
-                  BB: 0,
-                  HB: 30,
-                  FB: 50
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 6,
-              name: "Standard Room FB Rate",
-              marketId: 1,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 1,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 250,
-              baseRate: 250,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 200,
-                mealPlan: {
-                  BB: 0,
-                  HB: 30,
-                  FB: 50
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          ]
-        },
-        {
-          id: 2,
-          hotelId: 1,
-          marketId: 2,
-          seasonId: 1,
-          name: "International Rate Contract",
-          startDate: "2024-05-01",
-          endDate: "2024-10-31",
-          status: "active",
-          rateType: "public",
-          terms: {
-            cancellationPolicy: [
-              {
-                daysBeforeArrival: 14,
-                charge: 50
-              }
-            ],
-            paymentTerms: "30 days",
-            commission: 15,
-            specialConditions: []
-          },
-          validFrom: new Date("2024-05-01"),
-          validTo: new Date("2024-10-31"),
-          rates: [
-            {
-              id: 2,
-              name: "International Room BB Rate",
-              marketId: 2,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 2,
-              hotelId: 1,
-              currency: "USD",
-              amount: 220,
-              baseRate: 220,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 165,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 165,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 7,
-              name: "International Room HB Rate",
-              marketId: 2,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 2,
-              hotelId: 1,
-              currency: "USD",
-              amount: 255,
-              baseRate: 255,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 200,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 8,
-              name: "International Room FB Rate",
-              marketId: 2,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 2,
-              hotelId: 1,
-              currency: "USD",
-              amount: 280,
-              baseRate: 280,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 225,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 225,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          ]
-        },
-        {
-          id: 3,
-          hotelId: 1,
-          marketId: 3,
-          seasonId: 1,
-          name: "Tour Operator Rate Contract",
-          startDate: "2024-05-01",
-          endDate: "2024-10-31",
-          status: "active",
-          rateType: "private",
-          terms: {
-            cancellationPolicy: [
-              {
-                daysBeforeArrival: 21,
-                charge: 50
-              }
-            ],
-            paymentTerms: "45 days",
-            commission: 20,
-            specialConditions: []
-          },
-          validFrom: new Date("2024-05-01"),
-          validTo: new Date("2024-10-31"),
-          rates: [
-            {
-              id: 3,
-              name: "Tour Operator Room BB Rate",
-              marketId: 3,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 3,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 180,
-              baseRate: 180,
-              extraAdult: 45,
-              extraChild: 23,
-              singleOccupancy: 135,
-              supplements: {
-                extraAdult: 45,
-                extraChild: 23,
-                singleOccupancy: 135,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 3,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 11,
-              name: "Tour Operator Room HB Rate",
-              marketId: 3,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 3,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 205,
-              baseRate: 205,
-              extraAdult: 45,
-              extraChild: 23,
-              singleOccupancy: 160,
-              supplements: {
-                extraAdult: 45,
-                extraChild: 23,
-                singleOccupancy: 160,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 3,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            {
-              id: 12,
-              name: "Tour Operator Room FB Rate",
-              marketId: 3,
-              seasonId: 1,
-              roomTypeId: 1,
-              contractId: 3,
-              hotelId: 1,
-              currency: "EUR",
-              amount: 225,
-              baseRate: 225,
-              extraAdult: 45,
-              extraChild: 23,
-              singleOccupancy: 180,
-              supplements: {
-                extraAdult: 45,
-                extraChild: 23,
-                singleOccupancy: 180,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 3,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
+    startDate: "2024-06-01",
+    endDate: "2024-08-31",
+    conditions: [
+      "Must book 60 days in advance",
+      "Non-refundable"
+    ],
+    minimumNights: 7,
+    bookingWindow: {
+      start: "2024-01-01",
+      end: "2024-04-30"
+    }
+  }
+];
+
+// Rates definition
+export const defaultRates: Rate[] = [
+  {
+    id: 1,
+    name: "Standard Summer Rate",
+    marketId: 1,
+    seasonId: 1,
+    roomTypeId: 1,
+    contractId: 1,
+    hotelId: 1,
+    periodId: 1,
+    rateType: 'per_pax',
+    villaRate: null,
+    currency: "EUR",
+    amount: 200,
+    baseRate: 200,
+    extraAdult: 50,
+    extraChild: 25,
+    singleOccupancy: 150,
+    supplements: {
+      extraAdult: 50,
+      extraChild: 25,
+      singleOccupancy: 150,
+      mealPlan: {
+        BB: 0,
+        HB: 30,
+        FB: 50
+      }
+    },
+    // ageCategoryRates: {
+    //   "1": 100,
+    //   "2": 50,
+    //   "3": 0
+    // },
+    specialOffers: defaultSpecialOffers,
+    startDate: "2024-06-01",
+    endDate: "2024-08-31",
+    isActive: true
+  }
+];
+
+// Applied Rates Examples for the special offers component
+export const appliedRatesExamples = [
+  {
+    id: 1,
+    name: "Standard Summer Rate",
+    baseRate: 200,
+    currency: "EUR",
+    amount: 170,
+    bookingDates: {
+      checkIn: "2024-06-01",
+      checkOut: "2024-06-08",
+      nights: 7
+    },
+    selectedMealPlan: {
+      name: "Half Board",
+      supplement: 30
+    },
+    specialOffers: [
+      {
+        name: "Summer Early Booking",
+        code: "SUMMER2024",
+        type: "combinable",
+        description: "Early booking discount for summer 2024",
+        discountType: "percentage",
+        discountValues: [
+          {
+            nights: 7,
+            value: 15
+          }
+        ],
+        startDate: "2024-06-01",
+        endDate: "2024-08-31",
+        appliedDiscount: {
+          value: 15,
+          amountOff: 30,
+          additionalBenefits: [
+            "Free airport transfer",
+            "Welcome drink"
           ]
         }
+      }
+    ]
+  }
+];
+
+// Contracts with proper type structure
+export const defaultContracts: Contract[] = [
+  {
+    id: 1,
+    hotelId: 1,
+    marketId: 1,
+    seasonId: 1,
+    name: "Summer 2024 Contract",
+    startDate: "2024-06-01",
+    endDate: "2024-08-31",
+    status: "active",
+    rateType: "public",
+    terms: {
+      cancellationPolicy: [
+        { daysBeforeArrival: 30, charge: 0 },
+        { daysBeforeArrival: 14, charge: 50 },
+        { daysBeforeArrival: 7, charge: 100 }
       ],
-      2: [
-        {
-          id: 3,
-          hotelId: 2,
-          marketId: 3,
-          seasonId: 4,  // Low Season
-          name: "Local Market Contract - Low Season 2024",
-          startDate: "2024-05-01",
-          endDate: "2024-10-31",
-          status: "active",
-          rateType: "public",
-          validFrom: new Date("2024-01-01"),
-          validTo: new Date("2024-12-31"),
-          terms: {
-            cancellationPolicy: [
-              { daysBeforeArrival: 30, charge: 0 },
-              { daysBeforeArrival: 14, charge: 50 },
-              { daysBeforeArrival: 7, charge: 100 }
-            ],
-            paymentTerms: "30 days before arrival",
-            commission: 10,
-            specialConditions: []
-          },
-          rates: [
-            {
-              id: 5,
-              name: "Standard Room HB Rate",
-              marketId: 3,
-              seasonId: 4,
-              roomTypeId: 1,
-              contractId: 3,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 230,
-              baseRate: 230,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 180,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 6,
-              name: "Standard Room FB Rate",
-              marketId: 3,
-              seasonId: 4,
-              roomTypeId: 1,
-              contractId: 3,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 250,
-              baseRate: 250,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 7,
-              name: "International Room HB Rate",
-              marketId: 4,
-              seasonId: 4,
-              roomTypeId: 1,
-              contractId: 4,
-              hotelId: 2,
-              currency: "USD",
-              amount: 255,
-              baseRate: 255,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 45,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 8,
-              name: "International Room FB Rate",
-              marketId: 4,
-              seasonId: 4,
-              roomTypeId: 1,
-              contractId: 4,
-              hotelId: 2,
-              currency: "USD",
-              amount: 280,
-              baseRate: 280,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 225,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 45,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            }
-          ]
-        },
-        {
-          id: 4,
-          hotelId: 2,
-          marketId: 3,
-          seasonId: 3,  // High Season
-          name: "Local Market Contract - High Season 2024",
-          startDate: "2024-11-01",
-          endDate: "2025-03-31",
-          status: "active",
-          rateType: "public",
-          validFrom: new Date("2024-01-01"),
-          validTo: new Date("2024-12-31"),
-          terms: {
-            cancellationPolicy: [
-              { daysBeforeArrival: 30, charge: 0 },
-              { daysBeforeArrival: 14, charge: 50 },
-              { daysBeforeArrival: 7, charge: 100 }
-            ],
-            paymentTerms: "30 days before arrival",
-            commission: 10,
-            specialConditions: []
-          },
-          rates: [
-            {
-              id: 9,
-              name: "Standard Room HB Rate",
-              marketId: 3,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 5,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 230,
-              baseRate: 230,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 180,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 10,
-              name: "Standard Room FB Rate",
-              marketId: 3,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 5,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 250,
-              baseRate: 250,
-              extraAdult: 50,
-              extraChild: 25,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 50,
-                extraChild: 25,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 11,
-              name: "Tour Operator Room HB Rate",
-              marketId: 3,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 5,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 205,
-              baseRate: 205,
-              extraAdult: 45,
-              extraChild: 23,
-              singleOccupancy: 160,
-              supplements: {
-                extraAdult: 45,
-                extraChild: 23,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 3,
-              maximumStay: 14,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 12,
-              name: "Tour Operator Room FB Rate",
-              marketId: 3,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 5,
-              hotelId: 2,
-              currency: "EUR",
-              amount: 225,
-              baseRate: 225,
-              extraAdult: 45,
-              extraChild: 23,
-              singleOccupancy: 180,
-              supplements: {
-                extraAdult: 45,
-                extraChild: 23,
-                singleOccupancy: 40,
-                mealPlan: {
-                  BB: 0,
-                  HB: 25,
-                  FB: 45
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 3,
-              maximumStay: 14,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            }
-          ]
-        },
-        {
-          id: 6,
-          hotelId: 2,
-          marketId: 4,
-          seasonId: 3,  // High Season
-          name: "International Contract - High Season 2024",
-          startDate: "2024-11-01",
-          endDate: "2025-03-31",
-          status: "active",
-          rateType: "public",
-          validFrom: new Date("2024-01-01"),
-          validTo: new Date("2024-12-31"),
-          terms: {
-            cancellationPolicy: [
-              { daysBeforeArrival: 30, charge: 0 },
-              { daysBeforeArrival: 14, charge: 50 },
-              { daysBeforeArrival: 7, charge: 100 }
-            ],
-            paymentTerms: "30 days before arrival",
-            commission: 15,
-            specialConditions: []
-          },
-          rates: [
-            {
-              id: 11,
-              name: "International Room HB Rate",
-              marketId: 4,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 6,
-              hotelId: 2,
-              currency: "USD",
-              amount: 255,
-              baseRate: 255,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 200,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 45,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            },
-            {
-              id: 12,
-              name: "International Room FB Rate",
-              marketId: 4,
-              seasonId: 3,
-              roomTypeId: 1,
-              contractId: 6,
-              hotelId: 2,
-              currency: "USD",
-              amount: 280,
-              baseRate: 280,
-              extraAdult: 55,
-              extraChild: 28,
-              singleOccupancy: 225,
-              supplements: {
-                extraAdult: 55,
-                extraChild: 28,
-                singleOccupancy: 45,
-                mealPlan: {
-                  BB: 0,
-                  HB: 35,
-                  FB: 60
-                }
-              },
-              ageCategoryRates: {},
-              specialOffers: [],
-              minimumStay: 1,
-              maximumStay: 30,
-              isActive: true,
-              createdAt: new Date("2024-01-15T10:00:00Z"),
-              updatedAt: new Date("2024-01-15T10:00:00Z")
-            }
-          ]
-        }
+      paymentTerms: "30% deposit at booking, full payment 30 days before arrival",
+      commission: 10,
+      specialConditions: [
+        "Early booking discounts available",
+        "Group rates available for 10+ rooms"
       ]
     },
-    marketGroups: [
+    validFrom: new Date("2024-06-01"),
+    validTo: new Date("2024-08-31"),
+    rates: defaultRates
+  },
+  {
+    id: 2,
+    hotelId: 1,
+    marketId: 1,
+    seasonId: 2,
+    name: "Winter 2024 Contract",
+    startDate: "2024-12-01",
+    endDate: "2024-12-31",
+    status: "active",
+    rateType: "public",
+    terms: {
+      cancellationPolicy: [
+        { daysBeforeArrival: 60, charge: 0 },
+        { daysBeforeArrival: 30, charge: 50 },
+        { daysBeforeArrival: 14, charge: 100 }
+      ],
+      paymentTerms: "50% deposit at booking, full payment 60 days before arrival",
+      commission: 12,
+      specialConditions: [
+        "Peak season rates apply",
+        "Minimum stay of 4 nights during Christmas period",
+        "Gala dinner mandatory on Dec 24 and 31"
+      ]
+    },
+    validFrom: new Date("2024-12-01"),
+    validTo: new Date("2024-12-31"),
+    rates: defaultRates
+  }
+];
+
+// Room definitions
+export const roomTypes: RoomType[] = [
+  {
+    id: 1,
+    name: 'Deluxe Room',
+    type: 'Deluxe',
+    description: 'Spacious room with modern amenities',
+    maxOccupancy: {
+      adults: 2,
+      children: 1,
+      infants: 1
+    },
+    location: 'Main Building',
+    amenities: [
+      'Air Conditioning',
+      'Mini Bar',
+      'Safe',
+      'TV',
+      'WiFi'
+    ],
+    size: 35,
+    images: ['deluxe-1.jpg', 'deluxe-2.jpg'],
+    bedConfiguration: [
+      { type: 'King', count: 1 }
+    ],
+    isVilla: false,
+    baseOccupancy: 2
+  },
+  {
+    id: 2,
+    name: 'Ocean View Suite',
+    type: 'Suite',
+    description: 'Luxurious suite with ocean views',
+    maxOccupancy: {
+      adults: 3,
+      children: 2,
+      infants: 1
+    },
+    location: 'Beachfront',
+    amenities: [
+      'Air Conditioning',
+      'Mini Bar',
+      'Safe',
+      'TV',
+      'WiFi',
+      'Ocean View',
+      'Balcony'
+    ],
+    size: 55,
+    images: ['suite-1.jpg', 'suite-2.jpg'],
+    bedConfiguration: [
+      { type: 'King', count: 1 },
+      { type: 'Sofa Bed', count: 1 }
+    ],
+    isVilla: false,
+    baseOccupancy: 2
+  }
+];
+
+// Update hotel structure
+export const HOTELS: Hotel[] = [
+  {
+    id: 1,
+    name: 'Grand Hotel Riveria',
+    address: 'Via Regina Giovanna, 23',
+    city: 'Amalfi',
+    country: 'Italy',
+    description: 'Perched on the stunning Amalfi Coast, the Grand Hotel Riveria is a luxurious sanctuary offering breathtaking views of the Mediterranean Sea. This historic property combines classic Italian elegance with modern luxury, featuring world-class dining, a premium spa, and impeccable service. Each room and suite is meticulously designed to provide the ultimate comfort while capturing the essence of coastal Italian living.',
+    rating: 5,
+    checkInTime: '16:00',
+    checkOutTime: '10:00',
+    policies: {
+      cancellation: 'Free cancellation up to 30 days prior to arrival. Cancellations within 30 days will incur a charge of one night\'s stay. Cancellations within 7 days or no-shows will be charged the full stay amount. Special events and holidays (Easter, Christmas, New Year\'s Eve) require full prepayment and are non-refundable.',
+      checkIn: 'Check-in time starts from 16:00. Early check-in available from 13:00 subject to availability and additional charge of €100. Private transfer from Naples Airport available on request.',
+      checkOut: 'Check-out time is 10:00. Late check-out until 15:00 available at 50% of daily rate, subject to availability. Luggage storage available for early arrivals and late departures.',
+      childPolicy: 'Children of all ages are welcome. Children under 6 stay free when using existing bedding. Baby cots available upon request for €25 per night. Children\'s activities and babysitting services available at additional charge.',
+      petPolicy: 'Small pets (up to 5kg) are welcome with prior arrangement. Additional cleaning fee of €50 per stay applies. Pet amenities provided. Pets not allowed in restaurants or spa areas.',
+      dressCode: 'Elegant Mediterranean resort attire required. For restaurants: Breakfast - Smart casual, no beachwear. Lunch - Smart casual, collared shirts for gentlemen. Dinner - Formal attire (jackets required for gentlemen, cocktail attire for ladies). No shorts, flip-flops, or sportswear in restaurants or public areas after 18:00. La Terrazza restaurant requires formal evening attire at all times.'
+    },
+    ageCategories: [
       {
         id: 1,
-        name: "Western Europe",
-        description: "Markets in Western Europe",
-        markets: [1, 2],
-        region: "Europe",
-        defaultCurrency: "EUR",
+        name: 'Infant',
+        label: 'Infant',
+        minAge: 0,
+        maxAge: 2,
+        type: 'infant',
+        description: 'Infants stay in existing bedding',
+        defaultRate: 0,
         isActive: true
       },
       {
         id: 2,
-        name: "DACH",
-        description: "German-speaking markets",
-        markets: [3, 4],
-        region: "Europe",
-        defaultCurrency: "EUR",
+        name: 'Child',
+        label: 'Child',
+        minAge: 3,
+        maxAge: 11,
+        type: 'child',
+        description: 'Children sharing with adults',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        name: 'Teen',
+        label: 'Teen',
+        minAge: 12,
+        maxAge: 17,
+        type: 'teen',
+        description: 'Teens sharing with adults',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 4,
+        name: 'Adult',
+        label: 'Adult',
+        minAge: 18,
+        maxAge: 200,
+        type: 'adult',
+        description: 'Standard adult accommodation',
+        defaultRate: 0,
         isActive: true
       }
     ],
-    seasons: {
-      1: [
+    features: {
+      restaurants: [
         {
-          id: 1,
-          name: "Summer 2024",
-          startDate: "2024-05-01",
-          endDate: "2024-09-30",
-          isActive: true,
-          periods: [
-            {
-              id: 1,
-              startDate: "2024-05-01",
-              endDate: "2024-06-30",
-              mlos: 3,
-              description: "Early Summer"
-            },
-            {
-              id: 2,
-              startDate: "2024-07-01",
-              endDate: "2024-08-31",
-              mlos: 5,
-              description: "Peak Summer"
-            },
-            {
-              id: 3,
-              startDate: "2024-09-01",
-              endDate: "2024-09-30",
-              mlos: 3,
-              description: "Late Summer"
-            }
-          ]
+          name: 'La Terrazza',
+          cuisine: 'Mediterranean Fine Dining',
+          dressCode: 'Smart Elegant - Jacket required for gentlemen, evening wear for ladies',
+          openingHours: '19:00 - 23:00',
+          description: 'Michelin-starred restaurant offering innovative Mediterranean cuisine with panoramic sea views. Advance reservations required.'
         },
         {
-          id: 2,
-          name: "Winter 2024",
-          startDate: "2024-10-01",
-          endDate: "2025-04-30",
-          isActive: true,
-          periods: [
-            {
-              id: 4,
-              startDate: "2024-10-01",
-              endDate: "2024-12-20",
-              mlos: 2,
-              description: "Early Winter"
-            },
-            {
-              id: 5,
-              startDate: "2024-12-21",
-              endDate: "2025-01-05",
-              mlos: 7,
-              description: "Holiday Season",
-              isBlackout: true
-            },
-            {
-              id: 6,
-              startDate: "2025-01-06",
-              endDate: "2025-04-30",
-              mlos: 2,
-              description: "Late Winter"
-            }
-          ]
+          name: 'Il Giardino',
+          cuisine: 'Traditional Italian',
+          dressCode: 'Smart Casual - Collared shirts required for gentlemen',
+          openingHours: '12:00 - 15:00, 19:00 - 22:30',
+          description: 'Authentic Italian cuisine served in a romantic garden setting. Features wood-fired pizza and homemade pasta.'
+        },
+        {
+          name: 'Pool Bar & Grill',
+          cuisine: 'International Light Dining',
+          dressCode: 'Resort Casual - Cover-ups required',
+          openingHours: '10:00 - 18:00',
+          description: 'Casual poolside dining offering light meals, salads, and refreshing cocktails.'
         }
       ],
-      2: [
-        {
-          id: 3,
-          name: "High Season 2024",
-          startDate: "2024-11-01",
-          endDate: "2025-03-31",
-          isActive: true,
-          description: "Peak tourist season in Mauritius",
-          periods: [
-            {
-              id: 7,
-              startDate: "2024-11-01",
-              endDate: "2024-12-19",
-              mlos: 3,
-              description: "Early High Season"
-            },
-            {
-              id: 8,
-              startDate: "2024-12-20",
-              endDate: "2025-01-10",
-              mlos: 7,
-              description: "Festive Season",
-              isBlackout: true
-            },
-            {
-              id: 9,
-              startDate: "2025-01-11",
-              endDate: "2025-03-31",
-              mlos: 3,
-              description: "Late High Season"
-            }
-          ]
-        },
-        {
-          id: 4,
-          name: "Low Season 2024",
-          startDate: "2024-05-01",
-          endDate: "2024-10-31",
-          isActive: true,
-          description: "Off-peak season with mild weather",
-          periods: [
-            {
-              id: 10,
-              startDate: "2024-05-01",
-              endDate: "2024-07-31",
-              mlos: 2,
-              description: "Early Low Season"
-            },
-            {
-              id: 11,
-              startDate: "2024-08-01",
-              endDate: "2024-10-31",
-              mlos: 2,
-              description: "Late Low Season"
-            }
-          ]
-        }
-      ]
+      spa: {
+        name: 'Riveria Wellness & Spa',
+        treatments: [
+          'Signature Mediterranean Massages',
+          'Anti-aging Facial Treatments',
+          'Couples Treatments',
+          'Hydrotherapy',
+          'Beauty Salon Services',
+          'Traditional Italian Wellness Rituals'
+        ],
+        openingHours: '09:00 - 20:00',
+        description: 'A sanctuary of wellness offering traditional and innovative treatments using premium local ingredients. Features thermal pools, meditation garden, and state-of-the-art fitness center.'
+      }
     },
-    mealPlans: {
-      "1": [
+    contactInfo: {
+      phone: '+39 089 831 888',
+      email: 'info@grandhotelriveria.com',
+      website: 'www.grandhotelriveria.com'
+    },
+    images: [
+      'hotel-exterior.jpg',
+      'lobby.jpg',
+      'restaurant.jpg',
+      'pool.jpg',
+      'spa.jpg'
+    ],
+    amenities: [
+      'Swimming Pool',
+      'Spa',
+      'Fine Dining',
+      'Beach Access',
+      'Fitness Center',
+      'Tennis Court',
+      'Yacht Charter',
+      'Helicopter Pad',
+      'Business Center',
+      'Concierge Service'
+    ],
+    rooms: [
+      {
+        id: 1,
+        type: 'classic',
+        name: 'Classic Room',
+        description: 'Elegant room with garden view',
+        location: 'Garden Wing',
+        maxOccupancy: {
+          adults: 2,
+          children: 1,
+          infants: 1
+        },
+        size: 30,
+        amenities: ['King Bed', 'En-suite Bathroom', 'Mini Bar', 'Safe', 'Wi-Fi'],
+        images: ['classic-room-1.jpg', 'classic-room-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 }
+        ]
+      },
+      {
+        id: 2,
+        type: 'deluxe',
+        name: 'Deluxe Sea View',
+        description: 'Spacious room with Mediterranean views',
+        location: 'Sea Wing',
+        maxOccupancy: {
+          adults: 2,
+          children: 1,
+          infants: 1
+        },
+        size: 35,
+        amenities: ['King Bed', 'Balcony', 'Lounge Area', 'Premium Toiletries', 'Wi-Fi'],
+        images: ['deluxe-room-1.jpg', 'deluxe-room-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 }
+        ]
+      },
+      {
+        id: 3,
+        type: 'junior-suite',
+        name: 'Junior Suite',
+        description: 'Luxurious suite with separate living area',
+        location: 'Main Wing',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 45,
+        amenities: ['King Bed', 'Living Room', 'Walk-in Closet', 'Premium Bar', 'Wi-Fi'],
+        images: ['junior-suite-1.jpg', 'junior-suite-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Sofa Bed', count: 1 }
+        ]
+      },
+      {
+        id: 4,
+        type: 'executive-suite',
+        name: 'Executive Suite',
+        description: 'Premium suite with panoramic sea views',
+        location: 'Top Floor',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 60,
+        amenities: ['King Bed', 'Living Room', 'Dining Area', 'Private Terrace', 'Butler Service'],
+        images: ['executive-suite-1.jpg', 'executive-suite-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Sofa Bed', count: 1 }
+        ]
+      }
+    ],
+    mealPlans: [
+      {
+        id: 'MP-BB-01',
+        type: 'BB',
+        name: 'Bed & Breakfast',
+        description: 'Daily gourmet breakfast at main restaurant',
+        includedMeals: ['Breakfast'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Made-to-order eggs and specialties',
+          'Fresh juices and smoothies',
+          'Premium coffee and tea selection'
+        ],
+        restrictions: []
+      },
+      {
+        id: 'MP-HB-01',
+        type: 'HB',
+        name: 'Half Board',
+        description: 'Breakfast and dinner included',
+        includedMeals: ['Breakfast', 'Dinner'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Three-course dinner at choice of restaurants',
+          'Complimentary water with meals',
+          'Weekly themed dinner events'
+        ],
+        restrictions: ['Excluding premium restaurants']
+      },
+      {
+        id: 'MP-FB-01',
+        type: 'FB',
+        name: 'Full Board',
+        description: 'All daily meals included',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner'],
+        defaultInclusions: [
+          'Full buffet breakfast',
+          'Three-course lunch',
+          'Three-course dinner',
+          'Soft drinks with meals',
+          'Access to all restaurants'
+        ],
+        restrictions: ['Excluding premium beverages']
+      },
+      {
+        id: 'MP-AI-01',
+        type: 'AI',
+        name: 'All Inclusive Premium',
+        description: 'Complete luxury dining experience',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
+        defaultInclusions: [
+          'All meals and snacks',
+          'Premium alcoholic beverages',
+          'Mini bar included',
+          'Room service included',
+          'Special dining events',
+          'Cooking classes'
+        ],
+        restrictions: []
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Maldives Paradise Resort',
+    address: 'Maafushi Island',
+    city: 'Male',
+    country: 'Maldives',
+    description: 'Nestled in the pristine waters of the Maldives, this exclusive island resort offers an unparalleled luxury experience. Featuring overwater villas, world-class dining, and direct access to vibrant coral reefs, the resort combines natural beauty with exceptional service. Each villa is a private sanctuary, whether perched over turquoise lagoons or nestled along powder-soft beaches. The resort\'s commitment to sustainability and marine conservation makes it a perfect choice for environmentally conscious travelers seeking luxury in paradise.',
+    rating: 5,
+    checkInTime: '13:00',
+    checkOutTime: '12:00',
+    policies: {
+      cancellation: 'Free cancellation up to 45 days prior to arrival. Cancellations 45-60 days before arrival incur 25% charge. Cancellations 30-45 days before arrival incur 50% charge. Cancellations within 30 days or no-shows incur full stay charge. Peak season (December 20 - January 10, Chinese New Year, Easter) requires full prepayment 90 days prior and is non-refundable.',
+      checkIn: 'Check-in from 13:00. Seaplane transfers must be arranged at least 72 hours prior to arrival. Meet & greet service at Male International Airport included. Early check-in subject to availability and resort transfer schedules. Welcome drink and cold towel service provided upon arrival.',
+      checkOut: 'Check-out by 12:00. Late check-out until 18:00 at 50% of nightly rate, subject to availability. Complimentary access to facilities and lunch for guests with late flights. Departure lounge with shower facilities available.',
+      childPolicy: 'Children of all ages welcome. Special amenities and activities provided. Children under 12 stay and eat free from children\'s menu when dining with parents. Kids Club available for ages 4-12. Babysitting services with 24-hour notice. Special teen activities program available.',
+      petPolicy: 'No pets allowed due to island ecosystem preservation policy, seaplane transfer restrictions, and to protect the delicate marine environment.',
+      dressCode: 'Relaxed tropical resort attire encouraged. Dining venues: Breakfast/Lunch - Resort casual with appropriate cover-ups, no wet swimwear. Dinner - Smart casual (collared shirts for gentlemen, no sleeveless shirts). Ocean View and Sunset Grill restaurants require smart casual attire for dinner. Barefoot dining encouraged at beach venues. No swimwear in indoor restaurants and facilities. Traditional Maldivian attire welcomed and appreciated.'
+    },
+    ageCategories: [
+      {
+        id: 1,
+        name: 'Infant',
+        label: 'Infant',
+        minAge: 0,
+        maxAge: 2,
+        type: 'infant',
+        description: 'Infants with baby cot available',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        name: 'Child',
+        label: 'Child',
+        minAge: 3,
+        maxAge: 12,
+        type: 'child',
+        description: 'Children with special amenities',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        name: 'Teen',
+        label: 'Teen',
+        minAge: 13,
+        maxAge: 17,
+        type: 'teen',
+        description: 'Teens with special activities',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 4,
+        name: 'Adult',
+        label: 'Adult',
+        minAge: 18,
+        maxAge: 200,
+        type: 'adult',
+        description: 'Standard adult accommodation',
+        defaultRate: 0,
+        isActive: true
+      }
+    ],
+    features: {
+      restaurants: [
         {
-          id: 1,
-          name: "Room Only",
-          code: "RO",
-          description: "No meals included"
+          name: 'Ocean View',
+          cuisine: 'International',
+          dressCode: 'Smart Casual - No beachwear or uncovered swimwear',
+          openingHours: '06:30 - 23:00',
+          description: 'All-day dining venue offering international cuisine with Asian influences. Features live cooking stations and themed dinner nights.'
         },
         {
-          id: 2,
-          name: "Bed & Breakfast",
-          code: "BB",
-          description: "Breakfast included"
+          name: 'Sunset Grill',
+          cuisine: 'Fresh Seafood & Grills',
+          dressCode: 'Smart Casual - Covered beachwear for lunch, smart casual for dinner',
+          openingHours: '19:00 - 22:30',
+          description: 'Overwater restaurant specializing in fresh seafood and premium grills. Stunning sunset views and wine pairing available.'
         },
         {
-          id: 3,
-          name: "Half Board",
-          code: "HB",
-          description: "Breakfast and dinner included"
+          name: 'Teppanyaki',
+          cuisine: 'Japanese',
+          dressCode: 'Smart Casual - No beachwear',
+          openingHours: '19:00 - 22:30',
+          description: 'Interactive dining experience featuring skilled teppanyaki chefs and premium ingredients.'
         },
         {
-          id: 4,
-          name: "Full Board",
-          code: "FB",
-          description: "All meals included"
-        },
-        {
-          id: 5,
-          name: "All Inclusive",
-          code: "AI",
-          description: "All meals and selected drinks included"
+          name: 'Beach Club',
+          cuisine: 'Mediterranean & Light Fare',
+          dressCode: 'Resort Casual - Beachwear acceptable during day',
+          openingHours: '10:00 - 18:00',
+          description: 'Relaxed beachside venue offering light meals, wood-fired pizzas, and refreshing cocktails.'
         }
       ],
-      "2": [
-        {
-          id: 1,
-          name: "Room Only",
-          code: "RO",
-          description: "Accommodation only"
-        },
-        {
-          id: 2,
-          name: "Bed & Breakfast",
-          code: "BB",
-          description: "Includes breakfast buffet"
-        },
-        {
-          id: 3,
-          name: "Half Board",
-          code: "HB",
-          description: "Breakfast and dinner at main restaurant"
-        },
-        {
-          id: 4,
-          name: "Full Board",
-          code: "FB",
-          description: "All meals at main restaurant"
-        },
-        {
-          id: 5,
-          name: "All Inclusive",
-          code: "AI",
-          description: "All meals, snacks and selected beverages"
-        },
-        {
-          id: 6,
-          name: "Premium All Inclusive",
-          code: "PAI",
-          description: "All inclusive plus premium drinks and services"
-        }
-      ]
+      spa: {
+        name: 'Overwater Spa & Wellness',
+        treatments: [
+          'Traditional Maldivian Treatments',
+          'Ayurvedic Therapies',
+          'Couple\'s Rituals',
+          'Yoga and Meditation',
+          'Beauty Treatments',
+          'Holistic Healing Sessions'
+        ],
+        openingHours: '09:00 - 21:00',
+        description: 'Overwater treatment pavilions offering holistic wellness experiences. Features yoga sessions at sunrise, meditation classes, and traditional healing treatments using local ingredients.'
+      }
     },
-    specialOffers: {
-      1: [
-        {
-          id: 1,
-          code: "SUMMER2024",
-          name: "Summer Early Bird",
-          type: "combinable",
-          description: "Book early for summer 2024 and save up to 25%",
-          discountType: "percentage",
-          discountValues: [
-            {
-              nights: 3,
-              value: 15,
-              startDate: "2024-06-01",
-              endDate: "2024-08-31"
-            },
-            {
-              nights: 5,
-              value: 20,
-              startDate: "2024-06-01",
-              endDate: "2024-08-31"
-            },
-            {
-              nights: 7,
-              value: 25,
-              startDate: "2024-06-01",
-              endDate: "2024-08-31"
-            }
-          ],
-          startDate: "2024-01-01",
-          endDate: "2024-05-31",
-          conditions: [
-            "Valid for all room types",
-            "Non-refundable",
-            "Full prepayment required"
-          ],
-          minimumNights: 3,
-          maximumNights: 14,
-          blackoutDates: ["2024-07-14", "2024-07-15"],
-          bookingWindow: {
-            start: "2024-01-01",
-            end: "2024-05-31"
-          }
-        },
-        {
-          id: 2,
-          code: "FAMILY2024",
-          name: "Family Package",
-          type: "cumulative",
-          description: "Special rates for families with children",
-          discountType: "fixed",
-          discountValues: [
-            {
-              nights: 4,
-              value: 100,
-              startDate: "2024-04-01",
-              endDate: "2024-10-31"
-            },
-            {
-              nights: 7,
-              value: 200,
-              startDate: "2024-04-01",
-              endDate: "2024-10-31"
-            }
-          ],
-          startDate: "2024-04-01",
-          endDate: "2024-10-31",
-          conditions: [
-            "Valid for family rooms only",
-            "Includes free meals for children under 12",
-            "Free access to kids club"
-          ],
-          minimumNights: 4,
-          bookingWindow: {
-            start: "2024-01-01",
-            end: "2024-09-30"
-          }
-        }
-      ]
+    contactInfo: {
+      phone: '+960 400 6000',
+      email: 'reservations@maldivesparadise.com',
+      website: 'www.maldivesparadise.com'
     },
+    images: [
+      'aerial-view.jpg',
+      'water-villa.jpg',
+      'beach.jpg',
+      'restaurant.jpg',
+      'spa.jpg'
+    ],
+    amenities: [
+      'Private Beach',
+      'Overwater Spa',
+      'Water Sports Center',
+      'Diving Center',
+      'Multiple Restaurants',
+      'Infinity Pool',
+      'Kids Club',
+      'Sunset Lounge',
+      'Marine Biology Center',
+      'Yoga Pavilion'
+    ],
+    rooms: [
+      {
+        id: 1,
+        type: 'beach-villa',
+        name: 'Beach Villa',
+        description: 'Spacious villa with direct beach access',
+        location: 'Beachfront',
+        maxOccupancy: {
+          adults: 3,
+          children: 2,
+          infants: 1
+        },
+        size: 125,
+        amenities: ['King Bed', 'Private Pool', 'Outdoor Shower', 'Terrace', 'Butler Service'],
+        images: ['beach-villa-1.jpg', 'beach-villa-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Day Bed', count: 1 }
+        ]
+      },
+      {
+        id: 2,
+        type: 'water-villa',
+        name: 'Water Villa',
+        description: 'Overwater villa with ocean views',
+        location: 'Lagoon',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 110,
+        amenities: ['King Bed', 'Glass Floor', 'Private Deck', 'Ocean Access', 'Mini Bar'],
+        images: ['water-villa-1.jpg', 'water-villa-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 }
+        ]
+      },
+      {
+        id: 3,
+        type: 'sunset-villa',
+        name: 'Sunset Water Villa',
+        description: 'Premium overwater villa with sunset views',
+        location: 'Sunset Side',
+        maxOccupancy: {
+          adults: 2,
+          children: 2,
+          infants: 1
+        },
+        size: 140,
+        amenities: ['King Bed', 'Infinity Pool', 'Sunset Deck', 'Butler Service', 'Premium Bar'],
+        images: ['sunset-villa-1.jpg', 'sunset-villa-2.jpg'],
+        bedConfiguration: [
+          { type: 'King', count: 1 },
+          { type: 'Day Bed', count: 1 }
+        ]
+      }
+    ],
+    mealPlans: [
+      {
+        id: 'MP-BB-02',
+        type: 'BB',
+        name: 'Breakfast Experience',
+        description: 'Daily breakfast at main restaurant or in-villa dining',
+        includedMeals: ['Breakfast'],
+        defaultInclusions: [
+          'International breakfast buffet',
+          'In-villa breakfast option',
+          'Premium beverages',
+          'Fresh tropical fruits'
+        ],
+        restrictions: []
+      },
+      {
+        id: 'MP-HB-02',
+        type: 'HB',
+        name: 'Dine Around Half Board',
+        description: 'Breakfast and dinner at selected restaurants',
+        includedMeals: ['Breakfast', 'Dinner'],
+        defaultInclusions: [
+          'Breakfast at any restaurant',
+          'Dinner at selected restaurants',
+          'Non-alcoholic beverages',
+          'Theme night access'
+        ],
+        restrictions: ['Excluding specialty restaurants']
+      },
+      {
+        id: 'MP-AI-02',
+        type: 'AI',
+        name: 'Ultimate All Inclusive',
+        description: 'Complete resort experience',
+        includedMeals: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'],
+        defaultInclusions: [
+          'All meals at any restaurant',
+          'Premium drinks package',
+          'Mini bar included',
+          'Water sports activities',
+          'Spa treatments'
+        ],
+        restrictions: []
+      }
+    ]
+  }
+];
+
+// Sample data structure
+export const SAMPLE_CONTRACTS: Contract[] = [
+  {
+    id: 1,
+    hotelId: 1,
+    marketId: 1,
+    seasonId: 1,
+    name: 'Summer 2024 Contract',
+    startDate: '2024-05-01',
+    endDate: '2024-09-30',
+    status: 'active',
+    rateType: 'public',
+    terms: {
+      cancellationPolicy: [
+        { daysBeforeArrival: 7, charge: 100 },
+        { daysBeforeArrival: 14, charge: 50 }
+      ],
+      paymentTerms: 'Payment required 30 days before arrival',
+      commission: 15,
+      specialConditions: ['Minimum stay 3 nights during peak season'],
+      mealPlanTerms: {
+        restrictions: ['No room service included'],
+        inclusions: ['Breakfast buffet 7:00-10:30'],
+        exclusions: ['Special dinner events']
+      }
+    },
+    validFrom: new Date('2024-01-01'),
+    validTo: new Date('2024-12-31'),
     rates: [
       {
         id: 1,
-        name: "Standard Sea View - Summer 2024",
-        marketId: 1,
-        seasonId: 1,
+        periodId: 1,
         roomTypeId: 1,
+        rateType: 'per_pax',
         contractId: 1,
-        hotelId: 1,
-        currency: "EUR",
-        amount: 350,
-        baseRate: 350,
+        baseRate: 200,
         extraAdult: 80,
         extraChild: 40,
-        singleOccupancy: 300,
         supplements: {
           extraAdult: 80,
           extraChild: 40,
-          singleOccupancy: 300,
+          singleOccupancy: 50,
           mealPlan: {
-            HB: 45,
-            FB: 80
+            BB: 20,
+            HB: 40,
+            FB: 60
           }
-        },
-        minimumStay: 1,
-        maximumStay: 21,
-        restrictions: {
-          closedToArrival: ["2024-07-14"],
-          closedToDeparture: ["2024-07-15"],
-          minimumStayThrough: ["2024-08-01", "2024-08-15"]
-        },
-        ageCategoryRates: {
-          "1": 0,    // Adult
-          "2": 50,   // Child
-          "3": 0     // Infant
-        },
-        specialOffers: [
-          {
-            id: 1,
-            code: "SUMMER2024",
-            name: "Summer Early Bird",
-            type: "combinable",
-            description: "Book early for summer 2024 and save up to 25%",
-            discountType: "percentage",
-            discountValues: [
-              { nights: 3, value: 15 },
-              { nights: 5, value: 20 },
-              { nights: 7, value: 25 }
-            ],
-            startDate: "2024-01-01",
-            endDate: "2024-05-31",
-            conditions: [
-              "Non-refundable",
-              "Full prepayment required"
-            ],
-            minimumNights: 3,
-            maximumNights: 14,
-            blackoutDates: ["2024-07-14", "2024-07-15"],
-            bookingWindow: {
-              start: "2024-01-01",
-              end: "2024-05-31"
-            }
-          }
-        ],
-        startDate: "2024-06-01",
-        endDate: "2024-08-31",
-        isActive: true
+        }
       },
       {
         id: 2,
-        name: "Deluxe Ocean View - Family Summer",
-        marketId: 1,
-        seasonId: 1,
+        periodId: 1,
         roomTypeId: 2,
+        rateType: 'per_pax',
         contractId: 1,
-        hotelId: 1,
-        currency: "EUR",
-        amount: 550,
-        baseRate: 550,
+        baseRate: 300,
         extraAdult: 100,
         extraChild: 50,
-        singleOccupancy: 470,
         supplements: {
           extraAdult: 100,
           extraChild: 50,
-          singleOccupancy: 470,
+          singleOccupancy: 75,
           mealPlan: {
-            HB: 45,
-            FB: 80
+            BB: 25,
+            HB: 50,
+            FB: 75
           }
-        },
-        minimumStay: 4,
-        maximumStay: 21,
-        ageCategoryRates: {
-          "1": 0,    // Adult
-          "2": 50,   // Child
-          "3": 0     // Infant
-        },
-        specialOffers: [
-          {
-            id: 2,
-            code: "FAMILY2024",
-            name: "Family Package",
-            type: "cumulative",
-            description: "Special rates for families with children",
-            discountType: "fixed",
-            discountValues: [
-              { nights: 4, value: 100 },
-              { nights: 7, value: 200 }
-            ],
-            startDate: "2024-04-01",
-            endDate: "2024-10-31",
-            conditions: [
-              "Includes free meals for children under 12",
-              "Free access to kids club"
-            ],
-            minimumNights: 4,
-            bookingWindow: {
-              start: "2024-01-01",
-              end: "2024-09-30"
-            }
-          },
-          {
-            id: 3,
-            code: "LONGSTAY2024",
-            name: "Long Stay Discount",
-            type: "combinable",
-            description: "Special discounts for stays of 7 nights or more",
-            discountType: "percentage",
-            discountValues: [
-              { nights: 7, value: 15 },
-              { nights: 14, value: 25 }
-            ],
-            startDate: "2024-04-01",
-            endDate: "2024-10-31",
-            conditions: [
-              "Cannot be combined with other offers",
-              "Valid for all meal plans"
-            ],
-            minimumNights: 7,
-            blackoutDates: ["2024-07-14", "2024-07-15", "2024-08-01", "2024-08-15"],
-            bookingWindow: {
-              start: "2024-01-01",
-              end: "2024-09-30"
-            }
-          }
-        ],
-        startDate: "2024-06-01",
-        endDate: "2024-08-31",
-        isActive: true
-      },
-      {
-        id: 3,
-        name: "Standard Sea View - Winter 2024",
-        marketId: 1,
-        seasonId: 2,
-        roomTypeId: 1,
-        contractId: 1,
-        hotelId: 1,
-        currency: "EUR",
-        amount: 250,
-        baseRate: 250,
-        extraAdult: 60,
-        extraChild: 30,
-        singleOccupancy: 200,
-        supplements: {
-          extraAdult: 60,
-          extraChild: 30,
-          singleOccupancy: 200,
-          mealPlan: {
-            HB: 45,
-            FB: 80
-          }
-        },
-        minimumStay: 1,
-        maximumStay: 28,
-        ageCategoryRates: {
-          "1": 0,    // Adult
-          "2": 40,   // Child
-          "3": 0     // Infant
-        },
-        specialOffers: [
-          {
-            id: 4,
-            code: "WINTER2024",
-            name: "Winter Escape",
-            type: "cumulative",
-            description: "Special winter rates with flexible cancellation",
-            discountType: "percentage",
-            discountValues: [
-              { nights: 3, value: 10 },
-              { nights: 5, value: 15 },
-              { nights: 7, value: 20 }
-            ],
-            startDate: "2024-11-01",
-            endDate: "2024-12-20",
-            conditions: [
-              "Free cancellation up to 7 days before arrival",
-              "Includes daily breakfast"
-            ],
-            minimumNights: 3,
-            blackoutDates: ["2024-12-24", "2024-12-25", "2024-12-31"],
-            bookingWindow: {
-              start: "2024-09-01",
-              end: "2024-11-30"
-            }
-          }
-        ],
-        startDate: "2024-11-01",
-        endDate: "2024-12-31",
-        isActive: true
+        }
       }
     ],
-    hotelData: {
-      "1-description": "Perched on the stunning French Riviera, the Grand Hotel Riviera is a masterpiece of luxury and elegance. This five-star establishment offers breathtaking views of the Mediterranean Sea from its privileged location in Nice. The hotel seamlessly blends classic French architecture with modern amenities, featuring meticulously designed rooms and suites, each offering a unique perspective of the azure coastline. Our world-class restaurants serve exquisite Mediterranean and French cuisine, while our spa provides the ultimate relaxation experience. With direct beach access, a stunning infinity pool, and proximity to Nice's vibrant cultural attractions, the Grand Hotel Riviera represents the pinnacle of French Riviera hospitality.",
-      "1-cancellation": "Free cancellation up to 30 days before arrival",
-      "1-checkInOut": "Check-in: 2:00 PM, Check-out: 11:00 AM",
-      "2-description": "Nestled along the pristine shores of Pointe aux Piments, Le Meridien Ile Maurice embodies the essence of tropical luxury. This beachfront paradise combines contemporary elegance with authentic Mauritian charm, offering an unparalleled resort experience. Set against the backdrop of the crystal-clear Indian Ocean, the resort features extensive tropical gardens, a world-class spa, and one of the island's finest water sports centers. Our diverse dining venues showcase both local and international cuisines, while our specially designed Kids' Club ensures memorable experiences for our younger guests. Whether you're seeking romantic seclusion, family adventure, or cultural immersion, Le Meridien Ile Maurice provides the perfect setting for an unforgettable island getaway.",
-      "2-cancellation": "Free cancellation up to 45 days before arrival",
-      "2-checkInOut": "Check-in: 3:00 PM, Check-out: 12:00 PM"
-    },
-    currencySettings: [
+    mealPlanConfig: {
+      defaultMealPlan: 'BB',
+      includedMealPlans: ['BB', 'HB', 'FB'],
+      supplements: {
+        BB: 20,
+        HB: 40,
+        FB: 60
+      }
+    }
+  }
+];
+
+export const sampleData: SampleDataType = {
+  hotels: HOTELS,
+  markets: defaultMarkets,
+  contracts: {
+    1: SAMPLE_CONTRACTS
+  },
+  hotelData: {
+    "1-description": "Perched on the stunning French Riviera, the Grand Hotel Riviera offers breathtaking views of the Mediterranean Sea. This five-star establishment combines classic French elegance with modern luxury.",
+    "1-cancellation": "Free cancellation up to 30 days before arrival. Cancellations made within 30 days of arrival are subject to penalties.",
+    "1-checkInOut": "Check-in: 14:00, Check-out: 11:00",
+    "2-description": "Nestled in the heart of the Maldives, Paradise Resort offers an unparalleled luxury experience with overwater villas and pristine beaches. Experience world-class service in a tropical paradise.",
+    "2-cancellation": "Free cancellation up to 45 days before arrival. Cancellations within 45 days are subject to a fee based on the booking value.",
+    "2-checkInOut": "Check-in: 15:00, Check-out: 12:00"
+  },
+  currencySettings: currencySettings,
+  mealPlans: {
+    1: [
       {
         id: 1,
-        code: 'EUR',
-        symbol: '€',
-        name: 'Euro',
-        decimals: 2,
-        isActive: true
+        name: "Bed & Breakfast",
+        code: "BB",
+        description: "Start your day with our gourmet breakfast buffet"
       },
       {
         id: 2,
-        code: 'USD',
-        symbol: '$',
-        name: 'US Dollar',
-        decimals: 2,
-        isActive: true
+        name: "Half Board",
+        code: "HB",
+        description: "Breakfast and dinner included"
       },
       {
         id: 3,
-        code: 'GBP',
-        symbol: '£',
-        name: 'British Pound',
-        decimals: 2,
-        isActive: true
+        name: "Full Board",
+        code: "FB",
+        description: "All daily meals included"
       }
     ]
-  };
-  
-  export const appliedRatesExamples = [
-    {
-      // Example 1: Standard Room with Summer Early Bird
-      id: 101,
-      name: "Standard Sea View - Summer 2024 (with Early Bird)",
-      marketId: 1,
-      seasonId: 1,
-      roomTypeId: 1,
-      contractId: 1,
-      hotelId: 1,
-      currency: "EUR",
-      baseRate: 350,
-      amount: 297.50,
-      extraAdult: 80,
-      extraChild: 40,
-      singleOccupancy: 300,
-      supplements: {
-        extraAdult: 80,
-        extraChild: 40,
-        singleOccupancy: 300,
-        mealPlan: {
-          HB: 45,
-          FB: 80
-        }
-      },
-      specialOffers: [
-        {
-          id: 1,
-          code: "SUMMER2024",
-          name: "Summer Early Bird",
-          type: "combinable",
-          description: "Book early for summer 2024 and save up to 25%",
-          discountType: "percentage",
-          discountValues: [
-            { nights: 3, value: 15 }
-          ],
-          startDate: "2024-01-01",
-          endDate: "2024-05-31",
-          appliedDiscount: {
-            value: 15,
-            amountOff: 52.50
-          }
-        }
-      ],
-      bookingDates: {
-        checkIn: "2024-06-15",
-        checkOut: "2024-06-18",
-        nights: 3
-      },
-      isActive: true
-    },
-    {
-      // Example 2: Deluxe Room with Family Package and Long Stay
-      id: 102,
-      name: "Deluxe Ocean View - Family Summer (with Family Package + Long Stay)",
-      marketId: 1,
-      seasonId: 1,
-      roomTypeId: 2,
-      contractId: 1,
-      hotelId: 1,
-      currency: "EUR",
-      baseRate: 550,
-      amount: 367.50,
-      extraAdult: 100,
-      extraChild: 50,
-      singleOccupancy: 470,
-      supplements: {
-        extraAdult: 100,
-        extraChild: 50,
-        singleOccupancy: 470,
-        mealPlan: {
-          HB: 45,
-          FB: 80
-        }
-      },
-      specialOffers: [
-        {
-          id: 2,
-          code: "FAMILY2024",
-          name: "Family Package",
-          type: "cumulative",
-          description: "Special rates for families with children",
-          discountType: "fixed",
-          discountValues: [
-            { nights: 7, value: 200 }
-          ],
-          startDate: "2024-04-01",
-          endDate: "2024-10-31",
-          appliedDiscount: {
-            value: 200,
-            amountOff: 200,
-            additionalBenefits: ["Free meals for children", "Kids club access"]
-          }
-        },
-        {
-          id: 3,
-          code: "LONGSTAY2024",
-          name: "Long Stay Discount",
-          type: "combinable",
-          description: "Special discounts for stays of 7 nights or more",
-          discountType: "percentage",
-          discountValues: [
-            { nights: 7, value: 15 }
-          ],
-          startDate: "2024-04-01",
-          endDate: "2024-10-31",
-          appliedDiscount: {
-            value: 15,
-            amountOff: 82.50
-          }
-        }
-      ],
-      bookingDates: {
-        checkIn: "2024-06-20",
-        checkOut: "2024-06-27",
-        nights: 7
-      },
-      isActive: true
-    },
-    {
-      // Example 3: Winter Rate with Half Board and Winter Escape
-      id: 103,
-      name: "Standard Sea View - Winter 2024 (with HB and Winter Escape)",
-      marketId: 1,
-      seasonId: 2,
-      roomTypeId: 1,
-      contractId: 1,
-      hotelId: 1,
-      currency: "EUR",
-      baseRate: 250,
-      amount: 265.50,
-      extraAdult: 60,
-      extraChild: 30,
-      singleOccupancy: 200,
-      supplements: {
-        extraAdult: 60,
-        extraChild: 30,
-        singleOccupancy: 200,
-        mealPlan: {
-          HB: 45,
-          FB: 80
-        }
-      },
-      specialOffers: [
-        {
-          id: 4,
-          code: "WINTER2024",
-          name: "Winter Escape",
-          type: "cumulative",
-          description: "Special winter rates with flexible cancellation",
-          discountType: "percentage",
-          discountValues: [
-            { nights: 3, value: 10 }
-          ],
-          startDate: "2024-11-01",
-          endDate: "2024-12-20",
-          appliedDiscount: {
-            value: 10,
-            amountOff: 29.50,
-            includedBenefits: ["Free cancellation", "Daily breakfast"]
-          }
-        }
-      ],
-      bookingDates: {
-        checkIn: "2024-11-15",
-        checkOut: "2024-11-18",
-        nights: 3
-      },
-      selectedMealPlan: {
-        code: "HB",
-        name: "Half Board",
-        supplement: 45
-      },
-      isActive: true
-    }
-  ];
-  
-  // Constantes
-  export const MEAL_PLAN_TYPES: MealPlanType[] = [
-    'RO',   // Room Only
-    'BB',   // Bed & Breakfast
-    'HB',   // Half Board
-    'FB',   // Full Board
-    'AI',   // All Inclusive
-    'UAI'   // Ultra All Inclusive
-  ];
-  
-  // Configuration des devises
-  export const currencySettings: CurrencySetting[] = [
-    { id: 1, code: 'EUR', symbol: '€', name: 'Euro', decimals: 2, isActive: true },
-    { id: 2, code: 'USD', symbol: '$', name: 'US Dollar', decimals: 2, isActive: true },
-    { id: 3, code: 'GBP', symbol: '£', name: 'British Pound', decimals: 2, isActive: true },
-    { id: 4, code: 'MUR', symbol: 'Rs', name: 'Mauritian Rupee', decimals: 2, isActive: false },
-    { id: 5, code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', decimals: 2, isActive: false }
-  ];
-  
-  export const defaultMarketGroups: MarketGroup[] = [
-    {
-      id: 1,
-      name: 'European Markets',
-      region: 'Europe',
-      markets: [1, 2, 3], // IDs of markets
-      defaultCurrency: 'EUR',
-      description: 'Markets in the European region',
-      isActive: true
-    },
-    {
-      id: 2,
-      name: 'North American Markets',
-      region: 'North America',
-      markets: [4, 5],
-      defaultCurrency: 'USD',
-      description: 'Markets in North America',
-      isActive: true
-    }
-  ];
-  
-  export const defaultMarkets: Market[] = [
-    {
-      id: 1,
-      name: 'France',
-      code: 'FR',
-      currency: 'EUR', // Same as market group
-      region: 'Europe',
-      description: 'French market',
-      isActive: true
-    },
-    {
-      id: 2,
-      name: 'UK',
-      code: 'UK',
-      currency: 'GBP', // Different from market group (EUR)
-      region: 'Europe',
-      description: 'British market',
-      isActive: true
-    },
-    {
-      id: 3,
-      name: 'Germany',
-      code: 'DE',
-      currency: 'EUR', // Same as market group
-      region: 'Europe',
-      description: 'German market',
-      isActive: true
-    },
-    {
-      id: 4,
-      name: 'USA',
-      code: 'US',
-      currency: 'USD', // Same as market group
-      region: 'North America',
-      description: 'United States market',
-      isActive: true
-    },
-    {
-      id: 5,
-      name: 'Canada',
-      code: 'CA',
-      currency: 'USD', // Using USD instead of CAD
-      region: 'North America',
-      description: 'Canadian market',
-      isActive: true
-    }
-  ];
+  },
+  marketGroups: defaultMarketGroups,
+  seasons: {
+    1: defaultSeasons,
+    2: maldivesSeasons
+  },
+  specialOffers: {
+    1: defaultSpecialOffers
+  },
+  rates: defaultRates
+};
+
+// Export everything as a single object for easier imports
+export const data = {
+  sampleData,
+  hotels: HOTELS,
+  defaultMarkets,
+  defaultContracts,
+  currencySettings,
+  defaultMarketGroups,
+  defaultSpecialOffers,
+  defaultRates,
+  MEAL_PLAN_TYPES,
+  ageCategories
+};

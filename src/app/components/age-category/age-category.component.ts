@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -86,25 +86,47 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
   private createCategoryForm(): FormGroup {
     return this.formBuilder.group({
       type: ['adult', Validators.required],
-      label: ['', Validators.required],
+      name: ['', Validators.required],
       minAge: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
       maxAge: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
-      defaultRate: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
       isActive: [true]
     }, {
       validators: this.ageRangeValidator
     });
   }
 
-  private ageRangeValidator(group: FormGroup): { [key: string]: boolean } | null {
+  private ageRangeValidator(group: AbstractControl): ValidationErrors | null {
     const minAge = group.get('minAge')?.value;
     const maxAge = group.get('maxAge')?.value;
-    
+
     if (minAge === null || maxAge === null) {
       return null;
     }
 
-    return minAge >= maxAge ? { invalidAgeRange: true } : null;
+    if (minAge >= maxAge) {
+      return { ageRange: 'Maximum age must be greater than minimum age' };
+    }
+
+    return null;
+  }
+
+  private validateAgeRanges(newCategory: AgeCategory, existingCategories: AgeCategory[]): string | null {
+    const activeCategories = existingCategories.filter(c => c.isActive);
+    
+    // Check for overlapping ranges with active categories
+    for (const category of activeCategories) {
+      const overlaps = (
+        (newCategory.minAge >= category.minAge && newCategory.minAge <= category.maxAge) ||
+        (newCategory.maxAge >= category.minAge && newCategory.maxAge <= category.maxAge) ||
+        (category.minAge >= newCategory.minAge && category.minAge <= newCategory.maxAge)
+      );
+
+      if (overlaps) {
+        return `Age range overlaps with existing category "${category.name}" (${category.minAge}-${category.maxAge} years)`;
+      }
+    }
+
+    return null;
   }
 
   private loadCategories(): void {
@@ -117,10 +139,10 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
     this.editingCategory = null;
     this.categoryForm.reset({
       type: 'adult',
+      name: '',
       isActive: true,
-      defaultRate: 0,
       minAge: 0,
-      maxAge: 0
+      maxAge: 100
     });
     this.showCategoryForm = true;
   }
@@ -129,10 +151,9 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
     this.editingCategory = category;
     this.categoryForm.patchValue({
       type: category.type,
-      label: category.label,
+      name: category.name,
       minAge: category.minAge,
       maxAge: category.maxAge,
-      defaultRate: category.defaultRate,
       isActive: category.isActive ?? true
     });
     this.showCategoryForm = true;
@@ -166,16 +187,24 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
     if (this.categoryForm.valid) {
       const formValue = this.categoryForm.value;
       const category: AgeCategory = {
-        id: this.editingCategory ? this.editingCategory.id : this.categories.length + 1,
+        id: this.editingCategory ? this.editingCategory.id : this.getNextCategoryId(),
         name: formValue.name,
         type: formValue.type,
-        label: formValue.name,
+        label: formValue.name, // Using name as label for consistency
         minAge: formValue.minAge,
         maxAge: formValue.maxAge,
-        description: formValue.description,
-        defaultRate: 0,
+        description: `${formValue.name} age category (${formValue.minAge}-${formValue.maxAge} years)`,
+        defaultRate: 0, // Set default rate to 0
         isActive: formValue.isActive
       };
+
+      // Validate age ranges against existing categories
+      const existingCategories = this.categories.filter(c => c.id !== category.id);
+      const validationError = this.validateAgeRanges(category, existingCategories);
+      if (validationError) {
+        this.showError(validationError);
+        return;
+      }
 
       // Get current hotel using the public method
       this.hotelService.getSelectedHotel().subscribe(currentHotel => {
@@ -200,6 +229,8 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
             next: (updatedHotel) => {
               this.categories = updatedHotel.ageCategories || [];
               this.showSuccess(`Age category ${this.editingCategory ? 'updated' : 'added'} successfully`);
+              this.showCategoryForm = false;
+              this.editingCategory = null;
               this.resetForm();
             },
             error: (error) => {
@@ -244,10 +275,13 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
   private resetForm(): void {
     this.categoryForm.reset({
       type: 'adult',
+      name: '',
       isActive: true,
-      defaultRate: 0,
       minAge: 0,
-      maxAge: 0
+      maxAge: 100
     });
+    this.showCategoryForm = false;
+    this.editingCategory = null;
+    this.modalMessage = '';
   }
 }

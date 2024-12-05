@@ -9,11 +9,11 @@ import { PoliciesComponent } from '../policies/policies.component';
 import { RoomTypesComponent } from '../room-types/room-types.component';
 import { MealPlanComponent } from '../meal-plan/meal-plan.component';
 import { PeriodMlosComponent } from '../period-mlos/period-mlos.component';
-
 import { MarketConfigComponent } from '../market-config/market-config.component';
 import { CurrencyComponent } from '../currency/currency.component';
 import { SpecialOffersComponent } from '../special-offers/special-offers.component';
 import { AgeCategoryComponent } from "../age-category/age-category.component";
+import { ContractComponent } from "../contract/contract.component";
 
 @Component({
   selector: 'app-content-editor',
@@ -30,8 +30,9 @@ import { AgeCategoryComponent } from "../age-category/age-category.component";
     MarketConfigComponent,
     CurrencyComponent,
     SpecialOffersComponent,
-    AgeCategoryComponent
-],
+    AgeCategoryComponent,
+    ContractComponent
+  ],
   templateUrl: './content-editor.component.html',
   styleUrls: ['./content-editor.component.css']
 })
@@ -44,17 +45,22 @@ export class ContentEditorComponent implements OnInit {
     general: [
       { id: 'description', icon: 'description', label: 'Description' },
       { id: 'policies', icon: 'policy', label: 'Policies' },
-      { id: 'capacity', icon: 'people', label: 'Room Types' },
-      { id: 'mealPlan', icon: 'restaurant', label: 'Meal Plan' }
+      { id: 'capacity', icon: 'hotel', label: 'Capacity' },
+      { id: 'mealPlan', icon: 'fastfood', label: 'Meal Plans' }
     ],
-    rates: [
+    configuration: [
       { id: 'age-categories', icon: 'people', label: 'Age Categories' },
-      { id: 'currency', icon: 'currency_exchange', label: 'Currency Settings' },
-      { id: 'periodAndMlos', icon: 'calendar_today', label: 'Period and MLOS' },
+      { id: 'currency', icon: 'monetization_on', label: 'Currency' },
+      { id: 'periodAndMlos', icon: 'date_range', label: 'Periods & MLOS' },
       { id: 'markets', icon: 'public', label: 'Markets' }
     ],
+    contracts: [
+      { id: 'contract', icon: 'receipt_long', label: 'Contract Management' },
+      { id: 'ratesConfig', icon: 'settings', label: 'Rate Configuration' },
+      { id: 'rateSeasons', icon: 'calendar_today', label: 'Rate Seasons' }
+    ],
     inventory: [
-      { id: 'roomInventory', icon: 'hotel', label: 'Room Inventory' }
+      { id: 'roomInventory', icon: 'inventory_2', label: 'Room Inventory' }
     ],
     offers: [
       { id: 'specialOffers', icon: 'local_offer', label: 'Special Offers' }
@@ -64,16 +70,22 @@ export class ContentEditorComponent implements OnInit {
   constructor(private hotelService: HotelService) {}
 
   ngOnInit(): void {
+    // Subscribe to selected hotel changes
     this.hotelService.getSelectedHotel().subscribe(hotel => {
+      console.log('Selected hotel changed:', hotel);
       this.selectedHotel = hotel;
     });
 
+    // Subscribe to selected menu item changes
     this.hotelService.getSelectedMenuItem().subscribe(menuItem => {
+      console.log('Selected menu item changed:', menuItem);
       // Always ensure we have a valid menu item
       this.currentMenuItem = menuItem || 'description';
     });
 
+    // Subscribe to active tab changes
     this.hotelService.getActiveTab().subscribe(tab => {
+      console.log('Active tab changed:', tab);
       this.activeTab = tab;
     });
   }
@@ -83,6 +95,7 @@ export class ContentEditorComponent implements OnInit {
   }
 
   onMenuItemClick(item: MenuItem): void {
+    console.log('Menu item clicked:', item);
     this.hotelService.setSelectedMenuItem(item.id);
   }
 }

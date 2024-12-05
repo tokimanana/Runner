@@ -122,7 +122,7 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
     if (this.marketRatesCache.has(marketId)) {
       return this.marketRatesCache.get(marketId)!;
     }
-    const hasRate = this.rates.some(rate => rate.marketId === marketId);
+    const hasRate = this.rates.some((rate: Rate) => rate.marketId === marketId);
     this.marketRatesCache.set(marketId, hasRate);
     return hasRate;
   }

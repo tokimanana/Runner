@@ -1,0 +1,75 @@
+<div class="rates-container">
+  <div class="rates-header">
+    <h3>Contract Rates</h3>
+    <button mat-raised-button color="primary" (click)="openRateForm()">
+      <mat-icon>add</mat-icon>
+      Add Rate
+    </button>
+  </div>
+
+  <table mat-table [dataSource]="contract.rates || []" class="rates-table">
+    <ng-container matColumnDef="roomType">
+      <th mat-header-cell *matHeaderCellDef>Room Type</th>
+      <td mat-cell *matCellDef="let rate">
+        {{getRoomTypeName(rate.roomTypeId)}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="baseRate">
+      <th mat-header-cell *matHeaderCellDef>Base Rate</th>
+      <td mat-cell *matCellDef="let rate">{{rate.baseRate}}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="childRate">
+      <th mat-header-cell *matHeaderCellDef>Child Rate</th>
+      <td mat-cell *matCellDef="let rate">{{rate.childRate}}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let rate; let i = index">
+        <button mat-icon-button (click)="editRate(rate, i)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteRate(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+  <div class="rate-form" *ngIf="showRateForm">
+    <form [formGroup]="rateForm" (ngSubmit)="saveRate()">
+      <mat-form-field appearance="outline">
+        <mat-label>Room Type</mat-label>
+        <mat-select formControlName="roomTypeId">
+          <mat-option *ngFor="let room of roomTypes" [value]="room.id">
+            {{room.name}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Base Rate</mat-label>
+        <input matInput type="number" formControlName="baseRate">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Child Rate</mat-label>
+        <input matInput type="number" formControlName="childRate">
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button mat-button type="button" (click)="cancelRateForm()">
+          Cancel
+        </button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!rateForm.valid">
+          Save Rate
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

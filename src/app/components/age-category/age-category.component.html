@@ -54,10 +54,10 @@
 
     <div class="form-group">
       <mat-form-field appearance="outline">
-        <mat-label>Category Label</mat-label>
-        <input matInput formControlName="label" placeholder="e.g., Adult, Child, Infant" required>
-        <mat-error *ngIf="categoryForm.get('label')?.errors?.['required'] && categoryForm.get('label')?.touched">
-          Category label is required
+        <mat-label>Category Name</mat-label>
+        <input matInput formControlName="name" placeholder="e.g., Adult, Child, Infant" required>
+        <mat-error *ngIf="categoryForm.get('name')?.errors?.['required'] && categoryForm.get('name')?.touched">
+          Category name is required
         </mat-error>
       </mat-form-field>
     </div>
@@ -87,19 +87,6 @@
           </mat-error>
         </mat-form-field>
       </div>
-    </div>
-
-    <div class="form-group">
-      <mat-form-field appearance="outline">
-        <mat-label>Default Rate (%)</mat-label>
-        <input matInput type="number" formControlName="defaultRate" min="0" max="100" required>
-        <mat-error *ngIf="categoryForm.get('defaultRate')?.errors?.['required'] && categoryForm.get('defaultRate')?.touched">
-          Default rate is required
-        </mat-error>
-        <mat-error *ngIf="categoryForm.get('defaultRate')?.errors?.['min'] || categoryForm.get('defaultRate')?.errors?.['max']">
-          Rate must be between 0 and 100
-        </mat-error>
-      </mat-form-field>
     </div>
 
     <div class="form-group">

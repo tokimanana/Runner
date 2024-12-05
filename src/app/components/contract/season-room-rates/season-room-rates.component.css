@@ -1,0 +1,118 @@
+.season-rates-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.rates-header {
+  margin-bottom: 2rem;
+}
+
+.rates-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.season-info {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.season-name {
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.season-dates {
+  color: #666;
+}
+
+.room-type-select {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.period-rates {
+  margin-top: 1.5rem;
+}
+
+.rate-form {
+  padding: 1rem 0;
+}
+
+.base-rates,
+.supplement-rates {
+  margin-bottom: 1.5rem;
+}
+
+.base-rates h4,
+.supplement-rates h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-weight: 500;
+}
+
+.rate-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.rate-inputs mat-form-field {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.no-selection {
+  text-align: center;
+  padding: 2rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  color: #666;
+}
+
+:host ::ng-deep .mat-expansion-panel {
+  margin-bottom: 1rem;
+}
+
+:host ::ng-deep .mat-expansion-panel-header {
+  height: auto !important;
+  padding: 1rem;
+}
+
+:host ::ng-deep .mat-expansion-panel-header-title {
+  font-weight: 500;
+}
+
+:host ::ng-deep .mat-expansion-panel-header-description {
+  color: #666;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+:host ::ng-deep .mat-form-field-wrapper {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .rate-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .season-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

@@ -50,18 +50,28 @@
           [hotel]="selectedHotel"
         ></app-age-category>
 
-        <app-market-config
-          *ngSwitchCase="'markets'"
-          [hotel]="selectedHotel"
-        ></app-market-config>
-
         <app-currency
           *ngSwitchCase="'currency'"
           [hotel]="selectedHotel"
         ></app-currency>
 
+        <app-market-config
+          *ngSwitchCase="'markets'"
+          [hotel]="selectedHotel"
+        ></app-market-config>
+
+        <app-contract
+          *ngSwitchCase="'contract'"
+          [hotel]="selectedHotel"
+        ></app-contract>
+
+        <div *ngSwitchCase="'ratesConfig'" class="placeholder-content">
+          <h3>Rate Configuration</h3>
+          <p>Coming Soon</p>
+        </div>
+
         <div *ngSwitchCase="'rateSeasons'" class="placeholder-content">
-          <h3>Seasonal Rates</h3>
+          <h3>Rate Seasons</h3>
           <p>Coming Soon</p>
         </div>
 
@@ -72,6 +82,7 @@
 
         <app-special-offers
           *ngSwitchCase="'specialOffers'"
+          [hotel]="selectedHotel"
         ></app-special-offers>
       </div>
     </div>
