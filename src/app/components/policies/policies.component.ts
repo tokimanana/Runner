@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, OnChanges, Input, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Hotel, HotelPolicies } from '../../models/types';
-import { HotelService } from '../../services/hotel.service';
-import { Subscription } from 'rxjs';
+import { Hotel, HotelPolicies, PolicyType, CancellationPolicy, TimePolicy, ChildPolicy, PetPolicy, DressCodePolicy, CancellationChargeType } from '../../models/types';
+import { Subject, takeUntil } from 'rxjs';
 import { ModalComponent } from '../modal/modal.component';
+import { PolicyService } from '../../services/policy.service';
 
 @Component({
   selector: 'app-policies',
@@ -13,195 +13,388 @@ import { ModalComponent } from '../modal/modal.component';
   templateUrl: './policies.component.html',
   styleUrl: './policies.component.css'
 })
-export class PoliciesComponent implements OnInit, OnDestroy, OnChanges {
+export class PoliciesComponent implements OnInit, OnDestroy {
   @Input() hotel: Hotel | null = null;
   
   policies: HotelPolicies | null = null;
-  hotelDescription: string = '';
-  private subscriptions: Subscription[] = [];
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
+
+  // Make enums available in template
+  readonly PolicyType = PolicyType;
+  readonly CancellationChargeType = CancellationChargeType;
 
   // Modal related properties
   showModal = false;
   modalTitle = '';
   modalFormFields: any[] = [];
   modalInitialValues: { [key: string]: any } = {};
-  currentEditMode: 'description' | 'cancellation' | 'checkInOut' = 'description';
+  currentEditMode: PolicyType | 'description' = PolicyType.CANCELLATION;
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private policyService: PolicyService) {}
 
   ngOnInit() {
-    this.loadData();
+    this.loadPolicies();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['hotel'] && !changes['hotel'].firstChange) {
-      this.loadData();
+      this.loadPolicies();
     }
   }
 
   ngOnDestroy() {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  private loadData() {
-    if (this.hotel) {
-      // Load hotel description
-      const descSub = this.hotelService.getHotelDescription().subscribe(
-        description => this.hotelDescription = description || ''
-      );
+  private loadPolicies() {
+    if (this.hotel?.id) {
+      this.loading = true;
+      this.error = null;
       
-      // Load hotel policies
-      const policiesSub = this.hotelService.getHotelPolicies().subscribe(
-        policies => this.policies = policies
-      );
-
-      this.subscriptions.push(descSub, policiesSub);
+      this.policyService.getPolicies(this.hotel.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (policies) => {
+            this.policies = policies;
+            this.loading = false;
+          },
+          error: (error) => {
+            this.error = 'Failed to load policies. Please try again.';
+            this.loading = false;
+            console.error('Error loading policies:', error);
+          }
+        });
     }
   }
 
-  openDescriptionModal() {
-    this.currentEditMode = 'description';
-    this.modalTitle = 'Edit Hotel Description';
+  openPolicyModal(type: PolicyType) {
+    this.currentEditMode = type;
+    
+    switch (type) {
+      case PolicyType.CANCELLATION:
+        this.setupCancellationModal();
+        break;
+      case PolicyType.CHECK_IN:
+      case PolicyType.CHECK_OUT:
+        this.setupTimeModal(type);
+        break;
+      case PolicyType.CHILD:
+        this.setupChildPolicyModal();
+        break;
+      case PolicyType.PET:
+        this.setupPetPolicyModal();
+        break;
+      case PolicyType.DRESS_CODE:
+        this.setupDressCodeModal();
+        break;
+    }
+    
+    this.showModal = true;
+  }
+
+  private setupCancellationModal() {
+    const policy = this.policies?.cancellation;
+    this.modalTitle = 'Edit Cancellation Policy';
     this.modalFormFields = [
       {
         name: 'description',
-        label: 'Hotel Description',
+        label: 'Policy Description',
         type: 'textarea',
         required: true,
-        rows: 10
+        rows: 3
+      },
+      {
+        name: 'rules',
+        label: 'Cancellation Rules',
+        type: 'array',
+        fields: [
+          {
+            name: 'daysBeforeArrival',
+            label: 'Days Before Arrival',
+            type: 'number',
+            required: true
+          },
+          {
+            name: 'charge',
+            label: 'Charge',
+            type: 'number',
+            required: true
+          },
+          {
+            name: 'chargeType',
+            label: 'Charge Type',
+            type: 'select',
+            options: Object.values(CancellationChargeType),
+            required: true
+          }
+        ]
+      },
+      {
+        name: 'noShowCharge',
+        label: 'No Show Charge',
+        type: 'number',
+        required: true
+      },
+      {
+        name: 'noShowChargeType',
+        label: 'No Show Charge Type',
+        type: 'select',
+        options: Object.values(CancellationChargeType),
+        required: true
       }
     ];
-    this.modalInitialValues = {
-      description: this.hotelDescription
-    };
-    this.showModal = true;
+
+    this.modalInitialValues = policy || this.policyService.getPolicyTemplate(PolicyType.CANCELLATION);
   }
 
-  openPolicyModal(type: 'cancellation' | 'checkInOut') {
-    this.currentEditMode = type;
-    if (type === 'cancellation') {
-      this.modalTitle = 'Edit Cancellation Policy';
-      this.modalFormFields = [
-        {
-          name: 'policy',
-          label: 'Cancellation Policy',
-          type: 'textarea',
-          required: true,
-          rows: 10
-        }
-      ];
-      this.modalInitialValues = {
-        policy: this.policies?.cancellation || ''
-      };
-    } else {
-      this.modalTitle = 'Edit Check-In/Out Policy';
-      this.modalFormFields = [
-        {
-          name: 'checkIn',
-          label: 'Check-In Policy',
-          type: 'textarea',
-          required: true,
-          rows: 5
-        },
-        {
-          name: 'checkOut',
-          label: 'Check-Out Policy',
-          type: 'textarea',
-          required: true,
-          rows: 5
-        }
-      ];
-      this.modalInitialValues = {
-        checkIn: this.policies?.checkIn || '',
-        checkOut: this.policies?.checkOut || ''
-      };
+  private setupTimeModal(type: PolicyType.CHECK_IN | PolicyType.CHECK_OUT) {
+    const policy = type === PolicyType.CHECK_IN ? this.policies?.checkIn : this.policies?.checkOut;
+    const title = type === PolicyType.CHECK_IN ? 'Check-In' : 'Check-Out';
+    this.modalTitle = `Edit ${title} Policy`;
+    
+    this.modalFormFields = [
+      {
+        name: 'standardTime',
+        label: `Standard ${title} Time`,
+        type: 'time',
+        required: true
+      },
+      {
+        name: type === PolicyType.CHECK_IN ? 'earliestTime' : 'latestTime',
+        label: type === PolicyType.CHECK_IN ? 'Earliest Possible Time' : 'Latest Possible Time',
+        type: 'time'
+      },
+      {
+        name: 'requirements',
+        label: 'Requirements',
+        type: 'array',
+        fields: [
+          {
+            name: 'requirement',
+            label: 'Requirement',
+            type: 'text',
+            required: true
+          }
+        ]
+      }
+    ];
+
+    this.modalInitialValues = policy || this.policyService.getPolicyTemplate(type);
+  }
+
+  private setupChildPolicyModal() {
+    const policy = this.policies?.child;
+    this.modalTitle = 'Edit Child Policy';
+    
+    this.modalFormFields = [
+      {
+        name: 'allowChildren',
+        label: 'Allow Children',
+        type: 'checkbox',
+        required: true
+      },
+      {
+        name: 'maxChildAge',
+        label: 'Maximum Child Age',
+        type: 'number',
+        required: true
+      },
+      {
+        name: 'maxInfantAge',
+        label: 'Maximum Infant Age',
+        type: 'number',
+        required: true
+      },
+      {
+        name: 'childrenStayFree',
+        label: 'Children Stay Free',
+        type: 'checkbox'
+      },
+      {
+        name: 'maxChildrenFree',
+        label: 'Maximum Children Free',
+        type: 'number'
+      },
+      {
+        name: 'requiresAdult',
+        label: 'Requires Adult',
+        type: 'checkbox',
+        required: true
+      },
+      {
+        name: 'minAdultAge',
+        label: 'Minimum Adult Age',
+        type: 'number',
+        required: true
+      }
+    ];
+
+    this.modalInitialValues = policy || this.policyService.getPolicyTemplate(PolicyType.CHILD);
+  }
+
+  private setupPetPolicyModal() {
+    const policy = this.policies?.pet;
+    this.modalTitle = 'Edit Pet Policy';
+    
+    this.modalFormFields = [
+      {
+        name: 'allowPets',
+        label: 'Allow Pets',
+        type: 'checkbox',
+        required: true
+      },
+      {
+        name: 'maxPets',
+        label: 'Maximum Pets',
+        type: 'number',
+        required: true
+      },
+      {
+        name: 'petTypes',
+        label: 'Accepted Pet Types',
+        type: 'array',
+        fields: [
+          {
+            name: 'type',
+            label: 'Pet Type',
+            type: 'text',
+            required: true
+          }
+        ]
+      },
+      {
+        name: 'restrictions',
+        label: 'Restrictions',
+        type: 'array',
+        fields: [
+          {
+            name: 'restriction',
+            label: 'Restriction',
+            type: 'text',
+            required: true
+          }
+        ]
+      }
+    ];
+
+    this.modalInitialValues = policy || this.policyService.getPolicyTemplate(PolicyType.PET);
+  }
+
+  private setupDressCodeModal() {
+    const policy = this.policies?.dressCode;
+    this.modalTitle = 'Edit Dress Code Policy';
+    
+    this.modalFormFields = [
+      {
+        name: 'general',
+        label: 'General Dress Code',
+        type: 'textarea',
+        required: true,
+        rows: 3
+      },
+      {
+        name: 'restaurants',
+        label: 'Restaurant Dress Codes',
+        type: 'array',
+        fields: [
+          {
+            name: 'name',
+            label: 'Restaurant Name',
+            type: 'text',
+            required: true
+          },
+          {
+            name: 'code',
+            label: 'Dress Code',
+            type: 'text',
+            required: true
+          },
+          {
+            name: 'description',
+            label: 'Description',
+            type: 'textarea',
+            rows: 2
+          }
+        ]
+      },
+      {
+        name: 'publicAreas',
+        label: 'Public Area Dress Codes',
+        type: 'array',
+        fields: [
+          {
+            name: 'area',
+            label: 'Area Name',
+            type: 'text',
+            required: true
+          },
+          {
+            name: 'code',
+            label: 'Dress Code',
+            type: 'text',
+            required: true
+          },
+          {
+            name: 'description',
+            label: 'Description',
+            type: 'textarea',
+            rows: 2
+          }
+        ]
+      }
+    ];
+
+    this.modalInitialValues = policy || this.policyService.getPolicyTemplate(PolicyType.DRESS_CODE);
+  }
+
+  // Array field handling methods
+  addArrayItem(fieldName: string, defaultValue: any = '') {
+    if (!this.modalInitialValues[fieldName]) {
+      this.modalInitialValues[fieldName] = [];
     }
-    this.showModal = true;
+    this.modalInitialValues[fieldName].push(defaultValue);
+  }
+
+  removeArrayItem(fieldName: string, index: number) {
+    if (this.modalInitialValues[fieldName] && Array.isArray(this.modalInitialValues[fieldName])) {
+      this.modalInitialValues[fieldName].splice(index, 1);
+    }
   }
 
   handleModalSubmit(formData: any) {
-    if (!this.hotel) return;
+    if (!this.hotel?.id) return;
 
-    switch (this.currentEditMode) {
-      case 'description':
-        this.hotelService.saveHotelData(this.hotel.id, 'description', formData.description).subscribe(
-          () => {
-            this.hotelDescription = formData.description;
-            this.showModal = false;
-          }
-        );
-        break;
-
-      case 'cancellation':
-        const updatedCancellationPolicies: HotelPolicies = {
-          ...this.policies,
-          cancellation: formData.policy
-        } as HotelPolicies;
-        this.hotelService.saveHotelPolicies(this.hotel.id, updatedCancellationPolicies);
-        this.policies = updatedCancellationPolicies;
+    this.loading = true;
+    this.policyService.updatePolicy(
+      this.hotel.id,
+      this.currentEditMode as PolicyType,
+      formData
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (policies) => {
+        this.policies = policies;
+        this.loading = false;
         this.showModal = false;
-        break;
-
-      case 'checkInOut':
-        const updatedCheckInOutPolicies: HotelPolicies = {
-          ...this.policies,
-          checkIn: formData.checkIn,
-          checkOut: formData.checkOut
-        } as HotelPolicies;
-        this.hotelService.saveHotelPolicies(this.hotel.id, updatedCheckInOutPolicies);
-        this.policies = updatedCheckInOutPolicies;
-        this.showModal = false;
-        break;
-    }
+      },
+      error: (error) => {
+        this.error = 'Failed to update policy. Please try again.';
+        this.loading = false;
+        console.error('Error updating policy:', error);
+      }
+    });
   }
 
   handleModalCancel() {
     this.showModal = false;
   }
 
-  applyTemplate(type: 'cancellation' | 'checkInOut', template: string) {
-    if (!this.hotel) return;
+  applyTemplate(type: PolicyType) {
+    if (!this.hotel?.id) return;
 
-    let updatedPolicies: HotelPolicies;
-    
-    switch (template) {
-      case 'standard':
-        if (type === 'cancellation') {
-          updatedPolicies = {
-            ...this.policies,
-            cancellation: 'Standard cancellation policy:\n' +
-              '- Free cancellation up to 48 hours before check-in\n' +
-              '- Cancellations within 48 hours of check-in will be charged one night\'s stay\n' +
-              '- No-shows will be charged the full amount of the stay'
-          } as HotelPolicies;
-        } else {
-          updatedPolicies = {
-            ...this.policies,
-            checkIn: '3:00 PM - Early check-in subject to availability',
-            checkOut: '11:00 AM - Late check-out available for additional fee'
-          } as HotelPolicies;
-        }
-        break;
-      
-      case 'flexible':
-        if (type === 'cancellation') {
-          updatedPolicies = {
-            ...this.policies,
-            cancellation: 'Flexible cancellation policy:\n' +
-              '- Free cancellation up to 24 hours before check-in\n' +
-              '- Same-day cancellations will be charged 50% of one night\'s stay\n' +
-              '- No-shows will be charged one night\'s stay'
-          } as HotelPolicies;
-        } else {
-          return; // No flexible template for check-in/out
-        }
-        break;
-
-      default:
-        return;
-    }
-
-    this.hotelService.saveHotelPolicies(this.hotel.id, updatedPolicies);
-    this.policies = updatedPolicies;
+    const template = this.policyService.getPolicyTemplate(type);
+    this.handleModalSubmit(template);
   }
 }

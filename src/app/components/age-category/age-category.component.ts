@@ -103,8 +103,8 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (minAge >= maxAge) {
-      return { ageRange: 'Maximum age must be greater than minimum age' };
+    if (minAge >= maxAge && maxAge !== 100) {
+      return { ageRange: 'Maximum age must be greater than minimum age (unless it is 100 for unlimited)' };
     }
 
     return null;
@@ -190,11 +190,11 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
         id: this.editingCategory ? this.editingCategory.id : this.getNextCategoryId(),
         name: formValue.name,
         type: formValue.type,
-        label: formValue.name, // Using name as label for consistency
+        label: this.generateAgeLabel(formValue.type, formValue.minAge, formValue.maxAge),
         minAge: formValue.minAge,
         maxAge: formValue.maxAge,
-        description: `${formValue.name} age category (${formValue.minAge}-${formValue.maxAge} years)`,
-        defaultRate: 0, // Set default rate to 0
+        description: this.generateAgeDescription(formValue.name, formValue.minAge, formValue.maxAge),
+        defaultRate: 0,
         isActive: formValue.isActive
       };
 
@@ -206,7 +206,7 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Get current hotel using the public method
+      // Get current hotel
       this.hotelService.getSelectedHotel().subscribe(currentHotel => {
         if (!currentHotel) {
           this.showError('No hotel selected');
@@ -283,5 +283,18 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
     this.showCategoryForm = false;
     this.editingCategory = null;
     this.modalMessage = '';
+  }
+
+  private generateAgeLabel(type: string, minAge: number, maxAge: number): string {
+    const name = type.charAt(0).toUpperCase() + type.slice(1);
+    return maxAge === 100 ? 
+      `${name} (${minAge}+ years)` : 
+      `${name} (${minAge}-${maxAge} years)`;
+  }
+
+  private generateAgeDescription(name: string, minAge: number, maxAge: number): string {
+    return maxAge === 100 ?
+      `${name} age category (${minAge}+ years)` :
+      `${name} age category (${minAge}-${maxAge} years)`;
   }
 }

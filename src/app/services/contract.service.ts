@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, of, map, firstValueFrom } from 'rxjs';
-import { Contract, ContractPeriodRate, MealPlanType, RoomOccupancy, RateCalculationResult, Period } from '../models/types';
+import { Contract, ContractPeriodRate, MealPlanType, RoomOccupancy, RateCalculationResult, Period, RoomTypeRate } from '../models/types';
 import { defaultContracts } from '../../data';
 import { HotelService } from './hotel.service';
+import { CurrencyService } from './currency.service';
+import { MarketService } from './market.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +13,11 @@ export class ContractService {
   private contracts: Contract[] = defaultContracts;
   private currentContractSubject = new BehaviorSubject<Contract | null>(null);
 
-  constructor(private hotelService: HotelService) {}
+  constructor(
+    private hotelService: HotelService, 
+    private currencyService: CurrencyService,
+    private marketService: MarketService
+  ) {}
 
   getContracts(): Observable<Contract[]> {
     return of(this.contracts);
@@ -109,166 +115,139 @@ export class ContractService {
     );
   }
 
-  calculateRate(
-    periodRate: ContractPeriodRate,
+  async calculateRate(
+    contract: Contract,
+    periodId: number,
+    roomTypeId: number,
     occupancy: RoomOccupancy,
-    mealPlan: MealPlanType
-  ): RateCalculationResult {
-    if (periodRate.rateType === 'per_unit') {
-      return this.calculatePerUnitRate(periodRate, occupancy, mealPlan);
-    } else {
-      return this.calculatePerPaxRate(periodRate, occupancy, mealPlan);
+    mealPlan?: MealPlanType
+  ): Promise<RateCalculationResult> {
+    const periodRate = contract.periodRates.find(pr => pr.periodId === periodId);
+    if (!periodRate) {
+      throw new Error('Period rate not found');
     }
-  }
 
-  private calculatePerPaxRate(
-    periodRate: ContractPeriodRate,
-    occupancy: RoomOccupancy,
-    mealPlan: MealPlanType
-  ): RateCalculationResult {
-    const { adults, children, infants } = occupancy;
-    const baseRates = periodRate.baseRates;
-    const supplements = periodRate.supplements;
+    const roomRate = periodRate.roomRates.find(rr => rr.roomTypeId === roomTypeId);
+    if (!roomRate) {
+      throw new Error('Room rate not found');
+    }
 
+    const market = await firstValueFrom(this.marketService.getMarket(contract.marketId));
+    if (!market) {
+      throw new Error('Market not found');
+    }
+
+    const currency = market.currency;
     let baseRate = 0;
-    let baseRateDescription = '';
-    if (adults === 1 && baseRates.single) {
-      baseRate = baseRates.single;
-      baseRateDescription = 'Single occupancy base rate';
-    } else if (adults === 2 && baseRates.double) {
-      baseRate = baseRates.double;
-      baseRateDescription = 'Double occupancy base rate';
-    } else if (adults === 3 && baseRates.triple) {
-      baseRate = baseRates.triple;
-      baseRateDescription = 'Triple occupancy base rate';
-    } else if (adults === 4 && baseRates.quad) {
-      baseRate = baseRates.quad;
-      baseRateDescription = 'Quad occupancy base rate';
-    } else if (adults === 5 && baseRates.quint) {
-      baseRate = baseRates.quint;
-      baseRateDescription = 'Quint occupancy base rate';
-    }
-
-    const supplementsList: RateCalculationResult['breakdown']['supplements'] = [];
-    let supplementsTotal = 0;
-
-    const extraAdults = Math.max(0, adults - (baseRate ? 1 : 0));
-    if (extraAdults > 0) {
-      const extraAdultAmount = extraAdults * supplements.extraAdult;
-      supplementsTotal += extraAdultAmount;
-      supplementsList.push({
-        amount: extraAdultAmount,
-        description: `Extra adult supplement (${extraAdults} × ${supplements.extraAdult})`
-      });
-    }
-
-    if (children > 0) {
-      const childAmount = children * supplements.child;
-      supplementsTotal += childAmount;
-      supplementsList.push({
-        amount: childAmount,
-        description: `Child supplement (${children} × ${supplements.child})`
-      });
-    }
-
-    const mealPlanRates = periodRate.mealPlanRates.find(r => r.mealPlanType === mealPlan);
     let mealPlanTotal = 0;
-    const mealPlanBreakdown: RateCalculationResult['breakdown']['mealPlan'] = [];
 
-    if (mealPlanRates) {
-      if (mealPlanRates.roomRates) {
-        const occupancyKey = this.getOccupancyKey(adults);
-        const rates = mealPlanRates.roomRates[occupancyKey];
-        if (rates) {
-          const adultMealPlan = adults * rates.adult;
-          const childMealPlan = children * rates.child;
-          const infantMealPlan = infants * rates.infant;
-
-          mealPlanTotal = adultMealPlan + childMealPlan + infantMealPlan;
-          mealPlanBreakdown.push(
-            { amount: adultMealPlan, description: `Adult meal plan ${mealPlan} (${adults} × ${rates.adult})` },
-            { amount: childMealPlan, description: `Child meal plan ${mealPlan} (${children} × ${rates.child})` },
-            { amount: infantMealPlan, description: `Infant meal plan ${mealPlan} (${infants} × ${rates.infant})` }
-          );
-        }
-      } else if (mealPlanRates.rates) {
-        const adultMealPlan = adults * mealPlanRates.rates.adult;
-        const childMealPlan = children * mealPlanRates.rates.child;
-        const infantMealPlan = infants * mealPlanRates.rates.infant;
-
-        mealPlanTotal = adultMealPlan + childMealPlan + infantMealPlan;
-        mealPlanBreakdown.push(
-          { amount: adultMealPlan, description: `Adult meal plan ${mealPlan} (${adults} × ${mealPlanRates.rates.adult})` },
-          { amount: childMealPlan, description: `Child meal plan ${mealPlan} (${children} × ${mealPlanRates.rates.child})` },
-          { amount: infantMealPlan, description: `Infant meal plan ${mealPlan} (${infants} × ${mealPlanRates.rates.infant})` }
-        );
+    if (roomRate.rateType === 'per_pax') {
+      baseRate = this.calculatePerPaxRate(roomRate, occupancy);
+      if (mealPlan) {
+        mealPlanTotal = this.calculateMealPlanTotal(roomRate, occupancy, mealPlan);
+      }
+    } else {
+      baseRate = this.calculatePerVillaRate(roomRate, occupancy);
+      if (mealPlan) {
+        mealPlanTotal = this.calculateMealPlanTotal(roomRate, occupancy, mealPlan);
       }
     }
+
+    const total = baseRate + mealPlanTotal;
 
     return {
       baseRate,
-      supplementsTotal,
-      mealPlanTotal,
-      total: baseRate + supplementsTotal + mealPlanTotal,
+      supplements: {
+        mealPlan: mealPlanTotal
+      },
       breakdown: {
-        base: { amount: baseRate, description: baseRateDescription },
-        supplements: supplementsList,
-        mealPlan: mealPlanBreakdown
-      }
+        baseRate,
+        mealPlanTotal
+      },
+      total,
+      currency
     };
   }
 
-  private calculatePerUnitRate(
-    periodRate: ContractPeriodRate,
+  private calculatePerPaxRate(
+    roomRate: RoomTypeRate,
+    occupancy: RoomOccupancy
+  ): number {
+    const { adults, children, infants } = occupancy;
+    let baseRate = 0;
+
+    // Calculate adult rates
+    const adultRates = roomRate.personTypeRates['adult']?.rates || {};
+    for (let i = 1; i <= adults; i++) {
+      const rate = adultRates[i] || 0;
+      baseRate += rate;
+    }
+
+    // Calculate child rates
+    const childRates = roomRate.personTypeRates['child']?.rates || {};
+    for (let i = 1; i <= children; i++) {
+      const rate = childRates[i] || 0;
+      baseRate += rate;
+    }
+
+    // Calculate infant rates
+    const infantRates = roomRate.personTypeRates['infant']?.rates || {};
+    for (let i = 1; i <= infants; i++) {
+      const rate = infantRates[i] || 0;
+      baseRate += rate;
+    }
+
+    return baseRate;
+  }
+
+  private calculatePerVillaRate(
+    roomRate: RoomTypeRate,
+    occupancy: RoomOccupancy
+  ): number {
+    const { adults, children, infants } = occupancy;
+    let baseRate = 0;
+
+    // Get base villa rate
+    const baseVillaRate = roomRate.personTypeRates['base']?.rates?.[1] || 0;
+    baseRate = baseVillaRate;
+
+    // Calculate additional person charges
+    const adultRates = roomRate.personTypeRates['adult']?.rates || {};
+    for (let i = 1; i <= adults; i++) {
+      const rate = adultRates[i] || 0;
+      if (rate > 0) {
+        baseRate += rate;
+      }
+    }
+
+    const childRates = roomRate.personTypeRates['child']?.rates || {};
+    for (let i = 1; i <= children; i++) {
+      const rate = childRates[i] || 0;
+      if (rate > 0) {
+        baseRate += rate;
+      }
+    }
+
+    return baseRate;
+  }
+
+  private calculateMealPlanTotal(
+    roomRate: RoomTypeRate,
     occupancy: RoomOccupancy,
     mealPlan: MealPlanType
-  ): RateCalculationResult {
+  ): number {
     const { adults, children, infants } = occupancy;
-    const unitRate = periodRate.baseRates.unitRate || 0;
-
-    const supplementsTotal = 0;
-    const supplementsList: RateCalculationResult['breakdown']['supplements'] = [];
-
-    const mealPlanRates = periodRate.mealPlanRates.find(r => r.mealPlanType === mealPlan);
     let mealPlanTotal = 0;
-    const mealPlanBreakdown: RateCalculationResult['breakdown']['mealPlan'] = [];
 
+    const mealPlanRates = roomRate.mealPlanRates[mealPlan];
     if (mealPlanRates) {
-      if (mealPlanRates.rates) {
-        const adultMealPlan = adults * mealPlanRates.rates.adult;
-        const childMealPlan = children * mealPlanRates.rates.child;
-        const infantMealPlan = infants * mealPlanRates.rates.infant;
+      const adultMealPlan = adults * (mealPlanRates['adult'] || 0);
+      const childMealPlan = children * (mealPlanRates['child'] || 0);
+      const infantMealPlan = infants * (mealPlanRates['infant'] || 0);
 
-        mealPlanTotal = adultMealPlan + childMealPlan + infantMealPlan;
-        mealPlanBreakdown.push(
-          { amount: adultMealPlan, description: `Adult meal plan ${mealPlan} (${adults} × ${mealPlanRates.rates.adult})` },
-          { amount: childMealPlan, description: `Child meal plan ${mealPlan} (${children} × ${mealPlanRates.rates.child})` },
-          { amount: infantMealPlan, description: `Infant meal plan ${mealPlan} (${infants} × ${mealPlanRates.rates.infant})` }
-        );
-      }
+      mealPlanTotal = adultMealPlan + childMealPlan + infantMealPlan;
     }
 
-    return {
-      baseRate: unitRate,
-      supplementsTotal,
-      mealPlanTotal,
-      total: unitRate + mealPlanTotal,
-      breakdown: {
-        base: { amount: unitRate, description: 'Fixed room rate' },
-        supplements: supplementsList,
-        mealPlan: mealPlanBreakdown
-      }
-    };
-  }
-
-  private getOccupancyKey(adults: number): 'single' | 'double' | 'triple' | 'quad' | 'quint' {
-    switch (adults) {
-      case 1: return 'single';
-      case 2: return 'double';
-      case 3: return 'triple';
-      case 4: return 'quad';
-      case 5: return 'quint';
-      default: throw new Error(`Invalid number of adults: ${adults}`);
-    }
+    return mealPlanTotal;
   }
 }

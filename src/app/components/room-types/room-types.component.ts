@@ -2,7 +2,7 @@ import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoomConfigurationService } from '../../services/room-configuration.service';
-import { Hotel, RoomType } from '../../models/types';
+import { Hotel, RoomType, RoomCategory } from '../../models/types';
 import { ModalComponent } from '../modal/modal.component';
 import { Subscription } from 'rxjs';
 
@@ -19,22 +19,22 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   showRoomForm = false;
   editingRoom: RoomType | null = null;
   newAmenity = '';
+  roomCategories = Object.values(RoomCategory);
   private roomSubscription?: Subscription;
   
   roomForm: Omit<RoomType, 'id'> = {
-    type: '',
+    category: RoomCategory.STANDARD,
     name: '',
     description: '',
-    location: '',
     maxOccupancy: {
-      adults: 0,
-      children: 0,
-      infants: 0
+      adults: 2,
+      children: 1,
+      infants: 1
     },
+    baseOccupancy: 2,
     amenities: [],
     size: 0,
-    images: [],
-    bedConfiguration: []
+    images: []
   };
 
   constructor(private roomConfigService: RoomConfigurationService) {}
@@ -86,24 +86,23 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
   editRoom(room: RoomType) {
     this.editingRoom = room;
     this.roomForm = {
-      type: room.type || '',
-      name: room.name || '',
+      category: room.category,
+      name: room.name,
       description: room.description || '',
-      location: room.location || '',
       maxOccupancy: {
-        adults: room.maxOccupancy?.adults || 0,
-        children: room.maxOccupancy?.children || 0,
-        infants: room.maxOccupancy?.infants || 0
+        adults: room.maxOccupancy?.adults || 2,
+        children: room.maxOccupancy?.children || 1,
+        infants: room.maxOccupancy?.infants || 1
       },
-      amenities: Array.isArray(room.amenities) ? [...room.amenities] : [],
+      baseOccupancy: room.baseOccupancy || 2,
+      amenities: [...room.amenities],
       size: room.size || 0,
-      images: Array.isArray(room.images) ? [...room.images] : [],
-      bedConfiguration: Array.isArray(room.bedConfiguration) ? [...room.bedConfiguration] : []
+      images: [...(room.images || [])]
     };
     this.showRoomForm = true;
     console.log('Editing room:', room.id);
   }
-  
+
   deleteRoom(room: RoomType) {
     if (confirm('Are you sure you want to delete this room type?')) {
       this.roomConfigService.deleteRoom(this.hotel!.id, room.id);
@@ -125,7 +124,7 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
     if (!this.hotel) return;
     
     if (!this.roomConfigService.validateRoomConfiguration(this.roomForm)) {
-      alert('Please fill in all required fields correctly. Room must have a name, type, and at least one adult occupancy.');
+      alert('Please fill in all required fields correctly. Room must have a name, category, and at least one adult occupancy.');
       return;
     }
 
@@ -149,19 +148,18 @@ export class RoomTypesComponent implements OnInit, OnDestroy, OnChanges {
 
   resetRoomForm() {
     this.roomForm = {
-      type: '',
+      category: RoomCategory.STANDARD,
       name: '',
       description: '',
-      location: '',
       maxOccupancy: {
-        adults: 0,
-        children: 0,
-        infants: 0
+        adults: 2,
+        children: 1,
+        infants: 1
       },
+      baseOccupancy: 2,
       amenities: [],
       size: 0,
-      images: [],
-      bedConfiguration: []
+      images: []
     };
   }
 }

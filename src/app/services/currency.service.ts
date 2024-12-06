@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { CurrencySetting } from '../models/types';
+import { currencySettings as defaultCurrencySettings } from '../../data';
 
 @Injectable({
   providedIn: 'root'
@@ -10,14 +11,8 @@ export class CurrencyService {
   private currencySettingsSubject = new BehaviorSubject<CurrencySetting[]>([]);
 
   constructor() {
-    // Initialize with default currencies
-    this.currencySettings = [
-      { id: 1, code: 'USD', symbol: '$', name: 'US Dollar', decimals: 2, isActive: true },
-      { id: 2, code: 'EUR', symbol: '€', name: 'Euro', decimals: 2, isActive: false },
-      { id: 3, code: 'GBP', symbol: '£', name: 'British Pound', decimals: 2, isActive: false },
-      { id: 4, code: 'JPY', symbol: '¥', name: 'Japanese Yen', decimals: 0, isActive: false },
-      { id: 5, code: 'CHF', symbol: 'Fr', name: 'Swiss Franc', decimals: 2, isActive: false }
-    ];
+    // Initialize with default currencies from data.ts
+    this.currencySettings = [...defaultCurrencySettings];
     this.currencySettingsSubject.next(this.currencySettings);
   }
 

@@ -9,7 +9,7 @@
   <div class="room-list">
     <div *ngFor="let room of rooms" class="room-card">
       <div class="room-header">
-        <h4>{{ room.type }}</h4>
+        <h4>{{ room.name }} ({{ room.category }})</h4>
         <div class="actions">
           <button (click)="editRoom(room)" class="edit-btn">
             <i class="material-icons">edit</i>
@@ -22,13 +22,14 @@
 
       <div class="room-details">
         <p><strong>Description:</strong> {{ room.description }}</p>
-        <p><strong>Location:</strong> {{ room.location }}</p>
+        <p *ngIf="room.size"><strong>Size:</strong> {{ room.size }} sqm</p>
         <div class="occupancy">
-          <p><strong>Maximum Occupancy:</strong></p>
+          <p><strong>Occupancy:</strong></p>
           <ul>
-            <li>Adults: {{ room.maxOccupancy.adults }}</li>
-            <li>Children: {{ room.maxOccupancy.children }}</li>
-            <li>Infants: {{ room.maxOccupancy.infants }}</li>
+            <li>Base Occupancy: {{ room.baseOccupancy }}</li>
+            <li>Maximum: {{ room.maxOccupancy.adults }} adults, 
+                       {{ room.maxOccupancy.children }} children, 
+                       {{ room.maxOccupancy.infants }} infants</li>
           </ul>
         </div>
         <div class="amenities">
@@ -48,8 +49,17 @@
     <h3>{{ editingRoom ? 'Edit Room Type' : 'Add New Room Type' }}</h3>
     
     <div class="form-group">
-      <label>Room Type Name:</label>
-      <input type="text" [(ngModel)]="roomForm.type" class="form-input">
+      <label>Room Category:</label>
+      <select [(ngModel)]="roomForm.category" class="form-input">
+        <option *ngFor="let category of roomCategories" [value]="category">
+          {{ category }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Room Name:</label>
+      <input type="text" [(ngModel)]="roomForm.name" class="form-input">
     </div>
 
     <div class="form-group">
@@ -58,8 +68,13 @@
     </div>
 
     <div class="form-group">
-      <label>Location:</label>
-      <input type="text" [(ngModel)]="roomForm.location" class="form-input">
+      <label>Size (sqm):</label>
+      <input type="number" [(ngModel)]="roomForm.size" min="0" class="form-input">
+    </div>
+
+    <div class="form-group">
+      <label>Base Occupancy:</label>
+      <input type="number" [(ngModel)]="roomForm.baseOccupancy" min="1" class="form-input">
     </div>
 
     <div class="form-group">
@@ -101,8 +116,8 @@
     </div>
 
     <div class="modal-actions">
-      <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
       <button (click)="saveRoom()" class="save-btn">Save</button>
+      <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
     </div>
   </app-modal>
 </div>

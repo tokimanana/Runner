@@ -28,20 +28,20 @@
 
       <p class="description">{{ plan.description }}</p>
       
-      <div class="included-meals" *ngIf="plan.includedMeals.length">
+      <div class="included-meals" *ngIf="plan.mealTimes.length">
         <h4>Included Meals</h4>
         <div class="meals-list">
-          <span *ngFor="let meal of plan.includedMeals" class="meal-tag">
-            {{ meal }}
+          <span *ngFor="let meal of plan.mealTimes" class="meal-tag">
+            {{ meal.name }}
           </span>
         </div>
       </div>
 
-      <div class="default-inclusions" *ngIf="plan.defaultInclusions?.length">
+      <div class="default-inclusions" *ngIf="plan.inclusions?.length">
         <h4>Additional Features</h4>
         <ul class="inclusions-list">
-          <li *ngFor="let inclusion of plan.defaultInclusions" class="inclusion-item">
-            {{ inclusion }}
+          <li *ngFor="let inclusion of plan.inclusions" class="inclusion-item">
+            {{ inclusion.name }}
           </li>
         </ul>
       </div>
@@ -100,7 +100,7 @@
       <div class="meal-toggles">
         <label class="meal-toggle" *ngFor="let meal of availableMeals">
           <input type="checkbox" 
-                 [checked]="mealPlanForm.includedMeals.includes(meal)"
+                 [checked]="isMealIncluded(meal)"
                  (change)="toggleMeal(meal)">
           {{ meal }}
         </label>
@@ -112,7 +112,7 @@
       <div class="inclusion-toggles">
         <label class="inclusion-toggle" *ngFor="let inclusion of availableInclusions">
           <input type="checkbox"
-                 [checked]="mealPlanForm.defaultInclusions.includes(inclusion)"
+                 [checked]="isInclusionSelected(inclusion)"
                  (change)="toggleInclusion(inclusion)">
           {{ inclusion }}
         </label>

@@ -1,7 +1,7 @@
 import { sampleData } from './../../data';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { RoomType } from '../models/types';
+import { RoomType, Hotel } from '../models/types';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +16,7 @@ export class RoomConfigurationService {
 
   private initializeRoomsFromSampleData(): void {
     if (sampleData.hotels) {
-      sampleData.hotels.forEach(hotel => {
+      sampleData.hotels.forEach((hotel: Hotel & { rooms?: RoomType[] }) => {
         if (hotel.rooms) {
           this.roomsMap.set(hotel.id, [...hotel.rooms]);
         }
@@ -83,7 +83,7 @@ export class RoomConfigurationService {
     const maxOccupancyAdults = room.maxOccupancy?.adults ?? 0;
     
     const isValid = !!(
-      room.type?.trim() &&
+      room.category &&
       room.name?.trim() &&
       room.maxOccupancy &&
       maxOccupancyAdults > 0
@@ -91,7 +91,7 @@ export class RoomConfigurationService {
 
     if (!isValid) {
       console.warn('Room validation failed:', {
-        hasType: !!room.type?.trim(),
+        hasCategory: !!room.category,
         hasName: !!room.name?.trim(),
         hasMaxOccupancy: !!room.maxOccupancy,
         hasValidAdults: maxOccupancyAdults > 0,

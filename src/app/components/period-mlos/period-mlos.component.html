@@ -1,9 +1,29 @@
+<!-- Loading Spinner -->
+<div *ngIf="loading" class="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- Error Message -->
+<div *ngIf="error" class="error-message">
+  <i class="material-icons">error</i>
+  {{ error }}
+  <button class="close-btn" (click)="error = null">
+    <i class="material-icons">close</i>
+  </button>
+</div>
+
 <div class="period-container">
   <div class="header-actions">
     <h3>Seasons & Periods Management</h3>
     <button (click)="addNewSeason()" class="add-btn">
       <i class="material-icons">add</i> Add Season
     </button>
+  </div>
+
+  <!-- No Seasons Message -->
+  <div *ngIf="!loading && seasons.length === 0" class="no-data-message">
+    <i class="material-icons">event_busy</i>
+    <p>No seasons configured yet. Click "Add Season" to get started.</p>
   </div>
 
   <div class="seasons-list">
@@ -13,6 +33,9 @@
           <h4>{{ season.name }}</h4>
           <span class="season-description" *ngIf="season.description">
             {{ season.description }}
+          </span>
+          <span class="status-badge" [class.active]="season.isActive">
+            {{ season.isActive ? 'Active' : 'Inactive' }}
           </span>
         </div>
         <div class="actions">
@@ -28,17 +51,29 @@
         </div>
       </div>
 
+      <!-- No Periods Message -->
+      <div *ngIf="!season.periods?.length" class="no-periods-message">
+        <i class="material-icons">date_range</i>
+        <p>No periods defined for this season.</p>
+        <button (click)="addPeriodToSeason(season)" class="add-period-btn">
+          Add Period
+        </button>
+      </div>
+
       <div class="periods-list">
         <div *ngFor="let period of season.periods" class="period-card" [class.blackout]="period.isBlackout">
           <div class="period-header">
-            <div class="period-dates">
-              {{ formatDate(period.startDate) }} - {{ formatDate(period.endDate) }}
+            <div class="period-info">
+              <h5>{{ period.name }}</h5>
+              <div class="period-dates">
+                {{ formatDate(period.startDate) }} - {{ formatDate(period.endDate) }}
+              </div>
             </div>
             <div class="actions">
-              <button (click)="editPeriod(season, period)" class="edit-btn">
+              <button (click)="editPeriod(season, period)" class="edit-btn" title="Edit Period">
                 <i class="material-icons">edit</i>
               </button>
-              <button (click)="deletePeriod(season, period)" class="delete-btn">
+              <button (click)="deletePeriod(season, period)" class="delete-btn" title="Delete Period">
                 <i class="material-icons">delete</i>
               </button>
             </div>
@@ -66,12 +101,13 @@
     <h3>{{ editingSeason ? 'Edit Season' : 'Add New Season' }}</h3>
     
     <div class="form-group">
-      <label>Season Name:</label>
+      <label>Season Name: *</label>
       <input 
         type="text" 
         [(ngModel)]="seasonForm.name" 
         class="form-input"
         placeholder="e.g., Summer 2024, Winter 2024"
+        [class.error]="error && !seasonForm.name"
       >
     </div>
 
@@ -85,42 +121,69 @@
       ></textarea>
     </div>
 
+    <div class="form-group checkbox-group">
+      <label class="checkbox-label">
+        <input 
+          type="checkbox" 
+          [(ngModel)]="seasonForm.isActive"
+        >
+        Season is Active
+      </label>
+    </div>
+
     <div class="modal-actions">
-      <button (click)="saveSeason()" class="save-btn">Save</button>
-      <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
+      <button (click)="saveSeason()" class="save-btn" [disabled]="loading">
+        <i class="material-icons" *ngIf="loading">hourglass_empty</i>
+        {{ loading ? 'Saving...' : 'Save' }}
+      </button>
+      <button (click)="cancelEdit()" class="cancel-btn" [disabled]="loading">Cancel</button>
     </div>
   </app-modal>
 
   <!-- Period Form Modal -->
   <app-modal [show]="showPeriodForm" (close)="cancelPeriodEdit()">
     <h3>{{ editingPeriod ? 'Edit Period' : 'Add New Period' }}</h3>
+
+    <div class="form-group">
+      <label>Period Name: *</label>
+      <input 
+        type="text" 
+        [(ngModel)]="periodForm.name" 
+        class="form-input"
+        placeholder="e.g., Christmas Week, Summer Peak"
+        [class.error]="error && !periodForm.name"
+      >
+    </div>
     
     <div class="form-row">
       <div class="form-group">
-        <label>Start Date:</label>
+        <label>Start Date: *</label>
         <input 
           type="date" 
           [(ngModel)]="periodForm.startDate" 
           class="form-input"
+          [class.error]="error && !periodForm.startDate"
         >
       </div>
       <div class="form-group">
-        <label>End Date:</label>
+        <label>End Date: *</label>
         <input 
           type="date" 
           [(ngModel)]="periodForm.endDate" 
           class="form-input"
+          [class.error]="error && !periodForm.endDate"
         >
       </div>
     </div>
 
     <div class="form-group">
-      <label>Minimum Length of Stay (Nights):</label>
+      <label>Minimum Length of Stay (Nights): *</label>
       <input 
         type="number" 
         [(ngModel)]="periodForm.mlos" 
         class="form-input"
         min="1"
+        [class.error]="error && !periodForm.mlos"
       >
     </div>
 
@@ -145,8 +208,11 @@
     </div>
 
     <div class="modal-actions">
-      <button (click)="savePeriod()" class="save-btn">Save</button>
-      <button (click)="cancelPeriodEdit()" class="cancel-btn">Cancel</button>
+      <button (click)="savePeriod()" class="save-btn" [disabled]="loading">
+        <i class="material-icons" *ngIf="loading">hourglass_empty</i>
+        {{ loading ? 'Saving...' : 'Save' }}
+      </button>
+      <button (click)="cancelPeriodEdit()" class="cancel-btn" [disabled]="loading">Cancel</button>
     </div>
   </app-modal>
 </div>

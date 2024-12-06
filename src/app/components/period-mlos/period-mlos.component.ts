@@ -1,9 +1,10 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../modal/modal.component';
-import { HotelService } from '../../services/hotel.service';
+import { SeasonService } from '../../services/season.service';
 import { Season, Period, Hotel } from '../../models/types';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-period-mlos',
@@ -12,23 +13,29 @@ import { Season, Period, Hotel } from '../../models/types';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalComponent]
 })
-export class PeriodMlosComponent implements OnInit {
+export class PeriodMlosComponent implements OnInit, OnDestroy {
   @Input() hotel!: Hotel;
+  
   seasons: Season[] = [];
   showSeasonForm = false;
   showPeriodForm = false;
   editingSeason: Season | null = null;
   editingPeriod: Period | null = null;
   currentSeason: Season | null = null;
+  loading = false;
+  error: string | null = null;
 
-  seasonForm: Partial<Season> = {
+  private destroy$ = new Subject<void>();
+
+  seasonForm: Omit<Season, 'id'> = {
     name: '',
     description: '',
     isActive: true,
     periods: []
   };
 
-  periodForm: Partial<Period> = {
+  periodForm: Omit<Period, 'id' | 'seasonId'> = {
+    name: '',
     startDate: '',
     endDate: '',
     mlos: 1,
@@ -36,17 +43,34 @@ export class PeriodMlosComponent implements OnInit {
     isBlackout: false
   };
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private seasonService: SeasonService) {}
 
   ngOnInit(): void {
     this.loadSeasons();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadSeasons(): void {
     if (this.hotel) {
-      this.hotelService.currentSeasons$.subscribe(seasons => {
-        this.seasons = seasons;
-      });
+      this.loading = true;
+      this.seasonService.getSeasonsByHotel(this.hotel.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (seasons) => {
+            this.seasons = seasons;
+            this.loading = false;
+            this.error = null;
+          },
+          error: (err) => {
+            console.error('Error loading seasons:', err);
+            this.error = 'Failed to load seasons. Please try again.';
+            this.loading = false;
+          }
+        });
     }
   }
 
@@ -70,40 +94,77 @@ export class PeriodMlosComponent implements OnInit {
 
   saveSeason(): void {
     if (!this.seasonForm.name) {
-      alert('Season name is required');
+      this.error = 'Season name is required';
       return;
     }
 
+    this.loading = true;
+    this.error = null;
+
     if (this.editingSeason) {
       // Update existing season
-      const index = this.seasons.findIndex(s => s.id === this.editingSeason!.id);
-      if (index !== -1) {
-        this.seasons[index] = {
-          ...this.editingSeason,
-          ...this.seasonForm,
-          periods: this.editingSeason.periods
-        } as Season;
-      }
+      const updateData: Partial<Season> = {
+        name: this.seasonForm.name,
+        description: this.seasonForm.description,
+        isActive: this.seasonForm.isActive
+      };
+
+      this.seasonService.updateSeason(
+        this.hotel.id,
+        this.editingSeason.id,
+        updateData
+      ).pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.closeSeasonForm();
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error updating season:', err);
+            this.error = 'Failed to update season. Please try again.';
+            this.loading = false;
+          }
+        });
     } else {
       // Add new season
-      const newSeason: Season = {
-        id: Math.max(0, ...this.seasons.map(s => s.id)) + 1,
-        name: this.seasonForm.name!,
-        description: this.seasonForm.description,
-        isActive: this.seasonForm.isActive!,
-        periods: []
-      };
-      this.seasons.push(newSeason);
+      this.seasonService.createSeason(
+        this.hotel.id,
+        this.seasonForm
+      ).pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.closeSeasonForm();
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error creating season:', err);
+            this.error = 'Failed to create season. Please try again.';
+            this.loading = false;
+          }
+        });
     }
-
-    this.closeSeasonForm();
-    this.updateSeasons();
   }
 
   deleteSeason(season: Season): void {
     if (confirm(`Are you sure you want to delete the season "${season.name}"?`)) {
-      this.seasons = this.seasons.filter(s => s.id !== season.id);
-      this.updateSeasons();
+      this.loading = true;
+      this.error = null;
+
+      this.seasonService.deleteSeason(this.hotel.id, season.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error deleting season:', err);
+            this.error = 'Failed to delete season. Please try again.';
+            this.loading = false;
+          }
+        });
     }
   }
 
@@ -112,6 +173,7 @@ export class PeriodMlosComponent implements OnInit {
     this.editingPeriod = null;
     this.currentSeason = season;
     this.periodForm = {
+      name: '',
       startDate: '',
       endDate: '',
       mlos: 1,
@@ -130,80 +192,90 @@ export class PeriodMlosComponent implements OnInit {
 
   savePeriod(): void {
     if (!this.currentSeason) {
-      alert('No season selected');
+      this.error = 'No season selected';
       return;
     }
 
-    if (!this.currentSeason.periods) {
-      this.currentSeason.periods = [];
-    }
-
-    // Check for date overlaps with existing periods
-    const overlappingPeriod = this.currentSeason.periods.find(p => {
-      if (this.editingPeriod && p.id === this.editingPeriod.id) return false;
-      const start = new Date(p.startDate);
-      const end = new Date(p.endDate);
-      const newStart = new Date(this.periodForm.startDate!);
-      const newEnd = new Date(this.periodForm.endDate!);
-      return (newStart <= end && newEnd >= start);
-    });
-
-    if (overlappingPeriod) {
-      alert('This period overlaps with an existing period');
+    if (!this.periodForm.name || !this.periodForm.startDate || !this.periodForm.endDate) {
+      this.error = 'Period name and dates are required';
       return;
     }
 
-    const periodData: Period = {
-      id: this.editingPeriod ? this.editingPeriod.id : Math.random(),
-      startDate: this.periodForm.startDate!,
-      endDate: this.periodForm.endDate!,
-      mlos: this.periodForm.mlos || 1,
-      description: this.periodForm.description,
-      isBlackout: this.periodForm.isBlackout,
-      seasonId: this.currentSeason.id,
-      name: this.editingPeriod ? this.editingPeriod.name : ''
-    };
-
-    const seasonIndex = this.seasons.findIndex(s => s.id === this.currentSeason!.id);
-    if (seasonIndex === -1) return;
-
-    // Initialize periods array if it doesn't exist
-    if (!this.seasons[seasonIndex].periods) {
-      this.seasons[seasonIndex].periods = [];
-    }
+    this.loading = true;
+    this.error = null;
 
     if (this.editingPeriod) {
       // Update existing period
-      const periodIndex = this.seasons[seasonIndex].periods!.findIndex(
-        p => p.id === this.editingPeriod!.id
-      );
-      if (periodIndex !== -1) {
-        this.seasons[seasonIndex].periods![periodIndex] = periodData;
-      }
+      const updateData: Partial<Period> = {
+        name: this.periodForm.name,
+        startDate: this.periodForm.startDate,
+        endDate: this.periodForm.endDate,
+        mlos: this.periodForm.mlos,
+        description: this.periodForm.description,
+        isBlackout: this.periodForm.isBlackout
+      };
+
+      this.seasonService.updatePeriod(
+        this.currentSeason.id,
+        this.editingPeriod.id,
+        updateData
+      ).pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.closePeriodForm();
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error updating period:', err);
+            this.error = 'Failed to update period. Please try again.';
+            this.loading = false;
+          }
+        });
     } else {
       // Add new period
-      this.seasons[seasonIndex].periods!.push(periodData);
-    }
+      const newPeriod: Omit<Period, 'id'> = {
+        ...this.periodForm,
+        seasonId: this.currentSeason.id
+      };
 
-    this.closePeriodForm();
-    this.updateSeasons();
+      this.seasonService.createPeriod(
+        this.currentSeason.id,
+        newPeriod
+      ).pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.closePeriodForm();
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error creating period:', err);
+            this.error = 'Failed to create period. Please try again.';
+            this.loading = false;
+          }
+        });
+    }
   }
 
   deletePeriod(season: Season, period: Period): void {
     if (confirm('Are you sure you want to delete this period?')) {
-      const seasonIndex = this.seasons.findIndex(s => s.id === season.id);
-      if (seasonIndex === -1) return;
+      this.loading = true;
+      this.error = null;
 
-      // Initialize periods array if it doesn't exist
-      if (!this.seasons[seasonIndex].periods) {
-        this.seasons[seasonIndex].periods = [];
-        return; // Nothing to delete if periods array doesn't exist
-      }
-
-      this.seasons[seasonIndex].periods = this.seasons[seasonIndex].periods!.filter(
-        p => p.id !== period.id
-      );
-      this.updateSeasons();
+      this.seasonService.deletePeriod(season.id, period.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.loadSeasons();
+          },
+          error: (err) => {
+            console.error('Error deleting period:', err);
+            this.error = 'Failed to delete period. Please try again.';
+            this.loading = false;
+          }
+        });
     }
   }
 
@@ -219,6 +291,7 @@ export class PeriodMlosComponent implements OnInit {
   closeSeasonForm(): void {
     this.showSeasonForm = false;
     this.editingSeason = null;
+    this.error = null;
     this.seasonForm = {
       name: '',
       description: '',
@@ -231,20 +304,15 @@ export class PeriodMlosComponent implements OnInit {
     this.showPeriodForm = false;
     this.editingPeriod = null;
     this.currentSeason = null;
+    this.error = null;
     this.periodForm = {
+      name: '',
       startDate: '',
       endDate: '',
       mlos: 1,
       description: '',
       isBlackout: false
     };
-  }
-
-  private updateSeasons(): void {
-    if (this.hotel) {
-      // Update the seasons in the service
-      this.hotelService.updateSeasons(this.hotel.id, this.seasons);
-    }
   }
 
   cancelEdit(): void {
