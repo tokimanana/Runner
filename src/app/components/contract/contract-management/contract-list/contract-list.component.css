@@ -11,6 +11,7 @@
 
 .header h2 {
   margin: 0;
+  font-weight: 500;
 }
 
 .filters {
@@ -21,6 +22,7 @@
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 .filter-row mat-form-field {
@@ -32,6 +34,7 @@
   width: 100%;
   background: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
 .mat-column-actions {
@@ -39,31 +42,8 @@
   text-align: center;
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.status-badge-active {
-  background-color: #e6f4ea;
-  color: #1e8e3e;
-}
-
-.status-badge-draft {
-  background-color: #fef7e0;
-  color: #b06000;
-}
-
-.status-badge-expired {
-  background-color: #fce8e6;
-  color: #d93025;
-}
-
 .mat-mdc-row:hover {
-  background-color: #f5f5f5;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .mat-mdc-header-cell {
@@ -79,6 +59,29 @@
   padding-left: 16px;
 }
 
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.draft {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.expired {
+  background-color: #fafafa;
+  color: #757575;
+}
+
 /* Season and Periods Styling */
 .season-info {
   display: flex;
@@ -87,7 +90,7 @@
 }
 
 .periods-menu {
-  min-width: 300px;
+  min-width: 250px;
 }
 
 .periods-header {
@@ -107,8 +110,11 @@
 
 .period-dates {
   color: rgba(0, 0, 0, 0.6);
-  font-size: 12px;
   margin-left: 8px;
+}
+
+::ng-deep .mat-mdc-menu-panel.periods-menu {
+  max-width: none !important;
 }
 
 @media (max-width: 768px) {

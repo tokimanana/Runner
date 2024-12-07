@@ -1,0 +1,286 @@
+.navigation-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hotel-selector {
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.content-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.main-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+::ng-deep .main-tabs .mat-tab-header {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+::ng-deep .main-tabs .mat-tab-label {
+  height: 64px;
+  padding: 0 24px;
+  opacity: 1;
+}
+
+::ng-deep .main-tabs .mat-tab-label-active {
+  background-color: #fff;
+  border-bottom: 2px solid #1976d2;
+}
+
+::ng-deep .main-tabs .mat-tab-body-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+::ng-deep .main-tabs .mat-tab-body {
+  height: 100%;
+}
+
+::ng-deep .main-tabs .mat-tab-body-content {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav-container {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.sidenav {
+  width: 250px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu {
+  padding: 16px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sub-menu-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.nav-item.active {
+  background-color: rgba(25, 118, 210, 0.1);
+  color: #1976d2;
+}
+
+.nav-item mat-icon {
+  margin-right: 12px;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+
+.nav-item span {
+  font-size: 14px;
+}
+
+.sidenav-content {
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hotel-section {
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hotel-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hotel-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.hotel-details h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.hotel-details span {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.mat-nav-list a {
+  height: 48px;
+  color: rgba(0, 0, 0, 0.87);
+  border-radius: 0;
+}
+
+.mat-nav-list a.active {
+  background: rgba(25, 118, 210, 0.1);
+  color: #1976d2;
+}
+
+.mat-nav-list a:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.mat-tab-label mat-icon,
+.mat-list-item mat-icon {
+  margin-right: 8px;
+}
+
+/* Sidenav Styles */
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.menu-item.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.menu-item mat-icon {
+  margin-right: 12px;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+
+.menu-item span {
+  font-size: 14px;
+}
+
+mat-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+
+/* Style for the navigation list items */
+.mat-nav-list a {
+  color: #333;
+  text-decoration: none;
+}
+
+.mat-nav-list a.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.mat-nav-list a:hover {
+  background-color: #f0f0f0;
+}
+
+/* Make sure tab content fills available space */
+::ng-deep .mat-tab-body-content {
+  height: 100%;
+  overflow: hidden;
+}
+
+.nav-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f8f9fa;
+}
+
+/* Tab Group Styles */
+.tabs {
+  background: #f5f5f5;
+}
+
+.tab-item {
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.tab-item:hover {
+  background: #f1f3f5;
+}
+
+.tab-item.active {
+  background: #e7f5ff;
+  color: #228be6;
+}
+
+.tab-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+::ng-deep .mat-mdc-tab-header {
+  background: #f5f5f5 !important;
+}
+
+::ng-deep .mat-mdc-tab {
+  min-width: 60px !important;
+  padding: 0 12px !important;
+}
+
+::ng-deep .mat-mdc-tab-label-content {
+  flex-direction: column !important;
+  line-height: 1.2 !important;
+}
+
+::ng-deep .mat-mdc-tab .mat-icon {
+  margin-bottom: 4px !important;
+}

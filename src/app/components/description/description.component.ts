@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, OnChanges, Input, SimpleChanges } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxFileDropModule, NgxFileDropEntry, FileSystemFileEntry } from 'ngx-file-drop';
-import { Hotel } from '../../models/types';
+import { Hotel, DressCodePolicy } from '../../models/types';
 import { HotelService } from '../../services/hotel.service';
 import { Subscription, catchError, of } from 'rxjs';
 import { ModalComponent } from '../modal/modal.component';
@@ -17,7 +17,7 @@ import { ModalComponent } from '../modal/modal.component';
 export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   @Input() hotel: Hotel | null = null;
   description: string = '';
-  dressCode: string = '';
+  dressCode: DressCodePolicy | null = null;
   currentFactSheet: string = '';
   private subscriptions: Subscription[] = [];
 
@@ -50,31 +50,38 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
 
     // Subscribe to description
     this.subscriptions.push(
-      this.hotelService.getHotelData<string>(this.hotel.id, 'description').subscribe(
-        description => {
-          this.description = description || '';
-          console.log('Description loaded:', this.description);
-        }
-      )
+      this.hotelService.getHotelDescription(Number(this.hotel.id)).pipe(
+        catchError((error: any) => {
+          console.error('Error loading hotel description:', error);
+          return of('');
+        })
+      ).subscribe((description: string) => {
+        this.description = description || '';
+      })
     );
 
-    // Subscribe to policies
+    // Subscribe to dress code
     this.subscriptions.push(
-      this.hotelService.getHotelPolicies().subscribe(
-        policies => {
-          this.dressCode = policies?.dressCode || '';
-          console.log('Dress code loaded:', this.dressCode);
-        }
-      )
+      this.hotelService.getHotelDressCode(Number(this.hotel.id)).pipe(
+        catchError((error: any) => {
+          console.error('Error loading hotel dress code:', error);
+          return of(null);
+        })
+      ).subscribe((dressCode: DressCodePolicy | null) => {
+        this.dressCode = dressCode;
+      })
     );
 
     // Subscribe to fact sheet
     this.subscriptions.push(
-      this.hotelService.getHotelData<string>(this.hotel.id, 'factSheet').subscribe(
-        factSheet => {
-          this.currentFactSheet = factSheet || '';
-        }
-      )
+      this.hotelService.getHotelFactSheet(Number(this.hotel.id)).pipe(
+        catchError((error: any) => {
+          console.error('Error loading hotel fact sheet:', error);
+          return of('');
+        })
+      ).subscribe((factSheet: string) => {
+        this.currentFactSheet = factSheet || '';
+      })
     );
   }
 
@@ -91,7 +98,7 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
     this.currentEditMode = 'dressCode';
     this.modalTitle = 'Edit Dress Code';
     this.modalInitialValues = {
-      ['dressCode']: this.dressCode
+      ['dressCode']: JSON.stringify(this.dressCode)
     };
     this.showModal = true;
   }
@@ -106,20 +113,19 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
     if (key === 'description') {
       this.description = value;
     } else {
-      this.dressCode = value;
+      this.dressCode = JSON.parse(value);
     }
 
     // Then save to service
-    this.hotelService.setHotelData(this.hotel.id, key, value);
     this.hotelService.saveHotelData(this.hotel.id, key, value)
       .pipe(
-        catchError(error => {
+        catchError((error: any) => {
           console.error('Failed to save data:', error);
           // Revert local state on error
           if (key === 'description') {
             this.description = this.modalInitialValues['description'];
           } else {
-            this.dressCode = this.modalInitialValues['dressCode'];
+            this.dressCode = JSON.parse(this.modalInitialValues['dressCode']);
           }
           return of(void 0);
         })
@@ -144,10 +150,9 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
             const previousFile = this.currentFactSheet;
             this.currentFactSheet = file.name;
             
-            this.hotelService.setHotelData(this.hotel!.id, 'factSheet', file.name);
-            this.hotelService.updateHotelFactSheet(this.hotel!.id, file.name)
+            this.hotelService.saveHotelData(this.hotel!.id, 'factSheet', file.name)
               .pipe(
-                catchError(error => {
+                catchError((error: any) => {
                   console.error('Failed to upload fact sheet:', error);
                   this.currentFactSheet = previousFile;
                   return of(void 0);
@@ -162,8 +167,8 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
 
   viewFactSheet() {
     if (this.hotel && this.currentFactSheet) {
-      this.hotelService.getHotelData<string>(this.hotel.id, 'factSheet').subscribe(
-        factSheet => {
+      this.hotelService.getHotelData<string>(Number(this.hotel.id), 'factSheet').subscribe(
+        (factSheet: string | null) => {
           if (factSheet) {
             window.open(factSheet, '_blank');
           }
@@ -177,10 +182,9 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
       const previousFile = this.currentFactSheet;
       this.currentFactSheet = '';
       
-      this.hotelService.setHotelData(this.hotel.id, 'factSheet', null);
       this.hotelService.saveHotelData(this.hotel.id, 'factSheet', null)
         .pipe(
-          catchError(error => {
+          catchError((error: any) => {
             console.error('Failed to remove fact sheet:', error);
             this.currentFactSheet = previousFile;
             return of(void 0);

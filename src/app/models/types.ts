@@ -340,6 +340,26 @@ export interface RoomTypeRate {
   };
 }
 
+// Contract rate types for local data structure
+export interface ContractRate {
+  contractId: number;
+  periodRates: PeriodRate[];
+}
+
+export interface PeriodRate {
+  periodId: number;
+  roomRates: RoomRate[];
+}
+
+export interface RoomRate {
+  roomTypeId: number;
+  rateType: 'per_pax' | 'per_villa';
+  perVillaRate?: number;
+  adultRates?: { [key: number]: number };
+  teenRates?: { [key: number]: number };
+  childRates?: { [key: number]: number };
+}
+
 // Special offers
 export interface DiscountValue {
   nights: number;      // Number of nights
@@ -489,7 +509,6 @@ export type HotelDataKey =
   | 'marketGroups'
   | 'roomTypes'
   | 'periods'
-  | 'specialOffers'
   | 'description'
   | 'policies'
   | 'capacity'
@@ -515,8 +534,15 @@ export type MenuItemId =
   | 'ratesConfig'
   | 'rateSeasons'
   | 'roomInventory'
+  | 'contract'
+  | 'contracts'
+  | 'rates'
+  | 'roomTypes'
+  | 'supplements'
   | 'specialOffers'
-  | 'contract';
+  | 'rateScenarios'
+  | 'allotments'
+  | 'availability';
 
 export interface MenuItem {
   id: MenuItemId;

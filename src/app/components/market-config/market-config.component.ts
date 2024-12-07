@@ -16,7 +16,7 @@ import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 
 import { MarketService } from '../../services/market.service';
-import { Market, MarketGroup, CurrencySetting } from '../../models/types';
+import { Market, MarketGroup, CurrencySetting, Hotel } from '../../models/types';
 import { ModalComponent } from "../modal/modal.component";
 
 @Component({
@@ -43,6 +43,7 @@ import { ModalComponent } from "../modal/modal.component";
   ]
 })
 export class MarketConfigComponent implements OnInit, OnDestroy {
+  @Input() hotel!: Hotel;
   markets: Market[] = [];
   marketGroups: MarketGroup[] = [];
   currencySettings: CurrencySetting[] = [];

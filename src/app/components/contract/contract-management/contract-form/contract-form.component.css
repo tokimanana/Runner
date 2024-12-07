@@ -1,0 +1,97 @@
+.contract-form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.form-header {
+  margin-bottom: 24px;
+}
+
+.form-header h2 {
+  margin: 0 0 24px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 24px;
+}
+
+.form-section {
+  margin: 24px 0;
+  padding: 24px;
+}
+
+.form-section h3 {
+  margin: 24px 0 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 18px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.date-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.room-types-grid,
+.meal-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 16px;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+mat-divider {
+  margin: 32px 0;
+}
+
+/* Tab Styling */
+::ng-deep .mat-tab-body-content {
+  padding: 16px 0;
+}
+
+/* Warning Message */
+.warning-message {
+  padding: 16px;
+  background-color: #fff3e0;
+  border-radius: 4px;
+  color: #e65100;
+  margin: 16px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .contract-form {
+    padding: 16px;
+  }
+
+  .date-range {
+    grid-template-columns: 1fr;
+  }
+  
+  .room-types-grid,
+  .meal-plans-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-section {
+    padding: 16px;
+  }
+}

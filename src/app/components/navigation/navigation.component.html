@@ -1,0 +1,38 @@
+<div class="navigation-container">
+  <div class="hotel-selector">
+    <app-hotel-selector (hotelSelected)="onHotelSelect($event)"></app-hotel-selector>
+  </div>
+
+  <div class="content-section" *ngIf="selectedHotel">
+    <mat-tab-group class="main-tabs" 
+                   [(selectedIndex)]="selectedTabIndex" 
+                   (selectedIndexChange)="onTabChange($event)">
+      <mat-tab *ngFor="let tab of navigationTabs">
+        <ng-template matTabLabel>
+          <mat-icon>{{tab.icon}}</mat-icon>
+          <span>{{tab.label}}</span>
+        </ng-template>
+        
+        <mat-sidenav-container class="sidenav-container">
+          <mat-sidenav mode="side" opened class="sidenav">
+            <div class="side-menu">
+              <div class="sub-menu-items">
+                <div *ngFor="let item of getCurrentMenuItems()"
+                     class="nav-item"
+                     [class.active]="isMenuItemActive(item.id)"
+                     (click)="onMenuItemClick(item)">
+                  <mat-icon>{{item.icon}}</mat-icon>
+                  <span>{{item.label}}</span>
+                </div>
+              </div>
+            </div>
+          </mat-sidenav>
+          
+          <mat-sidenav-content class="sidenav-content">
+            <app-content-editor></app-content-editor>
+          </mat-sidenav-content>
+        </mat-sidenav-container>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

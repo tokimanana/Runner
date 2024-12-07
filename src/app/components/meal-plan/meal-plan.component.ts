@@ -18,7 +18,7 @@ import { MealPlanService } from '../../services/meal-plan.service';
     ModalComponent
   ],
   templateUrl: './meal-plan.component.html',
-  styleUrls: ['./meal-plan.component.scss']
+  styleUrls: ['./meal-plan.component.css']
 })
 export class MealPlanComponent implements OnInit, OnChanges {
   @Input() hotel!: Hotel;
@@ -93,7 +93,7 @@ export class MealPlanComponent implements OnInit, OnChanges {
 
   private loadMealPlans(): void {
     if (this.hotel?.id) {
-      this.mealPlanService.getMealPlansByHotel(this.hotel.id.toString())
+      this.mealPlanService.getMealPlansByHotel(Number(this.hotel.id))
         .subscribe(plans => {
           this.mealPlans = plans;
         });
@@ -121,6 +121,7 @@ export class MealPlanComponent implements OnInit, OnChanges {
     }
 
     if (this.hotel?.id) {
+      const hotelId = Number(this.hotel.id);
       if (this.isEditing && this.mealPlanForm.id) {
         this.mealPlanService.updateMealPlan(this.mealPlanForm.id, this.mealPlanForm)
           .subscribe(() => {

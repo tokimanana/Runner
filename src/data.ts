@@ -128,13 +128,26 @@ export const defaultMarketGroups: MarketGroup[] = [
   }
 ];
 
-// Meal plan definitions
+// Default meal plans that every hotel should have
 export const defaultMealPlans: MealPlan[] = [
   {
-    id: '1',
+    id: 'default-ro',
+    type: MealPlanType.RO,
+    name: 'Room Only',
+    description: "Accommodation only, no meals included",
+    mealTimes: [],
+    inclusions: [],
+    restrictions: [
+      'No meals included',
+      'Room service and restaurant charges are extra'
+    ],
+    isActive: true
+  },
+  {
+    id: 'default-bb',
     type: MealPlanType.BB,
     name: 'Bed & Breakfast',
-    description: "Start your day with our extensive breakfast buffet featuring local and international cuisine",
+    description: "Start your day with our extensive breakfast buffet",
     mealTimes: [
       {
         name: 'Breakfast',
@@ -162,10 +175,10 @@ export const defaultMealPlans: MealPlan[] = [
     isActive: true
   },
   {
-    id: '2',
+    id: 'default-hb',
     type: MealPlanType.HB,
     name: 'Half Board',
-    description: "Enjoy breakfast and dinner at our main restaurant",
+    description: "Enjoy breakfast and dinner at our restaurants",
     mealTimes: [
       {
         name: 'Breakfast',
@@ -193,18 +206,18 @@ export const defaultMealPlans: MealPlan[] = [
       },
       {
         name: 'Beverages',
-        description: 'Water, soft drinks during meals',
+        description: 'Water during meals',
         isIncluded: true
       }
     ],
     restrictions: [
-      'Meals must be taken in the main restaurant',
-      'Specialty restaurants available at additional charge'
+      'Meals must be taken in the designated restaurants',
+      'Lunch and additional beverages are not included'
     ],
     isActive: true
   },
   {
-    id: '3',
+    id: 'default-fb',
     type: MealPlanType.FB,
     name: 'Full Board',
     description: "All daily meals included - breakfast, lunch and dinner",
@@ -218,7 +231,7 @@ export const defaultMealPlans: MealPlan[] = [
       {
         name: 'Lunch',
         startTime: '12:30',
-        endTime: '15:00',
+        endTime: '14:30',
         location: 'Main Restaurant'
       },
       {
@@ -236,18 +249,182 @@ export const defaultMealPlans: MealPlan[] = [
       },
       {
         name: 'Beverages',
-        description: 'Water, soft drinks during meals',
+        description: 'Water during meals',
         isIncluded: true
       }
     ],
     restrictions: [
-      'Meals must be taken in the main restaurant',
-      'Specialty restaurants available at additional charge',
-      'Alcoholic beverages not included'
+      'Meals must be taken in the designated restaurants',
+      'Additional beverages are not included'
+    ],
+    isActive: true
+  },
+  {
+    id: 'default-ai',
+    type: MealPlanType.AI,
+    name: 'All Inclusive',
+    description: "Comprehensive package including all meals and selected beverages",
+    mealTimes: [
+      {
+        name: 'Breakfast',
+        startTime: '07:00',
+        endTime: '10:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Lunch',
+        startTime: '12:30',
+        endTime: '14:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Dinner',
+        startTime: '19:00',
+        endTime: '22:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Snacks',
+        startTime: '11:00',
+        endTime: '18:00',
+        location: 'Pool Bar'
+      }
+    ],
+    inclusions: [
+      {
+        name: 'All Meals',
+        description: 'Breakfast, lunch, dinner and snacks',
+        isIncluded: true
+      },
+      {
+        name: 'Beverages',
+        description: 'Selected alcoholic and non-alcoholic beverages',
+        isIncluded: true
+      },
+      {
+        name: 'Snacks',
+        description: 'Light snacks and refreshments throughout the day',
+        isIncluded: true
+      }
+    ],
+    restrictions: [
+      'Premium drinks and dining experiences may incur additional charges',
+      'All-inclusive benefits valid from check-in to check-out at 12:00'
     ],
     isActive: true
   }
 ];
+
+// Hotel-specific meal plans
+export const hotelMealPlans: { [key: number]: MealPlan[] } = {
+  // Grand Hotel Riveria (id: 1) specific meal plans
+  1: [
+    {
+      id: 'riveria-hb-plus',
+      type: MealPlanType.HB_PLUS,
+      name: 'Mediterranean Half Board Plus',
+      description: "Enhanced half board experience with drinks and Mediterranean specialties",
+      mealTimes: [
+        {
+          name: 'Breakfast',
+          startTime: '07:00',
+          endTime: '10:30',
+          location: 'La Terrazza'
+        },
+        {
+          name: 'Dinner',
+          startTime: '19:00',
+          endTime: '23:00',
+          location: 'La Terrazza'
+        }
+      ],
+      inclusions: [
+        {
+          name: 'Gourmet Breakfast',
+          description: 'Extended breakfast with local specialties and champagne',
+          isIncluded: true
+        },
+        {
+          name: 'Fine Dining Dinner',
+          description: 'À la carte dinner at La Terrazza',
+          isIncluded: true
+        },
+        {
+          name: 'Premium Beverages',
+          description: 'Selected wines and beverages during dinner',
+          isIncluded: true
+        }
+      ],
+      restrictions: [
+        'Reservation required for dinner',
+        'Premium wines available at additional cost'
+      ],
+      isActive: true
+    }
+  ],
+  // Maldives Paradise Resort (id: 2) specific meal plans
+  2: [
+    {
+      id: 'maldives-ai-plus',
+      type: MealPlanType.AI_PLUS,
+      name: 'Island Premium All Inclusive',
+      description: "Ultimate all-inclusive experience with premium dining and activities",
+      mealTimes: [
+        {
+          name: 'Breakfast',
+          startTime: '07:00',
+          endTime: '10:30',
+          location: 'Ocean View Restaurant'
+        },
+        {
+          name: 'Lunch',
+          startTime: '12:30',
+          endTime: '15:00',
+          location: 'Beach Club'
+        },
+        {
+          name: 'Afternoon Tea',
+          startTime: '16:00',
+          endTime: '17:30',
+          location: 'Sunset Lounge'
+        },
+        {
+          name: 'Dinner',
+          startTime: '19:00',
+          endTime: '22:30',
+          location: 'Ocean View Restaurant'
+        }
+      ],
+      inclusions: [
+        {
+          name: 'Premium Dining',
+          description: 'All meals at any restaurant including specialty dining',
+          isIncluded: true
+        },
+        {
+          name: 'Premium Beverages',
+          description: 'Premium branded alcoholic and non-alcoholic beverages',
+          isIncluded: true
+        },
+        {
+          name: 'Mini Bar',
+          description: 'Daily replenished mini bar with premium items',
+          isIncluded: true
+        },
+        {
+          name: 'Water Sports',
+          description: 'Non-motorized water sports included',
+          isIncluded: true
+        }
+      ],
+      restrictions: [
+        'Specialty dining requires reservation',
+        'Some premium wines and champagnes may incur additional charges'
+      ],
+      isActive: true
+    }
+  ]
+};
 
 // Special offers
 export const defaultSpecialOffers: SpecialOffer[] = [

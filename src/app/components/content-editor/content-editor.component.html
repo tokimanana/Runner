@@ -4,20 +4,6 @@
   </div>
 
   <div *ngIf="selectedHotel" class="editor-layout">
-    <div class="side-menu">
-      <div class="sub-menu-items">
-        <div
-          *ngFor="let item of getCurrentMenuItems()"
-          class="nav-item"
-          [class.active]="currentMenuItem === item.id"
-          (click)="onMenuItemClick(item)"
-        >
-          <mat-icon>{{item.icon}}</mat-icon>
-          <span>{{item.label}}</span>
-        </div>
-      </div>
-    </div>
-
     <div class="main-content">
       <div [ngSwitch]="currentMenuItem">
         <app-description 
@@ -50,40 +36,25 @@
           [hotel]="selectedHotel"
         ></app-age-category>
 
-        <app-currency
-          *ngSwitchCase="'currency'"
-          [hotel]="selectedHotel"
-        ></app-currency>
-
         <app-market-config
           *ngSwitchCase="'markets'"
           [hotel]="selectedHotel"
         ></app-market-config>
 
-        <app-contract
+        <app-contract-list
           *ngSwitchCase="'contract'"
-          [hotel]="selectedHotel"
-        ></app-contract>
-
-        <div *ngSwitchCase="'ratesConfig'" class="placeholder-content">
-          <h3>Rate Configuration</h3>
-          <p>Coming Soon</p>
-        </div>
-
-        <div *ngSwitchCase="'rateSeasons'" class="placeholder-content">
-          <h3>Rate Seasons</h3>
-          <p>Coming Soon</p>
-        </div>
-
-        <div *ngSwitchCase="'roomInventory'" class="placeholder-content">
-          <h3>Room Inventory</h3>
-          <p>Coming Soon</p>
-        </div>
-
-        <app-special-offers
-          *ngSwitchCase="'specialOffers'"
-          [hotel]="selectedHotel"
-        ></app-special-offers>
+          (contractSelected)="onContractSelected($event)"
+        ></app-contract-list>
+        
+        <ng-container *ngSwitchCase="'ratesConfig'">
+          <app-rates-config
+            *ngIf="selectedContract"
+            [contract]="selectedContract"
+          ></app-rates-config>
+          <div *ngIf="!selectedContract" class="no-contract">
+            <p>Please select a contract to view rates configuration</p>
+          </div>
+        </ng-container>
       </div>
     </div>
   </div>

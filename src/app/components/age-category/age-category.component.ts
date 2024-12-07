@@ -160,8 +160,7 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
   }
 
   deleteCategory(category: AgeCategory): void {
-    // Get current hotel using the public method
-    this.hotelService.getSelectedHotel().subscribe(currentHotel => {
+    this.hotelService.selectedHotel$.subscribe((currentHotel: Hotel | null) => {
       if (!currentHotel) {
         this.showError('No hotel selected');
         return;
@@ -206,8 +205,7 @@ export class AgeCategoryComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Get current hotel
-      this.hotelService.getSelectedHotel().subscribe(currentHotel => {
+      this.hotelService.selectedHotel$.subscribe((currentHotel: Hotel | null) => {
         if (!currentHotel) {
           this.showError('No hotel selected');
           return;

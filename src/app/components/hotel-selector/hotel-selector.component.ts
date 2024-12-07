@@ -48,7 +48,7 @@ export class HotelSelectorComponent implements OnInit {
       this.hotels = await firstValueFrom(this.hotelService.getHotels());
       
       // Set initial selected hotel if one is already selected in the service
-      const currentHotel = await firstValueFrom(this.hotelService.getSelectedHotel());
+      const currentHotel: Hotel | null = await firstValueFrom(this.hotelService.selectedHotel$);
       if (currentHotel) {
         this.hotelControl.setValue(currentHotel, { emitEvent: false });
       }

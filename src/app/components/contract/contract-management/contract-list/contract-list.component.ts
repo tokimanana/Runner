@@ -1,12 +1,39 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, TemplateRef, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatCardModule } from '@angular/material/card';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Contract, Hotel, Market, Season, Period } from '../../../../models/types';
 import { ContractService } from '../../../../services/contract.service';
 import { HotelService } from '../../../../services/hotel.service';
 import { MarketService } from '../../../../services/market.service';
 import { SeasonService } from '../../../../services/season.service';
-import { firstValueFrom, combineLatest } from 'rxjs';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+interface DateRange {
+  start: Date | null;
+  end: Date | null;
+}
+
+interface FilterCriteria {
+  hotel: number | null;
+  market: number | null;
+  season: number | null;
+  status: string | null;
+  dateRange: DateRange;
+}
 
 @Component({
   selector: 'app-contract-list',
@@ -14,169 +41,177 @@ import { firstValueFrom, combineLatest } from 'rxjs';
   styleUrls: ['./contract-list.component.css'],
   standalone: true,
   imports: [
-    // Add necessary imports
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatDialogModule
   ]
 })
-export class ContractListComponent implements OnInit {
+export class ContractListComponent implements OnInit, OnDestroy {
+  @ViewChild('deleteDialog') deleteDialog!: TemplateRef<any>;
+  @Output() contractSelected = new EventEmitter<Contract>();
+
+  displayedColumns: string[] = ['name', 'hotel', 'market', 'season', 'validFrom', 'validTo', 'status', 'actions'];
   contracts: Contract[] = [];
   filteredContracts: Contract[] = [];
-  hotels: { [id: number]: Hotel } = {};
-  markets: { [id: number]: Market } = {};
+  hotels: { [key: number]: Hotel } = {};
+  markets: { [key: number]: Market } = {};
   seasons: Season[] = [];
-  periods: { [seasonId: number]: Period[] } = {};
-  
-  displayedColumns: string[] = [
-    'name',
-    'hotel',
-    'market',
-    'season',
-    'validFrom',
-    'validTo',
-    'status',
-    'actions'
-  ];
+  contractToDelete: Contract | null = null;
 
-  filterCriteria = {
-    hotel: '',
-    market: '',
-    season: '',
-    status: '',
-    dateRange: null
+  filterCriteria: FilterCriteria = {
+    hotel: null,
+    market: null,
+    season: null,
+    status: null,
+    dateRange: {
+      start: null,
+      end: null
+    }
   };
 
+  private destroy$ = new Subject<void>();
+
   constructor(
+    private router: Router,
+    private dialog: MatDialog,
     private contractService: ContractService,
     private hotelService: HotelService,
     private marketService: MarketService,
-    private seasonService: SeasonService,
-    private router: Router,
-    private dialog: MatDialog
+    private seasonService: SeasonService
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadData();
   }
 
-  private async loadData() {
-    // Load hotels
-    const hotel = await firstValueFrom(this.hotelService.selectedHotel$);
-    if (hotel) {
-      this.hotels[hotel.id] = hotel;
-      
-      // Load seasons for the hotel
-      const seasons = await firstValueFrom(this.seasonService.getSeasonsByHotel(hotel.id));
-      this.seasons = seasons;
-      
-      // Load periods for each season
-      for (const season of seasons) {
-        const periods = await firstValueFrom(this.seasonService.getPeriodsBySeason(season.id));
-        if (periods) {
-          this.periods[season.id] = periods;
-        }
-      }
-    }
-
-    // Load markets
-    const markets = await this.marketService.getMarkets();
-    markets.forEach(market => {
-      this.markets[market.id] = market;
-    });
-
-    // Load contracts
-    this.contracts = await this.contractService.getContracts();
-    this.applyFilters();
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  applyFilters() {
+  private loadData(): void {
+    // Get hotelId from route or use a default value
+    const hotelId = 1; // TODO: Get from route or configuration
+    
+    combineLatest({
+      hotels: this.hotelService.getHotels(),
+      markets: this.marketService.markets$,
+      seasons: this.seasonService.getSeasonsByHotel(hotelId),
+      contracts: this.contractService.getContracts()
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(({ hotels, markets, seasons, contracts }) => {
+      // Convert arrays to lookup objects for hotels and markets with proper typing
+      this.hotels = hotels.reduce<{ [key: number]: Hotel }>(
+        (acc, hotel) => ({ ...acc, [hotel.id]: hotel }), 
+        {}
+      );
+      
+      if (markets) {
+        this.markets = markets.reduce<{ [key: number]: Market }>(
+          (acc, market) => ({ ...acc, [market.id]: market }), 
+          {}
+        );
+      }
+      
+      this.seasons = seasons;
+      this.contracts = contracts;
+      this.applyFilters();
+    });
+  }
+
+  getHotelName(hotelId: number): string {
+    return this.hotels[hotelId]?.name || '';
+  }
+
+  getMarketName(marketId: number): string {
+    return this.markets[marketId]?.name || '';
+  }
+
+  getSeasonName(seasonId: number): string {
+    const season = this.seasons.find(s => s.id === seasonId);
+    return season?.name || '';
+  }
+
+  getSeasonPeriods(seasonId: number): Period[] {
+    const season = this.seasons.find(s => s.id === seasonId);
+    return season?.periods || [];
+  }
+
+  getStatusBadgeClass(status: string): string {
+    return `status-badge ${status}`;
+  }
+
+  applyFilters(): void {
     this.filteredContracts = this.contracts.filter(contract => {
-      let matches = true;
-
-      if (this.filterCriteria.hotel) {
-        matches = matches && contract.hotelId.toString() === this.filterCriteria.hotel;
-      }
-
-      if (this.filterCriteria.market) {
-        matches = matches && contract.marketId.toString() === this.filterCriteria.market;
-      }
-
-      if (this.filterCriteria.season) {
-        matches = matches && contract.seasonId.toString() === this.filterCriteria.season;
-      }
-
-      if (this.filterCriteria.status) {
-        matches = matches && contract.status === this.filterCriteria.status;
-      }
-
-      if (this.filterCriteria.dateRange) {
+      const hotelMatch = !this.filterCriteria.hotel || contract.hotelId === this.filterCriteria.hotel;
+      const marketMatch = !this.filterCriteria.market || contract.marketId === this.filterCriteria.market;
+      const seasonMatch = !this.filterCriteria.season || contract.seasonId === this.filterCriteria.season;
+      const statusMatch = !this.filterCriteria.status || contract.status === this.filterCriteria.status;
+      
+      let dateMatch = true;
+      if (this.filterCriteria.dateRange.start && this.filterCriteria.dateRange.end) {
         const validFrom = new Date(contract.validFrom);
         const validTo = new Date(contract.validTo);
         const filterStart = new Date(this.filterCriteria.dateRange.start);
         const filterEnd = new Date(this.filterCriteria.dateRange.end);
         
-        matches = matches && 
-          validFrom >= filterStart &&
-          validTo <= filterEnd;
+        dateMatch = validFrom >= filterStart && validTo <= filterEnd;
       }
 
-      return matches;
+      return hotelMatch && marketMatch && seasonMatch && statusMatch && dateMatch;
     });
   }
 
-  createContract() {
+  resetFilters(): void {
+    this.filterCriteria = {
+      hotel: null,
+      market: null,
+      season: null,
+      status: null,
+      dateRange: {
+        start: null,
+        end: null
+      }
+    };
+    this.applyFilters();
+  }
+
+  createContract(): void {
     this.router.navigate(['/contracts/new']);
   }
 
-  editContract(contract: Contract) {
+  editContract(contract: Contract): void {
     this.router.navigate([`/contracts/${contract.id}/edit`]);
   }
 
-  viewContract(contract: Contract) {
-    this.router.navigate([`/contracts/${contract.id}`]);
+  viewContract(contract: Contract): void {
+    this.contractSelected.emit(contract);
   }
 
-  async deleteContract(contract: Contract) {
-    const dialogRef = this.dialog.open(/* Confirmation Dialog Component */, {
-      data: {
-        title: 'Delete Contract',
-        message: `Are you sure you want to delete contract "${contract.name}"?`
-      }
-    });
-
-    const result = await dialogRef.afterClosed().toPromise();
-    if (result) {
-      await this.contractService.deleteContract(contract.id);
-      this.contracts = this.contracts.filter(c => c.id !== contract.id);
-      this.applyFilters();
-    }
-  }
-
-  getHotelName(hotelId: number): string {
-    return this.hotels[hotelId]?.name || 'Unknown Hotel';
-  }
-
-  getMarketName(marketId: number): string {
-    return this.markets[marketId]?.name || 'Unknown Market';
-  }
-
-  getSeasonName(seasonId: number): string {
-    const season = this.seasons.find(s => s.id === seasonId);
-    return season?.name || 'Unknown Season';
-  }
-
-  getSeasonPeriods(seasonId: number): Period[] {
-    return this.periods[seasonId] || [];
-  }
-
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'active':
-        return 'status-badge-active';
-      case 'draft':
-        return 'status-badge-draft';
-      case 'expired':
-        return 'status-badge-expired';
-      default:
-        return '';
+  deleteContract(contract: Contract): void {
+    if (confirm(`Are you sure you want to delete contract ${contract.name}?`)) {
+      this.contractService.deleteContract(contract.id)
+        .subscribe({
+          next: () => {
+            this.contracts = this.contracts.filter(c => c.id !== contract.id);
+            this.applyFilters();
+          },
+          error: (error) => {
+            console.error('Error deleting contract:', error);
+          }
+        });
     }
   }
 }

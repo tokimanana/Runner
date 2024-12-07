@@ -11,6 +11,9 @@ export class MarketService {
   private marketGroups = new BehaviorSubject<MarketGroup[]>([]);
   private currencySettings = new BehaviorSubject<CurrencySetting[]>([]);
 
+  // Expose markets as observable
+  markets$ = this.markets.asObservable();
+
   constructor() {
     // Initialize with data from data.ts
     this.markets.next(defaultMarkets);

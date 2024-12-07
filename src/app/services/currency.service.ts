@@ -102,4 +102,9 @@ export class CurrencyService {
   isCurrencyActive(code: string): boolean {
     return this.currencySettings.some(c => c.code === code && c.isActive);
   }
+
+  updateCurrencySettings(settings: CurrencySetting[]): void {
+    this.currencySettings = settings;
+    this.currencySettingsSubject.next(this.currencySettings);
+  }
 }

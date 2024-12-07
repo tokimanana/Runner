@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ModalComponent } from '../modal/modal.component';
 import { Subscription } from 'rxjs';
 
-import { HotelService } from '../../services/hotel.service';
+import { CurrencyService } from '../../services/currency.service';
 import { CurrencySetting, Hotel } from '../../models/types';
 
 @Component({
@@ -51,12 +51,12 @@ export class CurrencyComponent implements OnInit, OnDestroy {
 
   @ViewChild('firstInput') firstInput!: ElementRef;
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private currencyService: CurrencyService) {}
 
   ngOnInit(): void {
     // Subscribe to currency settings changes
     this.subscriptions.push(
-      this.hotelService.getCurrencySettings().subscribe(settings => {
+      this.currencyService.getCurrencySettings().subscribe(settings => {
         this.currencySettings = settings;
         console.log('Currency settings updated:', settings.length, 'currencies');
       })
@@ -68,7 +68,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
   }
 
   loadCurrencySettings(): void {
-    this.currencySettings = this.hotelService.getCurrentCurrencySettings();
+    this.currencySettings = this.currencyService.getCurrentCurrencySettings();
   }
 
   openCurrencyEditor(currency?: CurrencySetting): void {
@@ -124,7 +124,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
         updatedSettings = [...this.currencySettings, newCurrency];
       }
 
-      this.hotelService.updateCurrencySettings(updatedSettings);
+      this.currencyService.updateCurrencySettings(updatedSettings);
       this.showSuccess(`Currency ${this.selectedCurrency ? 'updated' : 'added'} successfully`);
       this.closeCurrencyEditor();
     } catch (error) {
@@ -140,7 +140,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     }
 
     const updatedSettings = this.currencySettings.filter(c => c.id !== currency.id);
-    this.hotelService.updateCurrencySettings(updatedSettings);
+    this.currencyService.updateCurrencySettings(updatedSettings);
     this.showSuccess('Currency deleted successfully');
   }
 
@@ -162,7 +162,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
         ...this.currencySettings.slice(index + 1)
       ];
 
-      this.hotelService.updateCurrencySettings(updatedSettings);
+      this.currencyService.updateCurrencySettings(updatedSettings);
       this.showSuccess(`Currency ${currency.isActive ? 'deactivated' : 'activated'} successfully`);
     } catch (error) {
       console.error('Error updating currency status:', error);
