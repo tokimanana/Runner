@@ -8,6 +8,14 @@ $modal-border-radius: 8px;
 $modal-max-width: 600px;
 $modal-max-height: 90vh;
 $modal-padding: 2rem;
+$modal-transition: all 0.3s ease-in-out;
+
+// Mixins for reusable styles
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 // Modal styles
 .modal-backdrop {
@@ -17,10 +25,9 @@ $modal-padding: 2rem;
   right: 0;
   bottom: 0;
   background: $modal-backdrop-color;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  @include flex-center;
   z-index: $modal-z-index;
+  transition: $modal-transition;
   
   // Modal content styling
   .modal-content {
@@ -31,11 +38,54 @@ $modal-padding: 2rem;
     max-width: $modal-max-width;
     max-height: $modal-max-height;
     overflow-y: auto;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
     
     // Add a subtle animation
     animation: modalFadeIn 0.3s ease-in-out;
     
-    // Scrollbar styling for webkit browsers
+    // Modal header
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+      h5 {
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .close {
+        border: none;
+        background: none;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: $modal-transition;
+
+        &:hover {
+          opacity: 0.7;
+        }
+      }
+    }
+
+    // Modal body
+    .modal-body {
+      margin: $modal-padding 0;
+    }
+
+    // Modal footer
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    // Scrollbar styling
     &::-webkit-scrollbar {
       width: 8px;
     }
@@ -85,6 +135,14 @@ $modal-padding: 2rem;
       max-width: 95%;
       margin: 10px;
       padding: 1rem;
+
+      .modal-footer {
+        flex-direction: column;
+        
+        button {
+          width: 100%;
+        }
+      }
     }
   }
 }

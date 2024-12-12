@@ -1,0 +1,250 @@
+// Variables
+$primary-color: #1976d2;
+$border-color: #e0e0e0;
+$text-primary: #1a1a1a;
+$text-secondary: #666;
+$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$border-radius: 8px;
+$spacing-base: 8px;
+
+// Mixins
+@mixin flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin card {
+  background: #fff;
+  border-radius: $border-radius;
+  box-shadow: $card-shadow;
+  border: 1px solid $border-color;
+}
+
+@mixin list-bullet {
+  &:before {
+    content: "•";
+    color: $primary-color;
+    margin-right: $spacing-base;
+  }
+}
+
+// Main container
+.meal-plans-container {
+  padding: $spacing-base * 3;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+
+  .dashboard-header {
+    @include flex-between;
+    margin-bottom: $spacing-base * 3;
+  }
+}
+
+// Title section
+.title-section {
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: $text-secondary;
+    font-size: 14px;
+  }
+}
+
+// Grid layout
+.meal-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: $spacing-base * 3;
+  margin-top: $spacing-base * 3;
+}
+
+// Meal plan card
+.meal-plan-card {
+  @include card;
+  padding: $spacing-base * 2.5;
+
+  .card-header {
+    @include flex-between;
+    margin-bottom: $spacing-base * 2;
+  }
+
+  .plan-info {
+    .plan-type {
+      font-size: 18px;
+      font-weight: 500;
+      color: $text-primary;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: $spacing-base;
+  }
+}
+
+// Content sections
+.description {
+  color: $text-secondary;
+  font-size: 14px;
+  margin-bottom: $spacing-base * 2;
+  line-height: 1.5;
+}
+
+.included-meals,
+.default-inclusions,
+.restrictions {
+  margin-top: $spacing-base * 2;
+
+  h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: $text-primary;
+    margin-bottom: $spacing-base;
+  }
+}
+
+// Lists
+.meals-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-base;
+
+  .meal-tag {
+    background: #e3f2fd;
+    color: $primary-color;
+    padding: $spacing-base/2 $spacing-base;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+}
+
+.inclusions-list,
+.restrictions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    font-size: 14px;
+    color: $text-secondary;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    padding: $spacing-base/2 0;
+    @include list-bullet;
+  }
+}
+
+// Form styles
+.form-group {
+  margin-bottom: $spacing-base * 2.5;
+
+  label {
+    display: block;
+    margin-bottom: $spacing-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  select,
+  input,
+  textarea {
+    width: 100%;
+    padding: $spacing-base * 1.5;
+    border: 1px solid $border-color;
+    border-radius: 4px;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+}
+
+// Modal styles
+.modal {
+  &-header {
+    @include flex-between;
+    padding: $spacing-base * 2;
+    border-bottom: 1px solid $border-color;
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 500;
+    }
+  }
+
+  &-content {
+    padding: $spacing-base * 3;
+  }
+
+  &-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-base * 2;
+    padding: $spacing-base * 2;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// Time slots
+.time-slot {
+  display: flex;
+  gap: $spacing-base * 2;
+  margin-bottom: $spacing-base * 2;
+  align-items: center;
+
+  .time-inputs {
+    display: flex;
+    gap: $spacing-base;
+    align-items: center;
+  }
+}
+
+// Restrictions section
+.restrictions-section {
+  margin-top: $spacing-base * 3;
+
+  .add-restriction {
+    display: flex;
+    gap: $spacing-base;
+    margin-bottom: $spacing-base * 2;
+
+    input {
+      flex: 1;
+    }
+  }
+}
+
+// Media queries
+@media (max-width: 768px) {
+  .meal-plans-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-base * 2;
+  }
+
+  .modal-container {
+    width: 95%;
+    margin: $spacing-base;
+  }
+}
