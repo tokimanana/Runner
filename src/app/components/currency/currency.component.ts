@@ -1,6 +1,6 @@
-import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,19 +10,29 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ModalComponent } from '../modal/modal.component';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subject, Subscription } from 'rxjs';
 
 import { CurrencyService } from '../../services/currency.service';
 import { CurrencySetting, Hotel } from '../../models/types';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatMenuModule } from '@angular/material/menu';
+
+interface CurrencyField {
+  key: keyof CurrencySetting;  // This ensures key can only be valid CurrencySetting properties
+  label: string;
+  type: string;
+  required?: boolean;
+}
 
 @Component({
   selector: 'app-currency',
   templateUrl: './currency.component.html',
-  styleUrls: ['./currency.component.css'],
+  styleUrls: ['./currency.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -31,98 +41,131 @@ import { CurrencySetting, Hotel } from '../../models/types';
     MatTableModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    MatSlideToggleModule,
+    MatMenuModule,
     ModalComponent
   ]
 })
 export class CurrencyComponent implements OnInit, OnDestroy {
-  @Input() hotel!: Hotel;
+  @Input({ required: true }) show!: boolean;
+  @Input() title: string = '';
+  @Output() close = new EventEmitter<void>();
   
-  currencySettings: CurrencySetting[] = [];
-  displayedColumns: string[] = ['code', 'symbol', 'name', 'status', 'actions'];
-  showCurrencyEditor = false;
-  selectedCurrency: CurrencySetting | null = null;
-  newCurrency: Partial<CurrencySetting> = {
+  private currencyService = inject(CurrencyService);
+  private destroy$ = new Subject<void>();
+  
+  // Signals
+  currencySettings = signal<CurrencySetting[]>([]);
+  showCurrencyEditor = signal(false);
+  selectedCurrency = signal<CurrencySetting | null>(null);
+  modalMessage = signal('');
+  modalError = signal(false);
+  showEditor = signal<boolean>(false);
+  isLoading = signal<boolean>(false);
+  modalInitialValues = signal<Partial<CurrencySetting>>({
     code: '',
     symbol: '',
     name: '',
     isActive: false
-  };
-  private subscriptions: Subscription[] = [];
-  modalMessage = '';
-  modalError = false;
-  isLoading = false;
+  });
 
-  @ViewChild('firstInput') firstInput!: ElementRef;
 
-  constructor(private currencyService: CurrencyService) {}
 
-  ngOnInit(): void {
+  // Component properties
+  displayedColumns = ['code', 'symbol', 'name', 'status', 'actions'];
+  
+  currencyFormFields: CurrencyField[] = [
+    { key: 'code', label: 'Currency Code', type: 'text', required: true },
+    { key: 'symbol', label: 'Symbol', type: 'text', required: true },
+    { key: 'name', label: 'Currency Name', type: 'text', required: true },
+  ];
+
+  constructor() {
     this.loadCurrencySettings();
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+  ngOnInit() {
+    // Initialize your component here
+    this.loadCurrencySettings();
   }
 
-  loadCurrencySettings(): void {
-    this.isLoading = true;
-    this.subscriptions.push(
-      this.currencyService.getCurrencySettings().subscribe({
-        next: (settings) => {
-          this.currencySettings = settings;
-          this.isLoading = false;
-        },
-        error: (error: Error) => {
-          console.error('Error loading currency settings:', error);
-          this.showError('Failed to load currency settings. Please try again.');
-          this.isLoading = false;
-        }
-      })
-    );
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  openCurrencyEditor(currency?: CurrencySetting): void {
+  async loadCurrencySettings() {
+    try {
+      const settings = await firstValueFrom(this.currencyService.getCurrencySettings());
+      this.currencySettings.set(settings);
+    } catch (error) {
+      console.error('Error loading currency settings:', error);
+      this.showError('Failed to load currency settings');
+    }
+  }
+
+  openCurrencyEditor(currency?: CurrencySetting) {
     if (currency?.isActive) {
       this.showError('Cannot edit an active currency. Please deactivate it in all markets first.');
       return;
     }
 
-    this.selectedCurrency = currency || null;
-    this.newCurrency = currency ? { ...currency } : {
+    this.selectedCurrency.set(currency || null);
+    this.modalInitialValues.set(currency ? { ...currency } : {
       code: '',
       symbol: '',
       name: '',
       isActive: false
-    };
-    this.showCurrencyEditor = true;
-    
-    setTimeout(() => {
-      if (this.firstInput) {
-        this.firstInput.nativeElement.focus();
-      }
+    });
+    this.showCurrencyEditor.set(true);
+  }
+
+  closeCurrencyEditor() {
+    this.showCurrencyEditor.set(false);
+    this.selectedCurrency.set(null);
+    this.modalInitialValues.set({
+      code: '',
+      symbol: '',
+      name: '',
+      isActive: false
     });
   }
 
-  saveCurrency(): void {
+  async saveCurrency(formData: Partial<CurrencySetting>) {
     try {
-      const newCurrency = { ...this.newCurrency } as CurrencySetting;
-      
-      if (this.selectedCurrency) {
-        this.currencyService.updateCurrency(newCurrency);
+      if (this.selectedCurrency()) {
+        await this.currencyService.updateCurrency({
+          ...this.selectedCurrency()!,
+          ...formData
+        });
       } else {
-        this.currencyService.addCurrency(newCurrency);
+        await this.currencyService.addCurrency(formData as CurrencySetting);
       }
-
-      this.showSuccess(`Currency ${this.selectedCurrency ? 'updated' : 'added'} successfully`);
-      this.closeCurrencyEditor();
+      
+      this.showSuccess(`Currency ${this.selectedCurrency() ? 'updated' : 'added'} successfully`);
+      this.showCurrencyEditor();
       this.loadCurrencySettings();
     } catch (error) {
       console.error('Error saving currency:', error);
       this.showError(error instanceof Error ? error.message : 'Failed to save currency');
     }
   }
+  
 
-  deleteCurrency(currency: CurrencySetting): void {
+  async toggleCurrencyStatus(currency: CurrencySetting) {
+    try {
+      const updatedCurrency = { ...currency, isActive: !currency.isActive };
+      await this.currencyService.updateCurrency(updatedCurrency);
+      this.showSuccess(`Currency ${updatedCurrency.isActive ? 'activated' : 'deactivated'} successfully`);
+      this.loadCurrencySettings();
+    } catch (error) {
+      console.error('Error updating currency status:', error);
+      this.showError(error instanceof Error ? error.message : 'Failed to update currency status');
+    }
+  }
+
+  async deleteCurrency(currency: CurrencySetting) {
     if (currency.isActive) {
       this.showError('Cannot delete an active currency. Please deactivate it in all markets first.');
       return;
@@ -130,7 +173,7 @@ export class CurrencyComponent implements OnInit, OnDestroy {
 
     if (confirm(`Are you sure you want to delete ${currency.name}?`)) {
       try {
-        this.currencyService.deleteCurrency(currency);
+        await this.currencyService.deleteCurrency(currency);
         this.showSuccess('Currency deleted successfully');
         this.loadCurrencySettings();
       } catch (error) {
@@ -140,47 +183,20 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     }
   }
 
-  updateCurrencyStatus(currency: CurrencySetting): void {
-    try {
-      const updatedCurrency = {
-        ...currency,
-        isActive: !currency.isActive
-      };
-
-      this.currencyService.updateCurrency(updatedCurrency);
-      this.showSuccess(`Currency ${updatedCurrency.isActive ? 'activated' : 'deactivated'} successfully`);
-      this.loadCurrencySettings();
-    } catch (error) {
-      console.error('Error updating currency status:', error);
-      this.showError(error instanceof Error ? error.message : 'Failed to update currency status');
-    }
+  private showSuccess(message: string) {
+    this.modalMessage.set(message);
+    this.modalError.set(false);
+    setTimeout(() => this.modalMessage.set(''), 3000);
   }
 
-  closeCurrencyEditor(): void {
-    this.showCurrencyEditor = false;
-    this.selectedCurrency = null;
-    this.newCurrency = {
-      code: '',
-      symbol: '',
-      name: '',
-      isActive: false
-    };
-  }
-
-  showSuccess(message: string): void {
-    this.modalMessage = message;
-    this.modalError = false;
+  private showError(message: string) {
+    this.modalMessage.set(message);
+    this.modalError.set(true);
     setTimeout(() => {
-      this.modalMessage = '';
+      this.modalMessage.set('');
+      this.modalError.set(false);
     }, 3000);
   }
 
-  showError(message: string): void {
-    this.modalMessage = message;
-    this.modalError = true;
-    setTimeout(() => {
-      this.modalMessage = '';
-      this.modalError = false;
-    }, 3000);
-  }
+  
 }

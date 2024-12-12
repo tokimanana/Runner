@@ -6,12 +6,12 @@ import {
   defaultMealPlans as mealPlans,
   hotelMealPlans,
 } from "../../data/mock/mealPlans.mock";
+import { currencySettings as initialCurrencySettings } from "../../data/mock/currencies.mock";
 
 import { contracts as initialContracts } from "../../../data/mock/contracts.mock";
 import { markets as initialMarkets } from "../../../data/mock/markets.mock";
 import { marketGroups as initialMarketGroups } from "../../../data/mock/market-groups.mock";
 import { seasons as initialSeasons } from "../../../data/mock/seasons.mock";
-import { currencySettings as initialCurrencySettings } from "../../../data/mock/currencies.mock";
 
 import {
   Hotel,
@@ -25,6 +25,7 @@ import {
   HotelDataKey,
   PolicyType,
   RoomType,
+  AgeCategory,
 } from "../../models/types";
 
 export class MockApiService {
@@ -34,12 +35,13 @@ export class MockApiService {
     ROOMS: "mock_rooms",
     MEAL_PLANS: "mock_meal_plans",
     HOTEL_MEAL_PLANS: "hotel_meal_plans",
+    CURRENCY_SETTINGS: "mock_currency_settings",
 
     CONTRACTS: "mock_contracts",
     MARKETS: "mock_markets",
     MARKET_GROUPS: "mock_market_groups",
     SEASONS: "mock_seasons",
-    CURRENCY_SETTINGS: "mock_currency_settings",
+
     INITIALIZED: "mock_storage_initialized",
   };
 
@@ -47,9 +49,10 @@ export class MockApiService {
 
   // Generic methods for data management
   private static getStorageData<T>(key: string, initialData: T[]): T[] {
-    const storedData = localStorage.getItem(key);
-    return storedData ? JSON.parse(storedData) : initialData;
-  }
+    this.initializeStorage();
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : initialData;
+}
 
   // Public method to access storage keys
   public static getStorageKey(
@@ -58,7 +61,7 @@ export class MockApiService {
     return this.STORAGE_KEYS[key];
   }
 
-  private static setStorageData(key: string, data: any): Promise<void> {
+  private static setStorageData<T>(key: string, data: T): Promise<void> {
     try {
       localStorage.setItem(key, JSON.stringify(data));
       return Promise.resolve();
@@ -85,12 +88,16 @@ export class MockApiService {
         JSON.stringify(initialRooms)
       );
       localStorage.setItem(
-        this.STORAGE_KEYS.MEAL_PLANS, 
+        this.STORAGE_KEYS.MEAL_PLANS,
         JSON.stringify(mealPlans)
       );
       localStorage.setItem(
         this.STORAGE_KEYS.HOTEL_MEAL_PLANS,
         JSON.stringify(hotelMealPlans)
+      );
+      this.setStorageData(
+        this.STORAGE_KEYS.CURRENCY_SETTINGS,
+        initialCurrencySettings
       );
       // localStorage.setItem(this.STORAGE_KEYS.CONTRACTS, JSON.stringify(initialContracts));
       // localStorage.setItem(this.STORAGE_KEYS.MARKETS, JSON.stringify(initialMarkets));
@@ -154,20 +161,17 @@ export class MockApiService {
     return Promise.resolve(hotel || null);
   }
 
-  static updateHotel(id: number, hotelData: Partial<Hotel>): Promise<Hotel> {
-    this.initializeStorage();
-    const hotels = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.HOTELS) || "[]"
-    );
-    const index = hotels.findIndex((hotel: Hotel) => hotel.id === id);
-
-    if (index === -1) {
-      return Promise.reject(new Error(`Hotel with id ${id} not found`));
+  static async updateHotel(id: number, hotelData: Partial<Hotel>) {
+    const hotels = this.getStorageData<Hotel>(this.STORAGE_KEYS.HOTELS, []);
+    const index = hotels.findIndex(hotel => hotel.id === id);
+    
+    if (index !== -1) {
+      hotels[index] = { ...hotels[index], ...hotelData };
+      await this.setStorageData(this.STORAGE_KEYS.HOTELS, hotels);
+      return hotels[index];
     }
-
-    hotels[index] = { ...hotels[index], ...hotelData };
-    localStorage.setItem(this.STORAGE_KEYS.HOTELS, JSON.stringify(hotels));
-    return Promise.resolve(hotels[index]);
+    
+    throw new Error('Hotel not found');
   }
 
   static resetHotelsData(): Promise<void> {
@@ -227,7 +231,6 @@ export class MockApiService {
 
     return Promise.resolve(policiesMap[hotelId]);
   }
-
 
   // Rooms methods
   static getRooms() {
@@ -351,7 +354,7 @@ export class MockApiService {
       const globalResetOperations = [
         this.setStorageData(
           this.STORAGE_KEYS.CURRENCY_SETTINGS,
-          currencySettings
+          initialCurrencySettings
         ),
         this.setStorageData(
           this.STORAGE_KEYS.MARKET_GROUPS,
@@ -384,81 +387,83 @@ export class MockApiService {
     switch (dataType) {
       case "hotel":
         return initialHotels.find((h) => h.id === hotelId);
-      
+
       case "policies":
         return initialHotels.find((h) => h.id === hotelId)?.policies || {};
-      
+
       case "rooms":
         return initialRooms.filter((r) => r.hotelId === hotelId);
-      
+
       // case "contracts":
       //   return initialContracts.filter((c) => c.hotelId === hotelId);
-      
+
       // case "markets":
       //   return defaultMarkets;
-      
+
       // case "seasons":
       //   return hotelSeasons.filter((s) => s.hotelId === hotelId);
-      
+
       case "mealPlans":
-        return [
-          ...mealPlans,
-          ...(hotelMealPlans[hotelId] || [])
-        ];
-      
+        return [...mealPlans, ...(hotelMealPlans[hotelId] || [])];
+
       // case "ageCategories":
       //   return initialHotels.find((h) => h.id === hotelId)?.ageCategories || [];
-      
+
       // case "currencySettings":
       //   return currencySettings;
-      
+
       // case "marketGroups":
       //   return defaultMarketGroups;
-      
+
       case "roomTypes":
         return initialRooms.filter((r) => r.hotelId === hotelId);
-      
+
       // case "periods":
       //   const hotelSeason = hotelSeasons.find((s) => s.hotelId === hotelId);
       //   return hotelSeason?.periods || [];
-      
+
       case "description":
-        return initialHotels.find((h) => h.id === hotelId)?.description || '';
-      
+        return initialHotels.find((h) => h.id === hotelId)?.description || "";
+
       case "capacity":
         return initialHotels.find((h) => h.id === hotelId)?.totalRooms || 0;
-      
+
       case "roomInventory":
         return []; // Initialize empty room inventory for new hotels
-      
+
       case "cancellation":
-        return initialHotels.find((h) => h.id === hotelId)?.policies?.cancellation || {};
-      
+        return (
+          initialHotels.find((h) => h.id === hotelId)?.policies?.cancellation ||
+          {}
+        );
+
       case "checkIn":
-        return initialHotels.find((h) => h.id === hotelId)?.checkInTime || '';
-      
+        return initialHotels.find((h) => h.id === hotelId)?.checkInTime || "";
+
       case "checkOut":
-        return initialHotels.find((h) => h.id === hotelId)?.checkOutTime || '';
-      
+        return initialHotels.find((h) => h.id === hotelId)?.checkOutTime || "";
+
       case "childPolicy":
-        return initialHotels.find((h) => h.id === hotelId)?.policies?.child || {};
-      
+        return (
+          initialHotels.find((h) => h.id === hotelId)?.policies?.child || {}
+        );
+
       case "petPolicy":
         return initialHotels.find((h) => h.id === hotelId)?.policies?.pet || {};
-      
+
       case "dressCode":
-        const hotel = initialHotels.find((h) => h.id === hotelId);
-        return hotel?.features?.restaurants?.[0]?.dressCode || '';
-      
+        return (
+          initialHotels.find((h) => h.id === hotelId)?.policies?.dressCode || {}
+        );
+
       case "factSheet":
-        return initialHotels.find((h) => h.id === hotelId)?.factSheet || '';
+        return "";
 
       default:
         console.warn(`No initial data handler for type: ${dataType}`);
         return null;
     }
   }
-
 
   static async clearStorage(): Promise<void> {
     Object.values(this.STORAGE_KEYS).forEach((key) => {
@@ -480,46 +485,46 @@ export class MockApiService {
   static async getMealPlans(): Promise<MealPlan[]> {
     this.initializeStorage();
     const mealPlans = localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS);
-    return Promise.resolve(JSON.parse(mealPlans || '[]'));
+    return Promise.resolve(JSON.parse(mealPlans || "[]"));
   }
 
   /// Get meal plans for a specific hotel (combines default + hotel-specific)
   static async getHotelMealPlans(hotelId: number): Promise<MealPlan[]> {
     this.initializeStorage();
     const defaultPlans = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || '[]'
+      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || "[]"
     );
     const hotelPlansMap = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || '{}'
+      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || "{}"
     );
-    
+
     const hotelSpecificPlans = hotelPlansMap[hotelId] || [];
     return Promise.resolve([...defaultPlans, ...hotelSpecificPlans]);
   }
 
   // Update a meal plan
   static async updateMealPlan(
-    mealPlanId: string, 
+    mealPlanId: string,
     updates: Partial<MealPlan>
   ): Promise<MealPlan> {
     this.initializeStorage();
-    
+
     // Check default meal plans first
     let defaultPlans = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || '[]'
+      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || "[]"
     );
-    
+
     const defaultIndex = defaultPlans.findIndex(
       (plan: MealPlan) => plan.id === mealPlanId
     );
 
     if (defaultIndex !== -1) {
-      defaultPlans[defaultIndex] = { 
-        ...defaultPlans[defaultIndex], 
-        ...updates 
+      defaultPlans[defaultIndex] = {
+        ...defaultPlans[defaultIndex],
+        ...updates,
       };
       localStorage.setItem(
-        this.STORAGE_KEYS.MEAL_PLANS, 
+        this.STORAGE_KEYS.MEAL_PLANS,
         JSON.stringify(defaultPlans)
       );
       return Promise.resolve(defaultPlans[defaultIndex]);
@@ -527,7 +532,7 @@ export class MockApiService {
 
     // If not found in default plans, check hotel-specific plans
     const hotelPlansMap = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || '{}'
+      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || "{}"
     );
 
     for (const hotelId in hotelPlansMap) {
@@ -539,7 +544,7 @@ export class MockApiService {
       if (planIndex !== -1) {
         hotelPlansMap[hotelId][planIndex] = {
           ...hotelPlansMap[hotelId][planIndex],
-          ...updates
+          ...updates,
         };
         localStorage.setItem(
           this.STORAGE_KEYS.HOTEL_MEAL_PLANS,
@@ -549,30 +554,30 @@ export class MockApiService {
       }
     }
 
-    return Promise.reject(new Error('Meal plan not found'));
+    return Promise.reject(new Error("Meal plan not found"));
   }
 
   static async getMealPlanById(id: string): Promise<MealPlan | undefined> {
     this.initializeStorage();
-    
+
     // Check default meal plans first
     const defaultPlans = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || '[]'
+      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || "[]"
     ) as MealPlan[];
-    
-    const defaultPlan = defaultPlans.find(plan => plan.id === id);
+
+    const defaultPlan = defaultPlans.find((plan) => plan.id === id);
     if (defaultPlan) {
       return Promise.resolve(defaultPlan);
     }
 
     // Check hotel-specific meal plans
     const hotelPlansMap = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || '{}'
+      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || "{}"
     ) as Record<number, MealPlan[]>;
-    
+
     // Search through all hotel meal plans
     for (const hotelPlans of Object.values(hotelPlansMap)) {
-      const plan = hotelPlans.find(p => p.id === id);
+      const plan = hotelPlans.find((p) => p.id === id);
       if (plan) {
         return Promise.resolve(plan);
       }
@@ -583,20 +588,20 @@ export class MockApiService {
 
   static async createMealPlan(mealPlan: MealPlan): Promise<MealPlan> {
     this.initializeStorage();
-    
+
     // Check if it's a hotel-specific meal plan
-    if (mealPlan.id.includes('hotel-')) {
+    if (mealPlan.id.includes("hotel-")) {
       const hotelPlansMap = JSON.parse(
-        localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || '{}'
+        localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || "{}"
       ) as Record<number, MealPlan[]>;
-      
+
       // Extract hotel ID from the meal plan ID or use a provided hotel ID
-      const hotelId = parseInt(mealPlan.id.split('-')[1]);
-      
+      const hotelId = parseInt(mealPlan.id.split("-")[1]);
+
       if (!hotelPlansMap[hotelId]) {
         hotelPlansMap[hotelId] = [];
       }
-      
+
       hotelPlansMap[hotelId].push(mealPlan);
       localStorage.setItem(
         this.STORAGE_KEYS.HOTEL_MEAL_PLANS,
@@ -605,31 +610,31 @@ export class MockApiService {
     } else {
       // Add to default meal plans
       const defaultPlans = JSON.parse(
-        localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || '[]'
+        localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || "[]"
       ) as MealPlan[];
-      
+
       defaultPlans.push(mealPlan);
       localStorage.setItem(
         this.STORAGE_KEYS.MEAL_PLANS,
         JSON.stringify(defaultPlans)
       );
     }
-    
+
     return Promise.resolve(mealPlan);
   }
 
   static async deleteMealPlan(id: string): Promise<void> {
     this.initializeStorage();
-    
+
     // Check default meal plans first
     let defaultPlans = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || '[]'
+      localStorage.getItem(this.STORAGE_KEYS.MEAL_PLANS) || "[]"
     );
-    
+
     const defaultIndex = defaultPlans.findIndex(
       (plan: MealPlan) => plan.id === id
     );
-  
+
     if (defaultIndex !== -1) {
       defaultPlans.splice(defaultIndex, 1);
       localStorage.setItem(
@@ -638,18 +643,18 @@ export class MockApiService {
       );
       return Promise.resolve();
     }
-  
+
     // If not found in default plans, check hotel-specific plans
     const hotelPlansMap = JSON.parse(
-      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || '{}'
+      localStorage.getItem(this.STORAGE_KEYS.HOTEL_MEAL_PLANS) || "{}"
     );
-  
+
     for (const hotelId in hotelPlansMap) {
       const hotelPlans = hotelPlansMap[hotelId];
       const planIndex = hotelPlans.findIndex(
         (plan: MealPlan) => plan.id === id
       );
-  
+
       if (planIndex !== -1) {
         hotelPlansMap[hotelId].splice(planIndex, 1);
         localStorage.setItem(
@@ -659,7 +664,186 @@ export class MockApiService {
         return Promise.resolve();
       }
     }
-  
-    return Promise.reject(new Error('Meal plan not found'));
+
+    return Promise.reject(new Error("Meal plan not found"));
   }
+
+  // Get age categories for a specific hotel
+  static async getHotelAgeCategories(hotelId: number): Promise<AgeCategory[]> {
+    const hotel = await this.getHotelById(hotelId);
+    if (!hotel) {
+      throw new Error('Hotel not found');
+    }
+    return Promise.resolve(hotel.ageCategories || []);
+  }
+
+  // Update age categories for a specific hotel
+  static async updateHotelAgeCategories(hotelId: number, categories: AgeCategory[]): Promise<Hotel> {
+    this.initializeStorage();
+    const hotels = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.HOTELS) || '[]');
+    const index = hotels.findIndex((h: Hotel) => h.id === hotelId);
+    
+    if (index === -1) {
+      throw new Error('Hotel not found');
+    }
+
+    // Validate age categories before updating
+    this.validateAgeCategories(categories);
+
+    // Update each category's label based on age ranges
+    const updatedCategories = categories.map(category => ({
+      ...category,
+      label: this.generateAgeLabel(category)
+    }));
+
+    hotels[index] = {
+      ...hotels[index],
+      ageCategories: updatedCategories
+    };
+
+    localStorage.setItem(this.STORAGE_KEYS.HOTELS, JSON.stringify(hotels));
+    return Promise.resolve(hotels[index]);
+  }
+
+
+  // Add a single age category
+  static async addHotelAgeCategory(hotelId: number, category: Omit<AgeCategory, 'id' | 'label'>): Promise<Hotel> {
+    const hotel = await this.getHotelById(hotelId);
+    if (!hotel) {
+      throw new Error('Hotel not found');
+    }
+
+    const currentCategories = hotel.ageCategories || [];
+    const newId = Math.max(0, ...currentCategories.map(c => c.id)) + 1;
+
+    const newCategory: AgeCategory = {
+      ...category,
+      id: newId,
+      label: this.generateAgeLabel(category)
+    };
+
+    return this.updateHotelAgeCategories(hotelId, [...currentCategories, newCategory]);
+  }
+
+  // Delete an age category
+  static async deleteHotelAgeCategory(hotelId: number, categoryId: number): Promise<Hotel> {
+    const hotel = await this.getHotelById(hotelId);
+    if (!hotel) {
+      throw new Error('Hotel not found');
+    }
+
+    const currentCategories = hotel.ageCategories || [];
+    const updatedCategories = currentCategories.filter(c => c.id !== categoryId);
+
+    return this.updateHotelAgeCategories(hotelId, updatedCategories);
+  }
+
+
+  // Helper method to generate age category label
+  private static generateAgeLabel(category: Pick<AgeCategory, 'type' | 'name' | 'minAge' | 'maxAge'>): string {
+    switch (category.type) {
+      case 'adult':
+        return `${category.name} (${category.minAge}+ years)`;
+      case 'infant':
+      case 'child':
+      case 'teen':
+        return `${category.name} (${category.minAge}-${category.maxAge} years)`;
+      default:
+        return `${category.name} (${category.minAge}-${category.maxAge} years)`;
+    }
+  }
+
+  // Validate age categories before saving
+  private static validateAgeCategories(categories: AgeCategory[]): void {
+    // Check for overlapping age ranges
+    categories.forEach((category, index) => {
+      categories.forEach((otherCategory, otherIndex) => {
+        if (index !== otherIndex) {
+          const overlap = (category.minAge >= otherCategory.minAge && category.minAge <= otherCategory.maxAge) ||
+                         (category.maxAge >= otherCategory.minAge && category.maxAge <= otherCategory.maxAge);
+          
+          if (overlap) {
+            throw new Error(`Age ranges overlap between ${category.name} and ${otherCategory.name}`);
+          }
+        }
+      });
+
+      // Validate individual category
+      if (category.minAge > category.maxAge) {
+        throw new Error(`Invalid age range for ${category.name}: minimum age cannot be greater than maximum age`);
+      }
+
+      if (category.minAge < 0 || category.maxAge > 100) {
+        throw new Error(`Invalid age range for ${category.name}: ages must be between 0 and 100`);
+      }
+    });
+  }
+
+  // Currency-specific methods
+  static async getCurrencySettings(): Promise<CurrencySetting[]> {
+    return this.getItems(this.STORAGE_KEYS.CURRENCY_SETTINGS, initialCurrencySettings);
+  }
+
+  static async updateCurrencySetting(
+    currencyCode: string,
+    updates: Partial<CurrencySetting>
+  ): Promise<CurrencySetting> {
+    const currencies = await this.getCurrencySettings();
+    const index = currencies.findIndex(c => c.code === currencyCode);
+    
+    if (index === -1) {
+      throw new Error('Currency not found');
+    }
+
+    // Prevent updating active currencies
+    if (currencies[index].isActive && updates.hasOwnProperty('code')) {
+      throw new Error('Cannot modify active currency code');
+    }
+
+    currencies[index] = { ...currencies[index], ...updates };
+    await this.setStorageData(this.STORAGE_KEYS.CURRENCY_SETTINGS, currencies);
+    return currencies[index];
+  }
+
+  static async addCurrencySetting(currency: Omit<CurrencySetting, 'id'>): Promise<CurrencySetting> {
+    const currencies = await this.getCurrencySettings();
+    
+    // Check for duplicate currency code
+    if (currencies.some(c => c.code === currency.code)) {
+      throw new Error(`Currency with code ${currency.code} already exists`);
+    }
+
+    // Generate new ID
+    const newId = Math.max(0, ...currencies.map(c => c.id)) + 1;
+    const newCurrency: CurrencySetting = {
+      ...currency,
+      id: newId,
+      isActive: false // New currencies are always inactive initially
+    };
+
+    currencies.push(newCurrency);
+    await this.setStorageData(this.STORAGE_KEYS.CURRENCY_SETTINGS, currencies);
+    return newCurrency;
+  }
+
+  static async deleteCurrencySetting(code: string): Promise<void> {
+    const currencies = await this.getCurrencySettings();
+    const currency = currencies.find(c => c.code === code);
+
+    if (!currency) {
+      throw new Error('Currency not found');
+    }
+
+    if (currency.isActive) {
+      throw new Error('Cannot delete an active currency');
+    }
+
+    const filteredCurrencies = currencies.filter(c => c.code !== code);
+    await this.setStorageData(this.STORAGE_KEYS.CURRENCY_SETTINGS, filteredCurrencies);
+  }
+
+  static async updateCurrencyStatus(code: string, isActive: boolean): Promise<CurrencySetting> {
+    return this.updateCurrencySetting(code, { isActive });
+  }
+
 }

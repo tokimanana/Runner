@@ -1,6 +1,6 @@
 // src/app/services/hotel.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, from, of } from 'rxjs';
+import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
 import { distinctUntilChanged, map, tap, catchError } from 'rxjs/operators';
 import { 
   Hotel, 
@@ -37,6 +37,12 @@ export class HotelService extends BaseDataService<Hotel> {
     });
   }
 
+  protected override handleError<T>(operation = 'operation', result?: T) {
+    return (error: any): Observable<T> => {
+      console.error(`${operation} failed:`, error);
+      return of(result as T);
+    };
+  }
   async loadHotels(): Promise<void> {
     try {
       const hotels = await MockApiService.getHotels();
@@ -70,20 +76,24 @@ export class HotelService extends BaseDataService<Hotel> {
   }
 
   // Public methods
+  // Get full hotel data
   getHotels(): Observable<Hotel[]> {
     return this.allHotels$;
   }
-
-  async getHotelById(id: number): Promise<Hotel | null> {
+  async getHotelById(id: number): Promise<Hotel> {
     try {
       const hotel = await MockApiService.getHotelById(id);
+      if (!hotel) {
+        throw new Error(`Hotel with ID ${id} not found`);
+      }
       return hotel;
     } catch (error) {
-      console.error(`Failed to get hotel with id ${id}:`, error);
-      return null;
+      console.error('Error fetching hotel:', error);
+      throw error;
     }
   }
 
+  // Hotel selection management
   setSelectedHotel(hotel: Hotel | null): void {
     this.selectedHotelSubject.next(hotel);
   }
@@ -118,8 +128,30 @@ export class HotelService extends BaseDataService<Hotel> {
   }
 
   // Specific update methods
-  async updateHotelAgeCategories(hotelId: number, ageCategories: AgeCategory[]): Promise<Hotel | null> {
-    return this.updateHotel(hotelId, { ageCategories });
+   // Method to update age categories with validation
+   async updateHotelAgeCategories(hotelId: number, categories: AgeCategory[]): Promise<Hotel> {
+    try {
+      // Validate categories before updating
+      this.validateAgeCategories(categories);
+      
+      const updatedHotel = await MockApiService.updateHotelAgeCategories(hotelId, categories);
+      this.updateHotelInStore(updatedHotel);
+      return updatedHotel;
+    } catch (error) {
+      // Convert error to string before passing to handleError
+      this.handleError(error instanceof Error ? error.message : 'Failed to update age categories');
+      throw error;
+    }
+  }
+  
+
+  private updateHotelInStore(updatedHotel: Hotel) {
+    const currentHotels = this.hotels$.value;
+    const index = currentHotels.findIndex(h => h.id === updatedHotel.id);
+    if (index !== -1) {
+      currentHotels[index] = updatedHotel;
+      this.hotels$.next([...currentHotels]);
+    }
   }
 
   async updateHotelPolicies(hotelId: number, policies: HotelPolicies): Promise<Hotel | null> {
@@ -182,7 +214,7 @@ export class HotelService extends BaseDataService<Hotel> {
   async resetHotels(): Promise<void> {
     try {
       await MockApiService.resetStorage();
-      await this.initializeData();
+      await this.loadHotels();
     } catch (error) {
       console.error('Failed to reset hotels:', error);
     }
@@ -192,4 +224,34 @@ export class HotelService extends BaseDataService<Hotel> {
   getHotelName(id: number): string {
     return this.hotels$.value.find(h => h.id === id)?.name || '';
   }
+
+  // New method to get age categories directly
+  getHotelAgeCategories(hotelId: number): Observable<AgeCategory[]> {
+    return from(MockApiService.getHotelAgeCategories(hotelId)).pipe(
+      map(categories => categories || []),
+      catchError(this.handleError('getHotelAgeCategories', []))
+    );
+  }
+
+  private validateAgeCategories(categories: AgeCategory[]): void {
+    // Ensure no overlapping age ranges
+    categories.forEach((category, index) => {
+      const nextCategory = categories[index + 1];
+      if (nextCategory && category.maxAge >= nextCategory.minAge) {
+        throw new Error('Age categories cannot have overlapping ranges');
+      }
+      // Ensure valid age ranges
+      if (category.minAge < 0 || category.maxAge < category.minAge) {
+        throw new Error('Invalid age range');
+      }
+    });
+    
+    // Ensure continuous coverage
+    for (let i = 0; i < categories.length - 1; i++) {
+      if (categories[i].maxAge + 1 !== categories[i + 1].minAge) {
+        throw new Error('Age categories must be continuous');
+      }
+    }
+  }
+
 }

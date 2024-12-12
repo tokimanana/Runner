@@ -1,110 +1,96 @@
+// src/app/services/currency.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CurrencySetting } from '../models/types';
-import { currencySettings as defaultCurrencySettings } from '../../data';
+import { MockApiService } from './mock/mock-api.service';
+import { BaseDataService } from './base-data.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class CurrencyService {
-  private currencySettings: CurrencySetting[] = [];
-  private currencySettingsSubject = new BehaviorSubject<CurrencySetting[]>([]);
-
+export class CurrencyService extends BaseDataService<CurrencySetting> {
   constructor() {
-    // Initialize with default currencies from data.ts
-    this.currencySettings = [...defaultCurrencySettings];
-    this.currencySettingsSubject.next(this.currencySettings);
+    super();
+    this.loadCurrencySettings();
+  }
+
+  private async loadCurrencySettings() {
+    await this.loadData(() => MockApiService.getCurrencySettings());
   }
 
   getCurrencySettings(): Observable<CurrencySetting[]> {
-    return this.currencySettingsSubject.asObservable();
+    return this.getData();
   }
 
-  getCurrentCurrencySettings(): CurrencySetting[] {
-    return this.currencySettings;
+  async addCurrency(currency: Omit<CurrencySetting, 'id'>): Promise<CurrencySetting> {
+    return this.addData(
+      (data) => MockApiService.addCurrencySetting(data),
+      currency
+    );
   }
 
-  addCurrency(currency: Omit<CurrencySetting, 'isActive'>): void {
-    // Validate currency code uniqueness
-    if (this.currencySettings.some(c => c.code === currency.code)) {
-      throw new Error(`Currency with code ${currency.code} already exists`);
-    }
-
-    // Add new currency (initially inactive)
-    const newCurrency: CurrencySetting = {
-      ...currency,
-      isActive: false
-    };
-
-    this.currencySettings.push(newCurrency);
-    this.currencySettingsSubject.next(this.currencySettings);
+  async updateCurrency(currency: CurrencySetting): Promise<CurrencySetting> {
+    return this.updateData(
+      currency.id,
+      (id, updates) => MockApiService.updateCurrencySetting(currency.code, updates),
+      currency
+    );
   }
 
-  updateCurrency(currency: CurrencySetting): void {
-    // Cannot update active currencies
-    const existingCurrency = this.currencySettings.find(c => c.code === currency.code);
-    if (existingCurrency?.isActive) {
-      throw new Error('Cannot update an active currency');
-    }
-
-    // Find and update currency
-    const index = this.currencySettings.findIndex(c => c.code === currency.code);
-    if (index === -1) {
-      throw new Error('Currency not found');
-    }
-
-    // Preserve active status
-    this.currencySettings[index] = {
-      ...currency,
-      isActive: this.currencySettings[index].isActive
-    };
-
-    this.currencySettingsSubject.next(this.currencySettings);
-  }
-
-  deleteCurrency(currency: CurrencySetting): void {
-    // Cannot delete active currencies
+  async deleteCurrency(currency: CurrencySetting): Promise<void> {
     if (currency.isActive) {
       throw new Error('Cannot delete an active currency');
     }
-
-    // Find and remove currency
-    const index = this.currencySettings.findIndex(c => c.code === currency.code);
-    if (index === -1) {
-      throw new Error('Currency not found');
-    }
-
-    this.currencySettings.splice(index, 1);
-    this.currencySettingsSubject.next(this.currencySettings);
+    
+    return this.deleteData(
+      () => MockApiService.deleteCurrencySetting(currency.code),
+      currency.id
+    );
   }
 
-  updateCurrencyStatuses(activeMarkets: { currency: string }[]): void {
-    // Reset all currencies to inactive
-    this.currencySettings.forEach(currency => {
-      currency.isActive = false;
-    });
-
-    // Set currencies to active based on market usage
-    activeMarkets.forEach(market => {
-      const currency = this.currencySettings.find(c => c.code === market.currency);
-      if (currency) {
-        currency.isActive = true;
+  async updateCurrencyStatus(code: string, isActive: boolean): Promise<CurrencySetting> {
+    try {
+      const updatedCurrency = await MockApiService.updateCurrencyStatus(code, isActive);
+      const currentData = this.dataSubject.value;
+      const index = currentData.findIndex(c => c.code === code);
+      
+      if (index !== -1) {
+        currentData[index] = updatedCurrency;
+        this.dataSubject.next([...currentData]);
       }
-    });
-
-    this.currencySettingsSubject.next(this.currencySettings);
+      
+      return updatedCurrency;
+    } catch (error) {
+      this.handleError('Failed to update currency status', error);
+      throw error;
+    }
   }
 
+  // Helper methods
   getCurrencyByCode(code: string): CurrencySetting | undefined {
-    return this.currencySettings.find(c => c.code === code);
+    return this.dataSubject.value.find(c => c.code === code);
   }
 
   isCurrencyActive(code: string): boolean {
-    return this.currencySettings.some(c => c.code === code && c.isActive);
+    return this.dataSubject.value.some(c => c.code === code && c.isActive);
   }
 
-  updateCurrencySettings(settings: CurrencySetting[]): void {
-    this.currencySettings = settings;
-    this.currencySettingsSubject.next(this.currencySettings);
+  protected override handleError(message: string, error: any): void {
+    console.error('Currency service error:', message, error);
+    super.handleError(message, error);
+  }
+
+  // Reset currency settings to initial state
+  async resetCurrencySettings(): Promise<void> {
+    try {
+      this.loadingSubject.next(true);
+      await MockApiService.resetStorage();
+      await this.loadCurrencySettings();
+    } catch (error) {
+      this.handleError('Failed to reset currency settings', error);
+      throw error;
+    } finally {
+      this.loadingSubject.next(false);
+    }
   }
 }

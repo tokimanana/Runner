@@ -1,6 +1,5 @@
 // Core interfaces
 export interface Hotel {
-  // Basic Information
   id: number;
   name: string;
   description: string;
@@ -9,52 +8,36 @@ export interface Hotel {
   country: string;
   rating: number;
   
-  // Documentation
-  factSheet?: string;
-  
-  // Timing Information
+  // Basic Information
   yearBuilt: string;
   lastRenovation: string;
-  checkInTime: string;
-  checkOutTime: string;
-  
-  // Capacity Information
   totalRooms: number;
-  
-  // Location Details
   airportDistance: string;
   cityCenterDistance: string;
   beachDistance: string;
-  
-  // Services
   languages: string[];
+  
+  // Operating hours
+  checkInTime: string;
+  checkOutTime: string;
+  
+  // Features currently in use
   amenities: {
     [key in AmenityCategory]?: string[];
   };
   
-  // Features and Facilities
-  features: {
-    restaurants: Restaurant[];
-    spa: Spa;
-  };
-  
-  // Business Configuration
+  // Optional relationships
+  rooms?: RoomType[];
+  mealPlans?: MealPlan[];
+  policies?: HotelPolicies;
   ageCategories?: AgeCategory[];
   
-  // Media
-  images: string[];
-  
-  // Contact Information
-  contactInfo: {
+  // Basic contact info
+  contactInfo?: {
     phone: string;
     email: string;
     website?: string;
   };
-
-  // Optional relationships - these might be managed separately
-  rooms?: RoomType[];
-  mealPlans?: MealPlan[];
-  policies?: HotelPolicies;
 }
 
 
@@ -478,13 +461,13 @@ export interface MarketGroup {
 // Age category management
 export interface AgeCategory {
   id: number;
-  name: string;
   type: 'adult' | 'child' | 'infant' | 'teen';
+  name: string;
   label: string;
   minAge: number;
   maxAge: number;
-  defaultRate: number;
   description?: string;
+  defaultRate: number;
   isActive: boolean;
 }
 

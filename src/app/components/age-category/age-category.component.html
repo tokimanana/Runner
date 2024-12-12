@@ -1,32 +1,34 @@
 <div class="age-categories-content">
-  <!-- Modal Message -->
-  <div *ngIf="modalMessage" [class]="modalError ? 'error-message' : 'success-message'" role="alert">
-    <mat-icon>{{ modalError ? 'error' : 'check_circle' }}</mat-icon>
-    {{ modalMessage }}
+  <!-- Message display -->
+  <div *ngIf="modalMessage()" [class]="modalError() ? 'error-message' : 'success-message'">
+    <mat-icon>{{ modalError() ? 'error' : 'check_circle' }}</mat-icon>
+    {{ modalMessage() }}
   </div>
 
+  <!-- Categories list -->
   <div class="age-categories-list">
     <div class="categories-header">
       <h3>Age Categories</h3>
-      <button mat-raised-button color="primary" (click)="addNewCategory()" *ngIf="!showCategoryForm">
+      <button mat-raised-button color="primary" (click)="addNewCategory()" *ngIf="!showCategoryForm()">
         <mat-icon>add</mat-icon>
         Add Category
       </button>
     </div>
-    
-    <div *ngFor="let category of categories" class="age-category-item">
+
+    <!-- Category items -->
+    <div class="age-category-item" *ngFor="let category of sortedCategories()">
       <div class="category-info">
         <mat-icon>{{ getCategoryIcon(category.type) }}</mat-icon>
         <div class="category-details">
           <span class="category-name">{{ category.name }}</span>
-          <span class="age-range">{{ category.minAge }} - {{ category.maxAge === 200 ? '+' : category.maxAge }} years</span>
+          <span class="age-range">{{ category.label }}</span>
         </div>
       </div>
-      <div class="category-actions" *ngIf="!showCategoryForm">
-        <button mat-icon-button color="primary" (click)="editCategory(category)">
+      <div class="category-actions">
+        <button mat-icon-button (click)="editCategory(category)" matTooltip="Edit">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button color="warn" (click)="deleteCategory(category)">
+        <button mat-icon-button color="warn" (click)="deleteCategory(category)" matTooltip="Delete">
           <mat-icon>delete</mat-icon>
         </button>
       </div>
@@ -35,7 +37,7 @@
 
   <!-- Age Category Form -->
   <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" *ngIf="showCategoryForm" role="form">
-    <h3>{{ editingCategory ? 'Edit' : 'Add' }} Age Category</h3>
+    <h3>{{ editingCategory() ? 'Edit' : 'Add' }} Age Category</h3>
     
     <div class="form-group">
       <mat-form-field appearance="outline">
@@ -89,14 +91,21 @@
       </div>
     </div>
 
+    <mat-error *ngIf="categoryForm.errors?.['ageRange']">
+      Minimum age cannot be greater than maximum age
+    </mat-error>
+    <mat-error *ngIf="categoryForm.errors?.['invalidAgeRange']">
+      Ages must be between 0 and 100
+    </mat-error>
+
     <div class="form-group">
       <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
     </div>
 
     <div class="modal-actions">
-      <button mat-button type="button" (click)="cancelCategoryEdit()">Cancel</button>
-      <button mat-raised-button color="primary" type="submit" [disabled]="categoryForm.invalid">
-        {{ editingCategory ? 'Update' : 'Add' }} Category
+      <button mat-button type="button" (click)="showCategoryForm.set(false)">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!categoryForm.valid">
+        Save
       </button>
     </div>
   </form>

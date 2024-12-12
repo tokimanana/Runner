@@ -1,0 +1,151 @@
+/* currency.component.scss */
+.currency-container {
+  padding: 24px;
+  position: relative;
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+    }
+  }
+
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    padding: 48px;
+  }
+
+  .currency-table {
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .mat-header-cell {
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    .mat-cell {
+      padding: 16px 8px;
+    }
+
+    .mat-column-actions {
+      width: 80px;
+      text-align: right;
+    }
+
+    .mat-column-status {
+      width: 120px;
+    }
+  }
+
+  .no-currencies {
+    text-align: center;
+    padding: 48px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    mat-icon {
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-weight: 500;
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+    }
+  }
+
+  .notification-message {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    background: #4caf50;
+    color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  
+    &.error {
+      background: #f44336;
+    }
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+/* Responsive styles */
+@media (max-width: 768px) {
+  .currency-container {
+    padding: 16px;
+
+    .header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+
+      button {
+        width: 100%;
+      }
+    }
+
+    .mat-table {
+      .mat-header-row {
+        display: none;
+      }
+
+      .mat-row {
+        flex-direction: column;
+        padding: 16px;
+        border-bottom: 1px solid #eee;
+
+        .mat-cell {
+          padding: 8px 0;
+          text-align: left;
+          width: 100%;
+
+          &:before {
+            content: attr(data-label);
+            font-weight: 500;
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+  }
+}
+}

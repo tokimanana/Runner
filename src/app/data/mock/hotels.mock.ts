@@ -1,7 +1,7 @@
 // src/data/mock/hotels.mock.ts
 import { 
   Hotel,
-  RoomType,
+  AgeCategory,
   Restaurant,
   Spa,
   ContactInfo,
@@ -40,44 +40,41 @@ export const hotels: Hotel[] = [
       [AmenityCategory.DINING]: ['Fine Dining', 'Room Service'],
       [AmenityCategory.BEACH]: ['Beach Access']
     },
-    
-    // Hotel features
-    features: {
-      restaurants: [
-        {
-          name: 'La Terrazza',
-          cuisine: CuisineType.MEDITERRANEAN,
-          type: RestaurantType.FINE_DINING,
-          dressCode: 'Smart Elegant',
-          openingHours: '19:00-23:00',
-          description: 'Michelin-starred restaurant offering innovative Mediterranean cuisine with panoramic sea views.'
-        },
-        {
-          name: 'Il Giardino',
-          cuisine: CuisineType.ITALIAN,
-          type: RestaurantType.CASUAL,
-          dressCode: 'Smart Casual',
-          openingHours: '12:00-15:00,19:00-22:30',
-          description: 'Authentic Italian cuisine served in a romantic garden setting.'
-        }
-      ],
-      spa: {
-        name: 'Riveria Wellness & Spa',
-        treatments: [
-          'Massage',
-          'Facial',
-          'Body Treatments',
-          'Mediterranean Rituals',
-          'Couples Treatments'
-        ],
-        openingHours: '09:00-20:00',
-        description: 'Luxury spa treatments with premium local ingredients.'
+    ageCategories: [
+      {
+        id: 1,
+        type: 'adult',
+        name: 'Adult',
+        label: `Adult (${12}+ years)`,
+        minAge: 12,
+        maxAge: 100,
+        description: 'Adult age category (12+ years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        type: 'child',
+        name: 'Child',
+        label: `Child (${2}-${11} years)`,
+        minAge: 2,
+        maxAge: 11,
+        description: 'Child age category (2-11 years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        type: 'infant',
+        name: 'Infant',
+        label: `Infant (${0}-${1} years)`,
+        minAge: 0,
+        maxAge: 1,
+        description: 'Infant age category (0-1 years)',
+        defaultRate: 0,
+        isActive: true
       }
-    },
-    
-    // Media
-    images: ['hotel-exterior.jpg', 'lobby.jpg', 'restaurant.jpg'],
-    
+    ],
     // Contact information
     contactInfo: {
       phone: '+39 089 831 888',
@@ -111,46 +108,92 @@ export const hotels: Hotel[] = [
       [AmenityCategory.DINING]: ['Multiple Restaurants', 'Private Dining'],
       [AmenityCategory.ACTIVITIES]: ['Water Sports', 'Excursions']
     },
-    
-    features: {
-      restaurants: [
-        {
-          name: 'Ocean View',
-          cuisine: CuisineType.INTERNATIONAL,
-          type: RestaurantType.BUFFET,
-          dressCode: 'Smart Casual',
-          openingHours: '06:30-23:00',
-          description: 'All-day dining venue offering international cuisine with Asian influences.'
-        },
-        {
-          name: 'Teppanyaki',
-          cuisine: CuisineType.JAPANESE,
-          type: RestaurantType.SPECIALTY,
-          dressCode: 'Smart Casual',
-          openingHours: '19:00-22:30',
-          description: 'Interactive dining experience featuring skilled teppanyaki chefs.'
-        }
-      ],
-      spa: {
-        name: 'Overwater Spa & Wellness',
-        treatments: [
-          'Massage',
-          'Yoga',
-          'Meditation',
-          'Traditional Asian Treatments',
-          'Ocean Healing Rituals'
-        ],
-        openingHours: '09:00-21:00',
-        description: 'Luxury overwater spa pavilions offering signature treatments.'
+    ageCategories: [
+      {
+        id: 1,
+        type: 'adult',
+        name: 'Adult',
+        label: `Adult (${16}+ years)`,
+        minAge: 16,
+        maxAge: 100,
+        description: 'Adult age category (16+ years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        type: 'teen',
+        name: 'Teen',
+        label: `Teen (${12}-${15} years)`,
+        minAge: 12,
+        maxAge: 15,
+        description: 'Teen age category (12-15 years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        type: 'child',
+        name: 'Child',
+        label: `Child (${2}-${11} years)`,
+        minAge: 2,
+        maxAge: 11,
+        description: 'Child age category (2-11 years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 4,
+        type: 'infant',
+        name: 'Infant',
+        label: `Infant (${0}-${1} years)`,
+        minAge: 0,
+        maxAge: 1,
+        description: 'Infant age category (0-1 years)',
+        defaultRate: 0,
+        isActive: true
       }
-    },
-    
-    images: ['aerial-view.jpg', 'water-villa.jpg', 'beach.jpg'],
-    
+    ],
     contactInfo: {
       phone: '+960 400 6000',
       email: 'reservations@maldivesparadise.com',
       website: 'www.maldivesparadise.com'
     }
+  }
+];
+
+const defaultAgeCategories: AgeCategory[] = [
+  {
+    id: 1,
+    type: 'adult',
+    name: 'Adult',
+    label: 'Adult (12+ years)',
+    minAge: 12,
+    maxAge: 100,
+    description: 'Adult age category (12+ years)',
+    defaultRate: 0,
+    isActive: true
+  },
+  {
+    id: 2,
+    type: 'child',
+    name: 'Child',
+    label: 'Child (2-11 years)',
+    minAge: 2,
+    maxAge: 11,
+    description: 'Child age category (2-11 years)',
+    defaultRate: 0,
+    isActive: true
+  },
+  {
+    id: 3,
+    type: 'infant',
+    name: 'Infant',
+    label: 'Infant (0-1 years)',
+    minAge: 0,
+    maxAge: 1,
+    description: 'Infant age category (0-1 years)',
+    defaultRate: 0,
+    isActive: true
   }
 ];

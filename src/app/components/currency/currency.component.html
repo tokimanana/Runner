@@ -1,140 +1,116 @@
+<!-- currency.component.html -->
 <div class="currency-container">
+  <!-- Header -->
   <div class="header">
-    <h2>Currency Settings</h2>
+    <h2>Currency Management</h2>
     <button mat-raised-button color="primary" (click)="openCurrencyEditor()">
-      <mat-icon>add</mat-icon> Add Currency
+      <mat-icon>add</mat-icon>
+      Add Currency
     </button>
   </div>
 
-  <mat-card>
-    <table mat-table [dataSource]="currencySettings" class="currency-table" *ngIf="currencySettings.length > 0">
-      <!-- Code Column -->
-      <ng-container matColumnDef="code">
-        <th mat-header-cell *matHeaderCellDef> Code </th>
-        <td mat-cell *matCellDef="let currency"> {{currency.code}} </td>
-      </ng-container>
+  <!-- Loading State -->
+  <div class="loading-spinner" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
 
-      <!-- Symbol Column -->
-      <ng-container matColumnDef="symbol">
-        <th mat-header-cell *matHeaderCellDef> Symbol </th>
-        <td mat-cell *matCellDef="let currency"> {{currency.symbol}} </td>
-      </ng-container>
+  <!-- Currency Table -->
+  <mat-table [dataSource]="currencySettings()" class="currency-table" *ngIf="!isLoading">
+    <!-- Code Column -->
+    <ng-container matColumnDef="code">
+      <mat-header-cell *matHeaderCellDef>Code</mat-header-cell>
+      <mat-cell *matCellDef="let currency">{{currency.code}}</mat-cell>
+    </ng-container>
 
-      <!-- Name Column -->
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef> Name </th>
-        <td mat-cell *matCellDef="let currency"> {{currency.name}} </td>
-      </ng-container>
+    <!-- Symbol Column -->
+    <ng-container matColumnDef="symbol">
+      <mat-header-cell *matHeaderCellDef>Symbol</mat-header-cell>
+      <mat-cell *matCellDef="let currency">{{currency.symbol}}</mat-cell>
+    </ng-container>
 
-      <!-- Status Column -->
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef> Status </th>
-        <td mat-cell *matCellDef="let currency">
-          <button mat-button
-                  [color]="currency.isActive ? 'primary' : 'warn'"
-                  (click)="updateCurrencyStatus(currency)"
-                  [matTooltip]="currency.isActive ? 'Used in a market' : ''"
-                  matTooltipPosition="above">
-            {{currency.isActive ? 'Active' : 'Inactive'}}
+    <!-- Name Column -->
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+      <mat-cell *matCellDef="let currency">{{currency.name}}</mat-cell>
+    </ng-container>
+
+    <!-- Status Column -->
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+      <mat-cell *matCellDef="let currency">
+        <mat-slide-toggle
+          [checked]="currency.isActive"
+          (change)="toggleCurrencyStatus(currency)"
+          [disabled]="currency.isActive">
+          {{ currency.isActive ? 'Active' : 'Inactive' }}
+        </mat-slide-toggle>
+      </mat-cell>
+    </ng-container>
+
+    <!-- Actions Column -->
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+      <mat-cell *matCellDef="let currency">
+        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Currency actions">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button mat-menu-item (click)="openCurrencyEditor(currency)" [disabled]="currency.isActive">
+            <mat-icon>edit</mat-icon>
+            <span>Edit</span>
           </button>
-        </td>
-      </ng-container>
+          <button mat-menu-item (click)="deleteCurrency(currency)" [disabled]="currency.isActive">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+          </button>
+        </mat-menu>
+      </mat-cell>
+    </ng-container>
 
-      <!-- Actions Column -->
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef> Actions </th>
-        <td mat-cell *matCellDef="let currency">
-          <div class="action-buttons">
-            <div [matTooltip]="currency.isActive ? 'Can\'t edit a used currency' : ''"
-                 matTooltipPosition="above">
-              <button mat-icon-button
-                      [disabled]="currency.isActive"
-                      (click)="openCurrencyEditor(currency)">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </div>
-            <div [matTooltip]="currency.isActive ? 'Can\'t delete a used currency' : ''"
-                 matTooltipPosition="above">
-              <button mat-icon-button
-                      [disabled]="currency.isActive"
-                      (click)="deleteCurrency(currency)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
-          </div>
-        </td>
-      </ng-container>
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+  </mat-table>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-
-    <!-- Empty state message -->
-    <div class="no-currencies" *ngIf="currencySettings.length === 0 && !isLoading">
-      <mat-icon>monetization_on</mat-icon>
-      <h3>No Currencies Added</h3>
-      <p>Click the "Add Currency" button above to add your first currency.</p>
-    </div>
-
-    <!-- Loading overlay -->
-    <div class="loading-overlay" *ngIf="isLoading">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
-  </mat-card>
+  <!-- Empty State -->
+  <div class="no-currencies" *ngIf="currencySettings().length === 0 && !isLoading">
+    <mat-icon>monetization_on</mat-icon>
+    <h3>No Currencies Added</h3>
+    <p>Click the "Add Currency" button above to add your first currency.</p>
+  </div>
 
   <!-- Currency Editor Modal -->
-  <app-modal [show]="showCurrencyEditor">
-    <h2>{{selectedCurrency ? 'Edit' : 'Add'}} Currency</h2>
-    <form #currencyForm="ngForm" (ngSubmit)="saveCurrency()">
-      <mat-form-field>
-        <mat-label>Currency Code</mat-label>
-        <input matInput
-               #firstInput
-               [(ngModel)]="newCurrency.code"
-               name="code"
-               required
-               pattern="[A-Z]{3}"
-               placeholder="e.g., USD"
-               maxlength="3"
-               [readonly]="!!selectedCurrency">
-        <mat-hint>3 uppercase letters</mat-hint>
-      </mat-form-field>
+  @if (showCurrencyEditor()) {
+    <app-modal 
+      [title]="selectedCurrency() ? 'Edit Currency' : 'Add Currency'"
+      [show]="showCurrencyEditor()"
+      (close)="closeCurrencyEditor()">
+      <form #currencyForm="ngForm" (ngSubmit)="saveCurrency(currencyForm.value)">
+        @for (field of currencyFormFields; track field.key) {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ field.label }}</mat-label>
+            <input 
+              matInput
+              [name]="field.key"
+              [ngModel]="modalInitialValues()[field.key]"
+              [required]="field.required ?? false" 
+              [placeholder]="field.label">
+          </mat-form-field>
+        }
+        <div class="form-actions">
+          <button mat-button type="button" (click)="closeCurrencyEditor()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="!currencyForm.valid">
+            {{ selectedCurrency() ? 'Update' : 'Add' }}
+          </button>
+        </div>
+      </form>
+    </app-modal>
 
-      <mat-form-field>
-        <mat-label>Symbol</mat-label>
-        <input matInput
-               [(ngModel)]="newCurrency.symbol"
-               name="symbol"
-               required
-               placeholder="e.g., $">
-      </mat-form-field>
+  }
 
-      <mat-form-field>
-        <mat-label>Name</mat-label>
-        <input matInput
-               [(ngModel)]="newCurrency.name"
-               name="name"
-               required
-               placeholder="e.g., US Dollar">
-      </mat-form-field>
-
-      <div class="button-container">
-        <button mat-button type="button" (click)="closeCurrencyEditor()">Cancel</button>
-        <button mat-raised-button
-                color="primary"
-                type="submit"
-                [disabled]="!currencyForm.valid"
-                [matTooltip]="!currencyForm.valid ? 'Please fill in all required fields correctly' : ''"
-                matTooltipPosition="above">
-          {{selectedCurrency ? 'Update' : 'Add'}}
-        </button>
-      </div>
-    </form>
-  </app-modal>
-
-  <!-- Status Messages -->
-  <div class="status-message" *ngIf="modalMessage"
-       [class.error]="modalError">
-    {{modalMessage}}
-  </div>
+  <!-- Notification Message -->
+  @if (modalMessage()) {
+    <div class="notification-message" [class.error]="modalError()">
+      {{ modalMessage() }}
+    </div>
+  }
 </div>
