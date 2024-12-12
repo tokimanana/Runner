@@ -38,11 +38,18 @@ export class NavigationComponent implements OnInit, OnDestroy {
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' }
   ];
 
+  defaultMenuItems: { [key: string]: MenuItemId } = {
+    'hotel': 'description',
+    'setup': 'age-categories',
+    'rates': 'contract',
+    'inventory': 'roomInventory'
+  };
+
   menuItems: { [key: string]: MenuItem[] } = {
     'hotel': [
       { id: 'description', icon: 'info', label: 'Basic Information' },
       { id: 'policies', icon: 'policy', label: 'Policies' },
-      { id: 'roomTypes', icon: 'hotel', label: 'Room Types' },
+      { id: 'capacity', icon: 'hotel', label: 'Room Types' },
       { id: 'mealPlan', icon: 'restaurant', label: 'Meal Plans' }
     ],
     'setup': [
@@ -52,15 +59,13 @@ export class NavigationComponent implements OnInit, OnDestroy {
       { id: 'periodAndMlos', icon: 'calendar_today', label: 'Periods & MLOS' }
     ],
     'rates': [
+      { id: 'contract', icon: 'description', label: 'Contract Management' },
       { id: 'ratesConfig', icon: 'price_change', label: 'Rate Configuration' },
-      { id: 'supplements', icon: 'add_circle', label: 'Supplements' },
-      { id: 'specialOffers', icon: 'local_offer', label: 'Special Offers' },
-      { id: 'rateScenarios', icon: 'science', label: 'Rate Scenarios' }
+      { id: 'supplements', icon: 'add_circle', label: 'Supplements' }
     ],
     'inventory': [
-      { id: 'roomInventory', icon: 'hotel', label: 'Room Inventory' },
-      { id: 'allotments', icon: 'event_seat', label: 'Allotments' },
-      { id: 'availability', icon: 'date_range', label: 'Availability Calendar' }
+      { id: 'capacity', icon: 'hotel', label: 'Room Inventory' },
+      { id: 'mealPlan', icon: 'event_seat', label: 'Room Types' }
     ]
   };
 
@@ -92,7 +97,13 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
-    this.hotelService.setActiveTab(this.navigationTabs[index].id);
+    const tabId = this.navigationTabs[index].id;
+    this.hotelService.setActiveTab(tabId);
+    // Set the default menu item for the selected tab
+    const defaultMenuItem = this.defaultMenuItems[tabId];
+    if (defaultMenuItem) {
+      this.hotelService.setSelectedMenuItem(defaultMenuItem);
+    }
   }
 
   getCurrentMenuItems(): MenuItem[] {

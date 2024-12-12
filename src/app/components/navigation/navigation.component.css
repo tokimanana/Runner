@@ -61,13 +61,20 @@
   flex: 1;
   height: 100%;
   overflow: hidden;
-  display: flex;
+}
+
+::ng-deep .mat-drawer-container {
+  background-color: transparent;
+}
+
+::ng-deep .mat-drawer-side {
+  border-right: 1px solid #e0e0e0;
 }
 
 .sidenav {
   width: 250px;
+  min-width: 250px;
   background: #fff;
-  border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
 }
@@ -76,11 +83,46 @@
   padding: 16px 0;
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
+}
+
+.sidenav-content {
+  padding: 24px;
+  background-color: #fff;
+  margin-left: 250px;
+}
+
+::ng-deep .sidenav-content > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+::ng-deep app-market-config,
+::ng-deep app-period-mlos,
+::ng-deep app-contract-list,
+::ng-deep app-rates-config,
+::ng-deep app-currency,
+::ng-deep app-age-category {
+  display: block;
+  padding: 24px;
+  height: 100%;
+  overflow: auto;
+}
+
+.no-contract {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
 }
 
 .sub-menu-items {
-  display: flex;
-  flex-direction: column;
+  padding-left: 16px;
 }
 
 .nav-item {
@@ -88,7 +130,7 @@
   align-items: center;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s;
 }
 
 .nav-item:hover {
@@ -109,12 +151,6 @@
 
 .nav-item span {
   font-size: 14px;
-}
-
-.sidenav-content {
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 .hotel-section {
@@ -179,11 +215,12 @@
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  color: #333;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
-  text-decoration: none;
+  gap: 8px;
+  border-radius: 4px;
+  margin: 2px 8px;
 }
 
 .menu-item:hover {
@@ -191,15 +228,12 @@
 }
 
 .menu-item.active {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: rgba(0, 0, 0, 0.08);
+  font-weight: 500;
 }
 
 .menu-item mat-icon {
-  margin-right: 12px;
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  margin-right: 8px;
 }
 
 .menu-item span {

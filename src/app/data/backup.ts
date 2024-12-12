@@ -5,7 +5,7 @@ import {
   CurrencySetting,
   RoomType,
   RoomCategory,
-  Season,
+  SeasonType,
   Contract,
   MealPlan,
   MealPlanType,
@@ -27,8 +27,9 @@ import {
   CancellationRule,
   CancellationPolicy,
   AgeCategoryRate,
-  RateConfiguration
-} from './app/models/types';
+  RateConfiguration,
+  Season
+} from '../models/types';
 
 // Market definitions and generation
 export const defaultMarkets: Market[] = [
@@ -128,13 +129,26 @@ export const defaultMarketGroups: MarketGroup[] = [
   }
 ];
 
-// Meal plan definitions
+// Default meal plans that every hotel should have
 export const defaultMealPlans: MealPlan[] = [
   {
-    id: '1',
+    id: 'default-ro',
+    type: MealPlanType.RO,
+    name: 'Room Only',
+    description: "Accommodation only, no meals included",
+    mealTimes: [],
+    inclusions: [],
+    restrictions: [
+      'No meals included',
+      'Room service and restaurant charges are extra'
+    ],
+    isActive: true
+  },
+  {
+    id: 'default-bb',
     type: MealPlanType.BB,
     name: 'Bed & Breakfast',
-    description: "Start your day with our extensive breakfast buffet featuring local and international cuisine",
+    description: "Start your day with our extensive breakfast buffet",
     mealTimes: [
       {
         name: 'Breakfast',
@@ -162,10 +176,10 @@ export const defaultMealPlans: MealPlan[] = [
     isActive: true
   },
   {
-    id: '2',
+    id: 'default-hb',
     type: MealPlanType.HB,
     name: 'Half Board',
-    description: "Enjoy breakfast and dinner at our main restaurant",
+    description: "Enjoy breakfast and dinner at our restaurants",
     mealTimes: [
       {
         name: 'Breakfast',
@@ -193,18 +207,18 @@ export const defaultMealPlans: MealPlan[] = [
       },
       {
         name: 'Beverages',
-        description: 'Water, soft drinks during meals',
+        description: 'Water during meals',
         isIncluded: true
       }
     ],
     restrictions: [
-      'Meals must be taken in the main restaurant',
-      'Specialty restaurants available at additional charge'
+      'Meals must be taken in the designated restaurants',
+      'Lunch and additional beverages are not included'
     ],
     isActive: true
   },
   {
-    id: '3',
+    id: 'default-fb',
     type: MealPlanType.FB,
     name: 'Full Board',
     description: "All daily meals included - breakfast, lunch and dinner",
@@ -218,7 +232,7 @@ export const defaultMealPlans: MealPlan[] = [
       {
         name: 'Lunch',
         startTime: '12:30',
-        endTime: '15:00',
+        endTime: '14:30',
         location: 'Main Restaurant'
       },
       {
@@ -236,18 +250,182 @@ export const defaultMealPlans: MealPlan[] = [
       },
       {
         name: 'Beverages',
-        description: 'Water, soft drinks during meals',
+        description: 'Water during meals',
         isIncluded: true
       }
     ],
     restrictions: [
-      'Meals must be taken in the main restaurant',
-      'Specialty restaurants available at additional charge',
-      'Alcoholic beverages not included'
+      'Meals must be taken in the designated restaurants',
+      'Additional beverages are not included'
+    ],
+    isActive: true
+  },
+  {
+    id: 'default-ai',
+    type: MealPlanType.AI,
+    name: 'All Inclusive',
+    description: "Comprehensive package including all meals and selected beverages",
+    mealTimes: [
+      {
+        name: 'Breakfast',
+        startTime: '07:00',
+        endTime: '10:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Lunch',
+        startTime: '12:30',
+        endTime: '14:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Dinner',
+        startTime: '19:00',
+        endTime: '22:30',
+        location: 'Main Restaurant'
+      },
+      {
+        name: 'Snacks',
+        startTime: '11:00',
+        endTime: '18:00',
+        location: 'Pool Bar'
+      }
+    ],
+    inclusions: [
+      {
+        name: 'All Meals',
+        description: 'Breakfast, lunch, dinner and snacks',
+        isIncluded: true
+      },
+      {
+        name: 'Beverages',
+        description: 'Selected alcoholic and non-alcoholic beverages',
+        isIncluded: true
+      },
+      {
+        name: 'Snacks',
+        description: 'Light snacks and refreshments throughout the day',
+        isIncluded: true
+      }
+    ],
+    restrictions: [
+      'Premium drinks and dining experiences may incur additional charges',
+      'All-inclusive benefits valid from check-in to check-out at 12:00'
     ],
     isActive: true
   }
 ];
+
+// Hotel-specific meal plans
+export const hotelMealPlans: { [key: number]: MealPlan[] } = {
+  // Grand Hotel Riveria (id: 1) specific meal plans
+  1: [
+    {
+      id: 'riveria-hb-plus',
+      type: MealPlanType.HB_PLUS,
+      name: 'Mediterranean Half Board Plus',
+      description: "Enhanced half board experience with drinks and Mediterranean specialties",
+      mealTimes: [
+        {
+          name: 'Breakfast',
+          startTime: '07:00',
+          endTime: '10:30',
+          location: 'La Terrazza'
+        },
+        {
+          name: 'Dinner',
+          startTime: '19:00',
+          endTime: '23:00',
+          location: 'La Terrazza'
+        }
+      ],
+      inclusions: [
+        {
+          name: 'Gourmet Breakfast',
+          description: 'Extended breakfast with local specialties and champagne',
+          isIncluded: true
+        },
+        {
+          name: 'Fine Dining Dinner',
+          description: 'À la carte dinner at La Terrazza',
+          isIncluded: true
+        },
+        {
+          name: 'Premium Beverages',
+          description: 'Selected wines and beverages during dinner',
+          isIncluded: true
+        }
+      ],
+      restrictions: [
+        'Reservation required for dinner',
+        'Premium wines available at additional cost'
+      ],
+      isActive: true
+    }
+  ],
+  // Maldives Paradise Resort (id: 2) specific meal plans
+  2: [
+    {
+      id: 'maldives-ai-plus',
+      type: MealPlanType.AI_PLUS,
+      name: 'Island Premium All Inclusive',
+      description: "Ultimate all-inclusive experience with premium dining and activities",
+      mealTimes: [
+        {
+          name: 'Breakfast',
+          startTime: '07:00',
+          endTime: '10:30',
+          location: 'Ocean View Restaurant'
+        },
+        {
+          name: 'Lunch',
+          startTime: '12:30',
+          endTime: '15:00',
+          location: 'Beach Club'
+        },
+        {
+          name: 'Afternoon Tea',
+          startTime: '16:00',
+          endTime: '17:30',
+          location: 'Sunset Lounge'
+        },
+        {
+          name: 'Dinner',
+          startTime: '19:00',
+          endTime: '22:30',
+          location: 'Ocean View Restaurant'
+        }
+      ],
+      inclusions: [
+        {
+          name: 'Premium Dining',
+          description: 'All meals at any restaurant including specialty dining',
+          isIncluded: true
+        },
+        {
+          name: 'Premium Beverages',
+          description: 'Premium branded alcoholic and non-alcoholic beverages',
+          isIncluded: true
+        },
+        {
+          name: 'Mini Bar',
+          description: 'Daily replenished mini bar with premium items',
+          isIncluded: true
+        },
+        {
+          name: 'Water Sports',
+          description: 'Non-motorized water sports included',
+          isIncluded: true
+        }
+      ],
+      restrictions: [
+        'Specialty dining requires reservation',
+        'Some premium wines and champagnes may incur additional charges'
+      ],
+      isActive: true
+    }
+  ]
+};
 
 // Special offers
 export const defaultSpecialOffers: SpecialOffer[] = [
@@ -648,6 +826,13 @@ export const HOTELS: Hotel[] = [
     checkInTime: '14:00',
     checkOutTime: '11:00',
     rating: 5,
+    yearBuilt: "1960",
+    lastRenovation: "2022",
+    totalRooms: 125,
+    airportDistance: "45 km from Naples International Airport",
+    cityCenterDistance: "0.5 km from Amalfi center",
+    beachDistance: "Direct beach access",
+    languages: ["Italian", "English", "French", "German"],
     amenities: {
       [AmenityCategory.POOL]: ['Swimming Pool'],
       [AmenityCategory.SPA]: ['Spa', 'Wellness Center'],
@@ -883,6 +1068,13 @@ export const HOTELS: Hotel[] = [
     checkInTime: '15:00',
     checkOutTime: '12:00',
     rating: 5,
+    yearBuilt: "2018",
+    lastRenovation: "2023",
+    totalRooms: 80,
+    airportDistance: "30 minutes by seaplane from Male International Airport",
+    cityCenterDistance: "25 minutes by speedboat from Male",
+    beachDistance: "Private beach resort",
+    languages: ["English", "Chinese", "Japanese", "Arabic"],
     amenities: {
       [AmenityCategory.BEACH]: ['Private Beach', 'Water Sports', 'Beach Club'],
       [AmenityCategory.POOL]: ['Infinity Pool'],
@@ -1119,6 +1311,134 @@ export const HOTELS: Hotel[] = [
   }
 ];
 
+
+export const hotelSeasons: { [hotelId: number]: Season[] } = {
+  // Grand Hotel Riveria (ID: 1)
+  1: [
+    {
+      id: 1,
+      name: 'Summer Season 2024',
+      type: SeasonType.PEAK,
+      description: 'Peak summer season with premium rates',
+      isActive: true,
+      periods: [
+        {
+          id: 1,
+          seasonId: 1,
+          name: 'Early Summer',
+          startDate: '2024-05-01',
+          endDate: '2024-06-14',
+          mlos: 3,
+          description: 'Early summer period with moderate rates'
+        },
+        {
+          id: 2,
+          seasonId: 1,
+          name: 'High Summer',
+          startDate: '2024-06-15',
+          endDate: '2024-09-15',
+          mlos: 5,
+          description: 'Peak summer period with premium rates'
+        },
+        {
+          id: 3,
+          seasonId: 1,
+          name: 'Late Summer',
+          startDate: '2024-09-16',
+          endDate: '2024-10-31',
+          mlos: 3,
+          description: 'Late summer period with moderate rates'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Winter Season 2024',
+      type: SeasonType.SHOULDER,
+      description: 'Winter season including festive period',
+      isActive: true,
+      periods: [
+        {
+          id: 4,
+          seasonId: 2,
+          name: 'Festive Period',
+          startDate: '2024-12-20',
+          endDate: '2025-01-05',
+          mlos: 7,
+          description: 'Christmas and New Year period'
+        }
+      ]
+    }
+  ],
+  
+  // Maldives Paradise Resort (ID: 2)
+  2: [
+    {
+      id: 1,
+      name: 'High Season 2024',
+      type: SeasonType.PEAK,
+      description: 'December to April - Dry Season',
+      isActive: true,
+      periods: [
+        {
+          id: 1,
+          seasonId: 1,
+          name: 'Peak Winter',
+          startDate: '2023-12-01',
+          endDate: '2023-12-19',
+          mlos: 3,
+          description: 'Early peak season'
+        },
+        {
+          id: 2,
+          seasonId: 1,
+          name: 'Festive Period',
+          startDate: '2023-12-20',
+          endDate: '2024-01-10',
+          mlos: 7,
+          description: 'Christmas and New Year period'
+        },
+        {
+          id: 3,
+          seasonId: 1,
+          name: 'Peak Season',
+          startDate: '2024-01-11',
+          endDate: '2024-04-30',
+          mlos: 4,
+          description: 'Main peak season'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Green Season 2024',
+      type: SeasonType.LOW,
+      description: 'May to November - Monsoon Season',
+      isActive: true,
+      periods: [
+        {
+          id: 4,
+          seasonId: 2,
+          name: 'Spring Promotion',
+          startDate: '2024-05-01',
+          endDate: '2024-07-31',
+          mlos: 3,
+          description: 'Early monsoon season with special rates'
+        },
+        {
+          id: 5,
+          seasonId: 2,
+          name: 'Autumn Promotion',
+          startDate: '2024-08-01',
+          endDate: '2024-11-30',
+          mlos: 3,
+          description: 'Late monsoon season with special rates'
+        }
+      ]
+    }
+  ]
+};
+
 // Sample data structure
 export const sampleData: any = {
   hotels: HOTELS.map(hotel => ({
@@ -1138,5 +1458,6 @@ export const sampleData: any = {
   marketGroups: defaultMarketGroups,
   contracts: defaultContracts,
   mealPlans: defaultMealPlans,
-  currencySettings: currencySettings
+  currencySettings: currencySettings,
+  season: hotelSeasons
 };

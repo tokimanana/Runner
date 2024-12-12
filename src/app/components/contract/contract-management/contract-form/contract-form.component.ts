@@ -1,27 +1,21 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
-import { Contract, Hotel, Market, Season, Period, RoomType, MealPlan } from '../../../../models/types';
+import { Contract, Hotel, Market, Season, RoomType, MealPlan } from '../../../../models/types';
 import { ContractService } from '../../../../services/contract.service';
 import { HotelService } from '../../../../services/hotel.service';
 import { MarketService } from '../../../../services/market.service';
 import { SeasonService } from '../../../../services/season.service';
-import { RatesConfigComponent } from '../rates-config/rates-config.component';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-contract-form',
@@ -36,30 +30,18 @@ import { takeUntil } from 'rxjs/operators';
     MatInputModule,
     MatSelectModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatButtonModule,
-    MatIconModule,
-    MatExpansionModule,
-    MatChipsModule,
-    MatDividerModule,
-    MatCheckboxModule,
-    MatTabsModule,
-    RatesConfigComponent
+    MatDialogModule,
+    MatTabsModule
   ]
 })
 export class ContractFormComponent implements OnInit, OnDestroy {
-  @Input() contract?: Contract;
-  @Output() save = new EventEmitter<Contract>();
-  @Output() cancel = new EventEmitter<void>();
-
   contractForm: FormGroup;
   hotels: Hotel[] = [];
   markets: Market[] = [];
   seasons: Season[] = [];
-  periods: Period[] = [];
   roomTypes: RoomType[] = [];
   mealPlans: MealPlan[] = [];
-  
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -67,25 +49,84 @@ export class ContractFormComponent implements OnInit, OnDestroy {
     private contractService: ContractService,
     private hotelService: HotelService,
     private marketService: MarketService,
-    private seasonService: SeasonService
+    private seasonService: SeasonService,
+    public dialogRef: MatDialogRef<ContractFormComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { mode: 'create' | 'edit', contract?: Contract }
   ) {
-    this.contractForm = this.createForm();
+    this.contractForm = this.fb.group({
+      name: ['', Validators.required],
+      hotelId: [null, Validators.required],
+      marketId: [null, Validators.required],
+      seasonId: [null, Validators.required],
+      description: [''],
+      status: ['draft'],
+      selectedRooms: [[], Validators.required],  // Add room types
+      selectedMealPlans: [[], Validators.required],  // Add meal plans
+      terms: [''],
+      validFrom: [null, Validators.required],
+      validTo: [null, Validators.required]
+    });
+
+    // Listen to hotel changes to load room types and meal plans
+    this.contractForm.get('hotelId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hotelId => {
+        if (hotelId) {
+          this.loadHotelDetails(hotelId);
+        } else {
+          this.roomTypes = [];
+          this.mealPlans = [];
+        }
+      });
+
+    if (data && data.mode === 'edit' && data.contract) {
+      this.contractForm.patchValue(data.contract);
+    }
+  }
+
+  private loadHotelDetails(hotelId: number): void {
+    this.hotelService.getHotels()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hotels => {
+        const hotel = hotels.find(h => h.id === hotelId);
+        if (hotel) {
+          this.roomTypes = hotel.rooms || [];
+          this.mealPlans = hotel.mealPlans || [];
+        }
+      });
   }
 
   ngOnInit(): void {
-    this.loadData();
-    
-    if (this.contract) {
-      // For editing existing contract
-      this.contractForm.patchValue({
-        ...this.contract,
-        hotelId: this.contract.hotelId,
-        marketId: this.contract.marketId,
-        seasonId: this.contract.seasonId,
-        validFrom: new Date(this.contract.validFrom),
-        validTo: new Date(this.contract.validTo)
+    // Load initial data
+    combineLatest({
+      hotels: this.hotelService.getHotels(),
+      markets: this.marketService.markets$
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(({ hotels, markets }) => {
+      this.hotels = hotels;
+      this.markets = markets || [];
+
+      // If editing existing contract, patch form and load hotel details
+      if (this.data?.contract) {
+        this.contractForm.patchValue(this.data.contract);
+        this.loadHotelDetails(this.data.contract.hotelId);
+      }
+    });
+
+    // Subscribe to hotel changes to load seasons
+    this.contractForm.get('hotelId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hotelId => {
+        if (hotelId) {
+          this.seasonService.getSeasonsByHotel(hotelId)
+            .subscribe(seasons => {
+              this.seasons = seasons;
+            });
+        } else {
+          this.seasons = [];
+        }
       });
-    }
   }
 
   ngOnDestroy(): void {
@@ -93,134 +134,39 @@ export class ContractFormComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private createForm(): FormGroup {
-    return this.fb.group({
-      id: [null],
-      name: ['', Validators.required],
-      hotelId: [null, Validators.required],
-      marketId: [null, Validators.required],
-      seasonId: [null, Validators.required],
-      description: [''],
-      status: ['draft', Validators.required],
-      selectedRooms: [[]],
-      selectedMealPlans: [[]],
-      periodRates: [[]],
-      terms: [''],
-      validFrom: [null, Validators.required],
-      validTo: [null, Validators.required]
-    });
-  }
-
-  private loadData(): void {
-    // Get hotelId from form or use a default
-    const hotelId = this.contract?.hotelId || 1;
-
-    // Load hotels
-    this.hotelService.getHotels()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hotels => this.hotels = hotels);
-
-    // Load markets
-    this.marketService.markets$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(markets => {
-        if (markets) {
-          this.markets = markets;
-        }
-      });
-
-    // Load seasons for the selected hotel
-    this.seasonService.getSeasonsByHotel(hotelId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(seasons => this.seasons = seasons);
-
-    // Watch for hotel changes to load room types, meal plans, and seasons
-    this.contractForm.get('hotelId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hotelId => {
-        if (hotelId) {
-          const hotel = this.hotels.find(h => h.id === hotelId);
-          this.roomTypes = hotel?.rooms || [];
-          this.mealPlans = hotel?.mealPlans || [];
-          
-          // Reload seasons when hotel changes
-          this.seasonService.getSeasonsByHotel(hotelId)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(seasons => this.seasons = seasons);
-        }
-      });
-
-    // Watch for season changes to load periods
-    this.contractForm.get('seasonId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(seasonId => {
-        if (seasonId) {
-          const season = this.seasons.find(s => s.id === seasonId);
-          this.periods = season?.periods || [];
-        }
-      });
-  }
-
   onSubmit(): void {
     if (this.contractForm.valid) {
-      const formValue = this.contractForm.value;
-      const contractData: Partial<Contract> = {
-        ...formValue,
-        id: this.contract?.id, // preserve existing id for updates
-        validFrom: formValue.validFrom?.toISOString(),
-        validTo: formValue.validTo?.toISOString()
-      };
+      const contractData = this.contractForm.value;
       
-      this.save.emit(contractData as Contract);
-    } else {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.contractForm.controls).forEach(key => {
-        const control = this.contractForm.get(key);
-        control?.markAsTouched();
-      });
+      if (this.data.mode === 'edit' && this.data.contract) {
+        this.contractService.updateContract(this.data.contract.id, contractData)
+          .subscribe({
+            next: () => this.dialogRef.close(true),
+            error: (error) => console.error('Error updating contract:', error)
+          });
+      } else {
+        this.contractService.createContract(contractData)
+          .subscribe({
+            next: () => this.dialogRef.close(true),
+            error: (error) => console.error('Error creating contract:', error)
+          });
+      }
     }
   }
 
   onCancel(): void {
-    this.cancel.emit();
+    this.dialogRef.close();
   }
 
-  // Helper method for template comparisons
   compareById(item1: any, item2: any): boolean {
     return item1 && item2 && item1.id === item2.id;
   }
 
-  onRoomTypeChange(event: { checked: boolean }, roomId: number): void {
-    const selectedRooms = this.contractForm.get('selectedRooms')?.value || [];
-    if (event.checked) {
-      // Add room if checked
-      if (!selectedRooms.includes(roomId)) {
-        this.contractForm.patchValue({
-          selectedRooms: [...selectedRooms, roomId]
-        });
-      }
-    } else {
-      // Remove room if unchecked
-      this.contractForm.patchValue({
-        selectedRooms: selectedRooms.filter((id: number) => id !== roomId)
-      });
-    }
+  getFormTitle(): string {
+    return this.data.mode === 'edit' ? 'Edit Contract' : 'Create New Contract';
   }
 
-  onMealPlanChange(event: { checked: boolean }, mealPlanId: string): void {
-    const selectedMealPlans = this.contractForm.get('selectedMealPlans')?.value || [];
-    if (event.checked) {
-      // Add meal plan if checked
-      if (!selectedMealPlans.includes(mealPlanId)) {
-        this.contractForm.patchValue({
-          selectedMealPlans: [...selectedMealPlans, mealPlanId]
-        });
-      }
-    } else {
-      // Remove meal plan if unchecked
-      this.contractForm.patchValue({
-        selectedMealPlans: selectedMealPlans.filter((id: string) => id !== mealPlanId)
-      });
-    }
+  getSubmitButtonText(): string {
+    return this.data.mode === 'edit' ? 'Update' : 'Create';
   }
 }

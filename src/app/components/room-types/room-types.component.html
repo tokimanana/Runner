@@ -1,123 +1,111 @@
+<!-- room-types.component.html -->
 <div class="room-types-container">
-  <div class="header-actions">
-    <h3>Room Types</h3>
-    <button (click)="addNewRoom()" class="add-btn">
-      <i class="material-icons">add</i> Add Room Type
+  <div class="header">
+    <div class="title-section">
+      <h2>Room Types</h2>
+      <p class="subtitle">Manage room types and their configurations</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="addNewRoom()" class="add-button">
+      <mat-icon>add</mat-icon>
+      Add Room Type
     </button>
   </div>
 
-  <div class="room-list">
-    <div *ngFor="let room of rooms" class="room-card">
-      <div class="room-header">
-        <h4>{{ room.name }} ({{ room.category }})</h4>
+  <div class="room-grid">
+    <mat-card *ngFor="let room of rooms" class="room-card">
+      <mat-card-header>
+        <mat-card-title>{{ room.name }}</mat-card-title>
+        <mat-card-subtitle>{{ room.category }}</mat-card-subtitle>
         <div class="actions">
-          <button (click)="editRoom(room)" class="edit-btn">
-            <i class="material-icons">edit</i>
+          <button mat-icon-button color="primary" (click)="editRoom(room)" matTooltip="Edit room">
+            <mat-icon>edit</mat-icon>
           </button>
-          <button (click)="deleteRoom(room)" class="delete-btn">
-            <i class="material-icons">delete</i>
+          <button mat-icon-button color="warn" (click)="deleteRoom(room)" matTooltip="Delete room">
+            <mat-icon>delete</mat-icon>
           </button>
         </div>
-      </div>
-
-      <div class="room-details">
-        <p><strong>Description:</strong> {{ room.description }}</p>
-        <p *ngIf="room.size"><strong>Size:</strong> {{ room.size }} sqm</p>
-        <div class="occupancy">
-          <p><strong>Occupancy:</strong></p>
-          <ul>
-            <li>Base Occupancy: {{ room.baseOccupancy }}</li>
-            <li>Maximum: {{ room.maxOccupancy.adults }} adults, 
-                       {{ room.maxOccupancy.children }} children, 
-                       {{ room.maxOccupancy.infants }} infants</li>
-          </ul>
-        </div>
-        <div class="amenities">
-          <p><strong>Amenities:</strong></p>
-          <div class="amenity-tags">
-            <span *ngFor="let amenity of room.amenities" class="amenity-tag">
-              {{ amenity }}
-            </span>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="room-details">
+          <div class="detail-item">
+            <mat-icon>group</mat-icon>
+            <span>Max Occupancy: {{ room.maxOccupancy.adults || 0 }} adults, 
+                  {{ room.maxOccupancy.children || 0 }} children</span>
+          </div>
+          <div class="detail-item">
+            <mat-icon>square_foot</mat-icon>
+            <span>{{ room.size }}m²</span>
+          </div>
+          <div class="amenities" *ngIf="room.amenities?.length">
+            <mat-chip-set>
+              <mat-chip *ngFor="let amenity of room.amenities">
+                {{ amenity }}
+              </mat-chip>
+            </mat-chip-set>
           </div>
         </div>
-      </div>
-    </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 
-  <!-- Room Form Modal -->
   <app-modal [show]="showRoomForm" (close)="cancelEdit()">
-    <h3>{{ editingRoom ? 'Edit Room Type' : 'Add New Room Type' }}</h3>
-    
-    <div class="form-group">
-      <label>Room Category:</label>
-      <select [(ngModel)]="roomForm.category" class="form-input">
-        <option *ngFor="let category of roomCategories" [value]="category">
-          {{ category }}
-        </option>
-      </select>
-    </div>
+    <h2>{{ editingRoom ? 'Edit Room Type' : 'Add New Room Type' }}</h2>
+    <form [formGroup]="roomForm" (ngSubmit)="saveRoom()" class="room-form">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Room Name</mat-label>
+          <input matInput formControlName="name" placeholder="Enter room name">
+          <mat-error>{{ getFormErrorMessage('name') }}</mat-error>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label>Room Name:</label>
-      <input type="text" [(ngModel)]="roomForm.name" class="form-input">
-    </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            <mat-option *ngFor="let category of roomCategories" [value]="category">
+              {{ category }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label>Description:</label>
-      <textarea [(ngModel)]="roomForm.description" rows="3" class="form-input"></textarea>
-    </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3"></textarea>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label>Size (sqm):</label>
-      <input type="number" [(ngModel)]="roomForm.size" min="0" class="form-input">
-    </div>
+        <div formGroupName="maxOccupancy" class="occupancy-group">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Adults</mat-label>
+            <input matInput type="number" formControlName="adults">
+            <mat-error>{{ getFormErrorMessage('adults') }}</mat-error>
+          </mat-form-field>
 
-    <div class="form-group">
-      <label>Base Occupancy:</label>
-      <input type="number" [(ngModel)]="roomForm.baseOccupancy" min="1" class="form-input">
-    </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Max Children</mat-label>
+            <input matInput type="number" formControlName="children">
+            <mat-error>{{ getFormErrorMessage('children') }}</mat-error>
+          </mat-form-field>
 
-    <div class="form-group">
-      <label>Maximum Occupancy:</label>
-      <div class="occupancy-inputs">
-        <div>
-          <label>Adults:</label>
-          <input type="number" [(ngModel)]="roomForm.maxOccupancy.adults" min="1" class="form-input">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Infants</mat-label>
+            <input matInput type="number" formControlName="infants">
+            <mat-error>{{ getFormErrorMessage('infants') }}</mat-error>
+          </mat-form-field>
         </div>
-        <div>
-          <label>Children:</label>
-          <input type="number" [(ngModel)]="roomForm.maxOccupancy.children" min="0" class="form-input">
-        </div>
-        <div>
-          <label>Infants:</label>
-          <input type="number" [(ngModel)]="roomForm.maxOccupancy.infants" min="0" class="form-input">
-        </div>
-      </div>
-    </div>
 
-    <div class="form-group">
-      <label>Amenities:</label>
-      <div class="amenity-input">
-        <input 
-          type="text" 
-          [(ngModel)]="newAmenity"
-          (keyup.enter)="addAmenity()"
-          placeholder="Type and press Enter"
-          class="form-input"
-        >
-        <button (click)="addAmenity()" class="add-amenity-btn">Add</button>
+        <mat-form-field appearance="outline">
+          <mat-label>Room Size (m²)</mat-label>
+          <input matInput type="number" formControlName="size">
+          <mat-error>{{ getFormErrorMessage('size') }}</mat-error>
+        </mat-form-field>
       </div>
-      <div class="amenity-tags">
-        <span *ngFor="let amenity of roomForm.amenities" class="amenity-tag">
-          {{ amenity }}
-          <i class="material-icons" (click)="removeAmenity(amenity)">close</i>
-        </span>
-      </div>
-    </div>
 
-    <div class="modal-actions">
-      <button (click)="saveRoom()" class="save-btn">Save</button>
-      <button (click)="cancelEdit()" class="cancel-btn">Cancel</button>
-    </div>
+      <div class="form-actions">
+        <button mat-button type="button" (click)="cancelEdit()">Cancel</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!roomForm.valid">
+          {{ editingRoom ? 'Update' : 'Create' }} Room
+        </button>
+      </div>
+    </form>
   </app-modal>
 </div>

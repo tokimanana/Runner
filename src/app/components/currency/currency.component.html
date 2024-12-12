@@ -1,14 +1,13 @@
 <div class="currency-container">
-  <div class="currency-header">
+  <div class="header">
     <h2>Currency Settings</h2>
     <button mat-raised-button color="primary" (click)="openCurrencyEditor()">
-      <mat-icon>add</mat-icon>
-      Add Currency
+      <mat-icon>add</mat-icon> Add Currency
     </button>
   </div>
 
   <mat-card>
-    <table mat-table [dataSource]="currencySettings" class="currency-table">
+    <table mat-table [dataSource]="currencySettings" class="currency-table" *ngIf="currencySettings.length > 0">
       <!-- Code Column -->
       <ng-container matColumnDef="code">
         <th mat-header-cell *matHeaderCellDef> Code </th>
@@ -30,10 +29,14 @@
       <!-- Status Column -->
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef> Status </th>
-        <td mat-cell *matCellDef="let currency"> 
-          <span class="status-chip" [ngClass]="currency.isActive ? 'active-chip' : 'inactive-chip'">
+        <td mat-cell *matCellDef="let currency">
+          <button mat-button
+                  [color]="currency.isActive ? 'primary' : 'warn'"
+                  (click)="updateCurrencyStatus(currency)"
+                  [matTooltip]="currency.isActive ? 'Used in a market' : ''"
+                  matTooltipPosition="above">
             {{currency.isActive ? 'Active' : 'Inactive'}}
-          </span>
+          </button>
         </td>
       </ng-container>
 
@@ -41,58 +44,97 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef> Actions </th>
         <td mat-cell *matCellDef="let currency">
-          <button mat-icon-button color="primary" (click)="openCurrencyEditor(currency)" matTooltip="Edit">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="deleteCurrency(currency)" matTooltip="Delete">
-            <mat-icon>delete</mat-icon>
-          </button>
+          <div class="action-buttons">
+            <div [matTooltip]="currency.isActive ? 'Can\'t edit a used currency' : ''"
+                 matTooltipPosition="above">
+              <button mat-icon-button
+                      [disabled]="currency.isActive"
+                      (click)="openCurrencyEditor(currency)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </div>
+            <div [matTooltip]="currency.isActive ? 'Can\'t delete a used currency' : ''"
+                 matTooltipPosition="above">
+              <button mat-icon-button
+                      [disabled]="currency.isActive"
+                      (click)="deleteCurrency(currency)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
         </td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
+
+    <!-- Empty state message -->
+    <div class="no-currencies" *ngIf="currencySettings.length === 0 && !isLoading">
+      <mat-icon>monetization_on</mat-icon>
+      <h3>No Currencies Added</h3>
+      <p>Click the "Add Currency" button above to add your first currency.</p>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" *ngIf="isLoading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
   </mat-card>
 
   <!-- Currency Editor Modal -->
-  <app-modal [show]="showCurrencyEditor" (close)="closeCurrencyEditor()">
-    <h2 id="modalTitle">{{selectedCurrency ? 'Edit' : 'Add'}} Currency</h2>
-    
-    <div class="form-group">
-      <label for="currencyCode">Currency Code</label>
-      <input id="currencyCode" 
-             type="text" 
-             [(ngModel)]="newCurrency.code" 
-             placeholder="e.g., USD"
-             (keydown.enter)="saveCurrency()" 
-             (keydown.escape)="closeCurrencyEditor()"
-             #firstInput>
-    </div>
+  <app-modal [show]="showCurrencyEditor">
+    <h2>{{selectedCurrency ? 'Edit' : 'Add'}} Currency</h2>
+    <form #currencyForm="ngForm" (ngSubmit)="saveCurrency()">
+      <mat-form-field>
+        <mat-label>Currency Code</mat-label>
+        <input matInput
+               #firstInput
+               [(ngModel)]="newCurrency.code"
+               name="code"
+               required
+               pattern="[A-Z]{3}"
+               placeholder="e.g., USD"
+               maxlength="3"
+               [readonly]="!!selectedCurrency">
+        <mat-hint>3 uppercase letters</mat-hint>
+      </mat-form-field>
 
-    <div class="form-group">
-      <label for="currencySymbol">Currency Symbol</label>
-      <input id="currencySymbol" 
-             type="text" 
-             [(ngModel)]="newCurrency.symbol" 
-             placeholder="e.g., $"
-             (keydown.enter)="saveCurrency()" 
-             (keydown.escape)="closeCurrencyEditor()">
-    </div>
+      <mat-form-field>
+        <mat-label>Symbol</mat-label>
+        <input matInput
+               [(ngModel)]="newCurrency.symbol"
+               name="symbol"
+               required
+               placeholder="e.g., $">
+      </mat-form-field>
 
-    <div class="form-group">
-      <label for="currencyName">Currency Name</label>
-      <input id="currencyName" 
-             type="text" 
-             [(ngModel)]="newCurrency.name" 
-             placeholder="e.g., US Dollar"
-             (keydown.enter)="saveCurrency()" 
-             (keydown.escape)="closeCurrencyEditor()">
-    </div>
+      <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput
+               [(ngModel)]="newCurrency.name"
+               name="name"
+               required
+               placeholder="e.g., US Dollar">
+      </mat-form-field>
 
-    <div class="modal-actions">
-      <button mat-button (click)="closeCurrencyEditor()" type="button">Cancel</button>
-      <button mat-raised-button color="primary" (click)="saveCurrency()" type="submit">Save</button>
-    </div>
+      <div class="button-container">
+        <button mat-button type="button" (click)="closeCurrencyEditor()">Cancel</button>
+        <button mat-raised-button
+                color="primary"
+                type="submit"
+                [disabled]="!currencyForm.valid"
+                [matTooltip]="!currencyForm.valid ? 'Please fill in all required fields correctly' : ''"
+                matTooltipPosition="above">
+          {{selectedCurrency ? 'Update' : 'Add'}}
+        </button>
+      </div>
+    </form>
   </app-modal>
+
+  <!-- Status Messages -->
+  <div class="status-message" *ngIf="modalMessage"
+       [class.error]="modalError">
+    {{modalMessage}}
+  </div>
 </div>

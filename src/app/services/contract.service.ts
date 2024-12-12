@@ -9,8 +9,14 @@ import { defaultContracts as contracts } from '../../data';
 export class ContractService {
   private contracts = contracts;
 
-  getContracts(): Observable<Contract[]> {
-    return of(this.contracts);
+  getContracts(pageSize: number = 10, pageIndex: number = 0): Observable<Contract[]> {
+    const start = pageIndex * pageSize;
+    const end = start + pageSize;
+    return of(this.contracts.slice(start, end));
+  }
+
+  getTotalContracts(): number {
+    return this.contracts.length;
   }
 
   getContract(id: number): Observable<Contract | undefined> {
@@ -42,7 +48,6 @@ export class ContractService {
     return of(false);
   }
 
-  // Contract Rates Methods
   getContractRates(contractId: number): Observable<ContractPeriodRate[]> {
     const contract = this.contracts.find(c => c.id === contractId);
     if (!contract) {

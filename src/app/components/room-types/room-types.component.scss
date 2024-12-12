@@ -1,0 +1,121 @@
+// room-types.component.scss
+.room-types-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .title-section {
+      h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 500;
+      }
+
+      .subtitle {
+        margin: 4px 0 0;
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    .add-button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+
+  .room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    
+    .room-card {
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      mat-card-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+
+        .actions {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+        }
+      }
+
+      .room-details {
+        .detail-item {
+          display: flex;
+          align-items: center;
+          margin-bottom: 8px;
+
+          mat-icon {
+            margin-right: 8px;
+            color: rgba(0, 0, 0, 0.54);
+          }
+        }
+
+        .amenities {
+          margin-top: 16px;
+
+          mat-chip {
+            margin: 4px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.room-form {
+  .form-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .occupancy-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .room-types-container {
+    padding: 16px;
+
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+  }
+
+  .room-form {
+    .form-grid {
+      .occupancy-group {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+}

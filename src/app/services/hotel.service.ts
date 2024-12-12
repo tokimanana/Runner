@@ -1,46 +1,33 @@
+// src/app/services/hotel.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { distinctUntilChanged, map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, from, of } from 'rxjs';
+import { distinctUntilChanged, map, tap, catchError } from 'rxjs/operators';
 import { 
   Hotel, 
   AgeCategory, 
   HotelPolicies, 
   HotelCapacity, 
-  MenuItemId, 
-  CancellationChargeType, 
+  MenuItemId,
   DressCodePolicy,
-  DressCodeVenue,
-  DressCodeArea,
-  RoomCategory
+  HotelDataKey
 } from '../models/types';
-import { sampleData } from '../../data';
+import { MockApiService } from './mock/mock-api.service';
+import { BaseDataService } from './base-data.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class HotelService {
-  // BehaviorSubjects
+export class HotelService extends BaseDataService<Hotel> {
   private selectedHotelSubject = new BehaviorSubject<Hotel | null>(null);
   private selectedMenuItemSubject = new BehaviorSubject<MenuItemId | null>(null);
-  private activeTabSubject = new BehaviorSubject<string | null>(null);
-  private hotelPoliciesSubject = new BehaviorSubject<HotelPolicies | null>(null);
-  private hotelCapacitySubject = new BehaviorSubject<HotelCapacity | null>(null);
+  private hotels$ = new BehaviorSubject<Hotel[]>([]);
 
-  // Observables
-  public selectedHotel$ = this.selectedHotelSubject.asObservable();
-  public selectedMenuItem$ = this.selectedMenuItemSubject.asObservable();
-  public activeTab$ = this.activeTabSubject.asObservable();
-  public hotelPolicies$ = this.hotelPoliciesSubject.asObservable();
-  public hotelCapacity$ = this.hotelCapacitySubject.asObservable();
-
-  // Data
-  private hotels: Hotel[] = sampleData.hotels;
+  readonly selectedHotel$ = this.selectedHotelSubject.asObservable();
+  readonly selectedMenuItem$ = this.selectedMenuItemSubject.asObservable();
+  readonly allHotels$ = this.hotels$.asObservable();
 
   constructor() {
-    this.loadInitialData();
-    this.selectedHotelSubject.next(null);
-    this.selectedMenuItemSubject.next(null);
-
+    super();
     this.selectedHotel$.pipe(
       distinctUntilChanged()
     ).subscribe(hotel => {
@@ -50,216 +37,159 @@ export class HotelService {
     });
   }
 
-  private loadInitialData(): void {
-    this.hotels = sampleData.hotels;
+  async loadHotels(): Promise<void> {
+    try {
+      const hotels = await MockApiService.getHotels();
+      this.hotels$.next(hotels);
+    } catch (error) {
+      console.error('Failed to load hotels:', error);
+      throw error;
+    }
   }
 
-  private loadHotelData(hotel: Hotel): void {
-    if (hotel.policies) {
-      this.hotelPoliciesSubject.next(hotel.policies);
+  // Initialize data from localStorage or mock data
+  private async initializeData() {
+    try {
+      const hotels = await MockApiService.getHotels();
+      this.hotels$.next(hotels);
+    } catch (error) {
+      console.error('Failed to initialize hotels:', error);
     }
-    if (hotel.capacity) {
-      this.hotelCapacitySubject.next(hotel.capacity);
+  }
+
+  // Load full hotel data including relationships
+  private async loadHotelData(hotel: Hotel) {
+    try {
+      const fullHotelData = await MockApiService.getHotelById(hotel.id);
+      if (fullHotelData) {
+        this.selectedHotelSubject.next(fullHotelData);
+      }
+    } catch (error) {
+      console.error(`Failed to load hotel data for hotel ${hotel.id}:`, error);
     }
   }
 
   // Public methods
-  public setSelectedHotel(hotel: Hotel | null): void {
+  getHotels(): Observable<Hotel[]> {
+    return this.allHotels$;
+  }
+
+  async getHotelById(id: number): Promise<Hotel | null> {
+    try {
+      const hotel = await MockApiService.getHotelById(id);
+      return hotel;
+    } catch (error) {
+      console.error(`Failed to get hotel with id ${id}:`, error);
+      return null;
+    }
+  }
+
+  setSelectedHotel(hotel: Hotel | null): void {
     this.selectedHotelSubject.next(hotel);
   }
 
-  public setSelectedMenuItem(menuItem: MenuItemId): void {
+  setSelectedMenuItem(menuItem: MenuItemId): void {
     this.selectedMenuItemSubject.next(menuItem);
   }
 
-  public setActiveTab(tab: string): void {
-    this.activeTabSubject.next(tab);
-  }
-
-  public getHotels(): Observable<Hotel[]> {
-    return of(this.hotels);
-  }
-
-  public getHotel(id: number): Hotel | undefined {
-    return this.hotels.find(h => h.id === id);
-  }
-
-  public getHotelName(id: number): string {
-    const hotel = this.getHotel(id);
-    return hotel?.name || '';
-  }
-
-  public getHotelDescription(hotelId: number): Observable<string> {
-    const hotel = this.hotels.find(h => h.id === hotelId);
-    return of(hotel?.description || '');
-  }
-
-  public getHotelDressCode(hotelId: number): Observable<DressCodePolicy | null> {
-    const hotel = this.hotels.find(h => h.id === hotelId);
-    return of(hotel?.policies?.dressCode || null);
-  }
-
-  public getHotelFactSheet(hotelId: number): Observable<string> {
-    const hotel = this.hotels.find(h => h.id === hotelId);
-    return of(hotel?.factSheet || '');
-  }
-
-  public addHotel(name: string): Hotel {
-    const defaultAgeCategories: AgeCategory[] = [
-      {
-        id: 1,
-        name: 'Adult',
-        type: 'adult',
-        label: 'Adult (18+ years)',
-        minAge: 18,
-        maxAge: 99,
-        defaultRate: 100,
-        description: 'Adult age category (18+ years)',
-        isActive: true
-      },
-      {
-        id: 2,
-        name: 'Child',
-        type: 'child',
-        label: 'Child (2-17 years)',
-        minAge: 2,
-        maxAge: 17,
-        defaultRate: 50,
-        description: 'Child age category (2-17 years)',
-        isActive: true
-      },
-      {
-        id: 3,
-        name: 'Infant',
-        type: 'infant',
-        label: 'Infant (0-1 years)',
-        minAge: 0,
-        maxAge: 1,
-        defaultRate: 0,
-        description: 'Infant age category (0-1 years)',
-        isActive: true
+  // Update methods
+  async updateHotel(id: number, updates: Partial<Hotel>): Promise<Hotel | null> {
+    try {
+      const updatedHotel = await MockApiService.updateHotel(id, updates);
+      
+      // Update hotels list
+      const currentHotels = this.hotels$.value;
+      const index = currentHotels.findIndex(h => h.id === id);
+      if (index !== -1) {
+        currentHotels[index] = updatedHotel;
+        this.hotels$.next([...currentHotels]);
       }
-    ];
 
-    const newHotel: Hotel = {
-      id: this.hotels.length + 1,
-      name,
-      description: '',
-      address: '',
-      city: '',
-      country: '',
-      rating: 0,
-      factSheet: '',
-      ageCategories: defaultAgeCategories,
-      amenities: {},
-      checkInTime: '14:00',
-      checkOutTime: '12:00',
-      policies: {
-        dressCode: {
-          general: 'Smart casual attire is required throughout the hotel.',
-          restaurants: [
-            {
-              name: 'Main Restaurant',
-              code: 'MAIN',
-              description: 'Smart casual attire is required',
-              restrictions: ['No beachwear', 'No shorts']
-            }
-          ],
-          publicAreas: [
-            {
-              area: 'Lobby',
-              code: 'LOBBY',
-              description: 'Smart casual attire is required',
-              restrictions: ['No swimwear']
-            }
-          ]
-        },
-        cancellation: {
-          id: 1,
-          name: 'Standard',
-          description: 'Standard cancellation policy',
-          rules: [{
-            daysBeforeArrival: 7,
-            charge: 100,
-            chargeType: CancellationChargeType.PERCENTAGE
-          }],
-          noShowCharge: 100,
-          noShowChargeType: CancellationChargeType.PERCENTAGE
-        },
-        checkIn: {
-          standardTime: '14:00'
-        },
-        checkOut: {
-          standardTime: '12:00'
-        },
-        child: {
-          maxChildAge: 17,
-          maxInfantAge: 1,
-          allowChildren: true,
-          childrenStayFree: false,
-          maxChildrenFree: 0,
-          requiresAdult: true,
-          minAdultAge: 18
-        },
-        pet: {
-          allowPets: false,
-          maxPets: 0,
-          petTypes: []
-        }
-      },
-      features: {
-        restaurants: [],
-        spa: {
-          name: '',
-          treatments: [],
-          openingHours: '',
-          description: ''
-        }
-      },
-      images: [],
-      contactInfo: {
-        phone: '',
-        email: ''
+      // Update selected hotel if it's the one being updated
+      if (this.selectedHotelSubject.value?.id === id) {
+        this.selectedHotelSubject.next(updatedHotel);
       }
-    };
 
-    this.hotels.push(newHotel);
-    return newHotel;
+      return updatedHotel;
+    } catch (error) {
+      console.error(`Failed to update hotel ${id}:`, error);
+      return null;
+    }
   }
 
-  public updateHotelAgeCategories(hotelId: number, ageCategories: AgeCategory[]): Observable<Hotel> {
-    const hotel = this.getHotel(hotelId);
-    if (hotel) {
-      hotel.ageCategories = ageCategories;
-    }
-    return of(hotel!);
+  // Specific update methods
+  async updateHotelAgeCategories(hotelId: number, ageCategories: AgeCategory[]): Promise<Hotel | null> {
+    return this.updateHotel(hotelId, { ageCategories });
   }
 
-  public updateHotel(hotel: Hotel): Observable<Hotel> {
-    const index = this.hotels.findIndex(h => h.id === hotel.id);
-    if (index !== -1) {
-      this.hotels[index] = hotel;
-      if (this.selectedHotelSubject.value?.id === hotel.id) {
-        this.selectedHotelSubject.next(hotel);
-      }
-      return of(hotel);
-    }
-    return of(hotel);
+  async updateHotelPolicies(hotelId: number, policies: HotelPolicies): Promise<Hotel | null> {
+    return this.updateHotel(hotelId, { policies });
   }
 
-  public saveHotelData(hotelId: number, field: string, value: any): Observable<Hotel> {
-    const hotel = this.getHotel(hotelId);
-    if (hotel) {
-      (hotel as any)[field] = value;
-    }
-    return of(hotel!);
+  getHotelDescription(hotelId: number): Observable<string> {
+    return this.getHotelData<string>(hotelId, 'description').pipe(
+      map(description => description || ''),
+      catchError(error => {
+        console.error('Error loading hotel description:', error);
+        return of('');
+      })
+    );
   }
 
-  public getHotelData<T>(hotelId: number, field: string): Observable<T | null> {
-    const hotel = this.getHotel(hotelId);
-    if (hotel) {
-      return of((hotel as any)[field] as T);
+  getHotelDressCode(hotelId: number): Observable<DressCodePolicy | null> {
+    return this.getHotelData<DressCodePolicy>(hotelId, 'dressCode').pipe(
+      catchError(error => {
+        console.error('Error loading hotel dress code:', error);
+        return of(null);
+      })
+    );
+  }
+
+  getHotelFactSheet(hotelId: number): Observable<string> {
+    return this.getHotelData<string>(hotelId, 'factSheet').pipe(
+      map(factSheet => factSheet || ''),
+      catchError(error => {
+        console.error('Error loading hotel fact sheet:', error);
+        return of('');
+      })
+    );
+  }
+
+  // async updateHotelCapacity(hotelId: number, capacity: HotelCapacity): Promise<Hotel | null> {
+  //   return this.updateHotel(hotelId, { capacity });
+  // }
+
+  // Storage management methods
+  saveHotelData<T>(hotelId: number, key: HotelDataKey, value: T): Observable<void> {
+    return from(MockApiService.saveHotelData(hotelId, key, value)).pipe(
+      catchError(error => {
+        console.error(`Failed to save hotel data for key ${key}:`, error);
+        throw error;
+      })
+    );
+  }
+
+  getHotelData<T>(hotelId: number, key: HotelDataKey): Observable<T | null> {
+    return from(MockApiService.getHotelData<T>(hotelId, key)).pipe(
+      catchError(error => {
+        console.error(`Error getting hotel data for key ${key}:`, error);
+        return of(null);
+      })
+    );
+  }
+
+  // Reset data
+  async resetHotels(): Promise<void> {
+    try {
+      await MockApiService.resetStorage();
+      await this.initializeData();
+    } catch (error) {
+      console.error('Failed to reset hotels:', error);
     }
-    return of(null);
+  }
+
+  // Helper methods
+  getHotelName(id: number): string {
+    return this.hotels$.value.find(h => h.id === id)?.name || '';
   }
 }

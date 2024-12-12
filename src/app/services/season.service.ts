@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map, tap, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, map, takeUntil, tap } from 'rxjs';
 import { Season, Period } from '../models/types';
-import { initialSeasonData } from '../data/season.data';
+import { hotelSeasons } from 'src/data';
+
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,6 @@ export class SeasonService {
   private seasonsSubject = new BehaviorSubject<Map<number, Season[]>>(new Map());
   private periodsSubject = new BehaviorSubject<Map<number, Period[]>>(new Map());
 
-  // Observable streams
   seasons$ = this.seasonsSubject.asObservable();
   periods$ = this.periodsSubject.asObservable();
 
@@ -19,8 +19,10 @@ export class SeasonService {
   }
 
   private initializeData(): void {
-    this.seasonsSubject.next(initialSeasonData);
-    this.updatePeriodsFromSeasons(initialSeasonData);
+    // Convert the plain object to a Map
+    const seasonMap = new Map(Object.entries(hotelSeasons).map(([key, value]) => [Number(key), value]));
+    this.seasonsSubject.next(seasonMap);
+    this.updatePeriodsFromSeasons(seasonMap);
   }
 
   // Season CRUD Operations
@@ -210,24 +212,24 @@ export class SeasonService {
     });
   }
 
-  deletePeriod(seasonId: number, periodId: number): Observable<void> {
+  deletePeriod(hotelId: number, periodId: number): Observable<void> {
     return new Observable(subscriber => {
       try {
-        const currentPeriods = this.periodsSubject.value;
-        const seasonPeriods = currentPeriods.get(seasonId) || [];
-        
-        const filteredPeriods = seasonPeriods.filter(period => period.id !== periodId);
-        
-        if (filteredPeriods.length === seasonPeriods.length) {
-          throw new Error(`Period ${periodId} not found for season ${seasonId}`);
+        const currentSeasons = this.seasonsSubject.getValue();
+        const hotelSeasons = currentSeasons.get(hotelId);
+  
+        if (!hotelSeasons) {
+          throw new Error('Hotel not found');
         }
-
-        currentPeriods.set(seasonId, filteredPeriods);
-        this.periodsSubject.next(currentPeriods);
-        
-        // Update the season's periods array
-        this.updateSeasonPeriods(seasonId, filteredPeriods);
-
+  
+        const updatedSeasons = hotelSeasons.map(season => ({
+          ...season,
+          periods: season.periods?.filter(p => p.id !== periodId) || []
+        }));
+  
+        currentSeasons.set(hotelId, updatedSeasons);
+        this.seasonsSubject.next(currentSeasons);
+  
         subscriber.next();
         subscriber.complete();
       } catch (error) {
@@ -235,6 +237,7 @@ export class SeasonService {
       }
     });
   }
+  
 
   // Private helper methods
   private updatePeriodsFromSeasons(seasons: Map<number, Season[]>): void {

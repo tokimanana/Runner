@@ -1,169 +1,132 @@
-<form [formGroup]="contractForm" (ngSubmit)="onSubmit()" class="contract-form">
-  <mat-tab-group>
-    <!-- Basic Details Tab -->
-    <mat-tab label="Basic Details">
-      <div class="form-section">
-        <h2>{{ contract ? 'Edit Contract' : 'Create New Contract' }}</h2>
+<div class="contract-form">
+  <h2>{{ getFormTitle() }}</h2>
 
-        <!-- Contract Name -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Contract Name</mat-label>
-          <input matInput formControlName="name" placeholder="Enter contract name" required>
-          <mat-error *ngIf="contractForm.get('name')?.hasError('required')">
-            Contract name is required
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Hotel Selection -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Hotel</mat-label>
-          <mat-select formControlName="hotelId" [compareWith]="compareById" required>
-            <mat-option *ngFor="let hotel of hotels" [value]="hotel.id">
-              {{ hotel.name }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="contractForm.get('hotelId')?.hasError('required')">
-            Hotel is required
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Market Selection -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Market</mat-label>
-          <mat-select formControlName="marketId" [compareWith]="compareById" required>
-            <mat-option *ngFor="let market of markets" [value]="market.id">
-              {{ market.name }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="contractForm.get('marketId')?.hasError('required')">
-            Market is required
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Season Selection -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Season</mat-label>
-          <mat-select formControlName="seasonId" [compareWith]="compareById" required>
-            <mat-option *ngFor="let season of seasons" [value]="season.id">
-              {{ season.name }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="contractForm.get('seasonId')?.hasError('required')">
-            Season is required
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Contract Status -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status" required>
-            <mat-option value="draft">Draft</mat-option>
-            <mat-option value="active">Active</mat-option>
-            <mat-option value="expired">Expired</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Validity Period -->
-        <div class="date-range">
+  <form [formGroup]="contractForm" (ngSubmit)="onSubmit()">
+    <mat-tab-group>
+      <!-- Basic Details Tab -->
+      <mat-tab label="Basic Details">
+        <div class="tab-content">
+          <!-- Contract Name -->
           <mat-form-field appearance="outline">
-            <mat-label>Valid From</mat-label>
-            <input matInput [matDatepicker]="startPicker" formControlName="validFrom" required>
-            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-            <mat-datepicker #startPicker></mat-datepicker>
-            <mat-error *ngIf="contractForm.get('validFrom')?.hasError('required')">
-              Start date is required
+            <mat-label>Contract Name</mat-label>
+            <input matInput formControlName="name" required>
+            <mat-error *ngIf="contractForm.get('name')?.hasError('required')">
+              Contract name is required
             </mat-error>
           </mat-form-field>
 
+          <!-- Hotel Selection -->
           <mat-form-field appearance="outline">
-            <mat-label>Valid To</mat-label>
-            <input matInput [matDatepicker]="endPicker" formControlName="validTo" required>
-            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-            <mat-datepicker #endPicker></mat-datepicker>
-            <mat-error *ngIf="contractForm.get('validTo')?.hasError('required')">
-              End date is required
+            <mat-label>Hotel</mat-label>
+            <mat-select formControlName="hotelId" required [compareWith]="compareById">
+              <mat-option *ngFor="let hotel of hotels" [value]="hotel.id">
+                {{ hotel.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="contractForm.get('hotelId')?.hasError('required')">
+              Hotel is required
             </mat-error>
           </mat-form-field>
+
+          <!-- Market Selection -->
+          <mat-form-field appearance="outline">
+            <mat-label>Market</mat-label>
+            <mat-select formControlName="marketId" required [compareWith]="compareById">
+              <mat-option *ngFor="let market of markets" [value]="market.id">
+                {{ market.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="contractForm.get('marketId')?.hasError('required')">
+              Market is required
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Season Selection -->
+          <mat-form-field appearance="outline">
+            <mat-label>Season</mat-label>
+            <mat-select formControlName="seasonId" required [compareWith]="compareById">
+              <mat-option *ngFor="let season of seasons" [value]="season.id">
+                {{ season.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="contractForm.get('seasonId')?.hasError('required')">
+              Season is required
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Room Types Selection -->
+          <mat-form-field appearance="outline">
+            <mat-label>Room Types</mat-label>
+            <mat-select formControlName="selectedRooms" multiple required>
+              <mat-option *ngFor="let room of roomTypes" [value]="room.id">
+                {{ room.name }} ({{ room.category }})
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="contractForm.get('selectedRooms')?.hasError('required')">
+              At least one room type must be selected
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Meal Plans Selection -->
+          <mat-form-field appearance="outline">
+            <mat-label>Meal Plans</mat-label>
+            <mat-select formControlName="selectedMealPlans" multiple required>
+              <mat-option *ngFor="let plan of mealPlans" [value]="plan.id">
+                {{ plan.name }} ({{ plan.type }})
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="contractForm.get('selectedMealPlans')?.hasError('required')">
+              At least one meal plan must be selected
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Validity Period -->
+          <div class="date-range">
+            <mat-form-field appearance="outline">
+              <mat-label>Valid From</mat-label>
+              <input matInput [matDatepicker]="validFromPicker" formControlName="validFrom" required>
+              <mat-datepicker-toggle matSuffix [for]="validFromPicker"></mat-datepicker-toggle>
+              <mat-datepicker #validFromPicker></mat-datepicker>
+              <mat-error *ngIf="contractForm.get('validFrom')?.hasError('required')">
+                Start date is required
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Valid To</mat-label>
+              <input matInput [matDatepicker]="validToPicker" formControlName="validTo" required>
+              <mat-datepicker-toggle matSuffix [for]="validToPicker"></mat-datepicker-toggle>
+              <mat-datepicker #validToPicker></mat-datepicker>
+              <mat-error *ngIf="contractForm.get('validTo')?.hasError('required')">
+                End date is required
+              </mat-error>
+            </mat-form-field>
+          </div>
         </div>
+      </mat-tab>
 
-        <!-- Description -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" rows="3" placeholder="Enter contract description"></textarea>
-        </mat-form-field>
-      </div>
-    </mat-tab>
+      <!-- Terms & Conditions Tab -->
+      <mat-tab label="Terms & Conditions">
+        <div class="tab-content">
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Terms & Conditions</mat-label>
+            <textarea matInput formControlName="terms" rows="10"></textarea>
+          </mat-form-field>
 
-    <!-- Rates Configuration Tab -->
-    <mat-tab label="Rates">
-      <div class="form-section">
-        <app-rates-config
-          *ngIf="contractForm.valid"
-          [contract]="contract || contractForm.value"
-          [periods]="periods"
-          [roomTypes]="roomTypes"
-          [mealPlans]="mealPlans">
-        </app-rates-config>
-
-        <div *ngIf="!contractForm.valid" class="warning-message">
-          Please complete the basic contract details before configuring rates.
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="5"></textarea>
+          </mat-form-field>
         </div>
-      </div>
-    </mat-tab>
+      </mat-tab>
+    </mat-tab-group>
 
-    <!-- Terms & Conditions Tab -->
-    <mat-tab label="Terms & Conditions">
-      <div class="form-section">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Terms & Conditions</mat-label>
-          <textarea matInput formControlName="terms" rows="4" placeholder="Enter contract terms and conditions"></textarea>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="draft">Draft</mat-option>
-            <mat-option value="active">Active</mat-option>
-            <mat-option value="expired">Expired</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </mat-tab>
-
-    <!-- Room Types Tab -->
-    <mat-tab label="Room Types">
-      <div class="form-section">
-        <h3>Room Types</h3>
-        <div class="room-types-grid">
-          <mat-checkbox *ngFor="let room of roomTypes" 
-                        [checked]="contractForm.get('selectedRooms')?.value?.includes(room.id)"
-                        (change)="onRoomTypeChange($event, room.id)">
-            {{room.name}}
-          </mat-checkbox>
-        </div>
-      </div>
-    </mat-tab>
-
-    <!-- Meal Plans Tab -->
-    <mat-tab label="Meal Plans">
-      <div class="form-section">
-        <h3>Meal Plans</h3>
-        <div class="meal-plans-grid">
-          <mat-checkbox *ngFor="let plan of mealPlans" 
-                        [checked]="contractForm.get('selectedMealPlans')?.value?.includes(plan.id)"
-                        (change)="onMealPlanChange($event, plan.id)">
-            {{plan.name}}
-          </mat-checkbox>
-        </div>
-      </div>
-    </mat-tab>
-  </mat-tab-group>
-
-  <!-- Form Actions -->
-  <div class="form-actions">
-    <button mat-button type="button" (click)="onCancel()">Cancel</button>
-    <button mat-raised-button color="primary" type="submit" [disabled]="contractForm.invalid">
-      {{ contract ? 'Update' : 'Create' }} Contract
-    </button>
-  </div>
-</form>
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button mat-button type="button" (click)="onCancel()">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!contractForm.valid">
+        {{ getSubmitButtonText() }} Contract
+      </button>
+    </div>
+  </form>
+</div>

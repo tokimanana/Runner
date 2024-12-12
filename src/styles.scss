@@ -1,0 +1,218 @@
+// Variables
+$color-primary: #1976d2;
+$color-primary-dark: #1565c0;
+$color-accent: #ff4081;
+$color-warning: #ffc107;
+$color-error: #f44336;
+$color-success: #4caf50;
+$color-text: #333333;
+$color-text-light: #757575;
+$color-background: #ffffff;
+$color-background-light: #f5f5f5;
+$color-border: #e0e0e0;
+
+// Typography
+$font-primary: 'Roboto', sans-serif;
+$font-size-base: 16px;
+$line-height-base: 1.5;
+
+// Spacing
+$spacing-unit: 8px;
+$spacing-xs: $spacing-unit;
+$spacing-sm: $spacing-unit * 2;
+$spacing-md: $spacing-unit * 3;
+$spacing-lg: $spacing-unit * 4;
+$spacing-xl: $spacing-unit * 5;
+
+// Breakpoints
+$breakpoint-xs: 0;
+$breakpoint-sm: 600px;
+$breakpoint-md: 960px;
+$breakpoint-lg: 1280px;
+$breakpoint-xl: 1920px;
+
+// Mixins
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == sm {
+    @media (min-width: $breakpoint-sm) { @content; }
+  }
+  @if $breakpoint == md {
+    @media (min-width: $breakpoint-md) { @content; }
+  }
+  @if $breakpoint == lg {
+    @media (min-width: $breakpoint-lg) { @content; }
+  }
+  @if $breakpoint == xl {
+    @media (min-width: $breakpoint-xl) { @content; }
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin transition($property: all, $duration: 0.3s, $timing: ease) {
+  transition: $property $duration $timing;
+}
+
+// Base styles
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: $font-primary;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $color-text;
+  background-color: $color-background-light;
+}
+
+// Layout containers
+.container {
+  width: 100%;
+  padding-right: $spacing-md;
+  padding-left: $spacing-md;
+  margin-right: auto;
+  margin-left: auto;
+  
+  @include respond-to(sm) {
+    max-width: 540px;
+  }
+  
+  @include respond-to(md) {
+    max-width: 720px;
+  }
+  
+  @include respond-to(lg) {
+    max-width: 960px;
+  }
+  
+  @include respond-to(xl) {
+    max-width: 1140px;
+  }
+}
+
+// Card styles
+.custom-card {
+  background: $color-background;
+  border-radius: 8px;
+  padding: $spacing-lg;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  @include transition(box-shadow);
+  
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+  }
+  
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin: 0;
+  }
+}
+
+// Form styles
+.form-group {
+  margin-bottom: $spacing-lg;
+  
+  label {
+    display: block;
+    margin-bottom: $spacing-xs;
+    font-weight: 500;
+    color: rgba($color-text, 0.87);
+  }
+  
+  input, select, textarea {
+    width: 100%;
+    padding: $spacing-sm;
+    border: 1px solid $color-border;
+    border-radius: 4px;
+    @include transition(border-color);
+    
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+    }
+  }
+  
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+}
+
+// Button styles
+.btn {
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  @include transition;
+  
+  &-primary {
+    background-color: $color-primary;
+    color: white;
+    
+    &:hover {
+      background-color: $color-primary-dark;
+    }
+    
+    &:disabled {
+      background-color: rgba($color-primary, 0.6);
+      cursor: not-allowed;
+    }
+  }
+  
+  &-secondary {
+    background-color: transparent;
+    border: 1px solid $color-primary;
+    color: $color-primary;
+    
+    &:hover {
+      background-color: rgba($color-primary, 0.1);
+    }
+  }
+}
+
+// Utility classes
+.text {
+  &-center { text-align: center; }
+  &-right { text-align: right; }
+  &-left { text-align: left; }
+}
+
+.mt {
+  &-1 { margin-top: $spacing-xs; }
+  &-2 { margin-top: $spacing-sm; }
+  &-3 { margin-top: $spacing-md; }
+  &-4 { margin-top: $spacing-lg; }
+}
+
+.mb {
+  &-1 { margin-bottom: $spacing-xs; }
+  &-2 { margin-bottom: $spacing-sm; }
+  &-3 { margin-bottom: $spacing-md; }
+  &-4 { margin-bottom: $spacing-lg; }
+}
+
+// Animation classes
+.fade {
+  @include transition(opacity);
+  
+  &-enter {
+    opacity: 0;
+    
+    &.fade-enter-active {
+      opacity: 1;
+    }
+  }
+}

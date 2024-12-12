@@ -1,0 +1,90 @@
+// modal.component.scss
+
+// Variables
+$modal-z-index: 1000;
+$modal-backdrop-color: rgba(0, 0, 0, 0.5);
+$modal-content-bg: white;
+$modal-border-radius: 8px;
+$modal-max-width: 600px;
+$modal-max-height: 90vh;
+$modal-padding: 2rem;
+
+// Modal styles
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $modal-backdrop-color;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: $modal-z-index;
+  
+  // Modal content styling
+  .modal-content {
+    background: $modal-content-bg;
+    padding: $modal-padding;
+    border-radius: $modal-border-radius;
+    width: 100%;
+    max-width: $modal-max-width;
+    max-height: $modal-max-height;
+    overflow-y: auto;
+    
+    // Add a subtle animation
+    animation: modalFadeIn 0.3s ease-in-out;
+    
+    // Scrollbar styling for webkit browsers
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+    }
+  }
+}
+
+// Modal animation
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Media queries for responsive design
+@media screen and (max-width: 768px) {
+  .modal-backdrop {
+    .modal-content {
+      max-width: 90%;
+      margin: 20px;
+      padding: 1.5rem;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .modal-backdrop {
+    .modal-content {
+      max-width: 95%;
+      margin: 10px;
+      padding: 1rem;
+    }
+  }
+}

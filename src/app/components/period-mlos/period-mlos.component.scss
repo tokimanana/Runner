@@ -1,0 +1,176 @@
+
+// Variables
+$primary-color: #1976d2;
+$error-color: #f44336;
+$border-color: #e0e0e0;
+$background-light: #f8f9fa;
+$text-primary: #333333;
+$text-secondary: #666666;
+$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$border-radius: 8px;
+$spacing-unit: 8px;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+}
+
+@mixin card {
+  background: white;
+  border-radius: $border-radius;
+  box-shadow: $card-shadow;
+  padding: $spacing-unit * 2;
+}
+
+// Main container
+.policies-container {
+  padding: $spacing-unit * 3;
+
+  .section {
+    @include card;
+    margin-bottom: $spacing-unit * 3;
+
+    &-header {
+      @include flex-center;
+      justify-content: space-between;
+      padding-bottom: $spacing-unit * 2;
+      border-bottom: 1px solid $border-color;
+      margin-bottom: $spacing-unit * 2;
+
+      h3 {
+        margin: 0;
+        color: $text-primary;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Policy Cards
+.policy-card {
+  @include card;
+  margin-bottom: $spacing-unit * 2;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .policy-header {
+    @include flex-center;
+    justify-content: space-between;
+    margin-bottom: $spacing-unit * 2;
+
+    h4 {
+      margin: 0;
+      color: $text-primary;
+      font-weight: 500;
+    }
+  }
+
+  .policy-content {
+    color: $text-secondary;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}
+
+// Action Buttons
+.action-button {
+  @include flex-center;
+  gap: $spacing-unit;
+  padding: $spacing-unit $spacing-unit * 2;
+  border: none;
+  border-radius: $border-radius/2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.primary {
+    background-color: $primary-color;
+    color: white;
+
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
+  }
+
+  &.edit {
+    background-color: transparent;
+    color: $primary-color;
+    border: 1px solid currentColor;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.1);
+    }
+  }
+}
+
+// Loading State
+.loading-container {
+  @include flex-center;
+  justify-content: center;
+  padding: $spacing-unit * 4;
+}
+
+// Error State
+.error-message {
+  color: $error-color;
+  padding: $spacing-unit * 2;
+  background-color: lighten($error-color, 35%);
+  border-radius: $border-radius;
+  margin-bottom: $spacing-unit * 2;
+}
+
+// Policy Form Styles
+.policy-form {
+  .form-group {
+    margin-bottom: $spacing-unit * 2;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-unit;
+      color: $text-primary;
+      font-weight: 500;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: $spacing-unit;
+      border: 1px solid $border-color;
+      border-radius: $border-radius/2;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+      }
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .policies-container {
+    padding: $spacing-unit * 2;
+  }
+
+  .policy-card {
+    .policy-header {
+      flex-direction: column;
+      gap: $spacing-unit;
+      align-items: flex-start;
+    }
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

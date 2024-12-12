@@ -1,0 +1,190 @@
+// Variables
+$spacing-unit: 8px;
+$border-radius: 8px;
+$transition-speed: 0.2s;
+
+// Colors
+$primary-color: #1976d2;
+$text-color: #333;
+$border-color: #e0e0e0;
+$background-color: #fff;
+$error-color: #f44336;
+$success-color: #4caf50;
+
+.description-container {
+  padding: $spacing-unit * 3;
+  background: $background-color;
+  border-radius: $border-radius;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  // Header styles
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-unit * 3;
+    padding-bottom: $spacing-unit * 2;
+    border-bottom: 1px solid $border-color;
+
+    h2 {
+      margin: 0;
+      color: $primary-color;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+  }
+
+  // Form styles
+  .form-section {
+    margin-bottom: $spacing-unit * 4;
+
+    &__title {
+      font-size: 1.1rem;
+      color: $text-color;
+      margin-bottom: $spacing-unit * 2;
+      font-weight: 500;
+    }
+
+    &__content {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-unit * 2;
+    }
+  }
+
+  // Editor styles
+  .editor-container {
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    overflow: hidden;
+    margin-bottom: $spacing-unit * 3;
+
+    &:focus-within {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+    }
+  }
+
+  // Language selector
+  .language-selector {
+    display: flex;
+    gap: $spacing-unit;
+    margin-bottom: $spacing-unit * 2;
+
+    &__button {
+      padding: $spacing-unit $spacing-unit * 2;
+      border: 1px solid $border-color;
+      background: $background-color;
+      border-radius: $border-radius;
+      cursor: pointer;
+      transition: all $transition-speed ease;
+
+      &:hover {
+        background-color: rgba($primary-color, 0.05);
+      }
+
+      &--active {
+        background-color: $primary-color;
+        color: white;
+        border-color: $primary-color;
+      }
+    }
+  }
+
+  // Actions section
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-unit * 2;
+    margin-top: $spacing-unit * 4;
+    padding-top: $spacing-unit * 3;
+    border-top: 1px solid $border-color;
+
+    button {
+      min-width: 100px;
+      padding: $spacing-unit $spacing-unit * 2;
+      border-radius: $border-radius;
+      border: none;
+      cursor: pointer;
+      transition: all $transition-speed ease;
+      font-weight: 500;
+
+      &.save-btn {
+        background-color: $primary-color;
+        color: white;
+
+        &:hover {
+          background-color: darken($primary-color, 10%);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      &.cancel-btn {
+        background-color: transparent;
+        border: 1px solid $border-color;
+        color: $text-color;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+      }
+    }
+  }
+
+  // Status messages
+  .status-message {
+    padding: $spacing-unit * 2;
+    border-radius: $border-radius;
+    margin-bottom: $spacing-unit * 3;
+
+    &--success {
+      background-color: rgba($success-color, 0.1);
+      color: $success-color;
+      border: 1px solid rgba($success-color, 0.2);
+    }
+
+    &--error {
+      background-color: rgba($error-color, 0.1);
+      color: $error-color;
+      border: 1px solid rgba($error-color, 0.2);
+    }
+  }
+
+  // Responsive styles
+  @media (max-width: 768px) {
+    padding: $spacing-unit * 2;
+
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-unit * 2;
+    }
+
+    .actions {
+      flex-direction: column-reverse;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// Utility classes
+.mt-2 { margin-top: $spacing-unit * 2; }
+.mb-2 { margin-bottom: $spacing-unit * 2; }
+.mx-2 { margin-left: $spacing-unit * 2; margin-right: $spacing-unit * 2; }
+.my-2 { margin-top: $spacing-unit * 2; margin-bottom: $spacing-unit * 2; }
+
+.hidden {
+  display: none;
+}
+
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

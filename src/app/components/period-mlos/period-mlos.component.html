@@ -1,218 +1,194 @@
-<!-- Loading Spinner -->
-<div *ngIf="loading" class="loading-overlay">
-  <div class="spinner"></div>
-</div>
+<div class="period-mlos-container">
+  <mat-card>
+    <!-- Loading Spinner -->
+    <div *ngIf="loading" class="loading-overlay">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
 
-<!-- Error Message -->
-<div *ngIf="error" class="error-message">
-  <i class="material-icons">error</i>
-  {{ error }}
-  <button class="close-btn" (click)="error = null">
-    <i class="material-icons">close</i>
-  </button>
-</div>
+    <!-- Error Message -->
+    <div *ngIf="error" class="error-message mat-elevation-z2">
+      <mat-icon color="warn">error</mat-icon>
+      <span>{{ error }}</span>
+      <button mat-icon-button (click)="error = null">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
 
-<div class="period-container">
-  <div class="header-actions">
-    <h3>Seasons & Periods Management</h3>
-    <button (click)="addNewSeason()" class="add-btn">
-      <i class="material-icons">add</i> Add Season
-    </button>
-  </div>
+    <mat-card-header>
+      <mat-card-title>Seasons & Periods Management</mat-card-title>
+      <button mat-raised-button color="primary" (click)="addNewSeason()">
+        <mat-icon>add</mat-icon>
+        Add Season
+      </button>
+    </mat-card-header>
 
-  <!-- No Seasons Message -->
-  <div *ngIf="!loading && seasons.length === 0" class="no-data-message">
-    <i class="material-icons">event_busy</i>
-    <p>No seasons configured yet. Click "Add Season" to get started.</p>
-  </div>
-
-  <div class="seasons-list">
-    <div *ngFor="let season of seasons" class="season-card">
-      <div class="season-header">
-        <div class="season-title">
-          <h4>{{ season.name }}</h4>
-          <span class="season-description" *ngIf="season.description">
-            {{ season.description }}
-          </span>
-          <span class="status-badge" [class.active]="season.isActive">
-            {{ season.isActive ? 'Active' : 'Inactive' }}
-          </span>
-        </div>
-        <div class="actions">
-          <button (click)="addPeriodToSeason(season)" class="add-period-btn" title="Add Period">
-            <i class="material-icons">date_range</i>
-          </button>
-          <button (click)="editSeason(season)" class="edit-btn" title="Edit Season">
-            <i class="material-icons">edit</i>
-          </button>
-          <button (click)="deleteSeason(season)" class="delete-btn" title="Delete Season">
-            <i class="material-icons">delete</i>
-          </button>
-        </div>
+    <mat-card-content>
+      <!-- No Seasons Message -->
+      <div *ngIf="!loading && seasons.length === 0" class="no-data-message">
+        <mat-icon>event_busy</mat-icon>
+        <p>No seasons configured yet. Click "Add Season" to get started.</p>
       </div>
 
-      <!-- No Periods Message -->
-      <div *ngIf="!season.periods?.length" class="no-periods-message">
-        <i class="material-icons">date_range</i>
-        <p>No periods defined for this season.</p>
-        <button (click)="addPeriodToSeason(season)" class="add-period-btn">
-          Add Period
-        </button>
-      </div>
+      <!-- Seasons Accordion -->
+      <mat-accordion class="seasons-list" multi>
+        <mat-expansion-panel *ngFor="let season of seasons" class="season-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              {{ season.name }}
+            </mat-panel-title>
+            <mat-panel-description>
+              <span class="season-description" *ngIf="season.description">{{ season.description }}</span>
+              <mat-chip-listbox>
+                <mat-chip [color]="season.isActive ? 'primary' : 'warn'" selected>
+                  {{ season.isActive ? 'Active' : 'Inactive' }}
+                </mat-chip>
+              </mat-chip-listbox>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
 
-      <div class="periods-list">
-        <div *ngFor="let period of season.periods" class="period-card" [class.blackout]="period.isBlackout">
-          <div class="period-header">
-            <div class="period-info">
-              <h5>{{ period.name }}</h5>
-              <div class="period-dates">
-                {{ formatDate(period.startDate) }} - {{ formatDate(period.endDate) }}
+          <!-- Season Content -->
+          <div class="season-content">
+            <!-- Season Actions -->
+            <div class="season-actions">
+              <button mat-stroked-button (click)="editSeason(season)">
+                <mat-icon>edit</mat-icon> Edit Season
+              </button>
+              <button mat-stroked-button color="warn" (click)="deleteSeason(season)">
+                <mat-icon>delete</mat-icon> Delete Season
+              </button>
+            </div>
+
+            <!-- Periods Section -->
+            <div class="periods-section">
+              <div class="section-header">
+                <h3>Periods</h3>
+                <button mat-raised-button color="accent" (click)="addPeriodToSeason(season)">
+                  <mat-icon>date_range</mat-icon>
+                  Add Period
+                </button>
+              </div>
+
+              <mat-table [dataSource]="season.periods || []" class="periods-table mat-elevation-z1">
+                <!-- Name Column -->
+                <ng-container matColumnDef="name">
+                  <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+                  <mat-cell *matCellDef="let period">{{period.name}}</mat-cell>
+                </ng-container>
+
+                <!-- Start Date Column -->
+                <ng-container matColumnDef="startDate">
+                  <mat-header-cell *matHeaderCellDef>Start Date</mat-header-cell>
+                  <mat-cell *matCellDef="let period">{{period.startDate | date}}</mat-cell>
+                </ng-container>
+
+                <!-- End Date Column -->
+                <ng-container matColumnDef="endDate">
+                  <mat-header-cell *matHeaderCellDef>End Date</mat-header-cell>
+                  <mat-cell *matCellDef="let period">{{period.endDate | date}}</mat-cell>
+                </ng-container>
+
+                <!-- MLOs Column -->
+                <ng-container matColumnDef="mlos">
+                  <mat-header-cell *matHeaderCellDef>MLOs</mat-header-cell>
+                  <mat-cell *matCellDef="let period">{{period.mlos}}</mat-cell>
+                </ng-container>
+
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions">
+                  <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                  <mat-cell *matCellDef="let period">
+                    <button mat-icon-button color="primary" (click)="editPeriod(season, period)" matTooltip="Edit Period">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deletePeriod(season, period)" matTooltip="Delete Period">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </mat-cell>
+                </ng-container>
+
+                <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+                <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+              </mat-table>
+
+              <!-- No Periods Message -->
+              <div *ngIf="!season.periods || season.periods.length === 0" class="no-data-message">
+                <mat-icon>date_range</mat-icon>
+                <p>No periods defined for this season.</p>
               </div>
             </div>
-            <div class="actions">
-              <button (click)="editPeriod(season, period)" class="edit-btn" title="Edit Period">
-                <i class="material-icons">edit</i>
-              </button>
-              <button (click)="deletePeriod(season, period)" class="delete-btn" title="Delete Period">
-                <i class="material-icons">delete</i>
-              </button>
-            </div>
           </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </mat-card-content>
+  </mat-card>
+</div>
 
-          <div class="period-details">
-            <div class="mlos-info">
-              <span class="mlos-label">Minimum Stay:</span>
-              <span class="mlos-value">{{ period.mlos }} nights</span>
-            </div>
-            <p *ngIf="period.description" class="description">
-              {{ period.description }}
-            </p>
-            <div *ngIf="period.isBlackout" class="blackout-badge">
-              Blackout Period
-            </div>
-          </div>
+<!-- Period Form Modal -->
+<div *ngIf="showPeriodForm" class="period-form-overlay">
+  <mat-card class="period-form-dialog">
+    <mat-card-header>
+      <mat-card-title>{{ editingPeriod ? 'Edit Period' : 'Add New Period' }}</mat-card-title>
+    </mat-card-header>
+  
+    <mat-card-content>
+      <form [formGroup]="periodForm" class="period-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Period Name</mat-label>
+          <input matInput formControlName="name" required>
+          <mat-error *ngIf="periodForm.get('name')?.hasError('required')">
+            Name is required
+          </mat-error>
+        </mat-form-field>
+
+        <div class="date-range">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate" required>
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+            <mat-error *ngIf="periodForm.get('startDate')?.hasError('required')">
+              Start date is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate" required>
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+            <mat-error *ngIf="periodForm.get('endDate')?.hasError('required')">
+              End date is required
+            </mat-error>
+          </mat-form-field>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Season Form Modal -->
-  <app-modal [show]="showSeasonForm" (close)="cancelEdit()">
-    <h3>{{ editingSeason ? 'Edit Season' : 'Add New Season' }}</h3>
-    
-    <div class="form-group">
-      <label>Season Name: *</label>
-      <input 
-        type="text" 
-        [(ngModel)]="seasonForm.name" 
-        class="form-input"
-        placeholder="e.g., Summer 2024, Winter 2024"
-        [class.error]="error && !seasonForm.name"
-      >
-    </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Minimum Length of Stay (MLOs)</mat-label>
+          <input matInput type="number" formControlName="mlos" min="1" required>
+          <mat-error *ngIf="periodForm.get('mlos')?.hasError('required')">
+            MLOs is required
+          </mat-error>
+          <mat-error *ngIf="periodForm.get('mlos')?.hasError('min')">
+            MLOs must be at least 1
+          </mat-error>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label>Description (Optional):</label>
-      <textarea 
-        [(ngModel)]="seasonForm.description" 
-        rows="3" 
-        class="form-input"
-        placeholder="Add any special notes or conditions..."
-      ></textarea>
-    </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3"></textarea>
+        </mat-form-field>
 
-    <div class="form-group checkbox-group">
-      <label class="checkbox-label">
-        <input 
-          type="checkbox" 
-          [(ngModel)]="seasonForm.isActive"
-        >
-        Season is Active
-      </label>
-    </div>
+        <mat-checkbox formControlName="isBlackout" class="blackout-checkbox">
+          Blackout Period
+        </mat-checkbox>
+      </form>
+    </mat-card-content>
 
-    <div class="modal-actions">
-      <button (click)="saveSeason()" class="save-btn" [disabled]="loading">
-        <i class="material-icons" *ngIf="loading">hourglass_empty</i>
-        {{ loading ? 'Saving...' : 'Save' }}
+    <mat-card-actions align="end">
+      <button mat-button (click)="cancelPeriodEdit()">Cancel</button>
+      <button mat-raised-button color="primary" (click)="savePeriod()" [disabled]="!periodForm.valid">
+        {{ editingPeriod ? 'Update' : 'Add' }} Period
       </button>
-      <button (click)="cancelEdit()" class="cancel-btn" [disabled]="loading">Cancel</button>
-    </div>
-  </app-modal>
-
-  <!-- Period Form Modal -->
-  <app-modal [show]="showPeriodForm" (close)="cancelPeriodEdit()">
-    <h3>{{ editingPeriod ? 'Edit Period' : 'Add New Period' }}</h3>
-
-    <div class="form-group">
-      <label>Period Name: *</label>
-      <input 
-        type="text" 
-        [(ngModel)]="periodForm.name" 
-        class="form-input"
-        placeholder="e.g., Christmas Week, Summer Peak"
-        [class.error]="error && !periodForm.name"
-      >
-    </div>
-    
-    <div class="form-row">
-      <div class="form-group">
-        <label>Start Date: *</label>
-        <input 
-          type="date" 
-          [(ngModel)]="periodForm.startDate" 
-          class="form-input"
-          [class.error]="error && !periodForm.startDate"
-        >
-      </div>
-      <div class="form-group">
-        <label>End Date: *</label>
-        <input 
-          type="date" 
-          [(ngModel)]="periodForm.endDate" 
-          class="form-input"
-          [class.error]="error && !periodForm.endDate"
-        >
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Minimum Length of Stay (Nights): *</label>
-      <input 
-        type="number" 
-        [(ngModel)]="periodForm.mlos" 
-        class="form-input"
-        min="1"
-        [class.error]="error && !periodForm.mlos"
-      >
-    </div>
-
-    <div class="form-group">
-      <label>Description (Optional):</label>
-      <textarea 
-        [(ngModel)]="periodForm.description" 
-        rows="3" 
-        class="form-input"
-        placeholder="Add any special notes or conditions..."
-      ></textarea>
-    </div>
-
-    <div class="form-group checkbox-group">
-      <label class="checkbox-label">
-        <input 
-          type="checkbox" 
-          [(ngModel)]="periodForm.isBlackout"
-        >
-        Mark as Blackout Period
-      </label>
-    </div>
-
-    <div class="modal-actions">
-      <button (click)="savePeriod()" class="save-btn" [disabled]="loading">
-        <i class="material-icons" *ngIf="loading">hourglass_empty</i>
-        {{ loading ? 'Saving...' : 'Save' }}
-      </button>
-      <button (click)="cancelPeriodEdit()" class="cancel-btn" [disabled]="loading">Cancel</button>
-    </div>
-  </app-modal>
+    </mat-card-actions>
+  </mat-card>
 </div>

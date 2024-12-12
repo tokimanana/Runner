@@ -1,81 +1,78 @@
-import { sampleData } from './../../data';
+// src/app/services/room-configuration.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { RoomType, Hotel } from '../models/types';
+import { BehaviorSubject, Observable, catchError, from } from 'rxjs';
+import { RoomType } from '../models/types';
+import { MockApiService } from './mock/mock-api.service';
+import { BaseDataService } from './base-data.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class RoomConfigurationService {
-  private roomsMap = new Map<number, RoomType[]>();
-  private currentRooms = new BehaviorSubject<RoomType[]>([]);
+export class RoomConfigurationService extends BaseDataService<RoomType> {
+  private roomsSubject = new BehaviorSubject<RoomType[]>([]);
+  rooms$ = this.roomsSubject.asObservable();
 
   constructor() {
-    this.initializeRoomsFromSampleData();
+    super();
   }
 
-  private initializeRoomsFromSampleData(): void {
-    if (sampleData.hotels) {
-      sampleData.hotels.forEach((hotel: Hotel & { rooms?: RoomType[] }) => {
-        if (hotel.rooms) {
-          this.roomsMap.set(hotel.id, [...hotel.rooms]);
-        }
-      });
-    }
+  protected override handleError(error: any): never {
+    console.error('Room configuration error:', error);
+    throw error;
   }
 
   // Get rooms for a specific hotel
   getRooms(hotelId: number): Observable<RoomType[]> {
-    const rooms = this.roomsMap.get(hotelId) || [];
-    this.currentRooms.next(rooms);
-    return this.currentRooms.asObservable();
+    return from(MockApiService.getRoomsByHotelId(hotelId)).pipe(
+      catchError(error => {
+        this.handleError('Error getting rooms: ' + error);
+        return [];
+      })
+    );
   }
 
   // Add a new room type
-  addRoom(hotelId: number, room: Omit<RoomType, 'id'>): void {
-    const rooms = this.roomsMap.get(hotelId) || [];
-    const newRoom: RoomType = {
-      ...room,
-      id: this.generateRoomId(rooms)
-    };
-    rooms.push(newRoom);
-    this.roomsMap.set(hotelId, rooms);
-    this.currentRooms.next(rooms);
-    console.log(`Added new room for hotel ${hotelId}:`, newRoom);
+  async addRoom(hotelId: number, room: Omit<RoomType, 'id'>): Promise<RoomType> {
+    try {
+      const newRoom = await MockApiService.createRoom(hotelId, room);
+      const currentRooms = await MockApiService.getRoomsByHotelId(hotelId);
+      this.roomsSubject.next(currentRooms);
+      return newRoom;
+    } catch (error) {
+      console.error('Error adding room:', error);
+      throw error;
+    }
   }
 
   // Update an existing room type
-  updateRoom(hotelId: number, room: RoomType): void {
-    const rooms = this.roomsMap.get(hotelId) || [];
-    const index = rooms.findIndex(r => r.id === room.id);
-    if (index !== -1) {
-      rooms[index] = room;
-      this.roomsMap.set(hotelId, rooms);
-      this.currentRooms.next(rooms);
-      console.log(`Updated room for hotel ${hotelId}:`, room);
-    } else {
-      console.warn(`Room with id ${room.id} not found for hotel ${hotelId}`);
+  async updateRoom(hotelId: number, room: RoomType): Promise<RoomType> {
+    try {
+      const updatedRoom = await MockApiService.updateRoom(hotelId, room.id, room);
+      const currentRooms = await MockApiService.getRoomsByHotelId(hotelId);
+      this.roomsSubject.next(currentRooms);
+      return updatedRoom;
+    } catch (error) {
+      console.error('Error updating room:', error);
+      throw error;
     }
   }
 
   // Delete a room type
-  deleteRoom(hotelId: number, roomId: number): void {
-    const rooms = this.roomsMap.get(hotelId) || [];
-    const filteredRooms = rooms.filter(r => r.id !== roomId);
-    if (filteredRooms.length === rooms.length) {
-      console.warn(`Room with id ${roomId} not found for hotel ${hotelId}`);
-      return;
+  async deleteRoom(hotelId: number, roomId: number): Promise<boolean> {
+    try {
+      await MockApiService.deleteRoom(hotelId, roomId);
+      const currentRooms = await MockApiService.getRoomsByHotelId(hotelId);
+      this.roomsSubject.next(currentRooms);
+      return true;
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      throw error;
     }
-    this.roomsMap.set(hotelId, filteredRooms);
-    this.currentRooms.next(filteredRooms);
-    console.log(`Deleted room ${roomId} from hotel ${hotelId}`);
   }
 
-  // Initialize rooms for a hotel
-  initializeRooms(hotelId: number, rooms: RoomType[]): void {
-    this.roomsMap.set(hotelId, [...rooms]);
-    this.currentRooms.next(rooms);
-    console.log(`Initialized ${rooms.length} rooms for hotel ${hotelId}`);
+  // Get room by ID
+  getRoomById(hotelId: number, roomId: number): Promise<RoomType | undefined> {
+    return MockApiService.getRoomById(hotelId, roomId);
   }
 
   // Validate room configuration
@@ -102,20 +99,21 @@ export class RoomConfigurationService {
     return isValid;
   }
 
-  // Get room by ID
-  getRoomById(hotelId: number, roomId: number): RoomType | undefined {
-    const rooms = this.roomsMap.get(hotelId) || [];
-    return rooms.find(room => room.id === roomId);
-  }
-
   // Get total room count for hotel
-  getRoomCount(hotelId: number): number {
-    return this.roomsMap.get(hotelId)?.length || 0;
+  async getRoomCount(hotelId: number): Promise<number> {
+    const rooms = await MockApiService.getRoomsByHotelId(hotelId);
+    return rooms.length;
   }
 
-  // Private helper methods
-  private generateRoomId(existingRooms: RoomType[]): number {
-    const maxId = Math.max(...existingRooms.map(room => room.id), 0);
-    return maxId + 1;
+  // Reset rooms to initial state
+  async resetRooms(): Promise<void> {
+    try {
+      await MockApiService.resetStorage();
+      const rooms = await MockApiService.getRooms();
+      this.roomsSubject.next(rooms);
+    } catch (error) {
+      console.error('Error resetting rooms:', error);
+      throw error;
+    }
   }
 }

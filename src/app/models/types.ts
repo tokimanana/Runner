@@ -1,29 +1,79 @@
 // Core interfaces
 export interface Hotel {
+  // Basic Information
   id: number;
   name: string;
+  description: string;
   address: string;
   city: string;
   country: string;
   rating: number;
-  ageCategories?: AgeCategory[];
-  rooms?: RoomType[];
-  seasons?: Season[];
-  contracts?: Contract[];
-  amenities: { [key in AmenityCategory]?: string[] };
+  
+  // Documentation
+  factSheet?: string;
+  
+  // Timing Information
+  yearBuilt: string;
+  lastRenovation: string;
   checkInTime: string;
   checkOutTime: string;
-  policies: HotelPolicies;
-  features: HotelFeatures;
+  
+  // Capacity Information
+  totalRooms: number;
+  
+  // Location Details
+  airportDistance: string;
+  cityCenterDistance: string;
+  beachDistance: string;
+  
+  // Services
+  languages: string[];
+  amenities: {
+    [key in AmenityCategory]?: string[];
+  };
+  
+  // Features and Facilities
+  features: {
+    restaurants: Restaurant[];
+    spa: Spa;
+  };
+  
+  // Business Configuration
+  ageCategories?: AgeCategory[];
+  
+  // Media
   images: string[];
-  description: string;
-  contactInfo: ContactInfo;
+  
+  // Contact Information
+  contactInfo: {
+    phone: string;
+    email: string;
+    website?: string;
+  };
+
+  // Optional relationships - these might be managed separately
+  rooms?: RoomType[];
   mealPlans?: MealPlan[];
-  factSheet?: string;
-  specialOffers?: SpecialOffer[];
-  capacity?: HotelCapacity;
-  rates?: Rate[];
+  policies?: HotelPolicies;
 }
+
+
+interface ImageAsset {
+  id: string;
+  url: string;
+  type: 'main' | 'room' | 'facility' | 'dining' | 'other';
+  title?: string;
+  description?: string;
+}
+
+interface ImageAsset {
+  id: string;
+  url: string;
+  type: 'main' | 'room' | 'facility' | 'dining' | 'other';
+  title?: string;
+  description?: string;
+}
+
 
 export enum PolicyType {
   CANCELLATION = 'cancellation',
@@ -188,26 +238,38 @@ export enum AmenityCategory {
 
 // Room management
 export enum RoomCategory {
-  STANDARD = 'standard',
-  DELUXE = 'deluxe',
-  SUITE = 'suite',
-  VILLA = 'villa'
+  STANDARD = 'STANDARD',
+  SUPERIOR = 'SUPERIOR',
+  DELUXE = 'DELUXE',
+  PREMIUM = 'PREMIUM',
+  JUNIOR_SUITE = 'JUNIOR_SUITE',
+  SUITE = 'SUITE',
+  EXECUTIVE_SUITE = 'EXECUTIVE_SUITE',
+  PENTHOUSE = 'PENTHOUSE',
+  VILLA = 'VILLA',
+  POOL_VILLA = 'POOL_VILLA',
+  OVERWATER_VILLA = 'OVERWATER_VILLA',
+  FAMILY_ROOM = 'FAMILY_ROOM',
+  CONNECTING_ROOM = 'CONNECTING_ROOM',
+  ACCESSIBLE = 'ACCESSIBLE'
 }
+
 
 export interface RoomType {
   id: number;
+  hotelId: number;
   name: string;
   category: RoomCategory;
-  description?: string;
+  description: string;
   maxOccupancy: {
     adults: number;
     children: number;
     infants: number;
   };
   baseOccupancy: number;
-  amenities: string[];
-  size?: number;
-  images?: string[];
+  size: number;             // in square meters
+  amenities: string[];      // array of amenity strings
+  status?: 'active' | 'inactive';
 }
 
 // Rate management
@@ -294,6 +356,7 @@ export interface Period {
 export interface Season {
   id: number;
   name: string;
+  type: SeasonType;
   description?: string;
   isActive: boolean;
   periods?: Period[];
@@ -326,13 +389,14 @@ export interface ContractPeriodRate {
 export interface RoomTypeRate {
   roomTypeId: number;
   rateType: 'per_pax' | 'per_villa';
-  personTypeRates: {
+  personTypeRates?: {
     [personType: string]: {  // 'adult', 'child', 'teen', 'infant', etc.
       rates: {
         [count: number]: number;  // 1: rate for first person, 2: rate for second person, etc.
       };
     };
   };
+  villaRate?: number;
   mealPlanRates: {
     [mealPlanId: string]: {
       [personType: string]: number;  // Rate per person type for this meal plan
@@ -496,6 +560,7 @@ export interface MealPlan {
 // Hotel data management
 export type HotelDataKey = 
   | 'hotel'
+  | 'rooms'
   | 'markets'
   | 'seasons'
   | 'contracts'
@@ -634,6 +699,12 @@ export interface AgeCategoryRate {
       discount: number;
     }[];
   };
+}
+
+export enum SeasonType {
+  PEAK = 'peak',
+  SHOULDER = 'shoulder',
+  LOW = 'low'
 }
 
 export interface RateConfiguration {

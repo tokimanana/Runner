@@ -1,65 +1,66 @@
 .contract-form {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 16px;
+  padding: 20px;
 }
 
-.form-header {
+.contract-form h2 {
   margin-bottom: 24px;
+  color: #333;
 }
 
-.form-header h2 {
-  margin: 0 0 24px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
-  font-size: 24px;
+.tab-content {
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.form-section {
-  margin: 24px 0;
-  padding: 24px;
-}
-
-.form-section h3 {
-  margin: 24px 0 16px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
-  font-size: 18px;
-}
-
-.full-width {
+.contract-form mat-form-field {
   width: 100%;
-  margin-bottom: 16px;
 }
 
 .date-range {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 16px;
-}
-
-.room-types-grid,
-.meal-plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin: 16px 0;
 }
 
 .form-actions {
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 16px;
-  background: #fff;
-  position: sticky;
-  bottom: 0;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  gap: 12px;
 }
 
-mat-divider {
-  margin: 32px 0;
+textarea {
+  min-height: 100px;
+}
+
+/* Style for multiple select options */
+::ng-deep .mat-mdc-select-panel {
+  max-height: 300px !important;
+}
+
+::ng-deep .mat-mdc-option {
+  height: 48px !important;
+  line-height: 48px !important;
+}
+
+::ng-deep .mat-mdc-select-value {
+  max-width: 90%;
+}
+
+/* Style for selected items in multiple select */
+::ng-deep .mat-mdc-select-multiple .mat-mdc-select-value {
+  padding: 8px 0;
+}
+
+::ng-deep .mat-mdc-select-value-text {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 /* Tab Styling */

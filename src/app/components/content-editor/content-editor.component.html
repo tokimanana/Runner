@@ -41,19 +41,25 @@
           [hotel]="selectedHotel"
         ></app-market-config>
 
+        <app-currency
+          *ngSwitchCase="'currency'"
+          [hotel]="selectedHotel"
+        ></app-currency>
+
         <app-contract-list
           *ngSwitchCase="'contract'"
           (contractSelected)="onContractSelected($event)"
         ></app-contract-list>
         
         <ng-container *ngSwitchCase="'ratesConfig'">
+          <div *ngIf="!selectedContract" class="no-contract">
+            <p>Please select a contract first from the Contract Management menu</p>
+            <button mat-raised-button color="primary" (click)="goToContractList()">Go to Contract Management</button>
+          </div>
           <app-rates-config
             *ngIf="selectedContract"
             [contract]="selectedContract"
           ></app-rates-config>
-          <div *ngIf="!selectedContract" class="no-contract">
-            <p>Please select a contract to view rates configuration</p>
-          </div>
         </ng-container>
       </div>
     </div>

@@ -1,0 +1,67 @@
+.contract-form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    mat-tab-group {
+      flex: 1;
+      overflow: hidden;
+
+      ::ng-deep .mat-mdc-tab-body-wrapper {
+        flex: 1;
+        overflow: auto;
+      }
+    }
+  }
+
+  .tab-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  .form-actions {
+    padding: 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  mat-select-panel {
+    max-height: 400px !important;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field {
+      .mdc-menu-surface.mat-mdc-select-panel {
+        max-height: 400px !important;
+      }
+    }
+
+    .mat-mdc-select-panel {
+      max-height: 400px !important;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  textarea {
+    min-height: 100px;
+  }
+}

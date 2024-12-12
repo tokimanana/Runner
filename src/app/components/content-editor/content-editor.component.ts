@@ -16,27 +16,31 @@ import { AgeCategoryComponent } from "../age-category/age-category.component";
 import { ContractListComponent } from '../contract/contract-management/contract-list/contract-list.component';
 import { RatesConfigComponent } from '../contract/contract-management/rates-config/rates-config.component';
 import { DEFAULT_MENU_ITEM } from '../../config/menu.config';
+import { NgIf, NgSwitch, NgSwitchCase } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { CurrencyComponent } from '../currency/currency.component';
 
 @Component({
   selector: 'app-content-editor',
-  standalone: true,
+  templateUrl: './content-editor.component.html',
+  styleUrls: ['./content-editor.component.css'],
   imports: [
-    CommonModule,
-    FormsModule,
-    MatIconModule,
-    RouterModule,
+    NgIf,
+    NgSwitch,
+    NgSwitchCase,
+    MatButtonModule,
     DescriptionComponent,
     PoliciesComponent,
     RoomTypesComponent,
     MealPlanComponent,
     PeriodMlosComponent,
-    MarketConfigComponent,
     AgeCategoryComponent,
+    MarketConfigComponent,
+    CurrencyComponent,
     ContractListComponent,
     RatesConfigComponent
   ],
-  templateUrl: './content-editor.component.html',
-  styleUrls: ['./content-editor.component.css']
+  standalone: true
 })
 export class ContentEditorComponent implements OnInit {
   selectedHotel: Hotel | null = null;
@@ -73,5 +77,9 @@ export class ContentEditorComponent implements OnInit {
     console.log('Contract selected:', contract);
     this.selectedContract = contract;
     this.hotelService.setSelectedMenuItem('ratesConfig');
+  }
+
+  goToContractList() {
+    this.currentMenuItem = 'contract';
   }
 }

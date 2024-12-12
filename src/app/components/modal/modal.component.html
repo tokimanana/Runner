@@ -1,5 +1,61 @@
-<div *ngIf="show" class="modal-backdrop" (click)="onModalClick($event)">
-  <div class="modal-content">
-    <ng-content></ng-content>
+<!-- modal.component.html -->
+<div class="modal" [class.show]="isVisible()" (click)="onBackdropClick($event)">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ title() }}</h5>
+        <button type="button" class="close" (click)="onCancel.emit()">×</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="handleSubmit()">
+          <ng-container *ngFor="let field of fields()">
+            <div class="form-group">
+              <label [for]="field.name">{{ field.label }}</label>
+              
+              <!-- Handle different field types -->
+              <ng-container [ngSwitch]="field.type">
+                <!-- Text/Number input -->
+                <input *ngSwitchCase="'text'" [type]="field.type"
+                       [id]="field.name"
+                       [name]="field.name"
+                       class="form-control"
+                       [required]="field.required ?? false"
+                       [(ngModel)]="formData()[field.name]">
+                
+                <!-- Textarea -->
+                <textarea *ngSwitchCase="'textarea'"
+                         [id]="field.name"
+                         [name]="field.name"
+                         class="form-control"
+                         [rows]="field.rows || 3"
+                         [required]="field.required ?? false"
+                         [(ngModel)]="formData()[field.name]"></textarea>
+                
+                <!-- Select -->
+                <select *ngSwitchCase="'select'"
+                        [id]="field.name"
+                        [name]="field.name"
+                        class="form-control"
+                        [required]="field.required ?? false"
+                        [(ngModel)]="formData()[field.name]">
+                  <option *ngFor="let option of field.options" [value]="option">
+                    {{ option }}
+                  </option>
+                </select>
+              </ng-container>
+            </div>
+          </ng-container>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="onCancel.emit()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>

@@ -1,35 +1,32 @@
-<div class="policies-container" *ngIf="hotel">
+<div class="policies-container" *ngIf="!loading; else loadingTemplate">
+  <!-- Error Alert -->
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+    <button class="close-btn" (click)="error = null">&times;</button>
+  </div>
+
   <!-- Cancellation Policy Section -->
   <div class="policy-section" *ngIf="policies?.cancellation">
     <div class="section-header">
       <h3>Cancellation Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.CANCELLATION)">
-        <i class="fas fa-edit"></i> Edit
+      <button mat-button class="edit-btn" (click)="openPolicyModal(PolicyType.CANCELLATION)">
+        <mat-icon>edit</mat-icon> Edit
       </button>
     </div>
     <div class="policy-content">
-      <ng-container *ngIf="policies?.cancellation; else noCancellationPolicy">
-        <ng-container *ngIf="policies?.cancellation as cancellation">
-          <p>{{cancellation.description}}</p>
-          <div class="rules-list" *ngIf="cancellation.rules?.length">
-            <div *ngFor="let rule of cancellation.rules" class="rule-item">
-              <strong>{{rule.daysBeforeArrival}} days before arrival:</strong>
-              <span class="charge-info">
-                {{rule.charge}}{{rule.chargeType === CancellationChargeType.PERCENTAGE ? '%' : 
-                  rule.chargeType === CancellationChargeType.NIGHTS ? ' night(s)' : ' fixed charge'}}
-              </span>
-            </div>
-          </div>
-          <p *ngIf="cancellation.noShowCharge">
-            <strong>No Show Charge:</strong>
-            {{cancellation.noShowCharge}}{{cancellation.noShowChargeType === CancellationChargeType.PERCENTAGE ? '%' : 
-              cancellation.noShowChargeType === CancellationChargeType.NIGHTS ? ' night(s)' : ' fixed charge'}}
-          </p>
-        </ng-container>
+      <ng-container *ngIf="policies?.cancellation as cancellation">
+        <p><strong>Policy Description:</strong> {{cancellation.description}}</p>
+        <div *ngIf="cancellation.rules?.length" class="rules-list">
+          <h4>Cancellation Rules:</h4>
+          <ul>
+            <li *ngFor="let rule of cancellation.rules">
+              If cancelled {{rule.daysBeforeArrival}} days before arrival: 
+              {{rule.charge}}{{rule.chargeType === CancellationChargeType.PERCENTAGE ? '%' : ' EUR'}}
+
+            </li>
+          </ul>
+        </div>
       </ng-container>
-      <ng-template #noCancellationPolicy>
-        <p>No cancellation policy set</p>
-      </ng-template>
     </div>
   </div>
 
@@ -37,40 +34,23 @@
   <div class="policy-section" *ngIf="policies?.checkIn">
     <div class="section-header">
       <h3>Check-In Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.CHECK_IN)">
-        <i class="fas fa-edit"></i> Edit
+      <button mat-button class="edit-btn" (click)="openPolicyModal(PolicyType.CHECK_IN)">
+        <mat-icon>edit</mat-icon> Edit
       </button>
     </div>
     <div class="policy-content">
-      <ng-container *ngIf="policies?.checkIn; else noCheckInPolicy">
-        <ng-container *ngIf="policies?.checkIn as checkIn">
-          <p><strong>Standard check-in time:</strong> {{checkIn.standardTime}}</p>
-          <p *ngIf="checkIn.earliestTime">
-            <strong>Earliest possible check-in:</strong> {{checkIn.earliestTime}}
-          </p>
-          <div *ngIf="checkIn.additionalCharges?.early as early">
-            <p>
-              <strong>Early check-in before {{early.beforeTime}}:</strong>
-              {{early.charge}} {{early.description}}
-            </p>
-          </div>
-          <div *ngIf="checkIn.additionalCharges?.late as late">
-            <p>
-              <strong>Late check-in after {{late.afterTime}}:</strong>
-              {{late.charge}} {{late.description}}
-            </p>
-          </div>
-          <div *ngIf="checkIn.requirements?.length" class="requirements-list">
-            <strong>Requirements:</strong>
-            <ul>
-              <li *ngFor="let req of checkIn.requirements">{{req}}</li>
-            </ul>
-          </div>
-        </ng-container>
+      <ng-container *ngIf="policies?.checkIn as checkIn">
+        <p><strong>Standard check-in time:</strong> {{checkIn.standardTime}}</p>
+        <p *ngIf="checkIn.earliestTime">
+          <strong>Earliest possible check-in:</strong> {{checkIn.earliestTime}}
+        </p>
+        <div *ngIf="checkIn.requirements?.length" class="requirements-list">
+          <strong>Requirements:</strong>
+          <ul>
+            <li *ngFor="let req of checkIn.requirements">{{req}}</li>
+          </ul>
+        </div>
       </ng-container>
-      <ng-template #noCheckInPolicy>
-        <p>No check-in policy set</p>
-      </ng-template>
     </div>
   </div>
 
@@ -78,40 +58,23 @@
   <div class="policy-section" *ngIf="policies?.checkOut">
     <div class="section-header">
       <h3>Check-Out Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.CHECK_OUT)">
-        <i class="fas fa-edit"></i> Edit
+      <button mat-button class="edit-btn" (click)="openPolicyModal(PolicyType.CHECK_OUT)">
+        <mat-icon>edit</mat-icon> Edit
       </button>
     </div>
     <div class="policy-content">
-      <ng-container *ngIf="policies?.checkOut; else noCheckOutPolicy">
-        <ng-container *ngIf="policies?.checkOut as checkOut">
-          <p><strong>Standard check-out time:</strong> {{checkOut.standardTime}}</p>
-          <p *ngIf="checkOut.latestTime">
-            <strong>Latest possible check-out:</strong> {{checkOut.latestTime}}
-          </p>
-          <div *ngIf="checkOut.additionalCharges?.early as early">
-            <p>
-              <strong>Early check-out before {{early.beforeTime}}:</strong>
-              {{early.charge}} {{early.description}}
-            </p>
-          </div>
-          <div *ngIf="checkOut.additionalCharges?.late as late">
-            <p>
-              <strong>Late check-out after {{late.afterTime}}:</strong>
-              {{late.charge}} {{late.description}}
-            </p>
-          </div>
-          <div *ngIf="checkOut.requirements?.length" class="requirements-list">
-            <strong>Requirements:</strong>
-            <ul>
-              <li *ngFor="let req of checkOut.requirements">{{req}}</li>
-            </ul>
-          </div>
-        </ng-container>
+      <ng-container *ngIf="policies?.checkOut as checkOut">
+        <p><strong>Standard check-out time:</strong> {{checkOut.standardTime}}</p>
+        <p *ngIf="checkOut.latestTime">
+          <strong>Latest possible check-out:</strong> {{checkOut.latestTime}}
+        </p>
+        <div *ngIf="checkOut.requirements?.length" class="requirements-list">
+          <strong>Requirements:</strong>
+          <ul>
+            <li *ngFor="let req of checkOut.requirements">{{req}}</li>
+          </ul>
+        </div>
       </ng-container>
-      <ng-template #noCheckOutPolicy>
-        <p>No check-out policy set</p>
-      </ng-template>
     </div>
   </div>
 
@@ -119,43 +82,26 @@
   <div class="policy-section" *ngIf="policies?.child">
     <div class="section-header">
       <h3>Child Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.CHILD)">
-        <i class="fas fa-edit"></i> Edit
+      <button mat-button class="edit-btn" (click)="openPolicyModal(PolicyType.CHILD)">
+        <mat-icon>edit</mat-icon> Edit
       </button>
     </div>
     <div class="policy-content">
-      <ng-container *ngIf="policies?.child; else noChildPolicy">
-        <ng-container *ngIf="policies?.child as child">
-          <p><strong>Children allowed:</strong> {{child.allowChildren ? 'Yes' : 'No'}}</p>
-          <p><strong>Maximum child age:</strong> {{child.maxChildAge}} years</p>
-          <p><strong>Maximum infant age:</strong> {{child.maxInfantAge}} years</p>
-          <p><strong>Children stay free:</strong> {{child.childrenStayFree ? 'Yes' : 'No'}}</p>
-          <p *ngIf="child.childrenStayFree"><strong>Maximum children free:</strong> {{child.maxChildrenFree}}</p>
-          <p><strong>Adult required:</strong> {{child.requiresAdult ? 'Yes' : 'No'}}</p>
-          <p><strong>Minimum adult age:</strong> {{child.minAdultAge}} years</p>
-          
-          <div *ngIf="child.extraBedPolicy">
-            <h4>Extra Bed Policy</h4>
-            <p><strong>Extra beds available:</strong> {{child.extraBedPolicy.available ? 'Yes' : 'No'}}</p>
-            <p *ngIf="child.extraBedPolicy.available">
-              <strong>Maximum extra beds:</strong> {{child.extraBedPolicy.maxExtraBeds}}
-            </p>
-            <p *ngIf="child.extraBedPolicy.available">
-              <strong>Charge:</strong> {{child.extraBedPolicy.charge}} {{child.extraBedPolicy.chargeType}}
-            </p>
-          </div>
-
-          <div *ngIf="child.restrictions?.length" class="restrictions-list">
-            <strong>Restrictions:</strong>
-            <ul>
-              <li *ngFor="let restriction of child.restrictions">{{restriction}}</li>
-            </ul>
-          </div>
-        </ng-container>
+      <ng-container *ngIf="policies?.child as child">
+        <p><strong>Allow children:</strong> {{child.allowChildren ? 'Yes' : 'No'}}</p>
+        <p *ngIf="child.allowChildren">
+          <strong>Maximum child age:</strong> {{child.maxChildAge}} years
+        </p>
+        <p *ngIf="child.maxInfantAge">
+          <strong>Maximum infant age:</strong> {{child.maxInfantAge}} years
+        </p>
+        <div *ngIf="child.restrictions?.length" class="restrictions-list">
+          <strong>Restrictions:</strong>
+          <ul>
+            <li *ngFor="let restriction of child.restrictions">{{restriction}}</li>
+          </ul>
+        </div>
       </ng-container>
-      <ng-template #noChildPolicy>
-        <p>No child policy set</p>
-      </ng-template>
     </div>
   </div>
 
@@ -163,17 +109,15 @@
   <div class="policy-section" *ngIf="policies?.pet">
     <div class="section-header">
       <h3>Pet Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.PET)">
-        <i class="fas fa-edit"></i> Edit
+      <button mat-button class="edit-btn" (click)="openPolicyModal(PolicyType.PET)">
+        <mat-icon>edit</mat-icon> Edit
       </button>
     </div>
     <div class="policy-content">
-      <ng-container *ngIf="policies?.pet; else noPetPolicy">
-        <ng-container *ngIf="policies?.pet as pet">
-          <p><strong>Pets allowed:</strong> {{pet.allowPets ? 'Yes' : 'No'}}</p>
-          <p *ngIf="pet.allowPets">
-            <strong>Maximum pets:</strong> {{pet.maxPets}}
-          </p>
+      <ng-container *ngIf="policies?.pet as pet">
+        <p><strong>Pets allowed:</strong> {{pet.allowPets ? 'Yes' : 'No'}}</p>
+        <ng-container *ngIf="pet.allowPets">
+          <p><strong>Maximum pets:</strong> {{pet.maxPets}}</p>
           <div *ngIf="pet.petTypes?.length">
             <strong>Accepted pet types:</strong>
             <ul>
@@ -189,199 +133,29 @@
           <div *ngIf="pet.restrictions?.length" class="restrictions-list">
             <strong>Restrictions:</strong>
             <ul>
-              <li *ngFor="let restriction of pet.restrictions">{{restriction}}</li>
-            </ul>
-          </div>
-          <div *ngIf="pet.requirements?.length" class="requirements-list">
-            <strong>Requirements:</strong>
-            <ul>
-              <li *ngFor="let req of pet.requirements">{{req}}</li>
+              <li *ngFor="let restriction of restrictions">{{restriction}}</li>
             </ul>
           </div>
         </ng-container>
       </ng-container>
-      <ng-template #noPetPolicy>
-        <p>No pet policy set</p>
-      </ng-template>
-    </div>
-  </div>
-
-  <!-- Dress Code Policy Section -->
-  <div class="policy-section" *ngIf="policies?.dressCode">
-    <div class="section-header">
-      <h3>Dress Code Policy</h3>
-      <button class="edit-btn" (click)="openPolicyModal(PolicyType.DRESS_CODE)">
-        <i class="fas fa-edit"></i> Edit
-      </button>
-    </div>
-    <div class="policy-content">
-      <ng-container *ngIf="policies?.dressCode; else noDressCodePolicy">
-        <ng-container *ngIf="policies?.dressCode as dressCode">
-          <p><strong>General dress code:</strong> {{dressCode.general}}</p>
-          
-          <div *ngIf="dressCode.restaurants?.length">
-            <h4>Restaurant Dress Codes</h4>
-            <div *ngFor="let venue of dressCode.restaurants" class="venue-item">
-              <h5>{{venue.name}}</h5>
-              <p><strong>Code:</strong> {{venue.code}}</p>
-              <p>{{venue.description}}</p>
-              <div *ngIf="venue.restrictions?.length" class="restrictions-list">
-                <strong>Restrictions:</strong>
-                <ul>
-                  <li *ngFor="let restriction of venue.restrictions">{{restriction}}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="dressCode.publicAreas?.length">
-            <h4>Public Area Dress Codes</h4>
-            <div *ngFor="let area of dressCode.publicAreas" class="area-item">
-              <h5>{{area.area}}</h5>
-              <p><strong>Code:</strong> {{area.code}}</p>
-              <p>{{area.description}}</p>
-              <div *ngIf="area.restrictions?.length" class="restrictions-list">
-                <strong>Restrictions:</strong>
-                <ul>
-                  <li *ngFor="let restriction of area.restrictions">{{restriction}}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </ng-container>
-      </ng-container>
-      <ng-template #noDressCodePolicy>
-        <p>No dress code policy set</p>
-      </ng-template>
-    </div>
-  </div>
-
-  <!-- Quick Templates Section -->
-  <div class="policy-templates">
-    <h3>Quick Templates</h3>
-    <div class="template-buttons">
-      <button (click)="applyTemplate(PolicyType.CANCELLATION)" class="template-btn">
-        Standard Cancellation
-      </button>
-      <button (click)="applyTemplate(PolicyType.CHECK_IN)" class="template-btn">
-        Standard Check-In
-      </button>
-      <button (click)="applyTemplate(PolicyType.CHECK_OUT)" class="template-btn">
-        Standard Check-Out
-      </button>
     </div>
   </div>
 </div>
 
-<!-- Message when no hotel is selected -->
-<div *ngIf="!hotel" class="policy-section">
-  <p>Please select a hotel to view and edit policies.</p>
-</div>
-
-<!-- Modal Component -->
-<app-modal [show]="showModal" (close)="handleModalCancel()">
-  <div class="modal-content">
-    <h2>{{modalTitle}}</h2>
-    <form (ngSubmit)="handleModalSubmit(modalForm.value)" #modalForm="ngForm">
-      <div class="form-group" *ngFor="let field of modalFormFields">
-        <!-- Regular input fields -->
-        <ng-container *ngIf="!field.fields && field.type !== 'array'">
-          <label [for]="field.name">{{field.label}}</label>
-          
-          <!-- Textarea -->
-          <textarea *ngIf="field.type === 'textarea'"
-            [id]="field.name"
-            [name]="field.name"
-            [rows]="field.rows || 5"
-            class="form-control"
-            [(ngModel)]="modalInitialValues[field.name]"
-            [required]="field.required">
-          </textarea>
-
-          <!-- Select -->
-          <select *ngIf="field.type === 'select'"
-            [id]="field.name"
-            [name]="field.name"
-            class="form-control"
-            [(ngModel)]="modalInitialValues[field.name]"
-            [required]="field.required">
-            <option *ngFor="let option of field.options" [value]="option">{{option}}</option>
-          </select>
-
-          <!-- Checkbox -->
-          <input *ngIf="field.type === 'checkbox'"
-            type="checkbox"
-            [id]="field.name"
-            [name]="field.name"
-            class="form-control"
-            [(ngModel)]="modalInitialValues[field.name]">
-
-          <!-- Other input types -->
-          <input *ngIf="field.type !== 'textarea' && field.type !== 'select' && field.type !== 'checkbox' && field.type !== 'array'"
-            [type]="field.type"
-            [id]="field.name"
-            [name]="field.name"
-            class="form-control"
-            [(ngModel)]="modalInitialValues[field.name]"
-            [required]="field.required">
-        </ng-container>
-
-        <!-- Array fields -->
-        <ng-container *ngIf="field.type === 'array'">
-          <label>{{field.label}}</label>
-          
-          <!-- Simple array -->
-          <div *ngIf="!field.fields" class="array-field">
-            <div *ngFor="let item of modalInitialValues[field.name] || []; let i = index" class="array-item">
-              <input [type]="field.type" 
-                     [id]="field.name + '_' + i"
-                     [name]="field.name + '_' + i"
-                     class="form-control"
-                     [(ngModel)]="modalInitialValues[field.name][i]"
-                     [required]="field.required">
-              <button type="button" class="btn btn-danger btn-sm" (click)="removeArrayItem(field.name, i)">Remove</button>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" 
-              (click)="addArrayItem(field.name)">Add {{field.label}}</button>
-          </div>
-
-          <!-- Complex array -->
-          <div *ngIf="field.fields" class="array-field">
-            <div *ngFor="let item of modalInitialValues[field.name] || []; let i = index" class="array-item">
-              <div *ngFor="let subfield of field.fields" class="form-group">
-                <label [for]="subfield.name + '_' + i">{{subfield.label}}</label>
-                
-                <!-- Subfield select -->
-                <select *ngIf="subfield.type === 'select'"
-                  [id]="subfield.name + '_' + i"
-                  [name]="subfield.name + '_' + i"
-                  class="form-control"
-                  [(ngModel)]="item[subfield.name]"
-                  [required]="subfield.required">
-                  <option *ngFor="let option of subfield.options" [value]="option">{{option}}</option>
-                </select>
-
-                <!-- Subfield input -->
-                <input *ngIf="subfield.type !== 'select'"
-                  [type]="subfield.type"
-                  [id]="subfield.name + '_' + i"
-                  [name]="subfield.name + '_' + i"
-                  class="form-control"
-                  [(ngModel)]="item[subfield.name]"
-                  [required]="subfield.required">
-              </div>
-              <button type="button" class="btn btn-danger btn-sm" (click)="removeArrayItem(field.name, i)">Remove</button>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" 
-              (click)="addArrayItem(field.name, {})">Add {{field.label}}</button>
-          </div>
-        </ng-container>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </div>
-    </form>
+<!-- Loading Template -->
+<ng-template #loadingTemplate>
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
   </div>
+</ng-template>
+
+<!-- Policy Edit Modal -->
+<app-modal
+  *ngIf="showModal"
+  [show]="showModal"
+  [title]="modalTitle"
+  [initialValues]="modalInitialValues"
+  [fields]="modalFormFields"
+  (onSubmit)="handleModalSubmit($event)"
+  (onCancel)="handleModalCancel()">
 </app-modal>

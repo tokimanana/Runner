@@ -5,7 +5,7 @@ import {
   CurrencySetting,
   RoomType,
   RoomCategory,
-  Season,
+  SeasonType,
   Contract,
   MealPlan,
   MealPlanType,
@@ -27,7 +27,8 @@ import {
   CancellationRule,
   CancellationPolicy,
   AgeCategoryRate,
-  RateConfiguration
+  RateConfiguration,
+  Season
 } from './app/models/types';
 
 // Market definitions and generation
@@ -825,6 +826,13 @@ export const HOTELS: Hotel[] = [
     checkInTime: '14:00',
     checkOutTime: '11:00',
     rating: 5,
+    yearBuilt: "1960",
+    lastRenovation: "2022",
+    totalRooms: 125,
+    airportDistance: "45 km from Naples International Airport",
+    cityCenterDistance: "0.5 km from Amalfi center",
+    beachDistance: "Direct beach access",
+    languages: ["Italian", "English", "French", "German"],
     amenities: {
       [AmenityCategory.POOL]: ['Swimming Pool'],
       [AmenityCategory.SPA]: ['Spa', 'Wellness Center'],
@@ -1060,6 +1068,13 @@ export const HOTELS: Hotel[] = [
     checkInTime: '15:00',
     checkOutTime: '12:00',
     rating: 5,
+    yearBuilt: "2018",
+    lastRenovation: "2023",
+    totalRooms: 80,
+    airportDistance: "30 minutes by seaplane from Male International Airport",
+    cityCenterDistance: "25 minutes by speedboat from Male",
+    beachDistance: "Private beach resort",
+    languages: ["English", "Chinese", "Japanese", "Arabic"],
     amenities: {
       [AmenityCategory.BEACH]: ['Private Beach', 'Water Sports', 'Beach Club'],
       [AmenityCategory.POOL]: ['Infinity Pool'],
@@ -1296,6 +1311,134 @@ export const HOTELS: Hotel[] = [
   }
 ];
 
+
+export const hotelSeasons: { [hotelId: number]: Season[] } = {
+  // Grand Hotel Riveria (ID: 1)
+  1: [
+    {
+      id: 1,
+      name: 'Summer Season 2024',
+      type: SeasonType.PEAK,
+      description: 'Peak summer season with premium rates',
+      isActive: true,
+      periods: [
+        {
+          id: 1,
+          seasonId: 1,
+          name: 'Early Summer',
+          startDate: '2024-05-01',
+          endDate: '2024-06-14',
+          mlos: 3,
+          description: 'Early summer period with moderate rates'
+        },
+        {
+          id: 2,
+          seasonId: 1,
+          name: 'High Summer',
+          startDate: '2024-06-15',
+          endDate: '2024-09-15',
+          mlos: 5,
+          description: 'Peak summer period with premium rates'
+        },
+        {
+          id: 3,
+          seasonId: 1,
+          name: 'Late Summer',
+          startDate: '2024-09-16',
+          endDate: '2024-10-31',
+          mlos: 3,
+          description: 'Late summer period with moderate rates'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Winter Season 2024',
+      type: SeasonType.SHOULDER,
+      description: 'Winter season including festive period',
+      isActive: true,
+      periods: [
+        {
+          id: 4,
+          seasonId: 2,
+          name: 'Festive Period',
+          startDate: '2024-12-20',
+          endDate: '2025-01-05',
+          mlos: 7,
+          description: 'Christmas and New Year period'
+        }
+      ]
+    }
+  ],
+  
+  // Maldives Paradise Resort (ID: 2)
+  2: [
+    {
+      id: 1,
+      name: 'High Season 2024',
+      type: SeasonType.PEAK,
+      description: 'December to April - Dry Season',
+      isActive: true,
+      periods: [
+        {
+          id: 1,
+          seasonId: 1,
+          name: 'Peak Winter',
+          startDate: '2023-12-01',
+          endDate: '2023-12-19',
+          mlos: 3,
+          description: 'Early peak season'
+        },
+        {
+          id: 2,
+          seasonId: 1,
+          name: 'Festive Period',
+          startDate: '2023-12-20',
+          endDate: '2024-01-10',
+          mlos: 7,
+          description: 'Christmas and New Year period'
+        },
+        {
+          id: 3,
+          seasonId: 1,
+          name: 'Peak Season',
+          startDate: '2024-01-11',
+          endDate: '2024-04-30',
+          mlos: 4,
+          description: 'Main peak season'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Green Season 2024',
+      type: SeasonType.LOW,
+      description: 'May to November - Monsoon Season',
+      isActive: true,
+      periods: [
+        {
+          id: 4,
+          seasonId: 2,
+          name: 'Spring Promotion',
+          startDate: '2024-05-01',
+          endDate: '2024-07-31',
+          mlos: 3,
+          description: 'Early monsoon season with special rates'
+        },
+        {
+          id: 5,
+          seasonId: 2,
+          name: 'Autumn Promotion',
+          startDate: '2024-08-01',
+          endDate: '2024-11-30',
+          mlos: 3,
+          description: 'Late monsoon season with special rates'
+        }
+      ]
+    }
+  ]
+};
+
 // Sample data structure
 export const sampleData: any = {
   hotels: HOTELS.map(hotel => ({
@@ -1315,5 +1458,6 @@ export const sampleData: any = {
   marketGroups: defaultMarketGroups,
   contracts: defaultContracts,
   mealPlans: defaultMealPlans,
-  currencySettings: currencySettings
+  currencySettings: currencySettings,
+  season: hotelSeasons
 };

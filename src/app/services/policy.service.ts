@@ -1,46 +1,97 @@
+// src/app/services/policy.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { HotelPolicies, PolicyType, Hotel } from '../models/types';
-import { HOTELS } from '../../data';
+import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
+import { HotelPolicies, PolicyType } from '../models/types';
+import { BaseDataService } from './base-data.service';
+import { MockApiService } from './mock/mock-api.service';
+
 
 @Injectable({
   providedIn: 'root'
 })
-export class PolicyService {
-  private hotelPolicies = new BehaviorSubject<{ [hotelId: number]: HotelPolicies }>(
-    HOTELS.reduce((acc, hotel) => ({
-      ...acc,
-      [hotel.id]: hotel.policies
-    }), {})
-  );
+export class PolicyService extends BaseDataService<HotelPolicies> {
+  private policiesMap = new BehaviorSubject<Map<number, HotelPolicies>>(new Map());
+  private updateQueue = new Map<number, Observable<HotelPolicies>>();
+  // Add override modifier and match the parent class signature
+  protected override handleError(message: string, error?: any): void {
+    console.error(message, error);
+    // Now it matches the base class signature
+    super.handleError(message, error);
+  }
 
-  constructor() {}
+  constructor() {
+    super();
+    this.initializePolicies();
+  }
+
+  protected logError(message: string, error: any): void {
+    console.error(message, error);
+    this.handleError(error);
+  }
+
+  private async initializePolicies() {
+    try {
+      const hotels = await MockApiService.getHotels();
+      const policiesPromises = hotels.map(hotel => 
+        MockApiService.getPolicies(hotel.id)
+          .then(policies => [hotel.id, policies] as [number, HotelPolicies])
+      );
+      
+      const policiesEntries = await Promise.all(policiesPromises);
+      const policiesMap = new Map<number, HotelPolicies>(
+        policiesEntries.filter((entry): entry is [number, HotelPolicies] => 
+          entry[1] !== null && entry[1] !== undefined
+        )
+      );
+      this.policiesMap.next(policiesMap);
+    } catch (error) {
+      this.handleError('Failed to initialize policies', error);
+    }
+  }
+  
+
+  protected getStorageKey(): string {
+    return MockApiService.getStorageKey('POLICIES');
+  }
 
   // Get policies for a specific hotel
   getPolicies(hotelId: number): Observable<HotelPolicies | null> {
-    return this.hotelPolicies.pipe(
-      map(policies => policies[hotelId] || null)
+    return from(MockApiService.getPolicies(hotelId)).pipe(
+      catchError(error => {
+        this.logError('Error getting policies', error);
+        return [null];
+      })
     );
   }
 
   // Update a specific policy type for a hotel
-  updatePolicy(hotelId: number, policyType: PolicyType, policyData: any): Observable<HotelPolicies | null> {
-    const currentPolicies = this.hotelPolicies.value;
-    
-    if (!currentPolicies[hotelId]) {
-      currentPolicies[hotelId] = {} as HotelPolicies;
+  updatePolicy(
+    hotelId: number, 
+    policyType: PolicyType, 
+    policyData: any
+  ): Observable<HotelPolicies | null> {
+    // Cancel any pending updates for this hotel
+    if (this.updateQueue.has(hotelId)) {
+      return throwError(() => new Error('Update already in progress'));
     }
 
-    const updatedPolicies = {
-      ...currentPolicies,
-      [hotelId]: {
-        ...currentPolicies[hotelId],
-        [policyType]: policyData
-      }
-    };
+    const update$ = from(
+      MockApiService.updatePolicies(hotelId, policyType, policyData)
+    ).pipe(
+      tap(policies => {
+        const currentMap = this.policiesMap.value;
+        currentMap.set(hotelId, policies);
+        this.policiesMap.next(new Map(currentMap));
+      }),
+      finalize(() => {
+        this.updateQueue.delete(hotelId);
+      }),
+      shareReplay(1)
+    );
 
-    this.hotelPolicies.next(updatedPolicies);
-    return this.getPolicies(hotelId);
+    this.updateQueue.set(hotelId, update$);
+    return update$;
   }
 
   // Get a policy template by type
@@ -48,64 +99,43 @@ export class PolicyService {
     switch (type) {
       case PolicyType.CANCELLATION:
         return {
-          description: 'Standard cancellation policy',
-          rules: [],
-          noShowCharge: 100,
-          noShowChargeType: 'PERCENTAGE'
+          charges: [],
+          terms: [],
+          exceptions: []
         };
       case PolicyType.CHECK_IN:
         return {
-          standardTime: '15:00',
-          earliestTime: '13:00',
-          requirements: [],
-          additionalCharges: {
-            early: {},
-            late: {}
-          }
-        };
-      case PolicyType.CHECK_OUT:
-        return {
-          standardTime: '11:00',
-          latestTime: '13:00',
-          requirements: [],
-          additionalCharges: {
-            early: {},
-            late: {}
-          }
-        };
-      case PolicyType.CHILD:
-        return {
-          allowChildren: true,
-          maxChildAge: 12,
-          maxInfantAge: 2,
-          childrenStayFree: false,
-          maxChildrenFree: 0,
-          requiresAdult: true,
-          minAdultAge: 18,
-          extraBedPolicy: {
-            available: false,
-            maxExtraBeds: 0,
-            charge: 0,
-            chargeType: 'PER_NIGHT'
-          },
-          restrictions: []
-        };
-      case PolicyType.PET:
-        return {
-          allowPets: false,
-          maxPets: 0,
-          petTypes: [],
-          restrictions: [],
+          standardTime: '14:00',
+          earliestTime: '12:00',
           requirements: []
         };
-      case PolicyType.DRESS_CODE:
-        return {
-          general: '',
-          restaurants: [],
-          publicAreas: []
-        };
+      // ... other policy templates
       default:
         return {};
     }
+  }
+
+  // Reset policies to initial state
+  async resetPolicies(): Promise<void> {
+    try {
+      await MockApiService.resetStorage();
+      await this.initializePolicies();
+    } catch (error) {
+      this.handleError('Error resetting policies', error);
+    }
+  }
+
+  // Implement required abstract methods from BaseDataService
+  protected override async loadData(): Promise<void> {
+    await this.initializePolicies();
+}
+
+  protected async saveData(data: any): Promise<void> {
+    // Implementation based on your needs
+  }
+
+  protected validateData(data: any): boolean {
+    // Add validation logic
+    return true;
   }
 }

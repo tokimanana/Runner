@@ -1,98 +1,123 @@
 <!-- Main Container -->
 <div class="description-container" *ngIf="hotel">
-    <!-- Hotel Description Section -->
-    <div class="description-section">
-      <div class="section-header">
-        <h3>Hotel Description</h3>
-        <button class="edit-btn" (click)="openDescriptionModal()">
-          <i class="fas fa-edit"></i> Edit
-        </button>
-      </div>
-      <div class="content-section">
-        <div [innerHTML]="description || 'No description available'"></div>
+  <!-- Hotel Description Section -->
+  <div class="description-section">
+    <div class="section-header">
+      <h3>Hotel Description</h3>
+      <button class="edit-btn" (click)="openDescriptionModal()">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+    </div>
+    <div class="content-section">
+      <div [innerHTML]="description || 'No description available'"></div>
+    </div>
+  </div>
+
+  <!-- Basic Information -->
+  <div class="description-section">
+    <div class="section-header">
+      <h3>Basic Information</h3>
+    </div>
+    <div class="content-section">
+      <div class="info-grid">
+        <div class="info-item">
+          <h4>Hotel Details</h4>
+          <ul>
+            <li>Year Built: {{hotel.yearBuilt || 'Not specified'}}</li>
+            <li>Last Renovation: {{hotel.lastRenovation || 'Not specified'}}</li>
+            <li>Total Rooms: {{hotel.totalRooms || 'Not specified'}}</li>
+          </ul>
+        </div>
+        <div class="info-item">
+          <h4>Check-in/Check-out</h4>
+          <ul>
+            <li>Check-in Time: {{hotel.checkInTime || '3:00 PM'}}</li>
+            <li>Check-out Time: {{hotel.checkOutTime || '11:00 AM'}}</li>
+          </ul>
+        </div>
+        <div class="info-item">
+          <h4>Location</h4>
+          <ul>
+            <li>Distance to Airport: {{hotel.airportDistance || 'Not specified'}}</li>
+            <li>Distance to City Center: {{hotel.cityCenterDistance || 'Not specified'}}</li>
+            <li>Nearest Beach: {{hotel.beachDistance || 'Not specified'}}</li>
+          </ul>
+        </div>
       </div>
     </div>
-  
-    <!-- Dress Code Section -->
-    <div class="description-section">
-      <div class="section-header">
-        <h3>Dress Code</h3>
-        <button class="edit-btn" (click)="openDressCodeModal()">
-          <i class="fas fa-edit"></i> Edit
-        </button>
-      </div>
-      <div class="content-section">
-        <div [innerHTML]="dressCode || 'No dress code specified'"></div>
-      </div>
+  </div>
+
+  <!-- Fact Sheet Section -->
+  <div class="description-section">
+    <div class="section-header">
+      <h3>Fact Sheet</h3>
     </div>
-  
-    <!-- Fact Sheet Section -->
-    <div class="description-section">
-      <div class="section-header">
-        <h3>Fact Sheet</h3>
-      </div>
-      <div class="content-section">
-        <ngx-file-drop
-          [multiple]="false"
-          (onFileDrop)="onFileDropped($event)"
-          accept="application/pdf"
-        >
-          <ng-template ngx-file-drop-content-tmp>
-            <div class="upload-area">
-              <i class="fas fa-file-upload"></i>
-              <p>Drop PDF file here or click to upload</p>
-            </div>
-          </ng-template>
-        </ngx-file-drop>
-  
-        <div *ngIf="currentFactSheet" class="current-file">
-          <p>Current file: {{ currentFactSheet }}</p>
-          <div class="file-actions">
-            <button (click)="viewFactSheet()" class="action-btn view-btn">
-              <i class="fas fa-eye"></i> View
-            </button>
-            <button (click)="removeFactSheet()" class="action-btn remove-btn">
-              <i class="fas fa-trash"></i> Remove
-            </button>
+    <div class="content-section">
+      <ngx-file-drop
+        [multiple]="false"
+        (onFileDrop)="onFileDropped($event)"
+        accept="application/pdf"
+      >
+        <ng-template ngx-file-drop-content-tmp>
+          <div class="upload-area">
+            <i class="fas fa-file-upload"></i>
+            <p>Drop PDF file here or click to upload</p>
           </div>
+        </ng-template>
+      </ngx-file-drop>
+
+      <div *ngIf="currentFactSheet" class="current-file">
+        <p>Current file: {{ currentFactSheet }}</p>
+        <div class="file-actions">
+          <button (click)="viewFactSheet()" class="action-btn view-btn">
+            <i class="fas fa-eye"></i> View
+          </button>
+          <button (click)="removeFactSheet()" class="action-btn remove-btn">
+            <i class="fas fa-trash"></i> Remove
+          </button>
         </div>
       </div>
     </div>
   </div>
-  
-  <!-- No Hotel Selected Message -->
-  <div *ngIf="!hotel" class="description-section">
-    <p>Please select a hotel to view and edit descriptions.</p>
+</div>
+
+<!-- No Hotel Selected Message -->
+<div *ngIf="!hotel" class="description-section">
+<p>Please select a hotel to view and edit descriptions.</p>
+</div>
+
+<!-- Modal Component -->
+<app-modal 
+      [show]="showModal()"
+      [title]="modalTitle()"
+      [initialValues]="modalInitialValues()"
+      (close)="handleModalClose()"
+      (submit)="handleModalSubmit($event)"
+>
+  <div class="modal-content">
+    <h2>{{ modalTitle() }}</h2>
+    <form (ngSubmit)="handleModalSubmit(modalForm.value)" #modalForm="ngForm">
+      <div class="form-group">
+        <label [for]="currentEditMode()">{{ modalTitle() }}</label>
+        <textarea
+          [id]="currentEditMode()"
+          [name]="currentEditMode()"
+          class="form-control"
+          rows="10"
+          [ngModel]="modalInitialValues()[currentEditMode()]"
+          (ngModelChange)="updateFormData(currentEditMode(), $event)"
+          required
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="!modalForm.valid">
+          Save
+        </button>
+      </div>
+    </form>
   </div>
-  
-  <!-- Modal Component -->
-  <app-modal 
-    *ngIf="showModal" 
-    [show]="showModal" 
-    (close)="handleModalCancel()"
-  >
-    <div class="modal-content">
-      <h2>{{ modalTitle }}</h2>
-      <form (ngSubmit)="handleModalSubmit(modalForm.value)" #modalForm="ngForm">
-        <div class="form-group">
-          <label [for]="currentEditMode">{{ modalTitle }}</label>
-          <textarea
-            [id]="currentEditMode"
-            [name]="currentEditMode"
-            class="form-control"
-            rows="10"
-            [(ngModel)]="modalInitialValues[currentEditMode]"
-            required
-          ></textarea>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary" [disabled]="!modalForm.valid">
-            Save
-          </button>
-        </div>
-      </form>
-    </div>
-  </app-modal>
+
+</app-modal>

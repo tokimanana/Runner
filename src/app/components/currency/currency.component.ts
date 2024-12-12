@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ModalComponent } from '../modal/modal.component';
 import { Subscription } from 'rxjs';
 
@@ -29,6 +30,7 @@ import { CurrencySetting, Hotel } from '../../models/types';
     MatIconModule,
     MatTableModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
     ModalComponent
   ]
 })
@@ -43,24 +45,19 @@ export class CurrencyComponent implements OnInit, OnDestroy {
     code: '',
     symbol: '',
     name: '',
-    isActive: true
+    isActive: false
   };
   private subscriptions: Subscription[] = [];
   modalMessage = '';
   modalError = false;
+  isLoading = false;
 
   @ViewChild('firstInput') firstInput!: ElementRef;
 
   constructor(private currencyService: CurrencyService) {}
 
   ngOnInit(): void {
-    // Subscribe to currency settings changes
-    this.subscriptions.push(
-      this.currencyService.getCurrencySettings().subscribe(settings => {
-        this.currencySettings = settings;
-        console.log('Currency settings updated:', settings.length, 'currencies');
-      })
-    );
+    this.loadCurrencySettings();
   }
 
   ngOnDestroy(): void {
@@ -68,30 +65,37 @@ export class CurrencyComponent implements OnInit, OnDestroy {
   }
 
   loadCurrencySettings(): void {
-    this.currencySettings = this.currencyService.getCurrentCurrencySettings();
+    this.isLoading = true;
+    this.subscriptions.push(
+      this.currencyService.getCurrencySettings().subscribe({
+        next: (settings) => {
+          this.currencySettings = settings;
+          this.isLoading = false;
+        },
+        error: (error: Error) => {
+          console.error('Error loading currency settings:', error);
+          this.showError('Failed to load currency settings. Please try again.');
+          this.isLoading = false;
+        }
+      })
+    );
   }
 
   openCurrencyEditor(currency?: CurrencySetting): void {
-    if (currency) {
-      // Cannot edit active currencies
-      if (currency.isActive) {
-        this.showError('Cannot edit an active currency. Remove it from all markets first.');
-        return;
-      }
-      this.selectedCurrency = currency;
-      this.newCurrency = { ...currency };
-    } else {
-      this.selectedCurrency = null;
-      this.newCurrency = {
-        code: '',
-        symbol: '',
-        name: '',
-        isActive: false
-      };
+    if (currency?.isActive) {
+      this.showError('Cannot edit an active currency. Please deactivate it in all markets first.');
+      return;
     }
+
+    this.selectedCurrency = currency || null;
+    this.newCurrency = currency ? { ...currency } : {
+      code: '',
+      symbol: '',
+      name: '',
+      isActive: false
+    };
     this.showCurrencyEditor = true;
     
-    // Focus the first input after the modal is shown
     setTimeout(() => {
       if (this.firstInput) {
         this.firstInput.nativeElement.focus();
@@ -101,32 +105,17 @@ export class CurrencyComponent implements OnInit, OnDestroy {
 
   saveCurrency(): void {
     try {
-      // Validate required fields
-      if (!this.newCurrency.code || !this.newCurrency.name || !this.newCurrency.symbol) {
-        throw new Error('All currency fields are required');
-      }
-
-      // Validate currency code format (3 uppercase letters)
-      if (!/^[A-Z]{3}$/.test(this.newCurrency.code)) {
-        throw new Error('Currency code must be 3 uppercase letters');
-      }
-
-      let updatedSettings: CurrencySetting[];
+      const newCurrency = { ...this.newCurrency } as CurrencySetting;
+      
       if (this.selectedCurrency) {
-        // Update existing currency
-        updatedSettings = this.currencySettings.map(c => 
-          c.id === this.selectedCurrency?.id ? { ...this.newCurrency, id: c.id } as CurrencySetting : c
-        );
+        this.currencyService.updateCurrency(newCurrency);
       } else {
-        // Add new currency with generated ID
-        const newId = Math.max(...this.currencySettings.map(c => c.id ?? 0), 0) + 1;
-        const newCurrency = { ...this.newCurrency, id: newId } as CurrencySetting;
-        updatedSettings = [...this.currencySettings, newCurrency];
+        this.currencyService.addCurrency(newCurrency);
       }
 
-      this.currencyService.updateCurrencySettings(updatedSettings);
       this.showSuccess(`Currency ${this.selectedCurrency ? 'updated' : 'added'} successfully`);
       this.closeCurrencyEditor();
+      this.loadCurrencySettings();
     } catch (error) {
       console.error('Error saving currency:', error);
       this.showError(error instanceof Error ? error.message : 'Failed to save currency');
@@ -135,55 +124,36 @@ export class CurrencyComponent implements OnInit, OnDestroy {
 
   deleteCurrency(currency: CurrencySetting): void {
     if (currency.isActive) {
-      this.showError('Cannot delete an active currency. Remove it from all markets first.');
+      this.showError('Cannot delete an active currency. Please deactivate it in all markets first.');
       return;
     }
 
-    const updatedSettings = this.currencySettings.filter(c => c.id !== currency.id);
-    this.currencyService.updateCurrencySettings(updatedSettings);
-    this.showSuccess('Currency deleted successfully');
+    if (confirm(`Are you sure you want to delete ${currency.name}?`)) {
+      try {
+        this.currencyService.deleteCurrency(currency);
+        this.showSuccess('Currency deleted successfully');
+        this.loadCurrencySettings();
+      } catch (error) {
+        console.error('Error deleting currency:', error);
+        this.showError(error instanceof Error ? error.message : 'Failed to delete currency');
+      }
+    }
   }
 
   updateCurrencyStatus(currency: CurrencySetting): void {
     try {
-      // Prevent deactivating the last active currency
-      if (!currency.isActive && this.currencySettings.filter(c => c.isActive).length <= 1) {
-        throw new Error('Cannot deactivate the last active currency');
-      }
+      const updatedCurrency = {
+        ...currency,
+        isActive: !currency.isActive
+      };
 
-      const index = this.currencySettings.findIndex(c => c.id === currency.id);
-      if (index === -1) {
-        throw new Error('Currency not found');
-      }
-
-      const updatedSettings = [
-        ...this.currencySettings.slice(0, index),
-        { ...currency, isActive: !currency.isActive },
-        ...this.currencySettings.slice(index + 1)
-      ];
-
-      this.currencyService.updateCurrencySettings(updatedSettings);
-      this.showSuccess(`Currency ${currency.isActive ? 'deactivated' : 'activated'} successfully`);
+      this.currencyService.updateCurrency(updatedCurrency);
+      this.showSuccess(`Currency ${updatedCurrency.isActive ? 'activated' : 'deactivated'} successfully`);
+      this.loadCurrencySettings();
     } catch (error) {
       console.error('Error updating currency status:', error);
       this.showError(error instanceof Error ? error.message : 'Failed to update currency status');
     }
-  }
-
-  private showSuccess(message: string): void {
-    this.modalMessage = message;
-    this.modalError = false;
-    setTimeout(() => {
-      this.modalMessage = '';
-    }, 3000);
-  }
-
-  private showError(message: string): void {
-    this.modalMessage = message;
-    this.modalError = true;
-    setTimeout(() => {
-      this.modalMessage = '';
-    }, 3000);
   }
 
   closeCurrencyEditor(): void {
@@ -195,5 +165,22 @@ export class CurrencyComponent implements OnInit, OnDestroy {
       name: '',
       isActive: false
     };
+  }
+
+  showSuccess(message: string): void {
+    this.modalMessage = message;
+    this.modalError = false;
+    setTimeout(() => {
+      this.modalMessage = '';
+    }, 3000);
+  }
+
+  showError(message: string): void {
+    this.modalMessage = message;
+    this.modalError = true;
+    setTimeout(() => {
+      this.modalMessage = '';
+      this.modalError = false;
+    }, 3000);
   }
 }

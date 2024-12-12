@@ -5,7 +5,11 @@
   "projects": {
     "hotel-management-console": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -23,7 +27,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/global_styles.css"
+              "src/styles.scss"
             ],
             "scripts": []
           },
