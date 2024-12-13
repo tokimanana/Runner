@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, OnDestroy, signal, computed, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -13,16 +13,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { RouterModule } from '@angular/router';
 import { takeUntil } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import { firstValueFrom, Subject } from 'rxjs';
 
 import { MarketService } from '../../services/market.service';
 import { Market, MarketGroup, CurrencySetting, Hotel } from '../../models/types';
 import { ModalComponent } from "../modal/modal.component";
+import { CurrencyService } from 'src/app/services/currency.service';
 
 @Component({
   selector: 'app-market-config',
   templateUrl: './market-config.component.html',
-  styleUrls: ['./market-config.component.css'],
+  styleUrls: ['./market-config.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -43,178 +44,174 @@ import { ModalComponent } from "../modal/modal.component";
   ]
 })
 export class MarketConfigComponent implements OnInit, OnDestroy {
-  @Input() hotel!: Hotel;
-  markets: Market[] = [];
-  marketGroups: MarketGroup[] = [];
-  currencySettings: CurrencySetting[] = [];
-  showMarketEditor = false;
-  showMarketGroupEditor = false;
-  selectedMarket: Market | null = null;
-  selectedMarketGroup: MarketGroup | null = null;
-  newMarket: Partial<Market> = {};
-  newMarketGroup: Partial<MarketGroup> = {};
+   // Input signals
+   hotel = input.required<Hotel>();
   
-  private destroy$ = new Subject<void>();
+   // State signals
+   markets = signal<Market[]>([]);
+   marketGroups = signal<MarketGroup[]>([]);
+   currencySettings = signal<CurrencySetting[]>([]);
+   selectedMarket = signal<Market | null>(null);
+   selectedMarketGroup = signal<MarketGroup | null>(null);
+   
+   // Modal signals
+   showMarketModal = signal(false);
+   showGroupModal = signal(false);
+   modalTitle = computed(() => {
+     if (this.showMarketModal()) {
+       return this.selectedMarket() ? 'Edit Market' : 'Add Market';
+     }
+     return this.selectedMarketGroup() ? 'Edit Region' : 'Add Region';
+   });
+ 
+   // Form signals
+   marketForm = signal<Partial<Market>>({});
+   groupForm = signal<Partial<MarketGroup>>({});
+ 
+   // Computed values
+   hasRates = computed(() => {
+     return (marketId: number) => {
+       const market = this.markets().find(m => m.id === marketId);
+       return market?.hasRates || false;
+     };
+   });
 
-  constructor(private marketService: MarketService) {}
+   private destroy$ = new Subject<void>();
+ 
+   constructor(
+     private marketService: MarketService,
+     private currencyService: CurrencyService
+   ) {
+     // Setup effects
+     effect(() => {
+       if (this.hotel()) {
+         this.loadMarketData();
+       }
+     });
+   }
 
-  ngOnInit() {
-    // Subscribe to markets
-    this.marketService.getMarkets()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(markets => this.markets = markets);
-
-    // Subscribe to market groups
-    this.marketService.getMarketGroups()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(groups => this.marketGroups = groups);
-
-    // Subscribe to currency settings
-    this.marketService.getCurrencySettings()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(settings => this.currencySettings = settings);
+   ngOnInit() {
+    // Any initialization logic if needed
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
-  // Market Operations
-  openMarketEditor(marketId: number | null = null, group?: MarketGroup) {
-    if (marketId) {
-      this.marketService.getMarket(marketId)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(market => {
-          this.selectedMarket = market;
-          this.newMarket = market ? { ...market } : {};
-        });
-    } else {
-      this.selectedMarket = null;
-      this.newMarket = {
-        groupId: group?.id // Set the group ID when creating a new market
-      };
-    }
-    this.selectedMarketGroup = group || null;
-    this.showMarketEditor = true;
-  }
-
-  closeMarketEditor() {
-    this.showMarketEditor = false;
-    this.selectedMarket = null;
-    this.newMarket = {};
-  }
-
-  saveMarket() {
-    if (!this.newMarket || !this.selectedMarketGroup) return;
-
-    const market: Market = {
-      ...this.newMarket as Market,
-      groupId: this.selectedMarketGroup.id,
-      currency: this.selectedMarketGroup.defaultCurrency // Use group's currency
-    };
-
-    const operation = market.id
-      ? this.marketService.updateMarket(market)
-      : this.marketService.addMarket(market);
-
-    operation
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => this.closeMarketEditor(),
-        error: (error) => console.error('Error saving market:', error)
-      });
-  }
-
-  // Market Group Operations
-  openMarketGroupEditor(group: MarketGroup | null = null) {
-    this.selectedMarketGroup = group;
-    this.newMarketGroup = group ? { ...group } : {};
-    this.showMarketGroupEditor = true;
-  }
-
-  closeMarketGroupEditor() {
-    this.showMarketGroupEditor = false;
-    this.selectedMarketGroup = null;
-    this.newMarketGroup = {};
-  }
-
-  saveMarketGroup() {
-    if (!this.newMarketGroup?.name || !this.newMarketGroup?.defaultCurrency) return;
-
-    const operation = this.selectedMarketGroup
-      ? this.marketService.updateMarketGroup(this.newMarketGroup as MarketGroup)
-      : this.marketService.addMarketGroup(this.newMarketGroup);
-
-    operation
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => this.closeMarketGroupEditor(),
-        error: (error) => console.error('Error saving market group:', error)
-      });
-  }
-
-  deleteMarketGroup(group: MarketGroup) {
-    if (confirm(`Are you sure you want to delete the region "${group.name}"?`)) {
-      this.marketService.deleteMarketGroup(group.id)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          error: (error) => console.error('Error deleting market group:', error)
-        });
+ 
+   private async loadMarketData() {
+    try {
+      // Use firstValueFrom to convert observables to promises
+      const [markets, groups, currencies] = await Promise.all([
+        firstValueFrom(this.marketService.markets$),
+        firstValueFrom(this.marketService.marketGroups$),
+        firstValueFrom(this.currencyService.getCurrencySettings())
+      ]);
+      
+      this.markets.set(markets);
+      this.marketGroups.set(groups);
+      this.currencySettings.set(currencies);
+    } catch (error) {
+      console.error('Error loading market data:', error);
     }
   }
-
-  deleteMarket(market: Market | number) {
-    const marketId = typeof market === 'number' ? market : market.id;
-    const marketName = typeof market === 'number' 
-      ? this.getMarketName(market)
-      : market.name;
-
-    if (confirm(`Are you sure you want to delete the market "${marketName}"?`)) {
-      this.marketService.deleteMarket(marketId)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.markets = this.markets.filter(m => m.id !== marketId);
-          },
-          error: (error) => console.error('Error deleting market:', error)
-        });
-    }
+ 
+   // Modal handlers
+   openMarketModal(market?: Market, group?: MarketGroup) {
+     this.selectedMarket.set(market || null);
+     this.selectedMarketGroup.set(group || null);
+     this.marketForm.set(market ? { ...market } : { 
+       groupId: group?.id,
+       currency: group?.defaultCurrency
+     });
+     this.showMarketModal.set(true);
+   }
+ 
+   openGroupModal(group?: MarketGroup) {
+    this.selectedMarketGroup.set(group || null);
+    this.groupForm.set(group ? { ...group } : {});
+    this.showGroupModal.set(true);
+  }
+ 
+  closeModals() {
+    this.showMarketModal.set(false);
+    this.showGroupModal.set(false);
+    this.selectedMarket.set(null);
+    this.selectedMarketGroup.set(null);
+    this.marketForm.set({});
+    this.groupForm.set({});
   }
 
-  // Helper Methods
-  getMarketName(marketId: number): string {
-    return this.marketService.getMarketName(marketId);
-  }
-
+  // Helper methods for market data
   getMarketCurrency(marketId: number): string {
-    return this.marketService.getMarketCurrency(marketId);
-  }
-
-  hasRate(marketId: number): boolean {
-    const market = this.markets.find(m => m.id === marketId);
-    return market?.hasRates || false;
-  }
-
-  isMarketActive(marketId: number): boolean {
-    const market = this.markets.find(m => m.id === marketId);
-    return market?.isActive || false;
-  }
-
-  toggleMarketStatus(marketId: number) {
-    const market = this.markets.find(m => m.id === marketId);
-    if (market) {
-      market.isActive = !market.isActive;
-      this.marketService.updateMarket(market).subscribe();
-    }
+    const market = this.markets().find(m => m.id === marketId);
+    return market?.currency || '';
   }
 
   getMarketDescription(marketId: number): string {
-    const market = this.markets.find(m => m.id === marketId);
+    const market = this.markets().find(m => m.id === marketId);
     return market?.description || '';
   }
 
-  onMarketSelect(market: Market) {
-    this.selectedMarket = market;
+  getMarket(marketId: number): Market | undefined {
+    return this.markets().find(m => m.id === marketId);
   }
-}
+
+  getMarketName(marketId: number): string {
+    const market = this.markets().find(m => m.id === marketId);
+    return market?.name || '';
+  }
+ 
+   // Save handlers
+   async saveMarket(formData: Partial<Market>) {
+    try {
+      // Ensure all required properties are present
+      const newMarket: Omit<Market, 'id'> = {
+        name: formData.name || '', // Provide default value
+        code: formData.code || '',
+        isActive: formData.isActive ?? true, // Provide default value
+        currency: formData.currency || '',
+        region: formData.region || '',
+        description: formData.description, // Optional field can be undefined
+        groupId: formData.groupId,        // Optional field can be undefined
+        hasRates: formData.hasRates ?? false // Provide default value
+      };
+  
+      const result = this.selectedMarket() 
+        ? await this.marketService.updateMarket(this.selectedMarket()!.id, formData)
+        : await this.marketService.createMarket(newMarket);
+      
+    } catch (error) {
+      console.error('Error saving market:', error);
+    }
+  }
+ 
+  async saveMarketGroup(formData: Partial<MarketGroup>) {
+    try {
+      // Create a complete MarketGroup object without the id
+      const newMarketGroup: Omit<MarketGroup, 'id'> = {
+        name: formData.name || '',
+        region: formData.region || '',
+        markets: formData.markets || [], // Provide empty array as default
+        defaultCurrency: formData.defaultCurrency || '',
+        description: formData.description, // Optional field can remain undefined
+        isActive: formData.isActive ?? true // Default to true if undefined
+      };
+  
+      const result = this.selectedMarketGroup()
+        ? await this.marketService.updateMarketGroup(this.selectedMarketGroup()!.id, formData)
+        : await this.marketService.createMarketGroup(newMarketGroup);
+      
+      this.marketGroups.update(groups =>
+        this.selectedMarketGroup()
+          ? groups.map(g => g.id === result.id ? result : g)
+          : [...groups, result]
+      );
+      
+      this.closeModals();
+    } catch (error) {
+      console.error('Error saving market group:', error);
+    }
+  }
+  
+ }

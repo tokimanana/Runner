@@ -1,8 +1,8 @@
+// src/app/services/season.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map, takeUntil, tap } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Season, Period } from '../models/types';
-import { hotelSeasons } from 'src/data';
-
+import { MockApiService } from './mock/mock-api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,228 +18,133 @@ export class SeasonService {
     this.initializeData();
   }
 
-  private initializeData(): void {
-    // Convert the plain object to a Map
-    const seasonMap = new Map(Object.entries(hotelSeasons).map(([key, value]) => [Number(key), value]));
-    this.seasonsSubject.next(seasonMap);
-    this.updatePeriodsFromSeasons(seasonMap);
+  private async initializeData(): Promise<void> {
+    try {
+      // Initial load for first hotel
+      const seasons = await MockApiService.getSeasonsByHotel(1);
+      const seasonMap = new Map();
+      seasonMap.set(1, seasons);
+      this.seasonsSubject.next(seasonMap);
+      this.updatePeriodsFromSeasons(seasonMap);
+    } catch (error) {
+      console.error('Error initializing seasons:', error);
+    }
   }
 
-  // Season CRUD Operations
-  getSeasonsByHotel(hotelId: number): Observable<Season[]> {
-    return this.seasons$.pipe(
-      map(seasons => seasons.get(hotelId) || []),
-      tap(seasons => {
-        if (!seasons.length) {
-          console.warn(`No seasons found for hotel ${hotelId}`);
-        }
-      })
-    );
+  async getSeasonsByHotel(hotelId: number): Promise<Season[]> {
+    try {
+      const seasons = await MockApiService.getSeasonsByHotel(hotelId);
+      const currentMap = this.seasonsSubject.value;
+      currentMap.set(hotelId, seasons);
+      this.seasonsSubject.next(currentMap);
+      this.updatePeriodsFromSeasons(currentMap);
+      return seasons;
+    } catch (error) {
+      console.error(`Error loading seasons for hotel ${hotelId}:`, error);
+      throw error;
+    }
   }
 
-  getSeason(hotelId: number, seasonId: number): Observable<Season | undefined> {
-    return this.getSeasonsByHotel(hotelId).pipe(
-      map(seasons => seasons.find(s => s.id === seasonId))
-    );
-  }
-
-  createSeason(hotelId: number, season: Omit<Season, 'id'>): Observable<Season> {
-    return new Observable(subscriber => {
-      try {
-        const currentSeasons = this.seasonsSubject.value;
-        const hotelSeasons = currentSeasons.get(hotelId) || [];
-        
-        const newSeason: Season = {
-          ...season,
-          id: this.generateSeasonId(hotelSeasons),
-          periods: season.periods || []
-        };
-
-        hotelSeasons.push(newSeason);
-        currentSeasons.set(hotelId, hotelSeasons);
-        this.seasonsSubject.next(currentSeasons);
-        
-        // Update periods if the season has any
-        if (newSeason.periods?.length) {
-          this.updatePeriodsFromSeasons(currentSeasons);
-        }
-
-        subscriber.next(newSeason);
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
+  async createSeason(hotelId: number, seasonData: Omit<Season, 'id'>): Promise<Season> {
+    try {
+      const newSeason = await MockApiService.createSeason(hotelId, seasonData);
+      const currentMap = this.seasonsSubject.value;
+      const hotelSeasons = currentMap.get(hotelId) || [];
+      currentMap.set(hotelId, [...hotelSeasons, newSeason]);
+      this.seasonsSubject.next(currentMap);
+      
+      if (newSeason.periods?.length) {
+        this.updatePeriodsFromSeasons(currentMap);
       }
-    });
+      
+      return newSeason;
+    } catch (error) {
+      console.error('Error creating season:', error);
+      throw error;
+    }
   }
 
-  updateSeason(hotelId: number, seasonId: number, updates: Partial<Season>): Observable<Season> {
-    return new Observable(subscriber => {
-      try {
-        const currentSeasons = this.seasonsSubject.value;
-        const hotelSeasons = currentSeasons.get(hotelId) || [];
+  async updateSeason(hotelId: number, seasonId: number, updates: Partial<Season>): Promise<Season> {
+    try {
+      const updatedSeason = await MockApiService.updateSeason(hotelId, seasonId, updates);
+      const currentMap = this.seasonsSubject.value;
+      const hotelSeasons = currentMap.get(hotelId) || [];
+      const index = hotelSeasons.findIndex(s => s.id === seasonId);
+      
+      if (index !== -1) {
+        hotelSeasons[index] = updatedSeason;
+        currentMap.set(hotelId, [...hotelSeasons]);
+        this.seasonsSubject.next(currentMap);
         
-        const seasonIndex = hotelSeasons.findIndex(s => s.id === seasonId);
-        if (seasonIndex === -1) {
-          throw new Error(`Season ${seasonId} not found for hotel ${hotelId}`);
-        }
-
-        const updatedSeason = {
-          ...hotelSeasons[seasonIndex],
-          ...updates,
-          id: seasonId // Ensure ID doesn't change
-        };
-
-        hotelSeasons[seasonIndex] = updatedSeason;
-        currentSeasons.set(hotelId, hotelSeasons);
-        this.seasonsSubject.next(currentSeasons);
-        
-        // Update periods if they were modified
         if (updates.periods) {
-          this.updatePeriodsFromSeasons(currentSeasons);
+          this.updatePeriodsFromSeasons(currentMap);
         }
-
-        subscriber.next(updatedSeason);
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
       }
-    });
+      
+      return updatedSeason;
+    } catch (error) {
+      console.error('Error updating season:', error);
+      throw error;
+    }
   }
 
-  deleteSeason(hotelId: number, seasonId: number): Observable<void> {
-    return new Observable(subscriber => {
-      try {
-        const currentSeasons = this.seasonsSubject.value;
-        const hotelSeasons = currentSeasons.get(hotelId) || [];
-        
-        const filteredSeasons = hotelSeasons.filter(season => season.id !== seasonId);
-        
-        if (filteredSeasons.length === hotelSeasons.length) {
-          throw new Error(`Season ${seasonId} not found for hotel ${hotelId}`);
-        }
-
-        currentSeasons.set(hotelId, filteredSeasons);
-        this.seasonsSubject.next(currentSeasons);
-        
-        // Delete associated periods
-        this.deletePeriodsForSeason(seasonId);
-
-        subscriber.next();
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
-      }
-    });
+  async deleteSeason(hotelId: number, seasonId: number): Promise<void> {
+    try {
+      await MockApiService.deleteSeason(hotelId, seasonId);
+      const currentMap = this.seasonsSubject.value;
+      const hotelSeasons = currentMap.get(hotelId) || [];
+      currentMap.set(hotelId, hotelSeasons.filter(s => s.id !== seasonId));
+      this.seasonsSubject.next(currentMap);
+      this.deletePeriodsForSeason(seasonId);
+    } catch (error) {
+      console.error('Error deleting season:', error);
+      throw error;
+    }
   }
 
-  // Period CRUD Operations
-  getPeriodsBySeason(seasonId: number): Observable<Period[]> {
-    return this.periods$.pipe(
-      map(periods => periods.get(seasonId) || []),
-      tap(periods => {
-        if (!periods.length) {
-          console.warn(`No periods found for season ${seasonId}`);
-        }
-      })
-    );
+  // Period-related methods
+  async createPeriod(hotelId: number, seasonId: number, periodData: Omit<Period, 'id'>): Promise<Period> {
+    try {
+      const newPeriod = await MockApiService.createPeriod(hotelId, seasonId, periodData);
+      this.updatePeriodsAfterChange(hotelId, seasonId);
+      return newPeriod;
+    } catch (error) {
+      console.error('Error creating period:', error);
+      throw error;
+    }
   }
 
-  createPeriod(seasonId: number, period: Omit<Period, 'id'>): Observable<Period> {
-    return new Observable(subscriber => {
-      try {
-        if (!this.validatePeriodDates(seasonId, period)) {
-          throw new Error('Invalid period dates or overlap detected');
-        }
-
-        const currentPeriods = this.periodsSubject.value;
-        const seasonPeriods = currentPeriods.get(seasonId) || [];
-        
-        const newPeriod: Period = {
-          ...period,
-          id: this.generatePeriodId(seasonPeriods),
-          seasonId
-        };
-
-        seasonPeriods.push(newPeriod);
-        currentPeriods.set(seasonId, seasonPeriods);
-        this.periodsSubject.next(currentPeriods);
-        
-        // Update the season's periods array
-        this.updateSeasonPeriods(seasonId, seasonPeriods);
-
-        subscriber.next(newPeriod);
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
-      }
-    });
+  async updatePeriod(hotelId: number, seasonId: number, periodId: number, updates: Partial<Period>): Promise<Period> {
+    try {
+      const updatedPeriod = await MockApiService.updatePeriod(hotelId, seasonId, periodId, updates);
+      this.updatePeriodsAfterChange(hotelId, seasonId);
+      return updatedPeriod;
+    } catch (error) {
+      console.error('Error updating period:', error);
+      throw error;
+    }
   }
 
-  updatePeriod(seasonId: number, periodId: number, updates: Partial<Period>): Observable<Period> {
-    return new Observable(subscriber => {
-      try {
-        const currentPeriods = this.periodsSubject.value;
-        const seasonPeriods = currentPeriods.get(seasonId) || [];
-        
-        const periodIndex = seasonPeriods.findIndex(p => p.id === periodId);
-        if (periodIndex === -1) {
-          throw new Error(`Period ${periodId} not found for season ${seasonId}`);
-        }
-
-        const updatedPeriod = {
-          ...seasonPeriods[periodIndex],
-          ...updates,
-          id: periodId, // Ensure ID doesn't change
-          seasonId // Ensure seasonId doesn't change
-        };
-
-        if (!this.validatePeriodDates(seasonId, updatedPeriod)) {
-          throw new Error('Invalid period dates or overlap detected');
-        }
-
-        seasonPeriods[periodIndex] = updatedPeriod;
-        currentPeriods.set(seasonId, seasonPeriods);
-        this.periodsSubject.next(currentPeriods);
-        
-        // Update the season's periods array
-        this.updateSeasonPeriods(seasonId, seasonPeriods);
-
-        subscriber.next(updatedPeriod);
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
-      }
-    });
+  async deletePeriod(hotelId: number, seasonId: number, periodId: number): Promise<void> {
+    try {
+      await MockApiService.deletePeriod(hotelId, seasonId, periodId);
+      this.updatePeriodsAfterChange(hotelId, seasonId);
+    } catch (error) {
+      console.error('Error deleting period:', error);
+      throw error;
+    }
   }
-
-  deletePeriod(hotelId: number, periodId: number): Observable<void> {
-    return new Observable(subscriber => {
-      try {
-        const currentSeasons = this.seasonsSubject.getValue();
-        const hotelSeasons = currentSeasons.get(hotelId);
-  
-        if (!hotelSeasons) {
-          throw new Error('Hotel not found');
-        }
-  
-        const updatedSeasons = hotelSeasons.map(season => ({
-          ...season,
-          periods: season.periods?.filter(p => p.id !== periodId) || []
-        }));
-  
-        currentSeasons.set(hotelId, updatedSeasons);
-        this.seasonsSubject.next(currentSeasons);
-  
-        subscriber.next();
-        subscriber.complete();
-      } catch (error) {
-        subscriber.error(error);
-      }
-    });
-  }
-  
 
   // Private helper methods
+  private async updatePeriodsAfterChange(hotelId: number, seasonId: number): Promise<void> {
+    const season = await MockApiService.getSeasonById(hotelId, seasonId);
+    if (season) {
+      const currentPeriodsMap = this.periodsSubject.value;
+      currentPeriodsMap.set(seasonId, season.periods || []);
+      this.periodsSubject.next(currentPeriodsMap);
+    }
+  }
+
   private updatePeriodsFromSeasons(seasons: Map<number, Season[]>): void {
     const periodMap = new Map<number, Period[]>();
     
@@ -254,62 +159,9 @@ export class SeasonService {
     this.periodsSubject.next(periodMap);
   }
 
-  private updateSeasonPeriods(seasonId: number, periods: Period[]): void {
-    const currentSeasons = this.seasonsSubject.value;
-    
-    currentSeasons.forEach((hotelSeasons, hotelId) => {
-      const seasonIndex = hotelSeasons.findIndex(s => s.id === seasonId);
-      if (seasonIndex !== -1) {
-        hotelSeasons[seasonIndex].periods = periods;
-        currentSeasons.set(hotelId, hotelSeasons);
-      }
-    });
-
-    this.seasonsSubject.next(currentSeasons);
-  }
-
-  private validatePeriodDates(seasonId: number, period: Partial<Period>): boolean {
-    if (!period.startDate || !period.endDate) return false;
-
-    const seasonPeriods = this.periodsSubject.value.get(seasonId) || [];
-    const periodStart = new Date(period.startDate);
-    const periodEnd = new Date(period.endDate);
-
-    // Check if dates are valid
-    if (periodEnd <= periodStart) return false;
-
-    // Check for overlaps with existing periods
-    const hasOverlap = seasonPeriods.some(existingPeriod => {
-      if (period.id === existingPeriod.id) return false; // Skip current period when updating
-      
-      const existingStart = new Date(existingPeriod.startDate);
-      const existingEnd = new Date(existingPeriod.endDate);
-
-      return (
-        (periodStart >= existingStart && periodStart <= existingEnd) ||
-        (periodEnd >= existingStart && periodEnd <= existingEnd) ||
-        (periodStart <= existingStart && periodEnd >= existingEnd)
-      );
-    });
-
-    return !hasOverlap;
-  }
-
   private deletePeriodsForSeason(seasonId: number): void {
     const currentPeriods = this.periodsSubject.value;
     currentPeriods.delete(seasonId);
     this.periodsSubject.next(currentPeriods);
-  }
-
-  private generateSeasonId(seasons: Season[]): number {
-    return seasons.length > 0 
-      ? Math.max(...seasons.map(s => s.id)) + 1 
-      : 1;
-  }
-
-  private generatePeriodId(periods: Period[]): number {
-    return periods.length > 0 
-      ? Math.max(...periods.map(p => p.id)) + 1 
-      : 1;
   }
 }

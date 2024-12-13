@@ -1,0 +1,212 @@
+// market-config.component.scss
+
+// Variables
+$primary-color: #1976d2;
+$accent-color: #ff4081;
+$warning-color: #f44336;
+$success-color: #4caf50;
+$text-primary: rgba(0, 0, 0, 0.87);
+$text-secondary: rgba(0, 0, 0, 0.54);
+$border-radius: 8px;
+$transition-duration: 0.3s;
+$spacing-unit: 8px;
+
+// Mixins
+@mixin card-shadow {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow $transition-duration ease;
+
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.market-config-container {
+  padding: $spacing-unit * 3;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+
+  .header-card {
+    @include card-shadow;
+    margin-bottom: $spacing-unit * 3;
+    border-radius: $border-radius;
+    
+    .header-content {
+      padding: $spacing-unit * 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .title-section {
+        h1 {
+          margin: 0;
+          font-size: 24px;
+          color: $text-primary;
+        }
+
+        .subtitle {
+          margin: $spacing-unit 0 0;
+          color: $text-secondary;
+          font-size: 14px;
+        }
+      }
+
+      .actions {
+        display: flex;
+        gap: $spacing-unit * 2;
+      }
+    }
+  }
+
+  .content-wrapper {
+    display: grid;
+    gap: $spacing-unit * 3;
+    
+    .market-groups {
+      .market-group-panel {
+        margin-bottom: $spacing-unit * 2;
+        border-radius: $border-radius;
+        @include card-shadow;
+
+        .group-header {
+          @include flex-center;
+          gap: $spacing-unit;
+
+          .group-name {
+            font-weight: 500;
+          }
+
+          .region-tag {
+            background-color: rgba($primary-color, 0.1);
+            color: $primary-color;
+            padding: $spacing-unit/2 $spacing-unit;
+            border-radius: $spacing-unit * 2;
+            font-size: 12px;
+          }
+        }
+
+        .group-metrics {
+          @include flex-center;
+          gap: $spacing-;
+
+          .metric, .currency {
+            @include flex-center;
+            gap: $spacing-unit/2;
+            color: $text-secondary;
+            font-size: 14px;
+          }
+        }
+      }
+    }
+
+    .markets-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: $spacing-unit * 2;
+      padding: $spacing-unit * 2;
+
+      .market-card {
+        @include card-shadow;
+        border-radius: $border-radius;
+        
+        .market-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: $spacing-unit * 2;
+
+          .market-info {
+            h3 {
+              margin: 0;
+              color: $text-primary;
+              font-size: 18px;
+            }
+
+            .market-code {
+              color: $text-secondary;
+              font-size: 12px;
+            }
+          }
+
+          .status-indicator {
+            @include flex-center;
+            gap: $spacing-unit/2;
+            
+            &.active {
+              color: $success-color;
+            }
+
+            .status-text {
+              font-size: 14px;
+            }
+          }
+        }
+
+        .market-details {
+          margin: $spacing-unit * 2 0;
+
+          .detail-item {
+            @include flex-center;
+            gap: $spacing-unit;
+            margin-bottom: $spacing-unit;
+            color: $text-secondary;
+
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+            }
+          }
+        }
+
+        .market-actions {
+          display: flex;
+          gap: $spacing-unit;
+          padding-top: $spacing-unit;
+
+          button {
+            opacity: 0.8;
+            transition: opacity $transition-duration ease;
+
+            &:hover {
+              opacity: 1;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Modal styles
+.modal-content {
+  padding: $spacing-unit * 3;
+  max-width: 500px;
+
+  h2 {
+    margin: 0 0 $spacing-unit * 3;
+    color: $text-primary;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .market-config-container {
+    padding: $spacing-unit * 2;
+
+    .header-content {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-unit * 2;
+    }
+
+    .markets-container {
+      grid-template-columns: 1fr;
+    }
+  }
+}

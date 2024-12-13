@@ -1,24 +1,29 @@
-import { Component, OnInit, Input, OnDestroy } from '@angular/core';
+// period-mlos.component.ts
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { from, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTableModule } from '@angular/material/table';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatDialogModule, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { SeasonService } from '../../services/season.service';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import { Season, Period, Hotel } from '../../models/types';
-import { Subject, takeUntil } from 'rxjs';
+import { SeasonService } from '../../services/season.service';
 
 @Component({
   selector: 'app-period-mlos',
@@ -29,6 +34,7 @@ import { Subject, takeUntil } from 'rxjs';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    // Material Modules
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -47,31 +53,49 @@ import { Subject, takeUntil } from 'rxjs';
   ]
 })
 export class PeriodMlosComponent implements OnInit, OnDestroy {
-  @Input() hotel!: Hotel;
-  
-  seasons: Season[] = [];
-  displayedColumns: string[] = ['name', 'startDate', 'endDate', 'mlos', 'actions'];
-  showSeasonForm = false;
-  showPeriodForm = false;
+  private fb = inject(FormBuilder);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
+  private seasonService = inject(SeasonService);
+  private destroy$ = new Subject<void>();
+
+  // Signals
+  seasons = signal<Season[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
+  showPeriodForm = signal(false);
+  showSeasonForm = signal(false);
+
+  // Form states
+  seasonForm!: FormGroup;
+  periodForm!: FormGroup;
   editingSeason: Season | null = null;
   editingPeriod: Period | null = null;
   currentSeason: Season | null = null;
-  loading = false;
-  error: string | null = null;
+  hotel!: Hotel;
 
-  periodForm!: FormGroup;
-  seasonForm!: FormGroup;
-  dialogRef: MatDialogRef<any> | null = null;
+  // Computed values
+  activeSeasonsCount = computed(() => 
+    this.seasons().filter(season => season.isActive).length
+  );
 
-  private destroy$ = new Subject<void>();
-
-  constructor(
-    private seasonService: SeasonService,
-    private fb: FormBuilder,
-    private dialog: MatDialog
-  ) {
+  constructor() {
     this.initializeForms();
   }
+
+  ngOnInit(): void {
+    this.loadSeasons();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  clearError() {
+    this.error.set(null);
+  }
+
 
   private initializeForms(): void {
     this.seasonForm = this.fb.group({
@@ -91,35 +115,33 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {
-    this.loadSeasons();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    if (this.dialogRef) {
-      this.dialogRef.close();
+  async loadSeasons(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    
+    try {
+      const seasons = await this.seasonService.getSeasonsByHotel(this.hotel.id);
+      this.seasons.set(seasons);
+    } catch (err) {
+      this.error.set('Failed to load seasons. Please try again.');
+      console.error('Error loading seasons:', err);
+    } finally {
+      this.loading.set(false);
     }
   }
 
-  loadSeasons(): void {
-    this.loading = true;
-    this.error = null;
-    this.seasonService.getSeasonsByHotel(this.hotel.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (seasons: Season[]) => {
-          this.seasons = seasons;
-          this.loading = false;
-        },
-        error: (error: Error) => {
-          this.error = 'Failed to load seasons. Please try again.';
-          this.loading = false;
-          console.error('Error loading seasons:', error);
-        }
-      });
+  displayedColumns: string[] = [
+    'name',
+    'startDate',
+    'endDate',
+    'mlos',
+    'actions'
+  ];
+
+  get seasonsArray() {
+    return this.seasons();
   }
+  
 
   addNewSeason(): void {
     this.editingSeason = null;
@@ -129,7 +151,7 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
       isActive: true,
       periods: []
     });
-    this.openSeasonDialog();
+    this.showSeasonForm.set(true);
   }
 
   editSeason(season: Season): void {
@@ -138,48 +160,21 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
       name: season.name,
       description: season.description,
       isActive: season.isActive,
-      periods: season.periods || []
+      periods: season.periods
     });
-    this.openSeasonDialog();
+    this.showSeasonForm.set(true);
   }
 
-  openSeasonDialog(): void {
-    this.showSeasonForm = true;
-    // TODO: Create a separate SeasonDialogComponent and use it here
-    // this.dialogRef = this.dialog.open(SeasonDialogComponent, {
-    //   width: '500px',
-    //   data: {
-    //     form: this.seasonForm,
-    //     isEdit: !!this.editingSeason
-    //   }
-    // });
-
-    // this.dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     if (this.editingSeason) {
-    //       this.updateSeason(result);
-    //     } else {
-    //       this.createSeason(result);
-    //     }
-    //   }
-    //   this.editingSeason = null;
-    //   this.showSeasonForm = false;
-    // });
-  }
-
-  deleteSeason(season: Season): void {
+  async deleteSeason(season: Season): Promise<void> {
     if (confirm(`Are you sure you want to delete the season "${season.name}"?`)) {
-      this.seasonService.deleteSeason(this.hotel.id, season.id)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.loadSeasons();
-          },
-          error: (error: Error) => {
-            this.error = 'Failed to delete season. Please try again.';
-            console.error('Error deleting season:', error);
-          }
-        });
+      try {
+        await this.seasonService.deleteSeason(this.hotel.id, season.id);
+        await this.loadSeasons();
+        this.snackBar.open('Season deleted successfully', 'Close', { duration: 3000 });
+      } catch (error) {
+        this.error.set('Failed to delete season. Please try again.');
+        console.error('Error deleting season:', error);
+      }
     }
   }
 
@@ -188,13 +183,13 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
     this.editingPeriod = null;
     this.periodForm.reset({
       name: '',
-      startDate: '',
-      endDate: '',
+      startDate: null,
+      endDate: null,
       mlos: 1,
       description: '',
       isBlackout: false
     });
-    this.openPeriodDialog();
+    this.showPeriodForm.set(true);
   }
 
   editPeriod(season: Season, period: Period): void {
@@ -208,99 +203,86 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
       description: period.description || '',
       isBlackout: period.isBlackout || false
     });
-    this.showPeriodForm = true;
-  }
-
-  openPeriodDialog(): void {
-    this.showPeriodForm = true;
-    // TODO: Create a separate PeriodDialogComponent and use it here
-    // this.dialogRef = this.dialog.open(PeriodDialogComponent, {
-    //   width: '500px',
-    //   data: {
-    //     form: this.periodForm,
-    //     isEdit: !!this.editingPeriod
-    //   }
-    // });
-
-    // this.dialogRef.afterClosed().subscribe(result => {
-    //   if (result) {
-    //     if (this.editingPeriod) {
-    //       this.updatePeriod(result);
-    //     } else {
-    //       this.createPeriod(result);
-    //     }
-    //   }
-    //   this.editingPeriod = null;
-    //   this.currentSeason = null;
-    //   this.showPeriodForm = false;
-    // });
+    this.showPeriodForm.set(true);
   }
 
   deletePeriod(season: Season, period: Period): void {
     if (confirm(`Are you sure you want to delete the period "${period.name}"?`)) {
-      this.seasonService.deletePeriod(this.hotel.id, period.id)
+      from(this.seasonService.deletePeriod(this.hotel.id, season.id, period.id))
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
             this.loadSeasons();
+            this.snackBar.open('Period deleted successfully', 'Close', { duration: 3000 });
           },
           error: (error: Error) => {
-            this.error = 'Failed to delete period. Please try again.';
+            this.error.set('Failed to delete period. Please try again.');
             console.error('Error deleting period:', error);
           }
         });
     }
+}
+
+savePeriod(): void {
+  if (!this.currentSeason || !this.periodForm.valid) {
+    return;
   }
 
-  savePeriod(): void {
-    if (!this.currentSeason || !this.periodForm.valid) {
-      return;
-    }
+  const periodData = {
+    ...this.periodForm.value,
+    startDate: this.periodForm.value.startDate?.toISOString(),
+    endDate: this.periodForm.value.endDate?.toISOString(),
+    seasonId: this.currentSeason.id
+  };
 
-    const periodData = {
-      ...this.periodForm.value,
-      startDate: this.periodForm.value.startDate?.toISOString(),
-      endDate: this.periodForm.value.endDate?.toISOString(),
-      seasonId: this.currentSeason.id
-    };
+  this.loading.set(true);
 
-    if (this.editingPeriod) {
-      this.loading = true;
-      this.seasonService.updatePeriod(this.hotel.id, this.editingPeriod.id, periodData)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.loading = false;
-            this.loadSeasons();
-            this.cancelPeriodEdit();
-          },
-          error: (error: Error) => {
-            this.loading = false;
-            this.error = 'Failed to update period. Please try again.';
-            console.error('Error updating period:', error);
-          }
-        });
-    } else {
-      this.loading = true;
-      this.seasonService.createPeriod(this.hotel.id, periodData)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.loading = false;
-            this.loadSeasons();
-            this.cancelPeriodEdit();
-          },
-          error: (error: Error) => {
-            this.loading = false;
-            this.error = 'Failed to create period. Please try again.';
-            console.error('Error creating period:', error);
-          }
-        });
-    }
+  if (this.editingPeriod) {
+    from(this.seasonService.updatePeriod(
+      this.hotel.id,
+      this.currentSeason.id,
+      this.editingPeriod.id,
+      periodData
+    ))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loading.set(false);
+          this.loadSeasons();
+          this.cancelPeriodEdit();
+          this.snackBar.open('Period updated successfully', 'Close', { duration: 3000 });
+        },
+        error: (error: Error) => {
+          this.loading.set(false);
+          this.error.set('Failed to update period. Please try again.');
+          console.error('Error updating period:', error);
+        }
+      });
+  } else {
+    from(this.seasonService.createPeriod(
+      this.hotel.id,
+      this.currentSeason.id,
+      periodData
+    ))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loading.set(false);
+          this.loadSeasons();
+          this.cancelPeriodEdit();
+          this.snackBar.open('Period created successfully', 'Close', { duration: 3000 });
+        },
+        error: (error: Error) => {
+          this.loading.set(false);
+          this.error.set('Failed to create period. Please try again.');
+          console.error('Error creating period:', error);
+        }
+      });
   }
+}
 
   cancelPeriodEdit(): void {
-    this.showPeriodForm = false;
+    this.showPeriodForm.set(false);
     this.editingPeriod = null;
     this.currentSeason = null;
     this.periodForm.reset({

@@ -8,8 +8,8 @@
     <!-- Error Message -->
     <div *ngIf="error" class="error-message mat-elevation-z2">
       <mat-icon color="warn">error</mat-icon>
-      <span>{{ error }}</span>
-      <button mat-icon-button (click)="error = null">
+      <span>{{ error() }}</span>
+      <button mat-icon-button (click)="error.set(null)">
         <mat-icon>close</mat-icon>
       </button>
     </div>
@@ -30,8 +30,8 @@
       </div>
 
       <!-- Seasons Accordion -->
-      <mat-accordion class="seasons-list" multi>
-        <mat-expansion-panel *ngFor="let season of seasons" class="season-panel">
+      <mat-accordion class="seasons-list" multi *ngFor="let season of seasonsArray">
+        <mat-expansion-panel *ngFor="let season of seasons()" class="season-panel">
           <mat-expansion-panel-header>
             <mat-panel-title>
               {{ season.name }}

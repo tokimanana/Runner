@@ -391,29 +391,30 @@ export const hotelMealPlans: Record<number, MealPlan[]> = {
   ]
 };
 
-// Helper functions for meal plan management
-export const mealPlanUtils = {
-  getMealPlansByHotel: (hotelId: number): MealPlan[] => {
+// Main export combining default and hotel-specific meal plans
+export const mealPlans = {
+  defaults: defaultMealPlans,
+  hotelSpecific: hotelMealPlans,
+  
+  // Utility function to get all meal plans for a specific hotel
+  getByHotelId(hotelId: number): MealPlan[] {
     return [
-      ...defaultMealPlans,
-      ...(hotelMealPlans[hotelId] || [])
+      ...this.defaults,
+      ...(this.hotelSpecific[hotelId] || [])
     ];
   },
   
-  getMealPlanById: (planId: string): MealPlan | undefined => {
+  // Utility function to get a specific meal plan
+  getById(planId: string): MealPlan | undefined {
     const allPlans = [
-      ...defaultMealPlans,
-      ...Object.values(hotelMealPlans).flat()
+      ...this.defaults,
+      ...Object.values(this.hotelSpecific).flat()
     ];
     return allPlans.find(plan => plan.id === planId);
-  },
-
-  isDefaultPlan: (planId: string): boolean => {
-    return planId.startsWith('default-');
   }
 };
 
-// Export types for meal plan management
+// Type for tracking meal plan operations
 export type MealPlanOperation = {
   hotelId: number;
   planId: string;
