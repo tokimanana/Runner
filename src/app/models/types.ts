@@ -27,7 +27,7 @@ export interface Hotel {
   };
   
   // Optional relationships
-  rooms?: RoomType[];
+  roomTypes?: RoomType[];
   mealPlans?: MealPlan[];
   policies?: HotelPolicies;
   ageCategories?: AgeCategory[];
@@ -350,19 +350,24 @@ export interface Season {
 // Contract management
 export interface Contract {
   id: number;
-  hotelId: number;
-  marketId: number;
-  seasonId: number;
+  code: string;
   name: string;
+  hotelId: number;
   description?: string;
-  status: 'active' | 'draft' | 'expired';
-  selectedRooms: number[];
+  status: ContractStatus;
+  validityPeriod: { 
+    startDate: string;
+    endDate: string; 
+  }; //automatically defined by the season
+  seasonId: number;
+  marketId: number;
+  selectedRoomTypes: number[];
   selectedMealPlans: string[];
-  periodRates: ContractPeriodRate[];
-  terms?: string;
-  validFrom: Date;
-  validTo: Date;
+  // Rate configuration flag
+  isRatesConfigured: boolean;
 }
+
+export type ContractStatus = 'draft' | 'active' | 'inactive' | 'expired';
 
 export interface ContractPeriodRate {
   periodId: number;

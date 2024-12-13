@@ -1,26 +1,34 @@
-import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatTabsModule } from '@angular/material/tabs';
-import { combineLatest, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-
-import { Contract, Hotel, Market, Season, RoomType, MealPlan } from '../../../../models/types';
-import { ContractService } from '../../../../services/contract.service';
-import { HotelService } from '../../../../services/hotel.service';
-import { MarketService } from '../../../../services/market.service';
-import { SeasonService } from '../../../../services/season.service';
+// src/app/components/contract/contract-management/contract-form/contract-form.component.ts
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, inject, computed, signal, Inject } from "@angular/core";
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatNativeDateModule } from "@angular/material/core";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatTabsModule } from "@angular/material/tabs";
+import { firstValueFrom } from "rxjs";
+import {
+  Contract,
+  Hotel,
+  Market,
+  Season,
+  RoomType,
+  MealPlan,
+} from "src/app/models/types";
+import { ContractService } from "src/app/services/contract.service";
+import { HotelService } from "src/app/services/hotel.service";
+import { MarketService } from "src/app/services/market.service";
+import { SeasonService } from "src/app/services/season.service";
+import { ContractDialogData } from "../contract-list/contract-list.component";
 
 @Component({
-  selector: 'app-contract-form',
-  templateUrl: './contract-form.component.html',
-  styleUrls: ['./contract-form.component.css'],
+  selector: "app-contract-form",
+  templateUrl: "./contract-form.component.html",
+  styleUrls: ["./contract-form.component.scss"],
   standalone: true,
   imports: [
     CommonModule,
@@ -29,144 +37,184 @@ import { SeasonService } from '../../../../services/season.service';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatTabsModule,
+    MatProgressSpinnerModule, 
     MatDatepickerModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatTabsModule
-  ]
+    MatNativeDateModule
+    // ... any other modules you need
+  ],
 })
-export class ContractFormComponent implements OnInit, OnDestroy {
-  contractForm: FormGroup;
-  hotels: Hotel[] = [];
-  markets: Market[] = [];
-  seasons: Season[] = [];
-  roomTypes: RoomType[] = [];
-  mealPlans: MealPlan[] = [];
-  private destroy$ = new Subject<void>();
+export class ContractFormComponent implements OnInit {
+  // Inject services
+  private fb = inject(FormBuilder);
+  private contractService = inject(ContractService);
+  private hotelService = inject(HotelService);
+  private marketService = inject(MarketService);
+  private seasonService = inject(SeasonService);
+
+  // Form
+  contractForm: FormGroup = this.fb.group({
+    name: ["", Validators.required],
+    hotelId: [null, Validators.required],
+    marketId: [null, Validators.required],
+    seasonId: [null, Validators.required],
+    description: [""],
+    status: ["draft"],
+    selectedRooms: [[], Validators.required],
+    selectedMealPlans: [[], Validators.required],
+  });
+
+  // State signals
+  loading = signal(false);
+  error = signal<string | null>(null);
+
+  // Data signals
+  hotels = signal<Hotel[]>([]);
+  markets = signal<Market[]>([]);
+  seasons = signal<Season[]>([]);
+  roomTypes = signal<RoomType[]>([]);
+  mealPlans = signal<MealPlan[]>([]);
+
+  // Computed values
+  isEditMode = computed(() => this.data?.mode === "edit");
+  formTitle = computed(() =>
+    this.isEditMode() ? "Edit Contract" : "Create Contract"
+  );
+  submitButtonText = computed(() => (this.isEditMode() ? "Update" : "Create"));
 
   constructor(
-    private fb: FormBuilder,
-    private contractService: ContractService,
-    private hotelService: HotelService,
-    private marketService: MarketService,
-    private seasonService: SeasonService,
     public dialogRef: MatDialogRef<ContractFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { mode: 'create' | 'edit', contract?: Contract }
+    @Inject(MAT_DIALOG_DATA) public data: ContractDialogData
   ) {
+    this.initForm();
+  }
+
+  private initForm() {
     this.contractForm = this.fb.group({
-      name: ['', Validators.required],
+      name: ["", Validators.required],
       hotelId: [null, Validators.required],
       marketId: [null, Validators.required],
       seasonId: [null, Validators.required],
-      description: [''],
-      status: ['draft'],
-      selectedRooms: [[], Validators.required],  // Add room types
-      selectedMealPlans: [[], Validators.required],  // Add meal plans
-      terms: [''],
+      description: [""],
+      status: ["draft"],
+      selectedRooms: [[], Validators.required],
+      selectedMealPlans: [[], Validators.required],
+      terms: [""],
       validFrom: [null, Validators.required],
-      validTo: [null, Validators.required]
+      validTo: [null, Validators.required],
     });
+  }
 
-    // Listen to hotel changes to load room types and meal plans
-    this.contractForm.get('hotelId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hotelId => {
-        if (hotelId) {
-          this.loadHotelDetails(hotelId);
-        } else {
-          this.roomTypes = [];
-          this.mealPlans = [];
-        }
-      });
-
-    if (data && data.mode === 'edit' && data.contract) {
-      this.contractForm.patchValue(data.contract);
+  private ensureContract(contract: Contract | undefined): asserts contract is Contract {
+    if (!contract) {
+      throw new Error('Contract is required in edit mode');
     }
   }
 
-  private loadHotelDetails(hotelId: number): void {
-    this.hotelService.getHotels()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hotels => {
-        const hotel = hotels.find(h => h.id === hotelId);
-        if (hotel) {
-          this.roomTypes = hotel.rooms || [];
-          this.mealPlans = hotel.mealPlans || [];
-        }
-      });
-  }
+  async ngOnInit() {
+    try {
+      this.loading.set(true);
+      await this.loadFormData();
 
-  ngOnInit(): void {
-    // Load initial data
-    combineLatest({
-      hotels: this.hotelService.getHotels(),
-      markets: this.marketService.markets$
-    }).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(({ hotels, markets }) => {
-      this.hotels = hotels;
-      this.markets = markets || [];
-
-      // If editing existing contract, patch form and load hotel details
-      if (this.data?.contract) {
-        this.contractForm.patchValue(this.data.contract);
-        this.loadHotelDetails(this.data.contract.hotelId);
+      if (this.isEditMode() && this.data.contract) {  
+        this.patchFormData(this.data.contract);
       }
+    } catch (error) {
+      this.error.set("Failed to load form data");
+      console.error(error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private async loadFormData() {
+    try {
+      const [hotelsResult, marketsResult, seasonsResult] = await Promise.all([
+        // Convert Observable<Hotel[]> to Promise<Hotel[]>
+        firstValueFrom(this.hotelService.getHotels()),
+        firstValueFrom(this.marketService.markets$),
+        // Convert Map<number, Season[]> to Season[] by getting all values and flattening
+        firstValueFrom(this.seasonService.seasons$).then(seasonMap => 
+          Array.from(seasonMap.values()).flat()
+        )
+      ]);
+
+      this.hotels.set(hotelsResult);
+      this.markets.set(marketsResult);
+      this.seasons.set(seasonsResult);
+    } catch (error) {
+      console.error('Error loading form data:', error);
+      // Handle error appropriately
+    }
+}
+
+
+  private patchFormData(contract: Contract) {
+    this.contractForm.patchValue({
+      ...contract,
+      hotelId: contract.hotelId,
+      marketId: contract.marketId,
+      seasonId: contract.seasonId,
+      selectedRooms: contract.selectedRoomTypes || [],
+      selectedMealPlans: contract.selectedMealPlans || [],
     });
-
-    // Subscribe to hotel changes to load seasons
-    this.contractForm.get('hotelId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hotelId => {
-        if (hotelId) {
-          this.seasonService.getSeasonsByHotel(hotelId)
-            .subscribe(seasons => {
-              this.seasons = seasons;
-            });
-        } else {
-          this.seasons = [];
-        }
-      });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  async onHotelChange(hotelId: number) {
+    if (!hotelId) return;
+
+    try {
+      this.loading.set(true);
+      const hotel = await this.hotelService.getHotelById(hotelId);
+
+      if (hotel) {
+        this.roomTypes.set(hotel.roomTypes || []);
+        this.mealPlans.set(hotel.mealPlans || []);
+      }
+    } catch (error) {
+      this.error.set("Failed to load hotel details");
+      console.error(error);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  onSubmit(): void {
-    if (this.contractForm.valid) {
-      const contractData = this.contractForm.value;
-      
-      if (this.data.mode === 'edit' && this.data.contract) {
-        this.contractService.updateContract(this.data.contract.id, contractData)
-          .subscribe({
-            next: () => this.dialogRef.close(true),
-            error: (error) => console.error('Error updating contract:', error)
-          });
+  async onSubmit() {
+    if (this.contractForm.invalid) return;
+
+    try {
+      this.loading.set(true);
+      const formData = this.contractForm.value;
+
+      if (this.isEditMode()) {
+        // Use the type guard before accessing contract
+        this.ensureContract(this.data.contract);
+        await this.contractService.updateContract(
+          this.data.contract.id,
+          formData
+        );
       } else {
-        this.contractService.createContract(contractData)
-          .subscribe({
-            next: () => this.dialogRef.close(true),
-            error: (error) => console.error('Error creating contract:', error)
-          });
+        await this.contractService.createContract(formData);
       }
+
+      this.dialogRef.close(true);
+    } catch (error) {
+      this.error.set(
+        this.isEditMode()
+          ? "Failed to update contract"
+          : "Failed to create contract"
+      );
+      console.error(error);
+    } finally {
+      this.loading.set(false);
     }
   }
 
-  onCancel(): void {
+  onCancel() {
     this.dialogRef.close();
   }
 
   compareById(item1: any, item2: any): boolean {
     return item1 && item2 && item1.id === item2.id;
-  }
-
-  getFormTitle(): string {
-    return this.data.mode === 'edit' ? 'Edit Contract' : 'Create New Contract';
-  }
-
-  getSubmitButtonText(): string {
-    return this.data.mode === 'edit' ? 'Update' : 'Create';
   }
 }

@@ -1,67 +1,133 @@
-.contract-form {
-  height: 100%;
+// Variables
+$primary-color: #1976d2;
+$border-color: #e0e0e0;
+$background-light: #f5f5f5;
+$overlay-bg: rgba(255, 255, 255, 0.7);
+$text-primary: #333;
+$spacing-unit: 8px;
+$border-radius: 8px;
+
+// Mixins
+@mixin flex-center {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+}
 
-  form {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+@mixin flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
 
-    mat-tab-group {
-      flex: 1;
-      overflow: hidden;
+@mixin grid-layout($columns) {
+  display: grid;
+  grid-template-columns: $columns;
+  gap: $spacing-unit * 2;
+}
 
-      ::ng-deep .mat-mdc-tab-body-wrapper {
-        flex: 1;
-        overflow: auto;
-      }
-    }
+.contract-form {
+  padding: $spacing-unit * 2.5;
+
+  h2 {
+    margin-bottom: $spacing-unit * 3;
+    color: $text-primary;
   }
 
   .tab-content {
-    padding: 16px;
+    padding: $spacing-unit * 3 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: $spacing-unit * 2;
   }
 
   mat-form-field {
     width: 100%;
   }
 
+  .date-range {
+    @include grid-layout(1fr 1fr);
+  }
+
   .form-actions {
-    padding: 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    background: white;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
-  }
-
-  mat-select-panel {
-    max-height: 400px !important;
-  }
-
-  ::ng-deep {
-    .mat-mdc-form-field {
-      .mdc-menu-surface.mat-mdc-select-panel {
-        max-height: 400px !important;
-      }
-    }
-
-    .mat-mdc-select-panel {
-      max-height: 400px !important;
-    }
-  }
-
-  .full-width {
-    width: 100%;
+    margin-top: $spacing-unit * 3;
+    @include flex-end;
+    gap: $spacing-unit * 1.5;
   }
 
   textarea {
     min-height: 100px;
+  }
+
+  .loading-overlay {
+    @include flex-center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: $overlay-bg;
+    z-index: 1000;
+  }
+
+  // Deep style overrides for Angular Material
+  ::ng-deep {
+    .mat-mdc-select-panel {
+      max-height: 300px !important;
+    }
+
+    .mat-mdc-option {
+      height: 48px !important;
+      line-height: 48px !important;
+    }
+
+    .mat-mdc-select-value {
+      max-width: 90%;
+    }
+
+    .mat-mdc-select-multiple {
+      .mat-mdc-select-value {
+        padding: $spacing-unit 0;
+      }
+    }
+
+    .mat-mdc-select-value-text {
+      display: inline-block;
+      padding: $spacing-unit/4 $spacing-unit;
+      margin: $spacing-unit/4;
+      background: $background-light;
+      border-radius: $spacing-unit/2;
+      font-size: 14px;
+    }
+
+    .mat-tab-body-content {
+      padding: $spacing-unit * 2 0;
+    }
+  }
+
+  // Warning message styles
+  .warning-message {
+    padding: $spacing-unit * 2;
+    background-color: #fff3e0;
+    border-radius: $border-radius/2;
+    color: #e65100;
+    margin: $spacing-unit * 2 0;
+  }
+
+  // Responsive styles
+  @media (max-width: 599px) {
+    padding: $spacing-unit * 2;
+
+    .date-range {
+      grid-template-columns: 1fr;
+    }
+
+    .room-types-grid,
+    .meal-plans-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-section {
+      padding: $spacing-unit * 2;
+    }
   }
 }
