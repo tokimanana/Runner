@@ -48,6 +48,7 @@ interface CurrencyField {
 })
 export class CurrencyComponent implements OnInit, OnDestroy {
   @Input({ required: true }) show!: boolean;
+  @Input({ required: true }) hotel!: Hotel;
   @Input() title: string = '';
   @Output() close = new EventEmitter<void>();
   

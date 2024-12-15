@@ -92,10 +92,10 @@ $border-radius: 8px;
 
     .mat-mdc-select-value-text {
       display: inline-block;
-      padding: $spacing-unit/4 $spacing-unit;
-      margin: $spacing-unit/4;
+      padding: calc($spacing-unit / 4) $spacing-unit;
+      margin: calc($spacing-unit / 4);
       background: $background-light;
-      border-radius: $spacing-unit/2;
+      border-radius: calc($spacing-unit / 2);
       font-size: 14px;
     }
 
@@ -108,9 +108,25 @@ $border-radius: 8px;
   .warning-message {
     padding: $spacing-unit * 2;
     background-color: #fff3e0;
-    border-radius: $border-radius/2;
+    border-radius: calc($border-radius / 2);
     color: #e65100;
     margin: $spacing-unit * 2 0;
+  }
+
+  // Room types styles
+  .room-types-container {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-unit;
+    margin-bottom: $spacing-unit * 2;
+
+    .mat-mdc-form-field-label {
+      margin-bottom: $spacing-unit;
+    }
+
+    mat-checkbox {
+      margin-bottom: calc($spacing-unit / 2);
+    }
   }
 
   // Responsive styles

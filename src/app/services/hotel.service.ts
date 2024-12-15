@@ -1,7 +1,6 @@
-// src/app/services/hotel.service.ts
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
-import { distinctUntilChanged, map, tap, catchError } from 'rxjs/operators';
+import { distinctUntilChanged, map, tap, catchError, switchMap } from 'rxjs/operators';
 import { 
   Hotel, 
   AgeCategory, 
@@ -9,10 +8,12 @@ import {
   HotelCapacity, 
   MenuItemId,
   DressCodePolicy,
-  HotelDataKey
+  HotelDataKey,
+  RoomType
 } from '../models/types';
 import { MockApiService } from './mock/mock-api.service';
 import { BaseDataService } from './base-data.service';
+import { RoomConfigurationService } from './room-configuration.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,15 +22,17 @@ export class HotelService extends BaseDataService<Hotel> {
   private selectedHotelSubject = new BehaviorSubject<Hotel | null>(null);
   private selectedMenuItemSubject = new BehaviorSubject<MenuItemId | null>(null);
   private hotels$ = new BehaviorSubject<Hotel[]>([]);
+  private activeTabSubject = new BehaviorSubject<string | null>(null);
 
   readonly selectedHotel$ = this.selectedHotelSubject.asObservable();
   readonly selectedMenuItem$ = this.selectedMenuItemSubject.asObservable();
   readonly allHotels$ = this.hotels$.asObservable();
+  readonly activeTab$ = this.activeTabSubject.asObservable();
 
-  constructor() {
+  constructor(private roomConfigService: RoomConfigurationService) {
     super();
     this.selectedHotel$.pipe(
-      distinctUntilChanged()
+      distinctUntilChanged((prev, curr) => prev?.id === curr?.id)
     ).subscribe(hotel => {
       if (hotel) {
         this.loadHotelData(hotel);
@@ -69,9 +72,19 @@ export class HotelService extends BaseDataService<Hotel> {
       const fullHotelData = await MockApiService.getHotelById(hotel.id);
       if (fullHotelData) {
         this.selectedHotelSubject.next(fullHotelData);
+        console.log('Hotel data loaded:', fullHotelData);
       }
     } catch (error) {
       console.error(`Failed to load hotel data for hotel ${hotel.id}:`, error);
+      // Ensure we don't block the app on error
+      this.selectedHotelSubject.next(hotel);
+      try {
+        await MockApiService.resetHotelsData();
+        await this.loadHotels();
+        console.warn('Hotel data reset due to error.');
+      } catch (resetError) {
+        console.error('Failed to reset hotel data:', resetError);
+      }
     }
   }
 
@@ -100,6 +113,10 @@ export class HotelService extends BaseDataService<Hotel> {
 
   setSelectedMenuItem(menuItem: MenuItemId): void {
     this.selectedMenuItemSubject.next(menuItem);
+  }
+
+  setActiveTab(tabId: string): void {
+    this.activeTabSubject.next(tabId);
   }
 
   // Update methods
@@ -254,4 +271,8 @@ export class HotelService extends BaseDataService<Hotel> {
     }
   }
 
+  // New method to get room types using RoomConfigurationService
+  getRoomTypes(hotelId: number): Observable<RoomType[]> {
+    return this.roomConfigService.getRooms(hotelId);
+  }
 }

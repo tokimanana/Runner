@@ -3,7 +3,7 @@
     <app-hotel-selector (hotelSelected)="onHotelSelect($event)"></app-hotel-selector>
   </div>
 
-  <div class="content-section" *ngIf="selectedHotel">
+  <div class="content-section" *ngIf="selectedHotel; else noHotelSelected">
     <mat-tab-group class="main-tabs" 
                    [(selectedIndex)]="selectedTabIndex" 
                    (selectedIndexChange)="onTabChange($event)">
@@ -35,4 +35,9 @@
       </mat-tab>
     </mat-tab-group>
   </div>
+  <ng-template #noHotelSelected>
+    <div class="no-hotel-message">
+      Please select a hotel to continue
+    </div>
+  </ng-template>
 </div>

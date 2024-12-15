@@ -82,7 +82,7 @@ $spacing-unit: 8px;
   gap: $spacing-unit;
   padding: $spacing-unit $spacing-unit * 2;
   border: none;
-  border-radius: $border-radius/2;
+  border-radius: calc($border-radius / 2);
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -138,7 +138,7 @@ $spacing-unit: 8px;
       width: 100%;
       padding: $spacing-unit;
       border: 1px solid $border-color;
-      border-radius: $border-radius/2;
+      border-radius: calc($border-radius / 2);
       font-size: 0.9rem;
 
       &:focus {

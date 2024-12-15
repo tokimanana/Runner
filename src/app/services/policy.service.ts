@@ -51,9 +51,7 @@ export class PolicyService extends BaseDataService<HotelPolicies> {
   }
   
 
-  protected getStorageKey(): string {
-    return MockApiService.getStorageKey('POLICIES');
-  }
+ 
 
   // Get policies for a specific hotel
   getPolicies(hotelId: number): Observable<HotelPolicies | null> {

@@ -8,6 +8,7 @@ import {
   signal,
   WritableSignal,
   Signal,
+  ViewEncapsulation,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
@@ -33,6 +34,7 @@ interface ModalValues {
   imports: [CommonModule, FormsModule, NgxFileDropModule, ModalComponent],
   templateUrl: "./description.component.html",
   styleUrls: ["./description.component.scss"],
+  encapsulation: ViewEncapsulation.None
 })
 export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   @Input() hotel: Hotel | null = null;
@@ -121,10 +123,10 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   openModal(mode: keyof ModalValues) {
     this.currentEditMode.set(mode);
     this.modalTitle.set(`Edit ${mode === 'description' ? 'Description' : 'Dress Code'}`);
-    this.modalInitialValues.set({
+    this.modalInitialValues.update(() => ({
       description: mode === 'description' ? this.description : '',
       dressCode: mode === 'dressCode' ? JSON.stringify(this.dressCode) : ''
-    });
+    }));
     this.showModal.set(true);
   }
 
@@ -146,18 +148,18 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   openDescriptionModal() {
     this.currentEditMode.set("description");
     this.modalTitle.set("Edit Hotel Description");
-    this.modalInitialValues.set({
+    this.modalInitialValues.update(() => ({
       ["description"]: this.description,
-    });
+    }));
     this.showModal.set(true);
   }
 
   openDressCodeModal() {
     this.currentEditMode.set("dressCode");
     this.modalTitle.set("Edit Dress Code");
-    this.modalInitialValues.set({
+    this.modalInitialValues.update(() => ({
       ["dressCode"]: JSON.stringify(this.dressCode),
-    });
+    }));
     this.showModal.set(true);
   }
 
@@ -168,7 +170,22 @@ export class DescriptionComponent implements OnInit, OnDestroy, OnChanges {
   handleModalSubmit(data: Record<string, any>) {
     // Handle form submission
     const mode = this.currentEditMode();
-    // Update your data
+    if (this.hotel) {
+      if (mode === 'description') {
+        this.hotelService.saveHotelData(this.hotel.id, 'description', data['description']).subscribe(() => {
+          this.loadHotelData();
+        });
+      } else if (mode === 'dressCode') {
+        try {
+          const dressCode = JSON.parse(data['dressCode']);
+          this.hotelService.saveHotelData(this.hotel.id, 'dressCode', dressCode).subscribe(() => {
+            this.loadHotelData();
+          });
+        } catch (error) {
+          console.error('Error parsing dress code:', error);
+        }
+      }
+    }
     this.showModal.set(false);
   }
 

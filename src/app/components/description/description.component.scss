@@ -12,7 +12,7 @@ $error-color: #f44336;
 $success-color: #4caf50;
 
 .description-container {
-  padding: $spacing-unit * 3;
+  padding: $spacing-unit * 4;
   background: $background-color;
   border-radius: $border-radius;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -22,33 +22,33 @@ $success-color: #4caf50;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: $spacing-unit * 3;
-    padding-bottom: $spacing-unit * 2;
+    margin-bottom: $spacing-unit * 4;
+    padding-bottom: $spacing-unit * 3;
     border-bottom: 1px solid $border-color;
 
     h2 {
       margin: 0;
       color: $primary-color;
-      font-size: 1.5rem;
-      font-weight: 500;
+      font-size: 1.8rem;
+      font-weight: 600;
     }
   }
 
   // Form styles
   .form-section {
-    margin-bottom: $spacing-unit * 4;
+    margin-bottom: $spacing-unit * 5;
 
     &__title {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       color: $text-color;
-      margin-bottom: $spacing-unit * 2;
+      margin-bottom: $spacing-unit * 3;
       font-weight: 500;
     }
 
     &__content {
       display: flex;
       flex-direction: column;
-      gap: $spacing-unit * 2;
+      gap: $spacing-unit * 3;
     }
   }
 
@@ -57,7 +57,7 @@ $success-color: #4caf50;
     border: 1px solid $border-color;
     border-radius: $border-radius;
     overflow: hidden;
-    margin-bottom: $spacing-unit * 3;
+    margin-bottom: $spacing-unit * 4;
 
     &:focus-within {
       border-color: $primary-color;
@@ -69,7 +69,7 @@ $success-color: #4caf50;
   .language-selector {
     display: flex;
     gap: $spacing-unit;
-    margin-bottom: $spacing-unit * 2;
+    margin-bottom: $spacing-unit * 3;
 
     &__button {
       padding: $spacing-unit $spacing-unit * 2;
@@ -95,19 +95,20 @@ $success-color: #4caf50;
   .actions {
     display: flex;
     justify-content: flex-end;
-    gap: $spacing-unit * 2;
-    margin-top: $spacing-unit * 4;
-    padding-top: $spacing-unit * 3;
+    gap: $spacing-unit * 3;
+    margin-top: $spacing-unit * 5;
+    padding-top: $spacing-unit * 4;
     border-top: 1px solid $border-color;
 
     button {
-      min-width: 100px;
-      padding: $spacing-unit $spacing-unit * 2;
+      min-width: 120px;
+      padding: $spacing-unit * 1.5 $spacing-unit * 3;
       border-radius: $border-radius;
       border: none;
       cursor: pointer;
       transition: all $transition-speed ease;
       font-weight: 500;
+      font-size: 1rem;
 
       &.save-btn {
         background-color: $primary-color;
@@ -156,7 +157,7 @@ $success-color: #4caf50;
 
   // Responsive styles
   @media (max-width: 768px) {
-    padding: $spacing-unit * 2;
+    padding: $spacing-unit * 3;
 
     .header {
       flex-direction: column;

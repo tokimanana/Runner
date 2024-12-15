@@ -5,7 +5,7 @@
 
   <div *ngIf="selectedHotel" class="editor-layout">
     <div class="main-content">
-      <div [ngSwitch]="currentMenuItem">
+      <ng-container [ngSwitch]="currentMenuItem">
         <app-description 
           *ngSwitchCase="'description'"
           [hotel]="selectedHotel"
@@ -44,24 +44,20 @@
         <app-currency
           *ngSwitchCase="'currency'"
           [hotel]="selectedHotel"
+          [show]="true"
         ></app-currency>
 
         <app-contract-list
           *ngSwitchCase="'contract'"
-          (contractSelected)="onContractSelected($event)"
+          [hotel]="selectedHotel"
         ></app-contract-list>
         
         <ng-container *ngSwitchCase="'ratesConfig'">
-          <div *ngIf="!selectedContract" class="no-contract">
-            <p>Please select a contract first from the Contract Management menu</p>
-            <button mat-raised-button color="primary" (click)="goToContractList()">Go to Contract Management</button>
+          <div class="no-contract">
+            <p>Rate Configuration is coming soon!</p>
           </div>
-          <app-rates-config
-            *ngIf="selectedContract"
-            [contract]="selectedContract"
-          ></app-rates-config>
         </ng-container>
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>

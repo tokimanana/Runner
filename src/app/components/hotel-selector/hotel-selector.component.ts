@@ -99,7 +99,7 @@ import { firstValueFrom } from 'rxjs';
       }
     }
 
-    // Responsive adjustments
+    /* Responsive adjustments */
     @media (max-width: 600px) {
       mat-form-field {
         min-width: 200px;

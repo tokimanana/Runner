@@ -26,7 +26,9 @@ import {
   AgeCategory,
   Period,
   ContractRate,
+  ContractPeriodRate,
 } from "../../models/types";
+import { contractRates } from "src/app/data/mock/rates.mock";
 
 export class MockApiService {
   protected static readonly STORAGE_KEYS = {
@@ -40,7 +42,7 @@ export class MockApiService {
     MARKET_GROUPS: "mock_market_groups",
     SEASONS: "mock_seasons",
     CONTRACTS: "mock_contracts",
-
+    CONTRACT_RATES: "mock_contract_rates",
     INITIALIZED: "mock_storage_initialized",
   };
 
@@ -143,6 +145,10 @@ export class MockApiService {
       localStorage.setItem(
         this.STORAGE_KEYS.CONTRACTS,
         JSON.stringify(initialContracts)
+      );
+      localStorage.setItem(
+        this.STORAGE_KEYS.CONTRACT_RATES,
+        JSON.stringify(contractRates)
       );
 
       localStorage.setItem(this.STORAGE_KEYS.INITIALIZED, "true");
@@ -395,15 +401,9 @@ export class MockApiService {
           initialMarketGroups
         ),
         // Resets markets
-        this.setStorageData(
-          this.STORAGE_KEYS.MARKETS,
-          initialMarkets
-        ),
+        this.setStorageData(this.STORAGE_KEYS.MARKETS, initialMarkets),
         // Resets contracts
-        this.setStorageData(
-          this.STORAGE_KEYS.CONTRACTS,
-          initialContracts
-        )
+        this.setStorageData(this.STORAGE_KEYS.CONTRACTS, initialContracts),
       ];
 
       // Execute all reset operations in parallel
@@ -420,10 +420,11 @@ export class MockApiService {
     }
   }
 
-
   static async getTotalContracts(): Promise<number> {
     this.initializeStorage();
-    const contracts = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || '[]');
+    const contracts = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || "[]"
+    );
     return Promise.resolve(contracts.length);
   }
 
@@ -1211,17 +1212,18 @@ export class MockApiService {
   static async getContracts(
     pageSize: number = 10,
     pageIndex: number = 0
-  ): Promise<{ contracts: Contract[], total: number }> {
+  ): Promise<{ contracts: Contract[]; total: number }> {
     this.initializeStorage();
-    const contracts = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || '[]');
+    const contracts = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || "[]"
+    );
     const total = contracts.length;
-    
+
     const start = pageIndex * pageSize;
     const paginatedContracts = contracts.slice(start, start + pageSize);
-    
+
     return Promise.resolve({ contracts: paginatedContracts, total });
   }
-
 
   static async getContractById(id: number): Promise<Contract | null> {
     this.initializeStorage();
@@ -1302,31 +1304,46 @@ export class MockApiService {
     );
   }
 
+  static async getContractRates(
+    contractId: number
+  ): Promise<ContractPeriodRate[]> {
+    this.initializeStorage();
+    const ratesData = localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES);
+    const rates = ratesData ? JSON.parse(ratesData) : {};
+    return Promise.resolve(rates[contractId] || []);
+  }
+
   static async updateContractRates(
     contractId: number,
-    rates: ContractRate[]
+    rates: ContractPeriodRate[]
   ): Promise<Contract> {
     this.initializeStorage();
+
+    const ratesData =
+      localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES) || "{}";
+    const allRates = JSON.parse(ratesData);
+    allRates[contractId] = rates;
+    localStorage.setItem(
+      this.STORAGE_KEYS.CONTRACT_RATES,
+      JSON.stringify(allRates)
+    );
+
     const contracts = JSON.parse(
       localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || "[]"
     );
-    const index = contracts.findIndex(
-      (contract: Contract) => contract.id === contractId
+    const contractIndex = contracts.findIndex(
+      (c: Contract) => c.id === contractId
     );
 
-    if (index === -1) {
-      throw new Error("Contract not found");
+    if (contractIndex !== -1) {
+      contracts[contractIndex].isRatesConfigured = true;
+      localStorage.setItem(
+        this.STORAGE_KEYS.CONTRACTS,
+        JSON.stringify(contracts)
+      );
+      return Promise.resolve(contracts[contractIndex]);
     }
 
-    contracts[index] = {
-      ...contracts[index],
-      rates: rates,
-    };
-
-    localStorage.setItem(
-      this.STORAGE_KEYS.CONTRACTS,
-      JSON.stringify(contracts)
-    );
-    return Promise.resolve(contracts[index]);
+    throw new Error("Contract not found");
   }
 }

@@ -1,61 +1,95 @@
 import { Injectable } from "@angular/core";
-import { Contract, ContractRate, RateConfiguration } from "../models/types";
+import { Contract, ContractPeriodRate, RoomTypeRate, PersonTypeRates } from "../models/types";
 import { MockApiService } from "./mock/mock-api.service";
+import { BehaviorSubject, Observable } from "rxjs";
+import { BaseDataService } from "./base-data.service";
 
-// src/app/services/contract-rate.service.ts
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
-export class ContractRateService {
-  constructor() {}
+export class ContractRateService extends BaseDataService<Contract> {
+  protected override dataSubject = new BehaviorSubject<Contract[]>([]);
 
-  // Move these methods from ContractService
-  async updateContractRates(contractId: number, rates: RateConfiguration): Promise<Contract> {
+  constructor() {
+    super();
+  }
+
+  async getContractRates(contractId: number): Promise<ContractPeriodRate[]> {
     try {
-      const contractRates: ContractRate[] = [{
-        contractId: contractId,
-        periodRates: rates.map(rate => ({
-          periodId: rate.periodId,
-          roomRates: rate.roomRates
-        }))
-      }];
-
-      return MockApiService.updateContractRates(contractId, contractRates);
+      return await MockApiService.getContractRates(contractId);
     } catch (error) {
-      this.handleError('Failed to update contract rates', error);
+      this.handleError(`Failed to get contract rates for contract ID ${contractId}`, error);
       throw error;
     }
   }
 
-  private validateRates(rates: ContractRate[]): boolean {
-    if (!Array.isArray(rates)) {
-      throw new Error('Rates must be an array');
+  async updateContractRates(
+    contractId: number,
+    rates: ContractPeriodRate[]
+  ): Promise<Contract> {
+    try {
+      this.validateRates(rates, contractId);
+      return await MockApiService.updateContractRates(contractId, rates);
+    } catch (error) {
+      this.handleError(`Failed to update contract rates for contract ID ${contractId}`, error);
+      throw error;
     }
-
-    for (const rate of rates) {
-      if (!rate.contractId) {
-        throw new Error('Contract ID is required for rates');
-      }
-
-      if (!Array.isArray(rate.periodRates)) {
-        throw new Error('Period rates must be an array');
-      }
-
-      for (const periodRate of rate.periodRates) {
-        if (!periodRate.periodId) {
-          throw new Error('Period ID is required for period rates');
-        }
-
-        if (!Array.isArray(periodRate.roomRates)) {
-          throw new Error('Room rates must be an array');
-        }
-      }
-    }
-
-    return true;
   }
 
-  protected handleError(message: string, error: any): void {
-    console.error('Contract rate service error:', message, error);
+  protected validateRates(rates: ContractPeriodRate[], contractId: number): void {
+    if (!Array.isArray(rates) || rates.length === 0) {
+      throw new Error(`Invalid rate configuration: Rates array is empty or not an array for contract ID ${contractId}`);
+    }
+
+    for (const period of rates) {
+      this.validatePeriodRates(period, contractId);
+    }
+  }
+
+  private validatePeriodRates(period: ContractPeriodRate, contractId: number): void {
+    if (!period.roomRates || !Array.isArray(period.roomRates)) {
+        throw new Error(`Invalid rate configuration: Room rates array is missing or not an array for contract ID ${contractId} and period ID ${period.periodId}`);
+    }
+
+    for (const roomRate of period.roomRates) {
+      this.validateRoomRate(roomRate, contractId, period.periodId);
+    }
+  }
+
+  private validateRoomRate(roomRate: RoomTypeRate, contractId: number, periodId: number): void {
+    if (roomRate.rateType === "per_villa") {
+      this.validatePerVillaRate(roomRate, contractId, periodId);
+    } else if (roomRate.rateType === "per_pax") {
+      this.validatePerPaxRate(roomRate, contractId, periodId);
+    } else {
+      throw new Error(`Invalid rate configuration: Invalid rate type "${roomRate.rateType}" for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+    }
+  }
+
+  private validatePerVillaRate(roomRate: RoomTypeRate, contractId: number, periodId: number): void {
+    if (typeof roomRate.villaRate !== "number") {
+      throw new Error(`Invalid rate configuration: Villa rate is not a number for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+    }
+  }
+
+  private validatePerPaxRate(roomRate: RoomTypeRate, contractId: number, periodId: number): void {
+      if (!roomRate.personTypeRates) {
+          throw new Error(`Invalid rate configuration: Person type rates are missing for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+      }
+
+      if (!this.hasValidPersonTypeRates(roomRate.personTypeRates)) {
+          throw new Error(`Invalid rate configuration: No valid person type rates found for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+      }
+  }
+
+  private hasValidPersonTypeRates(personTypeRates: PersonTypeRates): boolean {
+    return Object.keys(personTypeRates).some((personType) => {
+      const rates = personTypeRates[personType]?.rates;
+      return rates && Object.keys(rates).length > 0;
+    });
+  }
+
+  protected override handleError(message: string, error: any): void {
+    console.error("Contract rate service error:", message, error);
   }
 }

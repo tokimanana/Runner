@@ -374,16 +374,18 @@ export interface ContractPeriodRate {
   roomRates: RoomTypeRate[];
 }
 
-export interface RoomTypeRate {
-  roomTypeId: number;
-  rateType: 'per_pax' | 'per_villa';
-  personTypeRates?: {
+export type PersonTypeRates = {
     [personType: string]: {  // 'adult', 'child', 'teen', 'infant', etc.
       rates: {
         [count: number]: number;  // 1: rate for first person, 2: rate for second person, etc.
       };
     };
   };
+
+export interface RoomTypeRate {
+  roomTypeId: number;
+  rateType: 'per_pax' | 'per_villa';
+  personTypeRates?: PersonTypeRates;
   villaRate?: number;
   mealPlanRates: {
     [mealPlanId: string]: {

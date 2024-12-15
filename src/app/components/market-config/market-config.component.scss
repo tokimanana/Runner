@@ -84,7 +84,7 @@ $spacing-unit: 8px;
           .region-tag {
             background-color: rgba($primary-color, 0.1);
             color: $primary-color;
-            padding: $spacing-unit/2 $spacing-unit;
+            padding: calc($spacing-unit / 2) $spacing-unit;
             border-radius: $spacing-unit * 2;
             font-size: 12px;
           }
@@ -92,11 +92,11 @@ $spacing-unit: 8px;
 
         .group-metrics {
           @include flex-center;
-          gap: $spacing-;
+          gap: $spacing-unit;
 
           .metric, .currency {
             @include flex-center;
-            gap: $spacing-unit/2;
+            gap: calc($spacing-unit / 2);
             color: $text-secondary;
             font-size: 14px;
           }
@@ -135,7 +135,7 @@ $spacing-unit: 8px;
 
           .status-indicator {
             @include flex-center;
-            gap: $spacing-unit/2;
+            gap: calc($spacing-unit / 2);
             
             &.active {
               color: $success-color;

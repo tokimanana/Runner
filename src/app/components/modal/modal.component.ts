@@ -42,9 +42,15 @@ export class ModalComponent {
   // Initialize form data when initialValues changes
   constructor() {
     // Watch for changes in initialValues
-    effect(() => {
+    // effect(() => {
+    //   this.formData.update(() => ({...this.initialValues()}));
+    // });
+  }
+
+  ngOnChanges() {
+    if (this.show()) {
       this.formData.set({...this.initialValues()});
-    });
+    }
   }
 
   onBackdropClick(event: MouseEvent) {

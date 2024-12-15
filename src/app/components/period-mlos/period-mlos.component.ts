@@ -1,5 +1,4 @@
-// period-mlos.component.ts
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -72,7 +71,7 @@ export class PeriodMlosComponent implements OnInit, OnDestroy {
   editingSeason: Season | null = null;
   editingPeriod: Period | null = null;
   currentSeason: Season | null = null;
-  hotel!: Hotel;
+  @Input({ required: true }) hotel!: Hotel;
 
   // Computed values
   activeSeasonsCount = computed(() => 

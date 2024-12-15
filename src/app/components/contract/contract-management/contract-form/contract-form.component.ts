@@ -10,7 +10,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTabsModule } from "@angular/material/tabs";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, switchMap } from "rxjs";
 import {
   Contract,
   Hotel,
@@ -24,6 +24,7 @@ import { HotelService } from "src/app/services/hotel.service";
 import { MarketService } from "src/app/services/market.service";
 import { SeasonService } from "src/app/services/season.service";
 import { ContractDialogData } from "../contract-list/contract-list.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 @Component({
   selector: "app-contract-form",
@@ -40,7 +41,8 @@ import { ContractDialogData } from "../contract-list/contract-list.component";
     MatTabsModule,
     MatProgressSpinnerModule, 
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatCheckboxModule
     // ... any other modules you need
   ],
 })
@@ -150,13 +152,17 @@ export class ContractFormComponent implements OnInit {
 
 
   private patchFormData(contract: Contract) {
-    this.contractForm.patchValue({
-      ...contract,
-      hotelId: contract.hotelId,
-      marketId: contract.marketId,
-      seasonId: contract.seasonId,
-      selectedRooms: contract.selectedRoomTypes || [],
-      selectedMealPlans: contract.selectedMealPlans || [],
+    if (!contract.hotelId) return;
+    this.hotelService.getRoomTypes(contract.hotelId).subscribe(roomTypes => {
+      const selectedRooms = roomTypes.filter(room => contract.selectedRoomTypes?.includes(room.id));
+      this.contractForm.patchValue({
+        ...contract,
+        hotelId: contract.hotelId,
+        marketId: contract.marketId,
+        seasonId: contract.seasonId,
+        selectedRooms: selectedRooms,
+        selectedMealPlans: contract.selectedMealPlans || [],
+      });
     });
   }
 
@@ -165,10 +171,13 @@ export class ContractFormComponent implements OnInit {
 
     try {
       this.loading.set(true);
+      // Use the new getRoomTypes method
+      this.hotelService.getRoomTypes(hotelId).subscribe(roomTypes => {
+        this.roomTypes.set(roomTypes);
+      });
       const hotel = await this.hotelService.getHotelById(hotelId);
 
       if (hotel) {
-        this.roomTypes.set(hotel.roomTypes || []);
         this.mealPlans.set(hotel.mealPlans || []);
       }
     } catch (error) {
@@ -179,22 +188,39 @@ export class ContractFormComponent implements OnInit {
     }
   }
 
+  onRoomTypeChange(checked: boolean, room: RoomType) {
+    const selectedRooms = this.contractForm.value.selectedRooms || [];
+    if (checked) {
+      this.contractForm.patchValue({
+        selectedRooms: [...selectedRooms, room]
+      });
+    } else {
+      this.contractForm.patchValue({
+        selectedRooms: selectedRooms.filter((selectedRoom: any) => selectedRoom.id !== room.id)
+      });
+    }
+  }
+
   async onSubmit() {
     if (this.contractForm.invalid) return;
 
     try {
       this.loading.set(true);
       const formData = this.contractForm.value;
+      
+      // Convert selectedRooms back to IDs before submitting
+      const selectedRoomIds = formData.selectedRooms.map((room: RoomType) => room.id);
+      const formDataWithRoomIds = { ...formData, selectedRooms: selectedRoomIds };
 
       if (this.isEditMode()) {
         // Use the type guard before accessing contract
         this.ensureContract(this.data.contract);
         await this.contractService.updateContract(
           this.data.contract.id,
-          formData
+          formDataWithRoomIds
         );
       } else {
-        await this.contractService.createContract(formData);
+        await this.contractService.createContract(formDataWithRoomIds);
       }
 
       this.dialogRef.close(true);

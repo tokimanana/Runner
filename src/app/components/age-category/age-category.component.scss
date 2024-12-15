@@ -1,6 +1,3 @@
-// age-category.component.scss
-
-// Variables
 $primary-color: #1976d2;
 $error-color: #f44336;
 $success-color: #4caf50;
@@ -10,7 +7,7 @@ $text-secondary: #666666;
 $card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 $spacing-unit: 8px;
 
-// Mixins
+
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -28,7 +25,7 @@ $spacing-unit: 8px;
   max-width: 800px;
   margin: 0 auto;
 
-  // Status messages
+
   .success-message,
   .error-message {
     @include flex-center;
@@ -96,7 +93,7 @@ $spacing-unit: 8px;
       .age-range {
         color: $text-secondary;
         font-size: 0.9rem;
-        margin-top: $spacing-unit/2;
+        margin-top: calc($spacing-unit / 2);
       }
     }
   }
@@ -107,7 +104,6 @@ $spacing-unit: 8px;
   }
 }
 
-// Form Styles
 form {
   @include card;
   margin-top: $spacing-unit * 3;
@@ -144,7 +140,7 @@ form {
   }
 }
 
-// Responsive Design
+
 @media (max-width: 768px) {
   .age-categories-content {
     padding: $spacing-unit * 2;

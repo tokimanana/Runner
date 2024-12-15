@@ -1,5 +1,4 @@
-// src/app/components/contract/contract-management/contract-list/contract-list.component.ts
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, signal, inject, DestroyRef, computed, effect } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, signal, inject, DestroyRef, computed, effect, Input } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialogModule } from '@angular/material/dialog';
 import { BehaviorSubject, firstValueFrom, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -92,6 +91,8 @@ export class ContractListComponent implements OnInit, OnDestroy {
   // Computed values (if needed)
   hasContracts = computed(() => this.contracts().length > 0);
   
+  @Input({ required: true }) hotel!: Hotel;
+
   constructor(
     private dialog: MatDialog,
     private router: Router,

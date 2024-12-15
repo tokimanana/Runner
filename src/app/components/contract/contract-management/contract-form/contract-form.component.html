@@ -66,14 +66,18 @@
       <!-- Room Types & Meal Plans Tab -->
       <mat-tab label="Room Types & Meal Plans">
         <div class="tab-content">
-          <mat-form-field appearance="outline">
-            <mat-label>Room Types</mat-label>
-            <mat-select formControlName="selectedRooms" multiple required>
-              @for (room of roomTypes(); track room.id) {
-                <mat-option [value]="room.id">{{ room.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <div class="room-types-container">
+            <label class="mat-mdc-form-field-label">Room Types</label>
+            @for (room of roomTypes(); track room.id) {
+              <mat-checkbox
+                [value]="room.id.toString()"
+                (change)="onRoomTypeChange($event.checked, room)"
+                [checked]="contractForm.value.selectedRooms?.includes(room.id)"
+              >
+                {{ room.name }}
+              </mat-checkbox>
+            }
+          </div>
 
           <mat-form-field appearance="outline">
             <mat-label>Meal Plans</mat-label>
