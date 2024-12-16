@@ -3,13 +3,11 @@
   <h2>{{ formTitle() }}</h2>
 
   @if (loading()) {
-    <div class="loading-overlay">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
-  }
-
-  @if (error()) {
-    <mat-error class="error-message">{{ error() }}</mat-error>
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+  } @if (error()) {
+  <mat-error class="error-message">{{ error() }}</mat-error>
   }
 
   <form [formGroup]="contractForm" (ngSubmit)="onSubmit()">
@@ -19,7 +17,7 @@
         <div class="tab-content">
           <mat-form-field appearance="outline">
             <mat-label>Contract Name</mat-label>
-            <input matInput formControlName="name" required>
+            <input matInput formControlName="name" required />
             <mat-error *ngIf="contractForm.get('name')?.hasError('required')">
               Contract name is required
             </mat-error>
@@ -27,11 +25,13 @@
 
           <mat-form-field appearance="outline">
             <mat-label>Hotel</mat-label>
-            <mat-select formControlName="hotelId" 
-                       (selectionChange)="onHotelChange($event.value)" 
-                       required>
+            <mat-select
+              formControlName="hotelId"
+              (selectionChange)="onHotelChange($event.value)"
+              required
+            >
               @for (hotel of hotels(); track hotel.id) {
-                <mat-option [value]="hotel.id">{{ hotel.name }}</mat-option>
+              <mat-option [value]="hotel.id">{{ hotel.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -40,26 +40,21 @@
             <mat-label>Market</mat-label>
             <mat-select formControlName="marketId" required>
               @for (market of markets(); track market.id) {
-                <mat-option [value]="market.id">{{ market.name }}</mat-option>
+              <mat-option [value]="market.id">{{ market.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
 
-          <div class="date-range">
-            <mat-form-field appearance="outline">
-                <mat-label>Valid From</mat-label>
-                <input matInput [matDatepicker]="startPicker" formControlName="validFrom" required>
-                <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-                <mat-datepicker #startPicker></mat-datepicker>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Valid To</mat-label>
-              <input matInput [matDatepicker]="endPicker" formControlName="validTo" required>
-              <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-              <mat-datepicker #endPicker></mat-datepicker>
-            </mat-form-field>
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Season</mat-label>
+            <mat-select formControlName="seasonId" required>
+              @for (season of seasons(); track season.id) {
+                <mat-option [value]="season.id">
+                  {{ season.name }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
       </mat-tab>
 
@@ -70,23 +65,27 @@
             <label class="mat-mdc-form-field-label">Room Types</label>
             @for (room of roomTypes(); track room.id) {
               <mat-checkbox
-                [value]="room.id.toString()"
+                [checked]="isRoomSelected(room)"
                 (change)="onRoomTypeChange($event.checked, room)"
-                [checked]="contractForm.value.selectedRooms?.includes(room.id)"
               >
                 {{ room.name }}
               </mat-checkbox>
             }
           </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Meal Plans</mat-label>
-            <mat-select formControlName="selectedMealPlans" multiple required>
-              @for (plan of mealPlans(); track plan.id) {
-                <mat-option [value]="plan.id">{{ plan.name }}</mat-option>
+      
+          <div class="meal-plans-section">
+            <label class="mat-mdc-form-field-label">Meal Plans</label>
+            <div class="meal-plans-container">
+              @for (mealPlan of mealPlans(); track mealPlan.type) {
+                <mat-checkbox
+                  [checked]="isMealPlanSelected(mealPlan)"
+                  (change)="onMealPlanChange($event.checked, mealPlan)"
+                >
+                  {{ mealPlan.name }} ({{ mealPlan.type }})
+                </mat-checkbox>
               }
-            </mat-select>
-          </mat-form-field>
+            </div>
+          </div>
         </div>
       </mat-tab>
     </mat-tab-group>
@@ -94,9 +93,12 @@
     <!-- Form Actions -->
     <div class="form-actions">
       <button mat-button type="button" (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" 
-              type="submit" 
-              [disabled]="!contractForm.valid || loading()">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="!contractForm.valid || loading()"
+      >
         {{ submitButtonText() }}
       </button>
     </div>

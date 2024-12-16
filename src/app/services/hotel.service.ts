@@ -184,7 +184,7 @@ export class HotelService extends BaseDataService<Hotel> {
       })
     );
   }
-
+  
   getHotelDressCode(hotelId: number): Observable<DressCodePolicy | null> {
     return this.getHotelData<DressCodePolicy>(hotelId, 'dressCode').pipe(
       catchError(error => {

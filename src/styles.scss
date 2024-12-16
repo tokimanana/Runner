@@ -151,6 +151,12 @@ html, body {
   }
 }
 
+.rates-config-dialog {
+  .mat-mdc-dialog-container {
+    padding: 0;
+  }
+}
+
 // Button styles
 .btn {
   padding: $spacing-sm $spacing-md;

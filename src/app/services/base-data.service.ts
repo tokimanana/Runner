@@ -1,6 +1,6 @@
 // src/app/services/base-data.service.ts
 
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, take } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { MockApiService } from './mock/mock-api.service';
 
@@ -110,7 +110,7 @@ export abstract class BaseDataService<T> {
   }
 
   getData(): Observable<T[]> {
-    return this.dataSubject.asObservable();
+    return this.dataSubject.asObservable().pipe(take(1));
   }
 
   getSelected(): Observable<T | null> {

@@ -1,177 +1,109 @@
-// policies.component.scss
+:host {
+  .policies-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
 
-// Variables
-$primary-color: #1976d2;
-$secondary-color: #f5f5f5;
-$border-color: #e0e0e0;
-$text-primary: #333;
-$text-secondary: #666;
-$spacing-unit: 1rem;
-$border-radius: 8px;
-$transition-speed: 0.3s;
-
-// Mixins
-@mixin card-shadow {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-}
-
-.policies-container {
-  padding: $spacing-unit * 1.5;
-  max-width: 1200px;
-  margin: 0 auto;
-  
-  // Grid layout for policy sections
-  .policies-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: $spacing-unit * 1.5;
-  }
-}
-
-.policy-card {
-  background: white;
-  border-radius: $border-radius;
-  padding: $spacing-unit;
-  @include card-shadow;
-  transition: transform $transition-speed ease;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
-
-  .card-header {
-    @include flex-center;
-    justify-content: space-between;
-    margin-bottom: $spacing-unit;
-
-    h3 {
-      color: $text-primary;
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-
-    .edit-button {
-      color: $primary-color;
-      border: none;
-      background: none;
-      cursor: pointer;
-      padding: $spacing-unit * 0.5;
-      border-radius: 4px;
-      transition: background-color $transition-speed ease;
+    .policy-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
 
       &:hover {
-        background-color: rgba($primary-color, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
       }
 
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-    }
-  }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eee;
 
-  .policy-content {
-    .info-group {
-      margin-bottom: $spacing-unit;
-
-      .label {
-        color: $text-secondary;
-        font-size: 0.875rem;
-        margin-bottom: $spacing-unit * 0.25;
-      }
-
-      .value {
-        color: $text-primary;
-        font-size: 1rem;
-      }
-    }
-
-    .policy-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-
-      li {
-        @include flex-center;
-        padding: $spacing-unit * 0.5 0;
-        border-bottom: 1px solid $border-color;
-
-        &:last-child {
-          border-bottom: none;
+        h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          color: #2c3e50;
+          font-weight: 500;
         }
 
-        &::before {
-          content: "•";
-          color: $primary-color;
-          margin-right: $spacing-unit * 0.5;
+        .edit-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 6px;
+          background: #f8f9fa;
+          color: #0066cc;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+
+          &:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+          }
         }
       }
-    }
-  }
-}
 
-// Modal styles
-.policy-modal {
-  .modal-header {
-    @include flex-center;
-    justify-content: space-between;
-    padding: $spacing-unit;
-    border-bottom: 1px solid $border-color;
+      .policy-content {
+        p {
+          margin-bottom: 16px;
+          color: #4a5568;
+          line-height: 1.6;
 
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-  }
+          strong {
+            color: #2d3748;
+            font-weight: 500;
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 160px;
+          }
+        }
 
-  .modal-content {
-    padding: $spacing-unit;
+        .restrictions-list, .requirements-list {
+          margin-top: 20px;
 
-    .form-field {
-      margin-bottom: $spacing-unit;
+          strong {
+            display: block;
+            margin-bottom: 12px;
+            color: #2d3748;
+            font-weight: 500;
+          }
 
-      &.array-field {
-        background: $secondary-color;
-        padding: $spacing-unit;
-        border-radius: $border-radius;
-        margin-top: $spacing-unit;
+          ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
 
-        .array-item {
-          @include flex-center;
-          gap: $spacing-unit;
-          margin-bottom: $spacing-unit * 0.5;
+            li {
+              padding: 12px 0;
+              color: #4a5568;
+              border-bottom: 1px solid #edf2f7;
+              transition: background-color 0.2s ease;
 
-          .remove-button {
-            color: #f44336;
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &:hover {
+                background-color: #f8fafc;
+                padding-left: 8px;
+              }
+            }
           }
         }
       }
     }
-  }
-
-  .modal-footer {
-    @include flex-center;
-    justify-content: flex-end;
-    gap: $spacing-unit;
-    padding: $spacing-unit;
-    border-top: 1px solid $border-color;
-  }
-}
-
-// Responsive adjustments
-@media (max-width: 768px) {
-  .policies-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .policy-card {
-    margin-bottom: $spacing-unit;
   }
 }

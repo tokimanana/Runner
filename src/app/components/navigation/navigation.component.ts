@@ -1,17 +1,17 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
-import { HotelSelectorComponent } from '../hotel-selector/hotel-selector.component';
-import { ContentEditorComponent } from '../content-editor/content-editor.component';
-import { HotelService } from '../../services/hotel.service';
-import { Hotel, MenuItem, MenuItemId } from '../../models/types';
-import { Subscription } from 'rxjs';
+import { Component, OnInit, OnDestroy } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { MatTabsModule } from "@angular/material/tabs";
+import { MatIconModule } from "@angular/material/icon";
+import { MatSidenavModule } from "@angular/material/sidenav";
+import { MatListModule } from "@angular/material/list";
+import { HotelSelectorComponent } from "../hotel-selector/hotel-selector.component";
+import { ContentEditorComponent } from "../content-editor/content-editor.component";
+import { HotelService } from "../../services/hotel.service";
+import { Hotel, MenuItem, MenuItemId } from "../../models/types";
+import { Subscription } from "rxjs";
 
 @Component({
-  selector: 'app-navigation',
+  selector: "app-navigation",
   standalone: true,
   imports: [
     CommonModule,
@@ -20,53 +20,50 @@ import { Subscription } from 'rxjs';
     MatSidenavModule,
     MatListModule,
     HotelSelectorComponent,
-    ContentEditorComponent
+    ContentEditorComponent,
   ],
-  templateUrl: './navigation.component.html',
-  styleUrls: ['./navigation.component.scss']
+  templateUrl: "./navigation.component.html",
+  styleUrls: ["./navigation.component.scss"],
 })
 export class NavigationComponent implements OnInit, OnDestroy {
   selectedTabIndex = 0;
   selectedHotel: Hotel | null = null;
-  currentMenuItem: MenuItemId = 'description';
+  currentMenuItem: MenuItemId = "description";
   private subscription: Subscription = new Subscription();
 
   navigationTabs = [
-    { id: 'hotel', label: 'Hotel Management', icon: 'business' },
-    { id: 'setup', label: 'Configuration', icon: 'settings' },
-    { id: 'rates', label: 'Rate Management', icon: 'attach_money' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' }
+    { id: "hotel", label: "Hotel Management", icon: "business" },
+    { id: "setup", label: "Configuration", icon: "settings" },
+    { id: "rates", label: "Rate Management", icon: "attach_money" },
+    { id: "inventory", label: "Inventory", icon: "inventory_2" },
   ];
 
   defaultMenuItems: { [key: string]: MenuItemId } = {
-    'hotel': 'description',
-    'setup': 'age-categories',
-    'rates': 'contract',
-    'inventory': 'roomInventory'
+    hotel: "description",
+    setup: "age-categories",
+    rates: "contract",
+    inventory: "roomInventory",
   };
 
   menuItems: { [key: string]: MenuItem[] } = {
-    'hotel': [
-      { id: 'description', icon: 'info', label: 'Basic Information' },
-      { id: 'policies', icon: 'policy', label: 'Policies' },
-      { id: 'capacity', icon: 'hotel', label: 'Room Types' },
-      { id: 'mealPlan', icon: 'restaurant', label: 'Meal Plans' }
+    hotel: [
+      { id: "description", icon: "info", label: "Basic Information" },
+      { id: "policies", icon: "policy", label: "Policies" },
+      { id: "capacity", icon: "hotel", label: "Room Types" },
+      { id: "mealPlan", icon: "restaurant", label: "Meal Plans" },
     ],
-    'setup': [
-      { id: 'age-categories', icon: 'people', label: 'Age Categories' },
-      { id: 'currency', icon: 'currency_exchange', label: 'Currency Settings' },
-      { id: 'markets', icon: 'public', label: 'Markets' },
-      { id: 'periodAndMlos', icon: 'calendar_today', label: 'Periods & MLOS' }
+    setup: [
+      { id: "age-categories", icon: "people", label: "Age Categories" },
+      { id: "currency", icon: "currency_exchange", label: "Currency Settings" },
+      { id: "markets", icon: "public", label: "Markets" },
+      { id: "periodAndMlos", icon: "calendar_today", label: "Periods & MLOS" },
     ],
-    'rates': [
-      { id: 'contract', icon: 'description', label: 'Contract Management' },
-      { id: 'ratesConfig', icon: 'price_change', label: 'Rate Configuration' },
-      { id: 'supplements', icon: 'add_circle', label: 'Supplements' }
+    rates: [
+      { id: "contract", icon: "description", label: "Contract Management" },
+      { id: "ratesConfig", icon: "price_change", label: "Rate Configuration" },
+      { id: "supplements", icon: "add_circle", label: "Supplements" },
     ],
-    'inventory': [
-      { id: 'capacity', icon: 'hotel', label: 'Room Inventory' },
-      { id: 'mealPlan', icon: 'event_seat', label: 'Room Types' }
-    ]
+    inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
   };
 
   constructor(private hotelService: HotelService) {}
@@ -79,11 +76,13 @@ export class NavigationComponent implements OnInit, OnDestroy {
     );
 
     this.subscription.add(
-      this.hotelService.selectedMenuItem$.subscribe((menuItem: string | null) => {
-        if (menuItem && this.isValidMenuItem(menuItem)) {
-          this.currentMenuItem = menuItem;
+      this.hotelService.selectedMenuItem$.subscribe(
+        (menuItem: string | null) => {
+          if (menuItem && this.isValidMenuItem(menuItem)) {
+            this.currentMenuItem = menuItem;
+          }
         }
-      })
+      )
     );
   }
 
@@ -111,6 +110,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
   }
 
   onMenuItemClick(item: MenuItem): void {
+    console.log("Selected menu item:", item.id);
     this.hotelService.setSelectedMenuItem(item.id);
   }
 
@@ -121,6 +121,6 @@ export class NavigationComponent implements OnInit, OnDestroy {
   private isValidMenuItem(item: string): item is MenuItemId {
     return Object.values(this.menuItems)
       .flat()
-      .some(menuItem => menuItem.id === item);
+      .some((menuItem) => menuItem.id === item);
   }
 }

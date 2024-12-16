@@ -6,52 +6,51 @@
   <div *ngIf="selectedHotel" class="editor-layout">
     <div class="main-content">
       <ng-container [ngSwitch]="currentMenuItem">
-        <app-description 
+        <app-description
           *ngSwitchCase="'description'"
           [hotel]="selectedHotel"
         ></app-description>
-        
+
         <app-policies
           *ngSwitchCase="'policies'"
           [hotel]="selectedHotel"
         ></app-policies>
-        
+
         <app-room-types
           *ngSwitchCase="'capacity'"
           [hotel]="selectedHotel"
         ></app-room-types>
-        
+
         <app-meal-plan
           *ngSwitchCase="'mealPlan'"
           [hotel]="selectedHotel"
         ></app-meal-plan>
-        
-        <app-period-mlos
-          *ngSwitchCase="'periodAndMlos'"
+
+        <app-currency
+          *ngSwitchCase="'currency'"
           [hotel]="selectedHotel"
-        ></app-period-mlos>
-        
-        <app-age-category
-          *ngSwitchCase="'age-categories'"
-          [hotel]="selectedHotel"
-        ></app-age-category>
+        ></app-currency>
 
         <app-market-config
           *ngSwitchCase="'markets'"
           [hotel]="selectedHotel"
         ></app-market-config>
 
-        <app-currency
-          *ngSwitchCase="'currency'"
+        <app-period-mlos
+          *ngSwitchCase="'periodAndMlos'"
           [hotel]="selectedHotel"
-          [show]="true"
-        ></app-currency>
+        ></app-period-mlos>
+
+        <app-age-category
+          *ngSwitchCase="'age-categories'"
+          [hotel]="selectedHotel"
+        ></app-age-category>
 
         <app-contract-list
           *ngSwitchCase="'contract'"
           [hotel]="selectedHotel"
         ></app-contract-list>
-        
+
         <ng-container *ngSwitchCase="'ratesConfig'">
           <div class="no-contract">
             <p>Rate Configuration is coming soon!</p>

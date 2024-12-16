@@ -43,7 +43,7 @@ import { CurrencyService } from 'src/app/services/currency.service';
     ModalComponent
   ]
 })
-export class MarketConfigComponent implements OnInit, OnDestroy {
+export class MarketConfigComponent implements OnDestroy {
    // Input signals
    hotel = input.required<Hotel>();
   
@@ -53,6 +53,7 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
    currencySettings = signal<CurrencySetting[]>([]);
    selectedMarket = signal<Market | null>(null);
    selectedMarketGroup = signal<MarketGroup | null>(null);
+   isLoading = signal(false);
    
    // Modal signals
    showMarketModal = signal(false);
@@ -79,19 +80,15 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
    private destroy$ = new Subject<void>();
  
    constructor(
-     private marketService: MarketService,
-     private currencyService: CurrencyService
-   ) {
-     // Setup effects
-     effect(() => {
-       if (this.hotel()) {
-         this.loadMarketData();
-       }
-     });
-   }
-
-   ngOnInit() {
-    // Any initialization logic if needed
+    private marketService: MarketService,
+    private currencyService: CurrencyService
+  ) {
+    effect(() => {
+      const currentHotel = this.hotel();
+      if (currentHotel) {
+        this.loadMarketData();
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngOnDestroy() {
@@ -99,20 +96,24 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
  
-   private async loadMarketData() {
-    try {
-      // Use firstValueFrom to convert observables to promises
-      const [markets, groups, currencies] = await Promise.all([
-        firstValueFrom(this.marketService.markets$),
-        firstValueFrom(this.marketService.marketGroups$),
-        firstValueFrom(this.currencyService.getCurrencySettings())
-      ]);
-      
-      this.markets.set(markets);
-      this.marketGroups.set(groups);
-      this.currencySettings.set(currencies);
-    } catch (error) {
-      console.error('Error loading market data:', error);
+  private async loadMarketData() {
+    if (!this.isLoading()) {
+      try {
+        this.isLoading.set(true);
+        const [markets, groups, currencies] = await Promise.all([
+          firstValueFrom(this.marketService.markets$),
+          firstValueFrom(this.marketService.marketGroups$),
+          firstValueFrom(this.currencyService.getCurrencySettings())
+        ]);
+        
+        this.markets.set(markets);
+        this.marketGroups.set(groups);
+        this.currencySettings.set(currencies);
+      } catch (error) {
+        console.error('Error loading market data:', error);
+      } finally {
+        this.isLoading.set(false);
+      }
     }
   }
  

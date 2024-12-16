@@ -1,0 +1,29 @@
+<h2 mat-dialog-title>{{ data.title }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="currencyForm">
+    <mat-form-field>
+      <mat-label>Currency Code</mat-label>
+      <input matInput formControlName="code" required>
+      <mat-error *ngIf="currencyForm.get('code')?.hasError('required')">Currency code is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Symbol</mat-label>
+      <input matInput formControlName="symbol" required>
+      <mat-error *ngIf="currencyForm.get('symbol')?.hasError('required')">Symbol is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Currency Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="currencyForm.get('name')?.hasError('required')">Currency name is required</mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-raised-button color="primary" (click)="saveCurrency()" [disabled]="currencyForm.invalid || isLoading()">
+    <span *ngIf="!isLoading()">Save</span>
+    <mat-spinner *ngIf="isLoading()" diameter="20"></mat-spinner>
+  </button>
+</mat-dialog-actions>

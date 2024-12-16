@@ -355,7 +355,7 @@ export interface Contract {
   hotelId: number;
   description?: string;
   status: ContractStatus;
-  validityPeriod: { 
+  validityPeriod?: { 
     startDate: string;
     endDate: string; 
   }; //automatically defined by the season

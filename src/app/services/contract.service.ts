@@ -92,17 +92,6 @@ export class ContractService extends BaseDataService<Contract> {
 
   // In ContractService or similar service
   private validateContract(contract: Contract): boolean {
-    // Basic validation rules
-    if (!contract.name || !contract.validityPeriod.startDate || !contract.validityPeriod.endDate) {
-      return false;
-    }
-
-    // Validate dates
-    const start = new Date(contract.validityPeriod.startDate);
-    const end = new Date(contract.validityPeriod.endDate);
-    if (start >= end) {
-      return false;
-    }
 
     // Validate that room types and meal plans are selected
     if (!contract.selectedRoomTypes.length || !contract.selectedMealPlans.length) {

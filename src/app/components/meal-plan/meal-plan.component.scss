@@ -1,13 +1,15 @@
-// Variables
-$primary-color: #1976d2;
-$border-color: #e0e0e0;
-$text-primary: #1a1a1a;
-$text-secondary: #666;
-$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-$border-radius: 8px;
+// src/app/components/meal-plan/meal-plan.component.scss
+
+// Enhanced variables with more modern colors and shadows
+$primary-color: #2563eb;
+$border-color: #e5e7eb;
+$text-primary: #1f2937;
+$text-secondary: #4b5563;
+$card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$border-radius: 10px;
 $spacing-base: 8px;
 
-// Mixins
+// Enhanced mixins
 @mixin flex-between {
   display: flex;
   justify-content: space-between;
@@ -18,14 +20,12 @@ $spacing-base: 8px;
   background: #fff;
   border-radius: $border-radius;
   box-shadow: $card-shadow;
-  border: 1px solid $border-color;
-}
+  border: 1px solid rgba($border-color, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
-@mixin list-bullet {
-  &:before {
-    content: "•";
-    color: $primary-color;
-    margin-right: $spacing-base;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -34,118 +34,121 @@ $spacing-base: 8px;
   padding: $spacing-base * 3;
   height: 100%;
   overflow-y: auto;
-  background: #fff;
+  background: #f8fafc;
 
   .dashboard-header {
     @include flex-between;
-    margin-bottom: $spacing-base * 3;
+    margin-bottom: $spacing-base * 4;
+    
+    button {
+      background: $primary-color;
+      color: white;
+      padding: $spacing-base * 1.5 $spacing-base * 3;
+      border-radius: $border-radius;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: $spacing-base;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: darken($primary-color, 10%);
+        transform: translateY(-1px);
+      }
+
+      mat-icon {
+        font-size: 20px;
+      }
+    }
   }
 }
 
-// Title section
+// Title section with improved typography
 .title-section {
   h2 {
     margin: 0;
-    font-size: 24px;
-    font-weight: 500;
+    font-size: 28px;
+    font-weight: 600;
     color: $text-primary;
+    letter-spacing: -0.5px;
   }
 
   .subtitle {
-    margin: 4px 0 0;
+    margin: 8px 0 0;
     color: $text-secondary;
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
-// Grid layout
+// Enhanced grid layout
 .meal-plans-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: $spacing-base * 3;
   margin-top: $spacing-base * 3;
 }
 
-// Meal plan card
+// Improved meal plan card
 .meal-plan-card {
   @include card;
-  padding: $spacing-base * 2.5;
+  padding: $spacing-base * 3;
 
   .card-header {
     @include flex-between;
-    margin-bottom: $spacing-base * 2;
-  }
+    margin-bottom: $spacing-base * 2.5;
 
-  .plan-info {
     .plan-type {
-      font-size: 18px;
-      font-weight: 500;
+      font-size: 20px;
+      font-weight: 600;
       color: $text-primary;
     }
   }
 
-  .actions {
+  .description {
+    color: $text-secondary;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: $spacing-base * 2.5;
+  }
+
+  .meals-list {
     display: flex;
+    flex-wrap: wrap;
     gap: $spacing-base;
+
+    .meal-tag {
+      background: rgba($primary-color, 0.1);
+      color: $primary-color;
+      padding: $spacing-base $spacing-base * 1.5;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
   }
 }
 
-// Content sections
-.description {
-  color: $text-secondary;
-  font-size: 14px;
-  margin-bottom: $spacing-base * 2;
-  line-height: 1.5;
-}
-
-.included-meals,
-.default-inclusions,
-.restrictions {
-  margin-top: $spacing-base * 2;
-
-  h4 {
-    font-size: 14px;
-    font-weight: 500;
-    color: $text-primary;
-    margin-bottom: $spacing-base;
-  }
-}
-
-// Lists
-.meals-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-base;
-
-  .meal-tag {
-    background: #e3f2fd;
-    color: $primary-color;
-    padding: calc($spacing-base / 2) $spacing-base;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-}
-
+// Enhanced lists
 .inclusions-list,
 .restrictions-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
   li {
-    font-size: 14px;
+    position: relative;
+    padding: $spacing-base $spacing-base * 3;
     color: $text-secondary;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    padding: calc($spacing-base / 2) 0;
-    @include list-bullet;
+    font-size: 15px;
+
+    &::before {
+      content: "•";
+      color: $primary-color;
+      position: absolute;
+      left: $spacing-base;
+    }
   }
 }
 
-// Form styles
+// Form improvements
 .form-group {
-  margin-bottom: $spacing-base * 2.5;
+  margin-bottom: $spacing-base * 3;
 
   label {
     display: block;
@@ -154,84 +157,23 @@ $spacing-base: 8px;
     color: $text-primary;
   }
 
-  select,
-  input,
-  textarea {
+  select, input, textarea {
     width: 100%;
     padding: $spacing-base * 1.5;
     border: 1px solid $border-color;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: $border-radius;
+    font-size: 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
     &:focus {
       outline: none;
       border-color: $primary-color;
-    }
-  }
-
-  textarea {
-    min-height: 100px;
-    resize: vertical;
-  }
-}
-
-// Modal styles
-.modal {
-  &-header {
-    @include flex-between;
-    padding: $spacing-base * 2;
-    border-bottom: 1px solid $border-color;
-
-    h2 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 500;
-    }
-  }
-
-  &-content {
-    padding: $spacing-base * 3;
-  }
-
-  &-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: $spacing-base * 2;
-    padding: $spacing-base * 2;
-    border-top: 1px solid $border-color;
-  }
-}
-
-// Time slots
-.time-slot {
-  display: flex;
-  gap: $spacing-base * 2;
-  margin-bottom: $spacing-base * 2;
-  align-items: center;
-
-  .time-inputs {
-    display: flex;
-    gap: $spacing-base;
-    align-items: center;
-  }
-}
-
-// Restrictions section
-.restrictions-section {
-  margin-top: $spacing-base * 3;
-
-  .add-restriction {
-    display: flex;
-    gap: $spacing-base;
-    margin-bottom: $spacing-base * 2;
-
-    input {
-      flex: 1;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
     }
   }
 }
 
-// Media queries
+// Responsive adjustments
 @media (max-width: 768px) {
   .meal-plans-grid {
     grid-template-columns: 1fr;
@@ -241,10 +183,5 @@ $spacing-base: 8px;
     flex-direction: column;
     align-items: flex-start;
     gap: $spacing-base * 2;
-  }
-
-  .modal-container {
-    width: 95%;
-    margin: $spacing-base;
   }
 }

@@ -1,0 +1,111 @@
+<div class="rates-config">
+  <div *ngFor="let roomTypeRates of roomTypeRates()">
+    <h3>Room Type ID: {{ roomTypeRates.roomTypeId }}</h3>
+    <div *ngFor="let periodRates of roomTypeRates.periods">
+      <h4>Period ID: {{ periodRates.periodId }}</h4>
+      <div
+        *ngFor="
+          let roomRate of periodRates.roomRates
+            | filterByRoomType : roomTypeRates.roomTypeId
+        "
+      >
+        <table
+          *ngIf="roomRate.rateType === 'per_pax' && roomRate.personTypeRates"
+        >
+          <thead>
+            <tr>
+              <th>Person Type</th>
+              <th>Occupancy</th>
+              <th>Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="
+                let personType of getPersonTypeKeys(roomRate.personTypeRates)
+              "
+            >
+              <td
+                [attr.rowspan]="
+                  getOccupancyKeys(roomRate.personTypeRates[personType].rates)
+                    .length
+                "
+              >
+                {{ personType }}
+              </td>
+              <ng-container
+                *ngFor="
+                  let occupancy of getOccupancyKeys(
+                    roomRate.personTypeRates[personType].rates
+                  );
+                  let first = first
+                "
+              >
+                <tr *ngIf="!first"></tr>
+                <td>{{ occupancy }}</td>
+                <td>
+                  {{
+                    roomRate.personTypeRates[personType].rates[
+                      toNumber(occupancy)
+                    ]
+                  }}
+                </td>
+              </ng-container>
+            </tr>
+          </tbody>
+        </table>
+        <table *ngIf="roomRate.rateType === 'per_villa'">
+          <thead>
+            <tr>
+              <th>Villa Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ roomRate.villaRate }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div *ngIf="roomRate.mealPlanRates">
+          <h5>Meal Plan Rates</h5>
+          <table>
+            <thead>
+              <tr>
+                <th>Meal Plan</th>
+                <th>Person Type</th>
+                <th>Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let mealPlan of getMealPlanKeys(roomRate.mealPlanRates)"
+              >
+                <td
+                  [attr.rowspan]="
+                    getMealPlanPersonTypeKeys(roomRate.mealPlanRates, mealPlan)
+                      .length
+                  "
+                >
+                  {{ mealPlan }}
+                </td>
+                <ng-container
+                  *ngFor="
+                    let personType of getMealPlanPersonTypeKeys(
+                      roomRate.mealPlanRates,
+                      mealPlan
+                    );
+                    let first = first
+                  "
+                >
+                  <tr *ngIf="!first"></tr>
+                  <td>{{ personType }}</td>
+                  <td>{{ roomRate.mealPlanRates[mealPlan][personType] }}</td>
+                </ng-container>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

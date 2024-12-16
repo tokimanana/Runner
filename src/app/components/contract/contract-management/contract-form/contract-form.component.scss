@@ -40,6 +40,17 @@ $border-radius: 8px;
     gap: $spacing-unit * 2;
   }
 
+  .meal-plans-section {
+    margin-bottom: $spacing-unit * 2;
+
+    .meal-plans-container {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-unit;
+      margin-top: $spacing-unit;
+    }
+  }
+
   mat-form-field {
     width: 100%;
   }

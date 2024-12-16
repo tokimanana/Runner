@@ -1,33 +1,41 @@
 // src/app/components/meal-plan/meal-plan.component.ts
-import { Component, Input, computed, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { 
-  Hotel, 
-  MealPlan, 
-  MealPlanType, 
+import {
+  Component,
+  Input,
+  computed,
+  signal,
+  effect,
+  inject,
+  NgZone,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import {
+  Hotel,
+  MealPlan,
+  MealPlanType,
   MealTime,
-  MealPlanInclusion, 
-  MEAL_PLAN_NAMES
-} from '../../models/types';
-import { ModalComponent } from '../modal/modal.component';
-import { MealPlanService } from '../../services/meal-plan.service';
-import { toSignal } from '@angular/core/rxjs-interop';
+  MealPlanInclusion,
+  MEAL_PLAN_NAMES,
+} from "../../models/types";
+import { ModalComponent } from "../modal/modal.component";
+import { MealPlanService } from "../../services/meal-plan.service";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 @Component({
-  selector: 'app-meal-plan',
+  selector: "app-meal-plan",
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
     MatIconModule,
     MatButtonModule,
-    ModalComponent
+    ModalComponent,
   ],
-  templateUrl: './meal-plan.component.html',
-  styleUrls: ['./meal-plan.component.scss']
+  templateUrl: "./meal-plan.component.html",
+  styleUrls: ["./meal-plan.component.scss"],
 })
 export class MealPlanComponent {
   @Input() set hotel(value: Hotel) {
@@ -40,11 +48,11 @@ export class MealPlanComponent {
   showModal = signal<boolean>(false);
   isEditing = signal<boolean>(false);
   selectedMealPlan = signal<MealPlan | null>(null);
-  newRestriction = signal<string>('');
+  newRestriction = signal<string>("");
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
-  newRestrictionText: string = '';
+  newRestrictionText: string = "";
   restrictions: string[] = [];
 
   // Form data signal
@@ -52,10 +60,10 @@ export class MealPlanComponent {
 
   // Computed values
   readonly filteredMealPlans = computed(() => {
-    return this.mealPlans().filter(plan => plan.isActive);
+    return this.mealPlans().filter((plan) => plan.isActive);
   });
 
-  readonly displayMealPlans = computed(() => this.mealPlans())
+  readonly displayMealPlans = computed(() => this.mealPlans());
 
   // Constants
   readonly mealPlanTypes: MealPlanType[] = [
@@ -68,38 +76,66 @@ export class MealPlanComponent {
     MealPlanType.FB_PLUS,
     MealPlanType.AI,
     MealPlanType.AI_PLUS,
-    MealPlanType.UAI
+    MealPlanType.UAI,
   ];
 
-  readonly availableMeals = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] as const;
+  readonly availableMeals = ["Breakfast", "Lunch", "Dinner", "Snacks"] as const;
   readonly availableInclusions = [
-    'Welcome Drink',
-    'Mini Bar',
-    'Room Service',
-    'Pool Access',
-    'Spa Access',
-    'Gym Access'
+    "Welcome Drink",
+    "Mini Bar",
+    "Room Service",
+    "Pool Access",
+    "Spa Access",
+    "Gym Access",
   ];
 
-  constructor(private mealPlanService: MealPlanService) {
+  constructor(
+    private mealPlanService: MealPlanService,
+    private ngZone: NgZone
+  ) {
     // Effect to load meal plans when hotelId changes
     effect(() => {
       const currentHotelId = this.hotelId();
       if (currentHotelId) {
-        this.loadMealPlans(currentHotelId);
+        this.mealPlanService.getMealPlansByHotel(currentHotelId).subscribe({
+          next: (plans) => {
+            this.ngZone.run(() => {
+              this.loading.set(false);
+              this.error.set(null);
+              this.mealPlans.set(plans || []);
+            });
+          },
+          error: (err) => {
+            this.ngZone.run(() => {
+              this.loading.set(false);
+              this.error.set("Failed to load meal plans");
+            });
+            console.error("Error loading meal plans:", err);
+          },
+        });
       }
     });
+  }
+
+  ngOnInit() {
+    console.log("Meal Plan component initialized");
   }
 
   private async loadMealPlans(hotelId: number): Promise<void> {
     try {
       this.loading.set(true);
       this.error.set(null);
-      const plans = await this.mealPlanService.getMealPlansByHotel(hotelId).toPromise();
-      this.mealPlans.set(plans || []);
+
+      const plans = await this.mealPlanService
+        .getMealPlansByHotel(hotelId)
+        .toPromise();
+
+      this.ngZone.run(() => {
+        this.mealPlans.set(plans || []);
+      });
     } catch (err) {
-      this.error.set('Failed to load meal plans');
-      console.error('Error loading meal plans:', err);
+      this.error.set("Failed to load meal plans");
+      console.error("Error loading meal plans:", err);
     } finally {
       this.loading.set(false);
     }
@@ -117,7 +153,7 @@ export class MealPlanComponent {
     this.selectedMealPlan.set(null);
     this.isEditing.set(false);
     this.mealPlanForm.set(this.getEmptyMealPlan());
-    this.newRestriction.set('');
+    this.newRestriction.set("");
   }
 
   async saveMealPlan(): Promise<void> {
@@ -129,18 +165,18 @@ export class MealPlanComponent {
     try {
       this.loading.set(true);
       const formData = this.mealPlanForm();
-      
+
       if (this.isEditing() && formData.id) {
         await this.mealPlanService.updateMealPlan(formData.id, formData);
       } else {
         await this.mealPlanService.createMealPlan(formData);
       }
-      
+
       await this.loadMealPlans(hotelId);
       this.closeModal();
     } catch (err) {
-      this.error.set('Failed to save meal plan');
-      console.error('Error saving meal plan:', err);
+      this.error.set("Failed to save meal plan");
+      console.error("Error saving meal plan:", err);
     } finally {
       this.loading.set(false);
     }
@@ -152,27 +188,27 @@ export class MealPlanComponent {
 
   isMealIncluded(mealName: string): boolean {
     return this.mealPlanForm().mealTimes.some(
-      mealTime => mealTime.name === mealName
+      (mealTime) => mealTime.name === mealName
     );
   }
 
   isInclusionSelected(inclusionName: string): boolean {
     return this.mealPlanForm().inclusions.some(
-      inclusion => inclusion.name === inclusionName
+      (inclusion) => inclusion.name === inclusionName
     );
   }
 
-
   async deleteMealPlan(plan: MealPlan): Promise<void> {
-    if (!plan.id || !confirm('Are you sure you want to delete this meal plan?')) return;
+    if (!plan.id || !confirm("Are you sure you want to delete this meal plan?"))
+      return;
 
     try {
       this.loading.set(true);
       await this.mealPlanService.deleteMealPlan(plan.id);
       await this.loadMealPlans(this.hotelId());
     } catch (err) {
-      this.error.set('Failed to delete meal plan');
-      console.error('Error deleting meal plan:', err);
+      this.error.set("Failed to delete meal plan");
+      console.error("Error deleting meal plan:", err);
     } finally {
       this.loading.set(false);
     }
@@ -181,25 +217,25 @@ export class MealPlanComponent {
   // Helper methods
   private getEmptyMealPlan(): MealPlan {
     return {
-      id: '',
+      id: "",
       type: MealPlanType.BB,
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       mealTimes: [],
       inclusions: [],
       restrictions: [],
-      isActive: true
+      isActive: true,
     };
   }
 
   private validateForm(): boolean {
     const form = this.mealPlanForm();
     if (!form.name.trim()) {
-      this.error.set('Please enter a meal plan name');
+      this.error.set("Please enter a meal plan name");
       return false;
     }
     if (!form.type) {
-      this.error.set('Please select a meal plan type');
+      this.error.set("Please select a meal plan type");
       return false;
     }
     return true;
@@ -207,23 +243,23 @@ export class MealPlanComponent {
 
   // Form manipulation methods
   updateFormField(field: keyof MealPlan, value: any): void {
-    this.mealPlanForm.update(form => ({
+    this.mealPlanForm.update((form) => ({
       ...form,
-      [field]: value
+      [field]: value,
     }));
   }
 
   toggleMeal(meal: string): void {
-    this.mealPlanForm.update(form => {
+    this.mealPlanForm.update((form) => {
       const mealTimes = [...form.mealTimes];
-      const index = mealTimes.findIndex(mt => mt.name === meal);
-      
+      const index = mealTimes.findIndex((mt) => mt.name === meal);
+
       if (index === -1) {
-        mealTimes.push({ name: meal, startTime: '', endTime: '' });
+        mealTimes.push({ name: meal, startTime: "", endTime: "" });
       } else {
         mealTimes.splice(index, 1);
       }
-      
+
       return { ...form, mealTimes };
     });
   }
@@ -231,7 +267,7 @@ export class MealPlanComponent {
   addRestriction() {
     if (this.newRestrictionText.trim()) {
       this.handleNewRestriction(this.newRestrictionText.trim());
-      this.newRestrictionText = '';
+      this.newRestrictionText = "";
     }
   }
 
@@ -241,27 +277,27 @@ export class MealPlanComponent {
   }
 
   removeRestriction(index: number): void {
-    this.mealPlanForm.update(form => ({
+    this.mealPlanForm.update((form) => ({
       ...form,
-      restrictions: form.restrictions.filter((_, i) => i !== index)
+      restrictions: form.restrictions.filter((_, i) => i !== index),
     }));
   }
 
   toggleInclusion(inclusion: string): void {
-    this.mealPlanForm.update(form => {
+    this.mealPlanForm.update((form) => {
       const inclusions = [...form.inclusions];
-      const index = inclusions.findIndex(inc => inc.name === inclusion);
-      
+      const index = inclusions.findIndex((inc) => inc.name === inclusion);
+
       if (index === -1) {
         inclusions.push({
           name: inclusion,
-          description: '',
-          isIncluded: true
+          description: "",
+          isIncluded: true,
         });
       } else {
         inclusions.splice(index, 1);
       }
-      
+
       return { ...form, inclusions };
     });
   }
@@ -269,7 +305,7 @@ export class MealPlanComponent {
   isFormValid(): boolean {
     const form = this.mealPlanForm();
     return (
-      form.name.trim() !== '' && // Check if name is not empty
+      form.name.trim() !== "" && // Check if name is not empty
       form.type !== null && // Check if type is selected
       form.mealTimes.length > 0 // Ensure at least one meal time is selected
     );

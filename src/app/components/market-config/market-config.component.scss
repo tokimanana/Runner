@@ -1,212 +1,216 @@
-// market-config.component.scss
+:host {
+  .market-config-container {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 0 24px;
 
-// Variables
-$primary-color: #1976d2;
-$accent-color: #ff4081;
-$warning-color: #f44336;
-$success-color: #4caf50;
-$text-primary: rgba(0, 0, 0, 0.87);
-$text-secondary: rgba(0, 0, 0, 0.54);
-$border-radius: 8px;
-$transition-duration: 0.3s;
-$spacing-unit: 8px;
-
-// Mixins
-@mixin card-shadow {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow $transition-duration ease;
-
-  &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-}
-
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-}
-
-.market-config-container {
-  padding: $spacing-unit * 3;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-
-  .header-card {
-    @include card-shadow;
-    margin-bottom: $spacing-unit * 3;
-    border-radius: $border-radius;
-    
-    .header-content {
-      padding: $spacing-unit * 2;
+    // Header Section
+    .market-groups-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 32px;
 
-      .title-section {
-        h1 {
-          margin: 0;
-          font-size: 24px;
-          color: $text-primary;
-        }
-
-        .subtitle {
-          margin: $spacing-unit 0 0;
-          color: $text-secondary;
-          font-size: 14px;
-        }
+      h2 {
+        font-size: 24px;
+        color: #2c3e50;
+        margin: 0;
       }
 
-      .actions {
-        display: flex;
-        gap: $spacing-unit * 2;
+      .header-actions {
+        button {
+          mat-icon {
+            margin-right: 8px;
+          }
+        }
       }
     }
-  }
 
-  .content-wrapper {
-    display: grid;
-    gap: $spacing-unit * 3;
-    
+    // Market Groups Section
     .market-groups {
-      .market-group-panel {
-        margin-bottom: $spacing-unit * 2;
-        border-radius: $border-radius;
-        @include card-shadow;
+      display: grid;
+      gap: 24px;
+
+      mat-card {
+        background: white;
+        border-radius: 12px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
 
         .group-header {
-          @include flex-center;
-          gap: $spacing-unit;
-
-          .group-name {
-            font-weight: 500;
-          }
-
-          .region-tag {
-            background-color: rgba($primary-color, 0.1);
-            color: $primary-color;
-            padding: calc($spacing-unit / 2) $spacing-unit;
-            border-radius: $spacing-unit * 2;
-            font-size: 12px;
-          }
-        }
-
-        .group-metrics {
-          @include flex-center;
-          gap: $spacing-unit;
-
-          .metric, .currency {
-            @include flex-center;
-            gap: calc($spacing-unit / 2);
-            color: $text-secondary;
-            font-size: 14px;
-          }
-        }
-      }
-    }
-
-    .markets-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: $spacing-unit * 2;
-      padding: $spacing-unit * 2;
-
-      .market-card {
-        @include card-shadow;
-        border-radius: $border-radius;
-        
-        .market-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: $spacing-unit * 2;
+          align-items: center;
+          padding: 16px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 
-          .market-info {
-            h3 {
-              margin: 0;
-              color: $text-primary;
-              font-size: 18px;
-            }
-
-            .market-code {
-              color: $text-secondary;
-              font-size: 12px;
-            }
-          }
-
-          .status-indicator {
-            @include flex-center;
-            gap: calc($spacing-unit / 2);
-            
-            &.active {
-              color: $success-color;
-            }
-
-            .status-text {
-              font-size: 14px;
-            }
+          h3 {
+            font-size: 20px;
+            margin: 0;
+            color: #2c3e50;
           }
         }
 
-        .market-details {
-          margin: $spacing-unit * 2 0;
+        // Markets Grid
+        .markets-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 16px;
+          padding: 16px;
 
-          .detail-item {
-            @include flex-center;
-            gap: $spacing-unit;
-            margin-bottom: $spacing-unit;
-            color: $text-secondary;
+          .market-card {
+            background: #f8f9fa;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+
+            &.has-rate {
+              border-left: 4px solid #4caf50;
+            }
+
+            .market-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              padding: 16px;
+
+              .market-title {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+
+                .market-icon {
+                  color: #666;
+                }
+
+                .market-info {
+                  .market-name-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+
+                    .market-name {
+                      font-weight: 500;
+                      color: #2c3e50;
+                    }
+
+                    .rate-indicator {
+                      color: #4caf50;
+                      font-size: 16px;
+                    }
+                  }
+                }
+              }
+            }
+
+            .market-details {
+              padding: 0 16px 16px;
+
+              .market-currency {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+
+                .label {
+                  color: #666;
+                  font-size: 14px;
+                }
+
+                mat-chip {
+                  font-size: 13px;
+                  height: 24px;
+                }
+              }
+
+              .market-description {
+                color: #666;
+                font-size: 14px;
+                margin: 8px 0 0;
+                line-height: 1.5;
+              }
+            }
+          }
+
+          // Empty state styling
+          .empty-markets {
+            text-align: center;
+            padding: 32px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #ddd;
 
             mat-icon {
-              font-size: 18px;
-              width: 18px;
-              height: 18px;
+              font-size: 48px;
+              width: 48px;
+              height: 48px;
+              color: #999;
+              margin-bottom: 16px;
             }
-          }
-        }
 
-        .market-actions {
-          display: flex;
-          gap: $spacing-unit;
-          padding-top: $spacing-unit;
-
-          button {
-            opacity: 0.8;
-            transition: opacity $transition-duration ease;
-
-            &:hover {
-              opacity: 1;
+            p {
+              color: #666;
+              margin-bottom: 16px;
             }
           }
         }
       }
     }
-  }
-}
 
-// Modal styles
-.modal-content {
-  padding: $spacing-unit * 3;
-  max-width: 500px;
+    // Modal Styles
+    ::ng-deep .modal-body {
+      .form-group {
+        margin-bottom: 20px;
 
-  h2 {
-    margin: 0 0 $spacing-unit * 3;
-    color: $text-primary;
-  }
-}
+        label {
+          display: block;
+          margin-bottom: 8px;
+          color: #2c3e50;
+          font-weight: 500;
+        }
 
-// Responsive adjustments
-@media (max-width: 768px) {
-  .market-config-container {
-    padding: $spacing-unit * 2;
+        input, select, textarea {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: border-color 0.2s ease;
 
-    .header-content {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-unit * 2;
-    }
+          &:focus {
+            outline: none;
+            border-color: #1976d2;
+          }
+        }
 
-    .markets-container {
-      grid-template-columns: 1fr;
+        textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #eee;
+
+        button {
+          padding: 8px 24px;
+          border-radius: 4px;
+          font-weight: 500;
+
+          &:last-child {
+            background: #1976d2;
+            color: white;
+          }
+        }
+      }
     }
   }
 }
