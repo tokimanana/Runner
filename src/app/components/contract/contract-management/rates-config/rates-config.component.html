@@ -1,111 +1,154 @@
-<div class="rates-config">
-  <div *ngFor="let roomTypeRates of roomTypeRates()">
-    <h3>Room Type ID: {{ roomTypeRates.roomTypeId }}</h3>
-    <div *ngFor="let periodRates of roomTypeRates.periods">
-      <h4>Period ID: {{ periodRates.periodId }}</h4>
-      <div
-        *ngFor="
-          let roomRate of periodRates.roomRates
-            | filterByRoomType : roomTypeRates.roomTypeId
-        "
-      >
-        <table
-          *ngIf="roomRate.rateType === 'per_pax' && roomRate.personTypeRates"
-        >
-          <thead>
-            <tr>
-              <th>Person Type</th>
-              <th>Occupancy</th>
-              <th>Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              *ngFor="
-                let personType of getPersonTypeKeys(roomRate.personTypeRates)
-              "
-            >
-              <td
-                [attr.rowspan]="
-                  getOccupancyKeys(roomRate.personTypeRates[personType].rates)
-                    .length
-                "
-              >
-                {{ personType }}
-              </td>
-              <ng-container
-                *ngFor="
-                  let occupancy of getOccupancyKeys(
-                    roomRate.personTypeRates[personType].rates
-                  );
-                  let first = first
-                "
-              >
-                <tr *ngIf="!first"></tr>
-                <td>{{ occupancy }}</td>
-                <td>
-                  {{
-                    roomRate.personTypeRates[personType].rates[
-                      toNumber(occupancy)
-                    ]
-                  }}
-                </td>
+<!-- src/app/components/contract/contract-management/rates-config/rates-config.component.html -->
+<div class="rates-config-container">
+  <h2>Configure Rates for {{data.contract.name}}</h2>
+
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading rates configuration...</p>
+  </div>
+
+  <div *ngIf="error()" class="error-container">
+    <p class="error-message">{{error()}}</p>
+  </div>
+
+  <mat-tab-group *ngIf="!loading() && !error()">
+    <mat-tab *ngFor="let roomType of data.roomTypes" [label]="roomType.name">
+      <div class="room-type-rates">
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let period of data.periods">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                {{period.name}} ({{period.startDate}} - {{period.endDate}})
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <form [formGroup]="ratesForms[getFormControlName(roomType.id, period.id)]">
+              <div class="rate-type-selection">
+                <mat-form-field>
+                  <mat-label>Rate Type</mat-label>
+                  <mat-select formControlName="rateType">
+                    <mat-option value="per_pax">Per Person</mat-option>
+                    <mat-option value="per_villa">Per Villa</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <ng-container [ngSwitch]="ratesForms[getFormControlName(roomType.id, period.id)].get('rateType')?.value">
+                <!-- Per Person Rates -->
+                <div *ngSwitchCase="'per_pax'" class="per-person-rates" formGroupName="personTypeRates">
+                  <h4>Adult Rates</h4>
+                  <table class="rates-table">
+                    <thead>
+                      <tr>
+                        <th>Occupancy</th>
+                        <th>Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody formGroupName="adult">
+                      <tr>
+                        <td>Single</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="1"></mat-form-field></td>
+                      </tr>
+                      <tr>
+                        <td>Double</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="2"></mat-form-field></td>
+                      </tr>
+                      <tr>
+                        <td>Triple</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="3"></mat-form-field></td>
+                      </tr>
+                      <tr>
+                        <td>Quad</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="4"></mat-form-field></td>
+                      </tr>
+                      <tr>
+                        <td>Quint</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="5"></mat-form-field></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h4>Child Rates</h4>
+                  <table class="rates-table">
+                    <thead>
+                      <tr>
+                        <th>Child</th>
+                        <th>Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody formGroupName="child">
+                      <tr>
+                        <td>First Child</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="1"></mat-form-field></td>
+                      </tr>
+                      <tr>
+                        <td>Second Child</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="2"></mat-form-field></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h4>Infant Rates</h4>
+                  <table class="rates-table">
+                    <thead>
+                      <tr>
+                        <th>Infant</th>
+                        <th>Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody formGroupName="infant">
+                      <tr>
+                        <td>Per Infant</td>
+                        <td><mat-form-field><input matInput type="number" formControlName="1"></mat-form-field></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Per Villa Rate -->
+                <div *ngSwitchCase="'per_villa'" class="per-villa-rate">
+                  <mat-form-field>
+                    <mat-label>Villa Rate</mat-label>
+                    <input matInput type="number" formControlName="villaRate">
+                  </mat-form-field>
+                </div>
               </ng-container>
-            </tr>
-          </tbody>
-        </table>
-        <table *ngIf="roomRate.rateType === 'per_villa'">
-          <thead>
-            <tr>
-              <th>Villa Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{{ roomRate.villaRate }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div *ngIf="roomRate.mealPlanRates">
-          <h5>Meal Plan Rates</h5>
-          <table>
-            <thead>
-              <tr>
-                <th>Meal Plan</th>
-                <th>Person Type</th>
-                <th>Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                *ngFor="let mealPlan of getMealPlanKeys(roomRate.mealPlanRates)"
-              >
-                <td
-                  [attr.rowspan]="
-                    getMealPlanPersonTypeKeys(roomRate.mealPlanRates, mealPlan)
-                      .length
-                  "
-                >
-                  {{ mealPlan }}
-                </td>
-                <ng-container
-                  *ngFor="
-                    let personType of getMealPlanPersonTypeKeys(
-                      roomRate.mealPlanRates,
-                      mealPlan
-                    );
-                    let first = first
-                  "
-                >
-                  <tr *ngIf="!first"></tr>
-                  <td>{{ personType }}</td>
-                  <td>{{ roomRate.mealPlanRates[mealPlan][personType] }}</td>
-                </ng-container>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+
+              <!-- Meal Plan Rates -->
+              <div class="meal-plan-rates" formGroupName="mealPlanRates">
+                <h4>Meal Plan Rates</h4>
+                <table class="rates-table">
+                  <thead>
+                    <tr>
+                      <th>Meal Plan</th>
+                      <th>Adult</th>
+                      <th>Child</th>
+                      <th>Infant</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let mealPlan of data.mealPlans" [formGroupName]="mealPlan">
+                      <td>{{mealPlan}}</td>
+                      <td><mat-form-field><input matInput type="number" formControlName="adult"></mat-form-field></td>
+                      <td><mat-form-field><input matInput type="number" formControlName="child"></mat-form-field></td>
+                      <td><mat-form-field><input matInput type="number" formControlName="infant"></mat-form-field></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </form>
+          </mat-expansion-panel>
+        </mat-accordion>
       </div>
-    </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <div class="action-buttons">
+    <button mat-button (click)="close()">Cancel</button>
+    <button mat-raised-button color="primary" 
+            (click)="saveRates()"
+            [disabled]="saving() || loading()">
+      {{saving() ? 'Saving...' : 'Save Rates'}}
+    </button>
   </div>
 </div>

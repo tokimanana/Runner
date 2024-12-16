@@ -187,8 +187,11 @@ export class ContractFormComponent implements OnInit {
         selectedRooms: roomTypes.filter((room) =>
           contract.selectedRoomTypes?.includes(room.id)
         ),
-        selectedMealPlans: contract.selectedMealPlans || [],
+        selectedMealPlans: hotel?.mealPlans?.filter((mealPlan) =>
+          contract.selectedMealPlans?.includes(mealPlan.type)
+        ) || []
       });
+      
     } catch (error) {
       console.error("Error patching form data:", error);
     }

@@ -1,20 +1,49 @@
-import { Component, Inject, Input, OnInit, signal } from "@angular/core";
-import { contractRates } from "../../../../data/mock/rates.mock";
+// src/app/components/contract/contract-management/rates-config/rates-config.component.ts
+import { Component, Inject, OnInit, signal } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import {
+  FormBuilder,
+  FormGroup,
+  FormArray,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatTabsModule } from "@angular/material/tabs";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
+import { MatButtonModule } from "@angular/material/button";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+
 import {
   Contract,
   ContractPeriodRate,
-  PersonTypeRates,
   RoomTypeRate,
+  Period,
+  RoomType,
+  PersonTypeRates,
 } from "../../../../models/types";
-import { FilterByRoomTypePipe } from "./filter-by-room-type.pipe";
-import { CommonModule } from "@angular/common";
 import { ContractRateService } from "../../../../services/contract-rates.service";
-import { FormArray, FormBuilder, FormGroup } from "@angular/forms";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-interface RoomTypeRates {
+interface RateFormData {
   roomTypeId: number;
-  periods: ContractPeriodRate[];
+  periodId: number;
+  rateType: "per_pax" | "per_villa";
+  villaRate?: number;
+  personTypeRates?: {
+    adult: { rates: { [key: number]: number } };
+    child: { rates: { [key: number]: number } };
+    infant: { rates: { [key: number]: number } };
+  };
+  mealPlanRates?: {
+    [key: string]: {
+      adult: number;
+      child: number;
+      infant: number;
+    };
+  };
 }
 
 @Component({
@@ -22,153 +51,206 @@ interface RoomTypeRates {
   templateUrl: "./rates-config.component.html",
   styleUrls: ["./rates-config.component.scss"],
   standalone: true,
-  imports: [CommonModule, FilterByRoomTypePipe],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatTabsModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+  ],
 })
 export class RatesConfigComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
-  @Input() contractId: number | undefined;
-  roomTypeRates = signal<RoomTypeRates[]>([]);
+  saving = signal(false);
 
-  rateForm!: FormGroup;
+  ratesForms: { [key: string]: FormGroup } = {};
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: { contractId: number, contract: Contract },
+    @Inject(MAT_DIALOG_DATA)
+    public data: {
+      contract: Contract;
+      periods: Period[];
+      roomTypes: RoomType[];
+      mealPlans: string[];
+    },
     private dialogRef: MatDialogRef<RatesConfigComponent>,
     private fb: FormBuilder,
-    private contractRatesService: ContractRateService
-  ) {
-    this.initializeForm();
-  }
+    private contractRateService: ContractRateService
+  ) {}
 
-  ngOnInit() {
-    if (this.contractId) {
-      this.loadRatesData();
+  // In rates-config.component.ts
+async ngOnInit() {
+  try {
+    this.loading.set(true);
+    console.log('ngOnInit - data:', this.data);
+    // First verify the data is available
+    if (!this.data?.roomTypes || !this.data?.periods) {
+      throw new Error('Required data is missing: room types or periods');
     }
+    
+    const rates = await this.contractRateService.getContractRates(
+      this.data.contract.id
+    );
+    console.log('ngOnInit - rates:', rates);
+    this.initializeForms(rates);
+  } catch (error) {
+    this.error.set('Failed to load rates: ' + (error as Error).message);
+    console.error(error);
+  } finally {
+    this.loading.set(false);
   }
+}
 
-  private initializeForm() {
-    this.rateForm = this.fb.group({
-      roomTypes: this.fb.array([]),
-      periods: this.fb.array([]),
-      mealPlans: this.fb.array([]),
+
+  private initializeForms(existingRates: ContractPeriodRate[]) {
+    console.log('initializeForms - existingRates:', existingRates);
+    this.data.roomTypes.forEach((roomType) => {
+      this.data.periods.forEach((period) => {
+        const existingRate = this.findExistingRate(
+          existingRates,
+          roomType.id,
+          period.id
+        );
+        console.log('initializeForms - roomType:', roomType, 'period:', period, 'existingRate:', existingRate);
+        const formKey = `${roomType.id}-${period.id}`;
+        this.ratesForms[formKey] = this.createRateForm(existingRate);
+      });
     });
   }
 
-  addRoomTypeRate(roomTypeId: number) {
-    const roomTypeForm = this.fb.group({
-      roomTypeId: [roomTypeId],
-      rateType: ["per_pax"],
+  private findExistingRate(
+    rates: ContractPeriodRate[],
+    roomTypeId: number,
+    periodId: number
+  ): RoomTypeRate | undefined {
+    const foundRate = rates.find((r) => r.periodId === periodId)?.roomRates.find((rr) => rr.roomTypeId === roomTypeId);
+    console.log('findExistingRate - roomTypeId:', roomTypeId, 'periodId:', periodId, 'foundRate:', foundRate);
+    return foundRate;
+  }
+
+  private createRateForm(existingRate?: RoomTypeRate): FormGroup {
+    console.log('createRateForm - existingRate:', existingRate);
+    const form = this.fb.group({
+      rateType: [existingRate?.rateType || "per_pax", Validators.required],
+      villaRate: [existingRate?.villaRate || null],
       personTypeRates: this.fb.group({
-        adult: this.createOccupancyRatesForm(),
-        child: this.createOccupancyRatesForm(),
-        infant: this.createOccupancyRatesForm(),
+        adult: this.createPersonTypeRatesGroup(
+          existingRate?.personTypeRates?.["adult"]
+        ),
+        child: this.createPersonTypeRatesGroup(
+          existingRate?.personTypeRates?.["child"]
+        ),
+        infant: this.createPersonTypeRatesGroup(
+          existingRate?.personTypeRates?.["infant"]
+        ),
       }),
-      villaRate: [null],
-      mealPlanRates: this.fb.array([]),
+      mealPlanRates: this.createMealPlanRatesGroup(existingRate?.mealPlanRates),
     });
-
-    (this.rateForm.get("roomTypes") as FormArray).push(roomTypeForm);
+    console.log('createRateForm - form:', form);
+    return form;
   }
 
-  private createOccupancyRatesForm() {
+  private createPersonTypeRatesGroup(existing?: {
+    rates: { [key: number]: number };
+  }) {
     return this.fb.group({
-      rates: this.fb.array([]),
+        1: [existing?.rates[1] || null],
+        2: [existing?.rates[2] || null],
+        3: [existing?.rates[3] || null],
+        4: [existing?.rates[4] || null],
+        5: [existing?.rates[5] || null],
     });
+  }
+
+  private createMealPlanRatesGroup(existing?: {
+    [mealPlanId: string]: { [personType: string]: number };
+  }) {
+    const group: { [mealPlanId: string]: FormGroup } = {};
+
+    this.data.mealPlans.forEach((mealPlan) => {
+      group[mealPlan] = this.fb.group({
+        adult: [existing?.[mealPlan]?.["adult"] || 0],
+        child: [existing?.[mealPlan]?.["child"] || 0],
+        infant: [existing?.[mealPlan]?.["infant"] || 0],
+      });
+    });
+
+    return this.fb.group(group);
   }
 
   async saveRates() {
-    if (this.rateForm.valid && this.contractId) {
-      try {
-        const rates = this.transformFormToRates(this.rateForm.value);
-        await this.contractRatesService.updateContractRates(
-          this.contractId,
-          rates
-        );
-      } catch (error) {
-        console.error("Error saving rates:", error);
-      }
-    }
-  }
-
-  private transformFormToRates(formValue: any): ContractPeriodRate[] {
-    const rates: ContractPeriodRate[] = [];
-
-    // Transform room types form array to ContractPeriodRate structure
-    const roomTypes = formValue.roomTypes || [];
-    const periods = formValue.periods || [];
-
-    for (const period of periods) {
-      const periodRate: ContractPeriodRate = {
-        periodId: period.periodId,
-        roomRates: roomTypes.map((room: RoomTypeRate) => ({
-          roomTypeId: room.roomTypeId,
-          rateType: room.rateType,
-          personTypeRates: room.personTypeRates,
-          villaRate: room.villaRate,
-          mealPlanRates: room.mealPlanRates,
-        })),
-      };
-      rates.push(periodRate);
-    }
-
-    return rates;
-  }
-
-  private async loadRatesData() {
     try {
-      this.loading.set(true);
-      const rates = await this.contractRatesService.getContractRates(this.data.contractId);
-      this.roomTypeRates.set(this.transformRatesData(rates));
+      this.saving.set(true);
+      const rates = this.transformFormsToRates();
+      await this.contractRateService.updateContractRates(
+        this.data.contract.id,
+        rates
+      );
+      this.dialogRef.close(true);
     } catch (error) {
-      console.error('Error loading rates:', error);
-      this.error.set('Failed to load rates data');
+      this.error.set("Failed to save rates");
+      console.error(error);
     } finally {
-      this.loading.set(false);
+      this.saving.set(false);
     }
   }
 
-  // Add close dialog method
+  private transformFormsToRates(): ContractPeriodRate[] {
+    const periodRates: ContractPeriodRate[] = [];
+
+    this.data.periods.forEach((period) => {
+      const roomRates: RoomTypeRate[] = [];
+
+      this.data.roomTypes.forEach((roomType) => {
+        const formKey = `${roomType.id}-${period.id}`;
+        const formValue = this.ratesForms[formKey].value;
+
+        const mealPlanRates: { [key: string]: { adult: number, child: number, infant: number } } = {};
+        if (formValue.mealPlanRates) {
+          for (const mealPlanId of this.data.mealPlans) {
+            mealPlanRates[mealPlanId] = {
+              adult: formValue.mealPlanRates[mealPlanId]?.adult,
+              child: formValue.mealPlanRates[mealPlanId]?.child,
+              infant: formValue.mealPlanRates[mealPlanId]?.infant,
+            };
+          }
+        }
+
+
+        roomRates.push({
+          roomTypeId: roomType.id,
+          rateType: formValue.rateType,
+          villaRate:
+            formValue.rateType === "per_villa"
+              ? formValue.villaRate
+              : undefined,
+          personTypeRates:
+            formValue.rateType === "per_pax"
+              ? formValue.personTypeRates
+              : undefined,
+          mealPlanRates: mealPlanRates,
+        });
+      });
+
+      periodRates.push({
+        periodId: period.id,
+        roomRates,
+      });
+    });
+
+    return periodRates;
+  }
+
   close() {
     this.dialogRef.close();
   }
 
-  private transformRatesData(rates: any): RoomTypeRates[] {
-    // Transform the rates data into the required format
-    return rates.map((rate: any) => ({
-      roomTypeId: rate.roomTypeId,
-      periods: rate.periods,
-    }));
-  }
-
-  getPersonTypeKeys(personTypeRates: PersonTypeRates): string[] {
-    return Object.keys(personTypeRates);
-  }
-
-  getOccupancyKeys(rates: { [occupancy: string]: number }): string[] {
-    return Object.keys(rates);
-  }
-
-  toNumber(value: string): number {
-    return Number(value);
-  }
-
-  getMealPlanKeys(mealPlanRates: {
-    [mealPlanId: string]: {
-      [personType: string]: number;
-    };
-  }): string[] {
-    return Object.keys(mealPlanRates);
-  }
-
-  getMealPlanPersonTypeKeys(
-    mealPlanRates: {
-      [mealPlanId: string]: {
-        [personType: string]: number;
-      };
-    },
-    mealPlan: string
-  ): string[] {
-    return Object.keys(mealPlanRates[mealPlan]);
+  getFormControlName(roomTypeId: number, periodId: number): string {
+    return `${roomTypeId}-${periodId}`;
   }
 }
