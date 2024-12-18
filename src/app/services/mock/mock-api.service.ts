@@ -10,6 +10,7 @@ import {
 } from "../../data/mock/markets.mock";
 import { seasons as initialSeasons } from "../../data/mock/seasons.mock";
 import { contracts as initialContracts } from "../../data/mock/contracts.mock";
+import { offersMock as initialOffers } from "../../data/mock/offers.mock";
 
 import {
   Hotel,
@@ -27,6 +28,7 @@ import {
   Period,
   ContractRate,
   ContractPeriodRate,
+  SpecialOffer,
 } from "../../models/types";
 import { contractRates } from "src/app/data/mock/rates.mock";
 
@@ -44,6 +46,7 @@ export class MockApiService {
     CONTRACTS: "mock_contracts",
     CONTRACT_RATES: "mock_contract_rates",
     INITIALIZED: "mock_storage_initialized",
+    OFFERS: "mock_offers",
   };
 
   private static readonly ROOMS_KEY = "mock_rooms";
@@ -70,6 +73,7 @@ export class MockApiService {
     currencySettings: () => Promise.resolve(initialCurrencySettings),
     seasons: () => Promise.resolve(initialSeasons),
     contracts: () => Promise.resolve(initialContracts),
+    offers: () => Promise.resolve(initialOffers),
   };
 
   // Simplified way to get storage key
@@ -149,6 +153,10 @@ export class MockApiService {
       localStorage.setItem(
         this.STORAGE_KEYS.CONTRACT_RATES,
         JSON.stringify(contractRates)
+      );
+      localStorage.setItem(
+        this.STORAGE_KEYS.OFFERS,
+        JSON.stringify(initialOffers)
       );
 
       localStorage.setItem(this.STORAGE_KEYS.INITIALIZED, "true");
@@ -1346,4 +1354,57 @@ export class MockApiService {
 
     throw new Error("Contract not found");
   }
+
+
+
+  static async getOffers(): Promise<SpecialOffer[]> {
+    this.initializeStorage();
+    const offers = localStorage.getItem(this.STORAGE_KEYS.OFFERS);
+    return Promise.resolve(JSON.parse(offers || '[]'));
+  }
+  
+  static async getOfferById(id: number): Promise<SpecialOffer | null> {
+    this.initializeStorage();
+    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    return Promise.resolve(offers.find((offer: SpecialOffer) => offer.id === id) || null);
+  }
+  
+  static async createOffer(offer: Omit<SpecialOffer, 'id'>): Promise<SpecialOffer> {
+    this.initializeStorage();
+    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    const newId = Math.max(0, ...offers.map((o: SpecialOffer) => o.id)) + 1;
+  
+    const newOffer = {
+      ...offer,
+      id: newId
+    };
+  
+    offers.push(newOffer);
+    localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(offers));
+    return Promise.resolve(newOffer);
+  }
+  
+  static async updateOffer(id: number, offerData: Partial<SpecialOffer>): Promise<SpecialOffer> {
+    this.initializeStorage();
+    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    const index = offers.findIndex((offer: SpecialOffer) => offer.id === id);
+  
+    if (index === -1) {
+      throw new Error('Offer not found');
+    }
+  
+    offers[index] = { ...offers[index], ...offerData };
+    localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(offers));
+    return Promise.resolve(offers[index]);
+  }
+  
+  static async deleteOffer(id: number): Promise<void> {
+    this.initializeStorage();
+    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    const filteredOffers = offers.filter((offer: SpecialOffer) => offer.id !== id);
+    localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(filteredOffers));
+    return Promise.resolve();
+  }
 }
+
+

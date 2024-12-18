@@ -1,221 +1,116 @@
-<form [formGroup]="offerForm" (ngSubmit)="onSubmit()" class="offer-form">
-  <div class="form-header">
-    <h2>{{ editingOffer ? 'Edit' : 'Create' }} Special Offer</h2>
+<!-- src/app/components/special-offers/offer-form/offer-form.component.html -->
+
+<form [formGroup]="offerForm" (ngSubmit)="onSubmit()">
+  <h2>{{data.title}}</h2>
+
+  <div class="form-row">
+    <mat-form-field>
+      <mat-label>Code</mat-label>
+      <input matInput formControlName="code" required>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+    </mat-form-field>
   </div>
 
-  <mat-stepper linear #stepper>
-    <!-- Basic Info Step -->
-    <mat-step [stepControl]="offerForm" label="Basic Information">
-      <div class="step-content">
-        <div class="form-row">
-          <mat-form-field>
-            <mat-label>Code</mat-label>
-            <input matInput formControlName="code" placeholder="e.g., SUMMER2024">
-            <mat-hint>A unique code for the offer</mat-hint>
-            <mat-error *ngIf="offerForm.get('code')?.errors?.['required']">Code is required</mat-error>
-            <mat-error *ngIf="offerForm.get('code')?.errors?.['minlength']">Code must be at least 3 characters</mat-error>
-          </mat-form-field>
-        </div>
+  <div class="form-row">
+    <mat-form-field>
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type" required>
+        <mat-option value="combinable">Combinable</mat-option>
+        <mat-option value="cumulative">Cumulative</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-        <div class="form-row">
-          <mat-form-field>
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="name" placeholder="e.g., Summer Early Bird">
-            <mat-hint>A descriptive name for the offer</mat-hint>
-            <mat-error *ngIf="offerForm.get('name')?.errors?.['required']">Name is required</mat-error>
-          </mat-form-field>
-        </div>
+    <mat-form-field>
+      <mat-label>Discount Type</mat-label>
+      <mat-select formControlName="discountType" required>
+        <mat-option value="percentage">Percentage</mat-option>
+        <mat-option value="fixed">Fixed Amount</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
 
-        <div class="form-row">
-          <mat-form-field>
-            <mat-label>Description</mat-label>
-            <textarea matInput formControlName="description" placeholder="Describe the offer details" rows="3"></textarea>
-            <mat-hint>Provide a clear description of the offer</mat-hint>
-            <mat-error *ngIf="offerForm.get('description')?.errors?.['required']">Description is required</mat-error>
-          </mat-form-field>
-        </div>
+  <mat-form-field class="full-width">
+    <mat-label>Description</mat-label>
+    <textarea matInput formControlName="description" required rows="3"></textarea>
+  </mat-form-field>
 
-        <div class="step-actions">
-          <button mat-button type="button" (click)="cancel()">Cancel</button>
-          <button mat-button matStepperNext type="button" [disabled]="!isBasicInfoValid()">Next</button>
-        </div>
+  <div class="form-section">
+    <h3>Discount Values</h3>
+    <div formArrayName="discountValues">
+      <div *ngFor="let value of discountValues.controls; let i=index" [formGroupName]="i" class="discount-value-row">
+        <mat-form-field>
+          <mat-label>Nights</mat-label>
+          <input matInput type="number" formControlName="nights" required>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Value</mat-label>
+          <input matInput type="number" formControlName="value" required>
+        </mat-form-field>
+
+        <button type="button" mat-icon-button color="warn" (click)="removeDiscountValue(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
-    </mat-step>
+    </div>
+    <button type="button" mat-button color="primary" (click)="addDiscountValue()">
+      <mat-icon>add</mat-icon> Add Discount Value
+    </button>
+  </div>
 
-    <!-- Discount Details Step -->
-    <mat-step [stepControl]="offerForm" label="Discount Details">
-      <div class="step-content">
-        <div class="form-row">
-          <mat-form-field>
-            <mat-label>Discount Type</mat-label>
-            <mat-select formControlName="discountType">
-              <mat-option value="percentage">Percentage Off</mat-option>
-              <mat-option value="fixed">Fixed Amount Off</mat-option>
-            </mat-select>
-            <mat-hint>Choose how the discount will be applied</mat-hint>
-          </mat-form-field>
-        </div>
+  <div class="form-row">
+    <mat-form-field>
+      <mat-label>Start Date</mat-label>
+      <input matInput [matDatepicker]="startPicker" formControlName="startDate" required>
+      <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+      <mat-datepicker #startPicker></mat-datepicker>
+    </mat-form-field>
 
-        <div class="form-section">
-          <h3>Discount Values</h3>
-          <p class="section-hint">Add different discount tiers based on length of stay</p>
-          
-          <div formArrayName="discountValues" class="discount-values-container">
-            <mat-card *ngFor="let value of discountValues.controls; let i = index" [formGroupName]="i" class="discount-value-card">
-              <mat-card-content>
-                <div class="discount-value-inputs">
-                  <mat-form-field>
-                    <mat-label>Nights</mat-label>
-                    <input matInput type="number" formControlName="nights" placeholder="e.g., 3">
-                    <mat-hint>Minimum nights for this tier</mat-hint>
-                  </mat-form-field>
+    <mat-form-field>
+      <mat-label>End Date</mat-label>
+      <input matInput [matDatepicker]="endPicker" formControlName="endDate" required>
+      <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+      <mat-datepicker #endPicker></mat-datepicker>
+    </mat-form-field>
+  </div>
 
-                  <mat-form-field>
-                    <mat-label>Value</mat-label>
-                    <input matInput type="number" formControlName="value" [placeholder]="offerForm.get('discountType')?.value === 'percentage' ? 'e.g., 15' : 'e.g., 100'">
-                    <span matSuffix>{{ offerForm.get('discountType')?.value === 'percentage' ? '%' : '€' }}</span>
-                    <mat-hint>Discount amount for this tier</mat-hint>
-                  </mat-form-field>
+  <div class="form-row">
+    <mat-form-field>
+      <mat-label>Minimum Nights</mat-label>
+      <input matInput type="number" formControlName="minimumNights">
+    </mat-form-field>
 
-                  <div class="date-range">
-                    <mat-form-field>
-                      <mat-label>Valid From</mat-label>
-                      <input matInput [matDatepicker]="startPicker" formControlName="startDate">
-                      <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-                      <mat-datepicker #startPicker></mat-datepicker>
-                    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Maximum Nights</mat-label>
+      <input matInput type="number" formControlName="maximumNights">
+    </mat-form-field>
+  </div>
 
-                    <mat-form-field>
-                      <mat-label>Valid To</mat-label>
-                      <input matInput [matDatepicker]="endPicker" formControlName="endDate">
-                      <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-                      <mat-datepicker #endPicker></mat-datepicker>
-                    </mat-form-field>
-                  </div>
-                </div>
-
-                <button mat-icon-button color="warn" type="button" (click)="removeDiscountValue(i)" class="remove-button">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </mat-card-content>
-            </mat-card>
-          </div>
-
-          <button mat-stroked-button type="button" (click)="addDiscountValue()" class="add-button">
-            <mat-icon>add</mat-icon> Add Discount Tier
-          </button>
-        </div>
-
-        <div class="step-actions">
-          <button mat-button matStepperPrevious type="button">Back</button>
-          <button mat-button type="button" (click)="cancel()">Cancel</button>
-          <button mat-button matStepperNext type="button" [disabled]="!isDiscountDetailsValid()">Next</button>
-        </div>
+  <div class="form-section">
+    <h3>Conditions</h3>
+    <div formArrayName="conditions">
+      <div *ngFor="let condition of conditions.controls; let i=index" class="condition-row">
+        <mat-form-field class="full-width">
+          <input matInput [formControlName]="i" placeholder="Enter condition">
+        </mat-form-field>
+        <button type="button" mat-icon-button color="warn" (click)="removeCondition(i)">
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
-    </mat-step>
+    </div>
+    <button type="button" mat-button color="primary" (click)="addCondition()">
+      <mat-icon>add</mat-icon> Add Condition
+    </button>
+  </div>
 
-    <!-- Terms & Conditions Step -->
-    <mat-step [stepControl]="offerForm" label="Terms & Conditions">
-      <div class="step-content">
-        <div class="form-section">
-          <h3>Stay Requirements</h3>
-          <div class="form-row">
-            <mat-form-field>
-              <mat-label>Minimum Nights</mat-label>
-              <input matInput type="number" formControlName="minimumNights" placeholder="e.g., 3">
-              <mat-hint>Minimum nights required for the offer</mat-hint>
-            </mat-form-field>
-
-            <mat-form-field>
-              <mat-label>Maximum Nights</mat-label>
-              <input matInput type="number" formControlName="maximumNights" placeholder="e.g., 14">
-              <mat-hint>Maximum nights allowed (optional)</mat-hint>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Booking Window</h3>
-          <p class="section-hint">Period during which guests can book this offer</p>
-          
-          <div formGroupName="bookingWindow" class="form-row">
-            <mat-form-field>
-              <mat-label>Booking Start</mat-label>
-              <input matInput [matDatepicker]="bookingStartPicker" formControlName="start">
-              <mat-datepicker-toggle matSuffix [for]="bookingStartPicker"></mat-datepicker-toggle>
-              <mat-datepicker #bookingStartPicker></mat-datepicker>
-              <mat-hint>When guests can start booking</mat-hint>
-            </mat-form-field>
-
-            <mat-form-field>
-              <mat-label>Booking End</mat-label>
-              <input matInput [matDatepicker]="bookingEndPicker" formControlName="end">
-              <mat-datepicker-toggle matSuffix [for]="bookingEndPicker"></mat-datepicker-toggle>
-              <mat-datepicker #bookingEndPicker></mat-datepicker>
-              <mat-hint>Last day to book the offer</mat-hint>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Conditions</h3>
-          <p class="section-hint">Add terms and conditions for the offer</p>
-          
-          <div formArrayName="conditions" class="conditions-container">
-            <mat-card *ngFor="let condition of conditions.controls; let i = index" class="condition-card">
-              <mat-card-content>
-                <mat-form-field>
-                  <mat-label>Condition {{ i + 1 }}</mat-label>
-                  <input matInput [formControlName]="i" placeholder="e.g., Non-refundable">
-                  <mat-hint>Enter a condition or requirement</mat-hint>
-                </mat-form-field>
-
-                <button mat-icon-button color="warn" type="button" (click)="removeCondition(i)" class="remove-button">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </mat-card-content>
-            </mat-card>
-          </div>
-
-          <button mat-stroked-button type="button" (click)="addCondition()" class="add-button">
-            <mat-icon>add</mat-icon> Add Condition
-          </button>
-        </div>
-
-        <div class="form-section">
-          <h3>Blackout Dates</h3>
-          <p class="section-hint">Add dates when the offer cannot be used</p>
-          
-          <div formArrayName="blackoutDates" class="blackout-dates-container">
-            <mat-card *ngFor="let date of blackoutDates.controls; let i = index" class="blackout-date-card">
-              <mat-card-content>
-                <mat-form-field>
-                  <mat-label>Date</mat-label>
-                  <input matInput [matDatepicker]="blackoutPicker" [formControlName]="i">
-                  <mat-datepicker-toggle matSuffix [for]="blackoutPicker"></mat-datepicker-toggle>
-                  <mat-datepicker #blackoutPicker></mat-datepicker>
-                </mat-form-field>
-
-                <button mat-icon-button color="warn" type="button" (click)="removeBlackoutDate(i)" class="remove-button">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </mat-card-content>
-            </mat-card>
-          </div>
-
-          <button mat-stroked-button type="button" (click)="addBlackoutDate()" class="add-button">
-            <mat-icon>add</mat-icon> Add Blackout Date
-          </button>
-        </div>
-
-        <div class="step-actions">
-          <button mat-button matStepperPrevious type="button">Back</button>
-          <button mat-button type="button" (click)="cancel()">Cancel</button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="!offerForm.valid">
-            {{ editingOffer ? 'Update' : 'Create' }} Offer
-          </button>
-        </div>
-      </div>
-    </mat-step>
-  </mat-stepper>
+  <div class="dialog-actions">
+    <button type="button" mat-button (click)="onCancel()">Cancel</button>
+    <button type="submit" mat-raised-button color="primary" [disabled]="!offerForm.valid">
+      {{isEdit ? 'Update' : 'Create'}} Offer
+    </button>
+  </div>
 </form>

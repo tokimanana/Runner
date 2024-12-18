@@ -11,6 +11,8 @@ export const routes: Routes = [
   { path: 'rooms', component: ContentEditorComponent },
   { path: 'availability', component: ContentEditorComponent },
   { path: 'rates', component: ContentEditorComponent },
+  { path: 'specialOffers', component: ContentEditorComponent },
+  { path: 'rateOffers', component: ContentEditorComponent },
   { path: '', redirectTo: 'description', pathMatch: 'full' },
   { path: '**', redirectTo: 'description', pathMatch: 'full' }
 ];

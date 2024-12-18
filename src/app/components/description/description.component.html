@@ -9,7 +9,8 @@
       </button>
     </div>
     <div class="content-section">
-      <div [innerHTML]="description || 'No description available'"></div>
+      <div *ngIf="hotel?.description">{{ hotel.description }}</div>
+      <div *ngIf="!hotel?.description">No description available</div>
     </div>
   </div>
 
@@ -23,24 +24,32 @@
         <div class="info-item">
           <h4>Hotel Details</h4>
           <ul>
-            <li>Year Built: {{hotel.yearBuilt || 'Not specified'}}</li>
-            <li>Last Renovation: {{hotel.lastRenovation || 'Not specified'}}</li>
-            <li>Total Rooms: {{hotel.totalRooms || 'Not specified'}}</li>
+            <li>Year Built: {{ hotel.yearBuilt || "Not specified" }}</li>
+            <li>
+              Last Renovation: {{ hotel.lastRenovation || "Not specified" }}
+            </li>
+            <li>Total Rooms: {{ hotel.totalRooms || "Not specified" }}</li>
           </ul>
         </div>
         <div class="info-item">
           <h4>Check-in/Check-out</h4>
           <ul>
-            <li>Check-in Time: {{hotel.checkInTime || '3:00 PM'}}</li>
-            <li>Check-out Time: {{hotel.checkOutTime || '11:00 AM'}}</li>
+            <li>Check-in Time: {{ hotel.checkInTime || "3:00 PM" }}</li>
+            <li>Check-out Time: {{ hotel.checkOutTime || "11:00 AM" }}</li>
           </ul>
         </div>
         <div class="info-item">
           <h4>Location</h4>
           <ul>
-            <li>Distance to Airport: {{hotel.airportDistance || 'Not specified'}}</li>
-            <li>Distance to City Center: {{hotel.cityCenterDistance || 'Not specified'}}</li>
-            <li>Nearest Beach: {{hotel.beachDistance || 'Not specified'}}</li>
+            <li>
+              Distance to Airport:
+              {{ hotel.airportDistance || "Not specified" }}
+            </li>
+            <li>
+              Distance to City Center:
+              {{ hotel.cityCenterDistance || "Not specified" }}
+            </li>
+            <li>Nearest Beach: {{ hotel.beachDistance || "Not specified" }}</li>
           </ul>
         </div>
       </div>
@@ -83,16 +92,16 @@
 
 <!-- No Hotel Selected Message -->
 <div *ngIf="!hotel" class="description-section">
-<p>Please select a hotel to view and edit descriptions.</p>
+  <p>Please select a hotel to view and edit descriptions.</p>
 </div>
 
 <!-- Modal Component -->
-<app-modal 
-      [show]="showModal()"
-      [title]="modalTitle()"
-      [initialValues]="modalInitialValues()"
-      (close)="handleModalClose()"
-      (submit)="handleModalSubmit($event)"
+<app-modal
+  [show]="showModal()"
+  [title]="modalTitle()"
+  [initialValues]="modalInitialValues()"
+  (close)="handleModalClose()"
+  (submit)="handleModalSubmit($event)"
 >
   <div class="modal-content">
     <h2>{{ modalTitle() }}</h2>
@@ -110,14 +119,21 @@
         ></textarea>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="handleModalCancel()">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="handleModalCancel()"
+        >
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary" [disabled]="!modalForm.valid">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!modalForm.valid"
+        >
           Save
         </button>
       </div>
     </form>
   </div>
-
 </app-modal>

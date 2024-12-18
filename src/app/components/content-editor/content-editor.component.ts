@@ -34,6 +34,7 @@ import { CurrencyComponent } from '../currency/currency.component';
     MarketConfigComponent,
     CurrencyComponent,
     ContractListComponent,
+    
   ],
   standalone: true
 })

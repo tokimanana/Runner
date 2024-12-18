@@ -359,7 +359,8 @@ export class ContractListComponent implements OnInit, OnDestroy {
         (periodMap) => periodMap.get(contract.seasonId) || []
       );
 
-      const roomTypes = await firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId));
+      const allRoomTypes = await firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId));
+      const roomTypes = allRoomTypes.filter(room => contract.selectedRoomTypes.includes(room.id));
 
       const mealPlans = contract.selectedMealPlans;
 
@@ -420,5 +421,18 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   clearError() {
     this.error.set(null);
+  }
+
+  async updateContractStatus(contract: Contract): Promise<void> {
+    try {
+      this.loading.set(true);
+      await this.contractService.updateContractStatus(contract.id, contract);
+      await this.loadContracts(this.currentPage()); // Refresh the contracts list
+      this.snackBar.open('Contract status updated successfully', 'Close', { duration: 3000 });
+    } catch (error) {
+      this.handleError('Error updating contract status', error);
+    } finally {
+      this.loading.set(false);
+    }
   }
 }

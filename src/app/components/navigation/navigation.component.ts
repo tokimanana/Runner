@@ -40,7 +40,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
 
   defaultMenuItems: { [key: string]: MenuItemId } = {
     hotel: "description",
-    setup: "age-categories",
+    setup: "currency",
     rates: "contract",
     inventory: "roomInventory",
   };
@@ -48,20 +48,22 @@ export class NavigationComponent implements OnInit, OnDestroy {
   menuItems: { [key: string]: MenuItem[] } = {
     hotel: [
       { id: "description", icon: "info", label: "Basic Information" },
+      { id: "age-categories", icon: "people", label: "Age Categories" },
       { id: "policies", icon: "policy", label: "Policies" },
-      { id: "capacity", icon: "hotel", label: "Room Types" },
+      { id: "capacity", icon: "hotel", label: "Room Types & Capacity" },
       { id: "mealPlan", icon: "restaurant", label: "Meal Plans" },
     ],
     setup: [
-      { id: "age-categories", icon: "people", label: "Age Categories" },
       { id: "currency", icon: "currency_exchange", label: "Currency Settings" },
       { id: "markets", icon: "public", label: "Markets" },
       { id: "periodAndMlos", icon: "calendar_today", label: "Periods & MLOS" },
+      { id: "supplements", icon: "add_circle", label: "Supplements" },
     ],
     rates: [
       { id: "contract", icon: "description", label: "Contract Management" },
       { id: "ratesConfig", icon: "price_change", label: "Rate Configuration" },
-      { id: "supplements", icon: "add_circle", label: "Supplements" },
+      { id: "specialOffers", icon: "local_offer", label: "Special Offers" },
+      { id: "rateOffers", icon: "local_offer", label: "Rate Offers" },
     ],
     inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
   };

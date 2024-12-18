@@ -1,3 +1,4 @@
+import { MealPlanService } from './../../../../services/meal-plan.service';
 // src/app/components/contract/contract-management/contract-form/contract-form.component.ts
 import { CommonModule } from "@angular/common";
 import {
@@ -17,7 +18,11 @@ import {
 } from "@angular/forms";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import {
+  MatDialog,
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+} from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
@@ -38,6 +43,7 @@ import { MarketService } from "src/app/services/market.service";
 import { SeasonService } from "src/app/services/season.service";
 import { ContractDialogData } from "../contract-list/contract-list.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { RatesConfigComponent } from "../rates-config/rates-config.component";
 
 @Component({
   selector: "app-contract-form",
@@ -66,6 +72,8 @@ export class ContractFormComponent implements OnInit {
   private hotelService = inject(HotelService);
   private marketService = inject(MarketService);
   private seasonService = inject(SeasonService);
+  private MealPlanService = inject(MealPlanService);
+  private dialog = inject(MatDialog);
 
   // Form
   contractForm: FormGroup = this.fb.group({
@@ -168,18 +176,16 @@ export class ContractFormComponent implements OnInit {
     if (!contract.hotelId) return;
 
     try {
-      const [roomTypes, hotel, seasons] = await Promise.all([
+      const [roomTypes, hotel, seasons, mealPlans] = await Promise.all([
         firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId)),
         this.hotelService.getHotelById(contract.hotelId),
         this.seasonService.getSeasonsByHotel(contract.hotelId),
+        firstValueFrom(this.MealPlanService.getMealPlansByHotel(contract.hotelId)) // Add this line
       ]);
 
       this.roomTypes.set(roomTypes || []);
       this.seasons.set(seasons || []);
-
-      if (hotel?.mealPlans) {
-        this.mealPlans.set(hotel.mealPlans);
-      }
+      this.mealPlans.set(mealPlans || []);
 
       // Patch form with existing values
       this.contractForm.patchValue({
@@ -187,7 +193,7 @@ export class ContractFormComponent implements OnInit {
         selectedRooms: roomTypes.filter((room) =>
           contract.selectedRoomTypes?.includes(room.id)
         ),
-        selectedMealPlans: hotel?.mealPlans?.filter((mealPlan) =>
+        selectedMealPlans: mealPlans?.filter((mealPlan) =>
           contract.selectedMealPlans?.includes(mealPlan.type)
         ) || []
       });
@@ -196,6 +202,7 @@ export class ContractFormComponent implements OnInit {
       console.error("Error patching form data:", error);
     }
   }
+
 
   isRoomSelected(room: RoomType): boolean {
     const selectedRooms = this.contractForm.get("selectedRooms")?.value || [];
@@ -324,5 +331,32 @@ export class ContractFormComponent implements OnInit {
 
   compareById(item1: any, item2: any): boolean {
     return item1 && item2 && item1.id === item2.id;
+  }
+
+  openRatesConfigDialog(contract: Contract) {
+    const mealPlanIdMap: { [key: string]: string } = {
+      RO: "default-ro",
+      BB: "default-bb",
+      HB: "default-hb",
+      FB: "default-fb",
+      AI: "default-ai",
+      "BB+": "riveria-bb-plus",
+      "HB+": "riveria-hb-plus",
+      "AI+": "maldives-ai-plus",
+      UAI: "maldives-uai",
+    };
+
+    const dialogRef = this.dialog.open(RatesConfigComponent, {
+      width: "90%",
+      data: {
+        contract: contract,
+        periods:
+          this.seasons().find((s) => s.id === contract.seasonId)?.periods || [],
+        roomTypes: this.roomTypes(),
+        mealPlans: contract.selectedMealPlans.map(
+          (mealPlan) => mealPlanIdMap[mealPlan]
+        ),
+      },
+    });
   }
 }

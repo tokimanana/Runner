@@ -253,6 +253,7 @@ export interface RoomType {
   size: number;             // in square meters
   amenities: string[];      // array of amenity strings
   status?: 'active' | 'inactive';
+  capacityLabel?: string;
 }
 
 // Rate management
@@ -334,6 +335,7 @@ export interface Period {
   description?: string;
   mlos: number;
   isBlackout?: boolean;
+  type?: SeasonType;
 }
 
 export interface Season {
@@ -387,10 +389,14 @@ export interface RoomTypeRate {
   rateType: 'per_pax' | 'per_villa';
   personTypeRates?: PersonTypeRates;
   villaRate?: number;
-  mealPlanRates: {
-    [mealPlanId: string]: {
-      [personType: string]: number;  // Rate per person type for this meal plan
-    }
+  mealPlanRates: MealPlanRates;
+}
+
+export interface MealPlanRates {
+  [mealPlanId: string]: {
+    adult: number;
+    child: number;
+    infant: number;
   };
 }
 
@@ -595,6 +601,7 @@ export type MenuItemId =
   | 'roomTypes'
   | 'supplements'
   | 'specialOffers'
+  | 'rateOffers'
   | 'rateScenarios'
   | 'allotments'
   | 'availability';
@@ -736,4 +743,19 @@ export interface RateCalculationResult {
   };
   total: number;
   currency: string;
+}
+
+export interface Offer {
+    id: number;
+    name: string;
+    description: string;
+    discount: number;
+    hotelId: number;
+    roomTypeIds: number[];
+    marketIds: number[];
+    seasonIds: number[];
+    validFrom: string;
+    validTo: string;
+    isCombinable: boolean;
+    isCumulative: boolean;
 }

@@ -110,15 +110,17 @@ async ngOnInit() {
   private initializeForms(existingRates: ContractPeriodRate[]) {
     console.log('initializeForms - existingRates:', existingRates);
     this.data.roomTypes.forEach((roomType) => {
+      // Populate capacityLabel here, excluding the category
+      roomType.capacityLabel = `(${this.getCapacityString(roomType)})`;
       this.data.periods.forEach((period) => {
         const existingRate = this.findExistingRate(
           existingRates,
           roomType.id,
           period.id
         );
-        console.log('initializeForms - roomType:', roomType, 'period:', period, 'existingRate:', existingRate);
+        // Fix: Pass roomType as first parameter, existingRate as second
         const formKey = `${roomType.id}-${period.id}`;
-        this.ratesForms[formKey] = this.createRateForm(existingRate);
+        this.ratesForms[formKey] = this.createRateForm(roomType, existingRate);        
       });
     });
   }
@@ -133,39 +135,79 @@ async ngOnInit() {
     return foundRate;
   }
 
-  private createRateForm(existingRate?: RoomTypeRate): FormGroup {
-    console.log('createRateForm - existingRate:', existingRate);
+  private createRateForm(roomType: RoomType, existingRate?: RoomTypeRate): FormGroup {
     const form = this.fb.group({
       rateType: [existingRate?.rateType || "per_pax", Validators.required],
       villaRate: [existingRate?.villaRate || null],
       personTypeRates: this.fb.group({
         adult: this.createPersonTypeRatesGroup(
+          roomType,
           existingRate?.personTypeRates?.["adult"]
         ),
-        child: this.createPersonTypeRatesGroup(
-          existingRate?.personTypeRates?.["child"]
-        ),
-        infant: this.createPersonTypeRatesGroup(
-          existingRate?.personTypeRates?.["infant"]
-        ),
+        child: roomType.maxOccupancy.children > 0 ? 
+          this.createPersonTypeRatesGroup(
+            {...roomType, maxOccupancy: { 
+              adults: roomType.maxOccupancy.children,
+              children: roomType.maxOccupancy.children,
+              infants: roomType.maxOccupancy.infants 
+            }},
+            existingRate?.personTypeRates?.["child"]
+          ) : null,
+        infant: roomType.maxOccupancy.infants > 0 ?
+          this.createPersonTypeRatesGroup(
+            {...roomType, maxOccupancy: { 
+              adults: roomType.maxOccupancy.infants,
+              children: roomType.maxOccupancy.children,
+              infants: roomType.maxOccupancy.infants 
+            }},
+            existingRate?.personTypeRates?.["infant"]
+          ) : null,
       }),
       mealPlanRates: this.createMealPlanRatesGroup(existingRate?.mealPlanRates),
     });
-    console.log('createRateForm - form:', form);
+    
     return form;
+}
+
+
+
+
+
+private createPersonTypeRatesGroup(roomType: RoomType, existing?: {
+  rates: { [key: number]: number };
+}) {
+  const { maxOccupancy } = roomType;
+  const formGroup: { [key: number]: any[] } = {}; // Add type annotation
+  
+  for (let i = 1; i <= maxOccupancy.adults; i++) {
+      formGroup[i] = [existing?.rates[i] || null];
   }
 
-  private createPersonTypeRatesGroup(existing?: {
-    rates: { [key: number]: number };
-  }) {
-    return this.fb.group({
-        1: [existing?.rates[1] || null],
-        2: [existing?.rates[2] || null],
-        3: [existing?.rates[3] || null],
-        4: [existing?.rates[4] || null],
-        5: [existing?.rates[5] || null],
-    });
-  }
+  return this.fb.group(formGroup);
+}
+
+
+// Add to RatesConfigComponent class
+getOccupancyLabel(count: number): string {
+  const labels = ['Single', 'Double', 'Triple', 'Quad', 'Quint'];
+  return labels[count - 1] || `${count} Adults`;
+}
+
+getChildLabel(count: number): string {
+  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+  return `${ordinals[count - 1]} Child`;
+}
+
+getCapacityString(roomType: RoomType): string {
+  const { maxOccupancy } = roomType;
+  const capacityParts = [];
+  
+  if (maxOccupancy.adults > 0) capacityParts.push(`${maxOccupancy.adults}A`);
+  if (maxOccupancy.children > 0) capacityParts.push(`${maxOccupancy.children}C`);
+  if (maxOccupancy.infants > 0) capacityParts.push(`${maxOccupancy.infants}I`);
+  
+  return capacityParts.join(' + ');
+}
 
   private createMealPlanRatesGroup(existing?: {
     [mealPlanId: string]: { [personType: string]: number };

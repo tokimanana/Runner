@@ -158,7 +158,22 @@ export class ContractService extends BaseDataService<Contract> {
     }
   }
 
-  async updateContractStatus(id: number, status: ContractStatus): Promise<Contract> {
-    return this.updateContract(id, { status });
+  async updateContractStatus(id: number, contract: Contract): Promise<Contract> {
+    let newStatus: ContractStatus;
+    
+    // Check if rates are not configured
+    if (!contract.isRatesConfigured) {
+      newStatus = 'draft';
+    } 
+    // Check if contract period is expired
+    else if (contract.validityPeriod && new Date(contract.validityPeriod.endDate) < new Date()) {
+      newStatus = 'expired';
+    } 
+    // Contract has rates and is within validity period
+    else {
+      newStatus = 'active';
+    }
+    return this.updateContract(id, { status: newStatus });
   }
+  
 }

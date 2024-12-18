@@ -1,105 +1,33 @@
-<div class="special-offers-container">
-  <div class="tab-buttons">
-    <button 
-      [class.active]="activeTab === 'offers'"
-      (click)="switchTab('offers')">
-      Manage Offers
-    </button>
-    <button 
-      [class.active]="activeTab === 'rates'"
-      (click)="switchTab('rates')">
-      Apply to Rates
-    </button>
-    <button 
-      [class.active]="activeTab === 'examples'"
-      (click)="switchTab('examples')">
-      Applied Examples
+<div class="offers-container">
+  <div class="header-actions">
+    <h2>Special Offers Management</h2>
+    <button mat-raised-button color="primary" (click)="createOffer()">
+      <mat-icon>add</mat-icon>
+      New Offer
     </button>
   </div>
 
-  <div class="tab-content">
-    <app-offer-list 
-      *ngIf="activeTab === 'offers'"
-      [hotel]="hotel"
-    ></app-offer-list>
-    <app-offer-rates 
-      *ngIf="activeTab === 'rates'"
-      [hotel]="hotel"
-    ></app-offer-rates>
-    <div *ngIf="activeTab === 'examples'" class="examples-container">
-      <h2>Applied Offers Examples</h2>
-      
-      <div class="examples-grid">
-        <div *ngFor="let rate of appliedRatesExamples" class="rate-card">
-          <div class="rate-header">
-            <h3>{{ rate.name }}</h3>
-            <span class="base-rate">Base Rate: {{ rate.baseRate }} {{ rate.currency }}</span>
-          </div>
-          
-          <div class="applied-offers">
-            <div *ngFor="let offer of rate.specialOffers" class="offer-item">
-              <div class="offer-header">
-                <span class="offer-name">{{ offer.name }}</span>
-                <div class="offer-badges">
-                  <span class="offer-code">{{ offer.code }}</span>
-                  <span class="offer-type-badge" [class.combinable]="offer.type === 'combinable'" [class.cumulative]="offer.type === 'cumulative'">
-                    {{ offer.type === 'combinable' ? 'Combinable' : 'Cumulative' }}
-                  </span>
-                </div>
-              </div>
-              <p class="offer-description">{{ offer.description }}</p>
-              <div class="offer-validity">
-                <span class="validity-dates">Valid: {{ offer.startDate | date }} - {{ offer.endDate | date }}</span>
-              </div>
-              <div class="discount-tiers" *ngIf="offer.discountValues && offer.discountValues.length > 0">
-                <div *ngFor="let tier of offer.discountValues" class="discount-tier">
-                  <span class="nights">{{ tier.nights }} nights</span>
-                  <span class="discount">
-                    {{ offer.discountType === 'percentage' ? tier.value + '%' : tier.value + ' ' + rate.currency }} off
-                  </span>
-                </div>
-              </div>
-              <div class="applied-discount">
-                <span class="applied-label">Applied discount:</span>
-                <div class="discount-details">
-                  <span class="discount-type">
-                    {{ offer.discountType === 'percentage' ? offer.appliedDiscount.value + '%' : offer.appliedDiscount.value + ' ' + rate.currency }}
-                  </span>
-                  <span class="amount-off">-{{ offer.appliedDiscount.amountOff }} {{ rate.currency }}</span>
-                </div>
-              </div>
-              <div *ngIf="offer.appliedDiscount.additionalBenefits" class="benefits">
-                <div *ngFor="let benefit of offer.appliedDiscount.additionalBenefits" class="benefit-item">
-                  {{ benefit }}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="booking-details">
-            <div class="dates">
-              <span>Check-in: {{ rate.bookingDates.checkIn | date }}</span>
-              <span>Check-out: {{ rate.bookingDates.checkOut | date }}</span>
-              <span>Nights: {{ rate.bookingDates.nights }}</span>
-            </div>
-            <div *ngIf="rate.selectedMealPlan" class="meal-plan">
-              <span>{{ rate.selectedMealPlan.name }}</span>
-              <span>+{{ rate.selectedMealPlan.supplement }} {{ rate.currency }}</span>
-            </div>
-          </div>
-          
-          <div class="final-price">
-            <div class="calculation">
-              <span class="label">Final Price:</span>
-              <span class="amount">{{ rate.amount }} {{ rate.currency }}</span>
-            </div>
-            <span class="savings">
-              Save {{ rate.baseRate - rate.amount }} {{ rate.currency }}
-              ({{ ((rate.baseRate - rate.amount) / rate.baseRate * 100).toFixed(1) }}%)
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+  <mat-divider></mat-divider>
+
+  <div class="offers-list" *ngIf="offers$ | async as offers">
+    <mat-card *ngFor="let offer of offers">
+      <mat-card-header>
+        <mat-card-title>{{offer.name}}</mat-card-title>
+        <mat-card-subtitle>{{offer.code}}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{offer.description}}</p>
+        <p>Type: {{offer.type}}</p>
+        <p>Valid: {{offer.startDate | date}} - {{offer.endDate | date}}</p>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button color="primary" (click)="editOffer(offer)">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+        <button mat-button color="warn" (click)="deleteOffer(offer)">
+          <mat-icon>delete</mat-icon> Delete
+        </button>
+      </mat-card-actions>
+    </mat-card>
   </div>
 </div>
