@@ -176,9 +176,8 @@ export class ContractFormComponent implements OnInit {
     if (!contract.hotelId) return;
 
     try {
-      const [roomTypes, hotel, seasons, mealPlans] = await Promise.all([
+      const [roomTypes, seasons, mealPlans] = await Promise.all([
         firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId)),
-        this.hotelService.getHotelById(contract.hotelId),
         this.seasonService.getSeasonsByHotel(contract.hotelId),
         firstValueFrom(this.MealPlanService.getMealPlansByHotel(contract.hotelId)) // Add this line
       ]);

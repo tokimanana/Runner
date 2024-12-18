@@ -1,33 +1,46 @@
 // src/app/components/special-offers/special-offers.component.ts
 
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, Input } from "@angular/core";
 import { Subject } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { OffersService } from "../../services/offers.service";
-import { SpecialOffer } from "../../models/types";
+import { Hotel, SpecialOffer } from "../../models/types";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatIconModule } from "@angular/material/icon";
 import { MatDivider } from "@angular/material/divider";
 import { MatCardModule } from "@angular/material/card";
-import { CommonModule, DatePipe } from "@angular/common";
+import { CommonModule } from "@angular/common";
 import { OfferFormComponent } from "./offer-form/offer-form.component";
+import { OfferListComponent } from './offer-list/offer-list.component';
+
 
 @Component({
   selector: "app-special-offers",
   templateUrl: "special-offers.component.html",
   styleUrls: ["./special-offers.component.scss"],
   standalone: true,
-  imports: [MatIconModule, MatDivider, MatCardModule, DatePipe, CommonModule],
+  imports: [
+    MatIconModule,
+    MatDivider,
+    MatCardModule,
+    CommonModule,
+    OfferFormComponent,
+    OfferListComponent
+  ],
 })
 export class SpecialOffersComponent implements OnInit, OnDestroy {
-  offers$ = this.offersService.offers$;
+  @Input() hotel!: Hotel; // Add this line
   private destroy$ = new Subject<void>();
+  offers$ = this.offersService.offers$;
+
+  showOfferForm = false;
+  selectedOffer: SpecialOffer | null = null;
 
   constructor(
     private offersService: OffersService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
@@ -47,7 +60,10 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
 
   createOffer(): void {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.width = "800px";
+    dialogConfig.width = "1000px"; // Increased from 800px
+    dialogConfig.height = "800px"; // Added height
+    dialogConfig.maxWidth = "90vw"; // Ensures dialog doesn't exceed viewport width
+    dialogConfig.maxHeight = "90vh"; // Ensures dialog doesn't exceed viewport height
     dialogConfig.disableClose = true;
     dialogConfig.data = {
       title: "Create Special Offer",
@@ -74,15 +90,22 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
           });
         },
       });
+
+      dialogRef.backdropClick().subscribe(() => {
+        dialogRef.close();
+      });
   }
 
   editOffer(offer: SpecialOffer): void {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.width = "800px";
+    dialogConfig.width = "1000px";
+    dialogConfig.height = "800px";
+    dialogConfig.maxWidth = "90vw";
+    dialogConfig.maxHeight = "90vh";
     dialogConfig.disableClose = true;
     dialogConfig.data = {
       title: "Edit Special Offer",
-      offer: { ...offer }, // Clone to avoid direct mutations
+      offer: { ...offer },
     };
 
     const dialogRef = this.dialog.open(OfferFormComponent, dialogConfig);
@@ -105,6 +128,10 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
           });
         },
       });
+
+      dialogRef.backdropClick().subscribe(() => {
+        dialogRef.close();
+      });
   }
 
   async deleteOffer(offer: SpecialOffer): Promise<void> {
@@ -119,5 +146,20 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
         this.snackBar.open("Error deleting offer", "Close", { duration: 3000 });
       }
     }
+  }
+
+  onSaveOffer(offerData: Partial<SpecialOffer>) {
+    if (this.selectedOffer) {
+      this.offersService.updateOffer(this.selectedOffer.id, offerData);
+    } else {
+      this.offersService.createOffer(offerData as Omit<SpecialOffer, 'id'>);
+    }
+    this.showOfferForm = false;
+    this.selectedOffer = null;
+  }
+
+  onCancelOffer() {
+    this.showOfferForm = false;
+    this.selectedOffer = null;
   }
 }

@@ -1,0 +1,80 @@
+<!-- src/app/components/special-offers/offer-list/offer-list.component.html -->
+<div class="offer-list-container">
+  <div class="offer-types-legend">
+    <mat-card>
+      <h3>Offer Types:</h3>
+      <div class="type-explanation">
+        <span class="combinable-badge">Combinable</span>
+        <p>Can be combined with other offers</p>
+      </div>
+      <div class="type-explanation">
+        <span class="cumulative-badge">Cumulative</span>
+        <p>Discounts increase with longer stays</p>
+      </div>
+    </mat-card>
+  </div>
+
+  <div *ngIf="offers?.length; else noOffers" class="offers-grid">
+    <mat-card *ngFor="let offer of offers" class="offer-card" [ngClass]="offer.type">
+      <mat-card-header>
+        <div class="offer-type-badge" [ngClass]="offer.type">
+          {{ offer.type | titlecase }}
+        </div>
+        <mat-card-title>{{offer.name}}</mat-card-title>
+        <mat-card-subtitle>Code: {{offer.code}}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p class="description">{{offer.description}}</p>
+        
+        <div class="offer-details">
+          <div class="discount-section">
+            <h4>Savings:</h4>
+            <ul>
+              <li *ngFor="let discount of offer.discountValues">
+                <strong>{{ discount.nights }} nights:</strong> 
+                {{ discount.value }}{{ offer.discountType === 'percentage' ? '%' : ' €' }} off
+                <span *ngIf="discount.startDate" class="date-range">
+                  ({{ discount.startDate | date }} - {{ discount.endDate | date }})
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="validity-section">
+            <p><mat-icon>date_range</mat-icon> Valid: {{ offer.startDate | date }} - {{ offer.endDate | date }}</p>
+            <p *ngIf="offer.minimumNights">
+              <mat-icon>nights_stay</mat-icon> Min stay: {{ offer.minimumNights }} nights
+            </p>
+            <p *ngIf="offer.maximumNights">
+              <mat-icon>nights_stay</mat-icon> Max stay: {{ offer.maximumNights }} nights
+            </p>
+          </div>
+
+          <div class="conditions-section" *ngIf="offer.conditions?.length">
+            <h4>Conditions:</h4>
+            <ul>
+              <li *ngFor="let condition of offer.conditions">{{ condition }}</li>
+            </ul>
+          </div>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <button mat-button color="primary" (click)="editOffer.emit(offer)">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+        <button mat-button color="warn" (click)="deleteOffer.emit(offer)">
+          <mat-icon>delete</mat-icon> Delete
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <ng-template #noOffers>
+    <div class="no-offers">
+      <mat-icon>local_offer</mat-icon>
+      <p>No special offers available</p>
+    </div>
+  </ng-template>
+</div>

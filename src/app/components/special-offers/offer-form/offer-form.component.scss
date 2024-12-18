@@ -1,0 +1,189 @@
+// src/app/components/special-offers/offer-form/offer-form.component.scss
+
+.offer-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  h2 {
+    margin: 0 0 20px;
+    color: #1976d2;
+    font-size: 24px;
+  }
+
+  ::ng-deep .mat-horizontal-stepper-wrapper {
+    flex: 1;
+  }
+
+  ::ng-deep .mat-horizontal-content-container {
+    padding: 0 24px 24px 24px;
+  }
+
+  .step-content {
+    padding: 20px 0;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: rgba(0, 0, 0, 0.87);
+
+      mat-icon {
+        color: #1976d2;
+      }
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+
+      mat-form-field {
+        width: 100%;
+      }
+    }
+
+    .full-width {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+  }
+
+  .discount-values-section,
+  .conditions-section {
+    margin: 30px 0;
+
+    .discount-value-row,
+    .condition-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 20px;
+      align-items: center;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+
+      mat-form-field {
+        width: 100%;
+      }
+
+      button {
+        align-self: center;
+      }
+    }
+
+    .add-value-button,
+    .add-condition-button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 8px;
+    }
+  }
+
+  .date-range-section,
+  .stay-limits-section {
+    margin: 30px 0;
+  }
+
+  .step-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+
+    .left-actions,
+    .right-actions {
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  // Material form field customizations
+  ::ng-deep {
+
+    .mat-mdc-form-field-subscript-wrapper {
+      position: static;
+    }
+
+    .mat-mdc-form-field {
+      display: block;
+    }
+
+    .mat-stepper-horizontal {
+      background-color: transparent;
+    }
+
+    .mat-step-header {
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+    }
+
+    // Ensure proper spacing for form field outlines
+    .mdc-text-field--outlined {
+      padding: 0 !important;
+      .mat-mdc-form-field-infix {
+        min-height: 50px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+    }
+  }
+
+  .mat-mdc-form-field {
+    .mdc-text-field--outlined {
+      .mat-mdc-form-field-infix {
+        padding: 12px 0;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .mdc-text-field__input {
+      padding: 8px 16px;
+      height: auto;
+    }
+  }
+
+  .mat-mdc-select-value {
+    display: flex;
+    align-items: center;
+  }
+
+  .mat-mdc-option {
+    display: flex;
+    align-items: center;
+
+    .mat-icon {
+      margin-right: 8px;
+    }
+  }
+
+  .mat-mdc-select-trigger {
+    .mat-mdc-select-value {
+      text-align: center;
+    }
+    
+    .mat-mdc-select-value-text {
+      text-align: center;
+    }
+  }
+
+  // Center text in mat-option elements
+  .mat-mdc-select-panel {
+    .mat-mdc-option {
+      text-align: center;
+      
+      .mat-mdc-option-text {
+        text-align: center;
+      }
+    }
+  }
+}

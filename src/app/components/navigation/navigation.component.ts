@@ -61,9 +61,8 @@ export class NavigationComponent implements OnInit, OnDestroy {
     ],
     rates: [
       { id: "contract", icon: "description", label: "Contract Management" },
-      { id: "ratesConfig", icon: "price_change", label: "Rate Configuration" },
       { id: "specialOffers", icon: "local_offer", label: "Special Offers" },
-      { id: "rateOffers", icon: "local_offer", label: "Rate Offers" },
+      { id: "rateOffers", icon: "price_change", label: "Rate Offers" },
     ],
     inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
   };

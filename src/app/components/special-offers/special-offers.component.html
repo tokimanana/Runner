@@ -1,4 +1,5 @@
 <div class="offers-container">
+  <!-- Header Section -->
   <div class="header-actions">
     <h2>Special Offers Management</h2>
     <button mat-raised-button color="primary" (click)="createOffer()">
@@ -9,25 +10,18 @@
 
   <mat-divider></mat-divider>
 
-  <div class="offers-list" *ngIf="offers$ | async as offers">
-    <mat-card *ngFor="let offer of offers">
-      <mat-card-header>
-        <mat-card-title>{{offer.name}}</mat-card-title>
-        <mat-card-subtitle>{{offer.code}}</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>{{offer.description}}</p>
-        <p>Type: {{offer.type}}</p>
-        <p>Valid: {{offer.startDate | date}} - {{offer.endDate | date}}</p>
-      </mat-card-content>
-      <mat-card-actions align="end">
-        <button mat-button color="primary" (click)="editOffer(offer)">
-          <mat-icon>edit</mat-icon> Edit
-        </button>
-        <button mat-button color="warn" (click)="deleteOffer(offer)">
-          <mat-icon>delete</mat-icon> Delete
-        </button>
-      </mat-card-actions>
-    </mat-card>
-  </div>
+  <!-- Offers List Component -->
+  <app-offer-list
+    [offers]="(offers$ | async) || []"
+    (editOffer)="editOffer($event)"
+    (deleteOffer)="deleteOffer($event)"
+  ></app-offer-list>
+
+  <!-- Offer Form Dialog (will be opened via dialog service) -->
+  <app-offer-form
+    *ngIf="showOfferForm"
+    [offer]="selectedOffer"
+    (saveOffer)="onSaveOffer($event)"
+    (cancel)="onCancelOffer()"
+  ></app-offer-form>
 </div>

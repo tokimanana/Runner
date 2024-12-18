@@ -1,6 +1,6 @@
 // src/app/components/special-offers/offer-form/offer-form.component.ts
 
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -11,6 +11,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { SpecialOffer, DiscountValue } from '../../../models/types';
+import { MatStepper, MatStepperModule } from '@angular/material/stepper';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { StepperSelectionEvent } from '@angular/cdk/stepper';
 
 interface DialogData {
   title: string;
@@ -20,6 +23,7 @@ interface DialogData {
 @Component({
   selector: 'app-offer-form',
   templateUrl: './offer-form.component.html',
+  styleUrls: ['./offer-form.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -29,12 +33,20 @@ interface DialogData {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatDatepickerModule
+    MatDatepickerModule,
+    MatStepperModule,
+    MatTooltipModule
   ]
 })
 export class OfferFormComponent implements OnInit {
+  @Input() offer: SpecialOffer | null = null;
+  @Output() saveOffer = new EventEmitter<Partial<SpecialOffer>>();
+  @ViewChild('stepper') stepper!: MatStepper;
+  // @Output() cancel = new EventEmitter<void>();
   offerForm!: FormGroup;
   isEdit: boolean = false;
+  isFirstStep = true;
+  isLastStep = false;
 
   constructor(
     private fb: FormBuilder,
@@ -45,9 +57,10 @@ export class OfferFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const offerToEdit = this.data?.offer || this.offer;
     if (this.data.offer) {
       this.isEdit = true;
-      this.populateForm(this.data.offer);
+      this.populateForm(offerToEdit as SpecialOffer);
     }
   }
 
@@ -151,12 +164,19 @@ export class OfferFormComponent implements OnInit {
 
   onSubmit(): void {
     if (this.offerForm.valid) {
-      const formData = this.offerForm.value;
-      this.dialogRef.close(formData);
+      const formData: Partial<SpecialOffer> = this.offerForm.value;
+      this.saveOffer.emit(formData);
     }
   }
 
   onCancel(): void {
-    this.dialogRef.close();
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
+
+  onStepChange(event: StepperSelectionEvent): void {
+    this.isFirstStep = event.selectedIndex === 0;
+    this.isLastStep = event.selectedIndex === this.stepper.steps.length - 1;
   }
 }

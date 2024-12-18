@@ -51,11 +51,10 @@
           [hotel]="selectedHotel"
         ></app-contract-list>
 
-        <ng-container *ngSwitchCase="'ratesConfig'">
-          <div class="no-contract">
-            <p>Rate Configuration is coming soon!</p>
-          </div>
-        </ng-container>
+        <app-special-offers
+          *ngSwitchCase="'specialOffers'"
+          [hotel]="selectedHotel"
+        ></app-special-offers>
       </ng-container>
     </div>
   </div>

@@ -18,7 +18,7 @@ export const MENU_ITEMS: { [key: string]: MenuItem[] } = {
   ],
   contracts: [
     { id: 'contract', icon: 'receipt_long', label: 'Contract Management' },
-    { id: 'ratesConfig', icon: 'settings', label: 'Rate Configuration' },
+    { id: 'specialOffers', icon: 'local_offer', label: 'Special Offers' },
     { id: 'rateSeasons', icon: 'calendar_today', label: 'Rate Seasons' }
   ],
   inventory: [

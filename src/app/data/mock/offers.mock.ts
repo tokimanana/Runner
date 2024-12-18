@@ -64,7 +64,7 @@ export const offersMock: SpecialOffer[] = [
     minimumNights: 21,
     bookingWindow: {
       start: "2024-01-01",
-      end: "2024-11-15", // Ends earlier than offer to allow for minimum 21 nights stay
+      end: "2024-11-15",
     },
   },
   {

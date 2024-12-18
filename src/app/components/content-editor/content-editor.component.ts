@@ -17,6 +17,7 @@ import { ContractListComponent } from '../contract/contract-management/contract-
 import { DEFAULT_MENU_ITEM } from '../../config/menu.config';
 import { MatButtonModule } from '@angular/material/button';
 import { CurrencyComponent } from '../currency/currency.component';
+import { SpecialOffersComponent } from "../special-offers/special-offers.component";
 
 @Component({
   selector: 'app-content-editor',
@@ -34,8 +35,8 @@ import { CurrencyComponent } from '../currency/currency.component';
     MarketConfigComponent,
     CurrencyComponent,
     ContractListComponent,
-    
-  ],
+    SpecialOffersComponent
+],
   standalone: true
 })
 export class ContentEditorComponent implements OnInit {
