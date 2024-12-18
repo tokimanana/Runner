@@ -440,7 +440,6 @@ export interface SpecialOffer {
   endDate: string;
   conditions?: string[];
   minimumNights?: number;
-  maximumNights?: number;
   blackoutDates?: string[];
   bookingWindow?: {
     start: string;   // When booking can start

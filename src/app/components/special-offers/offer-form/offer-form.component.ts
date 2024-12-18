@@ -76,7 +76,6 @@ export class OfferFormComponent implements OnInit {
       endDate: ['', Validators.required],
       conditions: this.fb.array([]),
       minimumNights: [null],
-      maximumNights: [null],
       blackoutDates: this.fb.array([]),
       bookingWindow: this.fb.group({
         start: [''],
@@ -137,7 +136,6 @@ export class OfferFormComponent implements OnInit {
       startDate: offer.startDate,
       endDate: offer.endDate,
       minimumNights: offer.minimumNights,
-      maximumNights: offer.maximumNights,
       bookingWindow: offer.bookingWindow || { start: '', end: '' }
     });
 
