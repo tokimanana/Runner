@@ -197,6 +197,10 @@ getChildLabel(count: number): string {
   const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
   return `${ordinals[count - 1]} Child`;
 }
+getInfantLabel(count: number): string {
+  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+  return `${ordinals[count - 1]} Infant`;
+}
 
 getCapacityString(roomType: RoomType): string {
   const { maxOccupancy } = roomType;

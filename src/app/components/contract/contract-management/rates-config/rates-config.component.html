@@ -119,9 +119,44 @@
                       </tbody>
                     </table>
                   </ng-container>
-
                   <!-- Infant Rates -->
                   <ng-container *ngIf="roomType.maxOccupancy.infants > 0">
+                    <h4>Infant Rates</h4>
+                    <table class="rates-table">
+                      <thead>
+                        <tr>
+                          <th>Infant</th>
+                          <th>Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody formGroupName="infant">
+                        <ng-container
+                          *ngFor="
+                            let i of [].constructor(
+                              roomType.maxOccupancy.infants
+                            );
+                            let index = index
+                          "
+                        >
+                          <tr>
+                            <td>{{ getInfantLabel(index + 1) }}</td>
+                            <td>
+                              <mat-form-field>
+                                <input
+                                  matInput
+                                  type="number"
+                                  [formControlName]="index + 1"
+                                />
+                              </mat-form-field>
+                            </td>
+                          </tr>
+                        </ng-container>
+                      </tbody>
+                    </table>
+                  </ng-container>
+
+                  <!-- Infant Rates -->
+                  <!-- <ng-container *ngIf="roomType.maxOccupancy.infants > 0">
                     <h4>Infant Rates</h4>
                     <table class="rates-table">
                       <thead>
@@ -146,7 +181,7 @@
                                 <input
                                   matInput
                                   type="number"
-                                  [formControlName]="index + 1"
+                                  [formControlName]="index"
                                 />
                               </mat-form-field>
                             </td>
@@ -154,7 +189,7 @@
                         </ng-container>
                       </tbody>
                     </table>
-                  </ng-container>
+                  </ng-container> -->
                 </div>
 
                 <!-- Per Villa Rate -->
