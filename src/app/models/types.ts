@@ -7,7 +7,7 @@ export interface Hotel {
   city: string;
   country: string;
   rating: number;
-  
+
   // Basic Information
   yearBuilt: string;
   lastRenovation: string;
@@ -16,22 +16,22 @@ export interface Hotel {
   cityCenterDistance: string;
   beachDistance: string;
   languages: string[];
-  
+
   // Operating hours
   checkInTime: string;
   checkOutTime: string;
-  
+
   // Features currently in use
   amenities: {
     [key in AmenityCategory]?: string[];
   };
-  
+
   // Optional relationships
   roomTypes?: RoomType[];
   mealPlans?: MealPlan[];
   policies?: HotelPolicies;
   ageCategories?: AgeCategory[];
-  
+
   // Basic contact info
   contactInfo?: {
     phone: string;
@@ -40,11 +40,10 @@ export interface Hotel {
   };
 }
 
-
 interface ImageAsset {
   id: string;
   url: string;
-  type: 'main' | 'room' | 'facility' | 'dining' | 'other';
+  type: "main" | "room" | "facility" | "dining" | "other";
   title?: string;
   description?: string;
 }
@@ -52,21 +51,20 @@ interface ImageAsset {
 interface ImageAsset {
   id: string;
   url: string;
-  type: 'main' | 'room' | 'facility' | 'dining' | 'other';
+  type: "main" | "room" | "facility" | "dining" | "other";
   title?: string;
   description?: string;
 }
-
 
 export enum PolicyType {
-  CANCELLATION = 'cancellation',
-  CHECK_IN = 'checkIn',
-  CHECK_OUT = 'checkOut',
-  CHILD = 'child',
-  PET = 'pet',
-  DRESS_CODE = 'dressCode',
-  PAYMENT = 'payment',
-  DAMAGE_DEPOSIT = 'damageDeposit'
+  CANCELLATION = "cancellation",
+  CHECK_IN = "checkIn",
+  CHECK_OUT = "checkOut",
+  CHILD = "child",
+  PET = "pet",
+  DRESS_CODE = "dressCode",
+  PAYMENT = "payment",
+  DAMAGE_DEPOSIT = "damageDeposit",
 }
 
 export interface TimePolicy {
@@ -173,23 +171,23 @@ export interface HotelFeatures {
 }
 
 export enum RestaurantType {
-  FINE_DINING = 'Fine Dining',
-  CASUAL = 'Casual Dining',
-  BUFFET = 'Buffet',
-  SPECIALTY = 'Specialty',
-  BAR = 'Bar & Lounge',
-  POOL = 'Pool & Beach'
+  FINE_DINING = "Fine Dining",
+  CASUAL = "Casual Dining",
+  BUFFET = "Buffet",
+  SPECIALTY = "Specialty",
+  BAR = "Bar & Lounge",
+  POOL = "Pool & Beach",
 }
 
 export enum CuisineType {
-  MEDITERRANEAN = 'Mediterranean',
-  ITALIAN = 'Italian',
-  INTERNATIONAL = 'International',
-  ASIAN = 'Asian',
-  JAPANESE = 'Japanese',
-  SEAFOOD = 'Seafood',
-  FUSION = 'Fusion',
-  GRILL = 'Grill'
+  MEDITERRANEAN = "Mediterranean",
+  ITALIAN = "Italian",
+  INTERNATIONAL = "International",
+  ASIAN = "Asian",
+  JAPANESE = "Japanese",
+  SEAFOOD = "Seafood",
+  FUSION = "Fusion",
+  GRILL = "Grill",
 }
 
 export interface Restaurant {
@@ -210,33 +208,32 @@ export interface Spa {
 
 // Amenity management
 export enum AmenityCategory {
-  POOL = 'pool',
-  SPA = 'spa',
-  DINING = 'dining',
-  BEACH = 'beach',
-  FITNESS = 'fitness',
-  SERVICES = 'services',
-  ACTIVITIES = 'activities'
+  POOL = "pool",
+  SPA = "spa",
+  DINING = "dining",
+  BEACH = "beach",
+  FITNESS = "fitness",
+  SERVICES = "services",
+  ACTIVITIES = "activities",
 }
 
 // Room management
 export enum RoomCategory {
-  STANDARD = 'STANDARD',
-  SUPERIOR = 'SUPERIOR',
-  DELUXE = 'DELUXE',
-  PREMIUM = 'PREMIUM',
-  JUNIOR_SUITE = 'JUNIOR_SUITE',
-  SUITE = 'SUITE',
-  EXECUTIVE_SUITE = 'EXECUTIVE_SUITE',
-  PENTHOUSE = 'PENTHOUSE',
-  VILLA = 'VILLA',
-  POOL_VILLA = 'POOL_VILLA',
-  OVERWATER_VILLA = 'OVERWATER_VILLA',
-  FAMILY_ROOM = 'FAMILY_ROOM',
-  CONNECTING_ROOM = 'CONNECTING_ROOM',
-  ACCESSIBLE = 'ACCESSIBLE'
+  STANDARD = "STANDARD",
+  SUPERIOR = "SUPERIOR",
+  DELUXE = "DELUXE",
+  PREMIUM = "PREMIUM",
+  JUNIOR_SUITE = "JUNIOR_SUITE",
+  SUITE = "SUITE",
+  EXECUTIVE_SUITE = "EXECUTIVE_SUITE",
+  PENTHOUSE = "PENTHOUSE",
+  VILLA = "VILLA",
+  POOL_VILLA = "POOL_VILLA",
+  OVERWATER_VILLA = "OVERWATER_VILLA",
+  FAMILY_ROOM = "FAMILY_ROOM",
+  CONNECTING_ROOM = "CONNECTING_ROOM",
+  ACCESSIBLE = "ACCESSIBLE",
 }
-
 
 export interface RoomType {
   id: number;
@@ -250,9 +247,9 @@ export interface RoomType {
     infants: number;
   };
   baseOccupancy: number;
-  size: number;             // in square meters
-  amenities: string[];      // array of amenity strings
-  status?: 'active' | 'inactive';
+  size: number; // in square meters
+  amenities: string[]; // array of amenity strings
+  status?: "active" | "inactive";
   capacityLabel?: string;
 }
 
@@ -263,7 +260,7 @@ export interface Rate {
   roomTypeId: number;
   name: string;
   currency: string;
-  rateType: 'per_pax' | 'per_villa';
+  rateType: "per_pax" | "per_villa";
   maxOccupancy: {
     adults: number;
     children: number;
@@ -275,11 +272,11 @@ export interface Rate {
 
 export interface PerPersonRateDetails {
   adult: {
-    single?: number;    // Rate for single occupancy
-    double?: number;    // Rate for 2 persons in double occupancy
-    triple?: number;    // Rate for 3 persons in triple occupancy
-    quad?: number;      // Rate for 4 persons in quad occupancy
-    quint?: number;     // Rate for 5 persons in quint occupancy
+    single?: number; // Rate for single occupancy
+    double?: number; // Rate for 2 persons in double occupancy
+    triple?: number; // Rate for 3 persons in triple occupancy
+    quad?: number; // Rate for 4 persons in quad occupancy
+    quint?: number; // Rate for 5 persons in quint occupancy
   };
   child: {
     firstChild?: number;
@@ -295,7 +292,7 @@ export interface PerPersonRateDetails {
 }
 
 export interface PerVillaRateDetails {
-  baseRate: number;     // Base rate for villa
+  baseRate: number; // Base rate for villa
 }
 
 export interface RateSupplements {
@@ -345,8 +342,8 @@ export interface Season {
   description?: string;
   isActive: boolean;
   periods?: Period[];
-  startDate?: string;  // Add optional startDate
-  endDate?: string;    // Add optional endDate
+  startDate?: string; // Add optional startDate
+  endDate?: string; // Add optional endDate
 }
 
 // Contract management
@@ -357,36 +354,39 @@ export interface Contract {
   hotelId: number;
   description?: string;
   status: ContractStatus;
-  validityPeriod?: { 
+  validityPeriod?: {
     startDate: string;
-    endDate: string; 
+    endDate: string;
   }; //automatically defined by the season
   seasonId: number;
   marketId: number;
+  baseMealPlan: MealPlanType;
   selectedRoomTypes: number[];
   selectedMealPlans: string[];
   // Rate configuration flag
   isRatesConfigured: boolean;
 }
 
-export type ContractStatus = 'draft' | 'active' | 'inactive' | 'expired';
+export type ContractStatus = "draft" | "active" | "inactive" | "expired";
 
 export interface ContractPeriodRate {
+  id: number;
   periodId: number;
   roomRates: RoomTypeRate[];
 }
 
 export type PersonTypeRates = {
-    [personType: string]: {  // 'adult', 'child', 'teen', 'infant', etc.
-      rates: {
-        [count: number]: number;  // 1: rate for first person, 2: rate for second person, etc.
-      };
+  [personType: string]: {
+    // 'adult', 'child', 'teen', 'infant', etc.
+    rates: {
+      [count: number]: number; // 1: rate for first person, 2: rate for second person, etc.
     };
   };
+};
 
 export interface RoomTypeRate {
   roomTypeId: number;
-  rateType: 'per_pax' | 'per_villa';
+  rateType: "per_pax" | "per_villa";
   personTypeRates?: PersonTypeRates;
   villaRate?: number;
   mealPlanRates: MealPlanRates;
@@ -413,7 +413,7 @@ export interface PeriodRate {
 
 export interface RoomRate {
   roomTypeId: number;
-  rateType: 'per_pax' | 'per_villa';
+  rateType: "per_pax" | "per_villa";
   perVillaRate?: number;
   adultRates?: { [key: number]: number };
   teenRates?: { [key: number]: number };
@@ -422,19 +422,19 @@ export interface RoomRate {
 
 // Special offers
 export interface DiscountValue {
-  nights: number;      // Number of nights
-  value: number;       // Discount value for these nights
-  startDate?: string;  // Optional start date for this specific discount
-  endDate?: string;    // Optional end date for this specific discount
+  nights: number; // Number of nights
+  value: number; // Discount value for these nights
+  startDate?: string; // Optional start date for this specific discount
+  endDate?: string; // Optional end date for this specific discount
 }
 
 export interface SpecialOffer {
   id: number;
   code: string;
   name: string;
-  type: 'combinable' | 'cumulative';
+  type: "combinable" | "cumulative";
   description: string;
-  discountType: 'percentage' | 'fixed';
+  discountType: "percentage" | "fixed";
   discountValues: DiscountValue[];
   startDate: string;
   endDate: string;
@@ -442,8 +442,8 @@ export interface SpecialOffer {
   minimumNights?: number;
   blackoutDates?: string[];
   bookingWindow?: {
-    start: string;   // When booking can start
-    end: string;     // When booking must be made by
+    start: string; // When booking can start
+    end: string; // When booking must be made by
   };
 }
 
@@ -473,7 +473,7 @@ export interface MarketGroup {
 // Age category management
 export interface AgeCategory {
   id: number;
-  type: 'adult' | 'child' | 'infant' | 'teen';
+  type: "adult" | "child" | "infant" | "teen";
   name: string;
   label: string;
   minAge: number;
@@ -503,29 +503,29 @@ export type Currency = {
 
 // Meal Plan Types
 export enum MealPlanType {
-  RO = 'RO',
-  BB = 'BB',
-  BB_PLUS = 'BB+',
-  HB = 'HB',
-  HB_PLUS = 'HB+',
-  FB = 'FB',
-  FB_PLUS = 'FB+',
-  AI = 'AI',
-  AI_PLUS = 'AI+',
-  UAI = 'UAI'
+  RO = "RO",
+  BB = "BB",
+  BB_PLUS = "BB+",
+  HB = "HB",
+  HB_PLUS = "HB+",
+  FB = "FB",
+  FB_PLUS = "FB+",
+  AI = "AI",
+  AI_PLUS = "AI+",
+  UAI = "UAI",
 }
 
 export const MEAL_PLAN_NAMES: Record<MealPlanType, string> = {
-  [MealPlanType.RO]: 'Room Only',
-  [MealPlanType.BB]: 'Bed & Breakfast',
-  [MealPlanType.BB_PLUS]: 'Bed & Breakfast Plus',
-  [MealPlanType.HB]: 'Half Board',
-  [MealPlanType.HB_PLUS]: 'Half Board Plus',
-  [MealPlanType.FB]: 'Full Board',
-  [MealPlanType.FB_PLUS]: 'Full Board Plus',
-  [MealPlanType.AI]: 'All Inclusive',
-  [MealPlanType.AI_PLUS]: 'All Inclusive Plus',
-  [MealPlanType.UAI]: 'Ultra All Inclusive'
+  [MealPlanType.RO]: "Room Only",
+  [MealPlanType.BB]: "Bed & Breakfast",
+  [MealPlanType.BB_PLUS]: "Bed & Breakfast Plus",
+  [MealPlanType.HB]: "Half Board",
+  [MealPlanType.HB_PLUS]: "Half Board Plus",
+  [MealPlanType.FB]: "Full Board",
+  [MealPlanType.FB_PLUS]: "Full Board Plus",
+  [MealPlanType.AI]: "All Inclusive",
+  [MealPlanType.AI_PLUS]: "All Inclusive Plus",
+  [MealPlanType.UAI]: "Ultra All Inclusive",
 };
 
 export interface MealTime {
@@ -553,57 +553,57 @@ export interface MealPlan {
 }
 
 // Hotel data management
-export type HotelDataKey = 
-  | 'hotel'
-  | 'rooms'
-  | 'markets'
-  | 'seasons'
-  | 'contracts'
-  | 'rateConfigurations'
-  | 'marketTemplates'
-  | 'menuItems'
-  | 'mealPlans'
-  | 'marketMealPlanRates'
-  | 'ageCategories'
-  | 'currencySettings'
-  | 'marketGroups'
-  | 'roomTypes'
-  | 'periods'
-  | 'description'
-  | 'policies'
-  | 'capacity'
-  | 'roomInventory'
-  | 'cancellation'
-  | 'checkIn'
-  | 'checkOut'
-  | 'childPolicy'
-  | 'petPolicy'
-  | 'dressCode' 
-  | 'factSheet';
+export type HotelDataKey =
+  | "hotel"
+  | "rooms"
+  | "markets"
+  | "seasons"
+  | "contracts"
+  | "rateConfigurations"
+  | "marketTemplates"
+  | "menuItems"
+  | "mealPlans"
+  | "marketMealPlanRates"
+  | "ageCategories"
+  | "currencySettings"
+  | "marketGroups"
+  | "roomTypes"
+  | "periods"
+  | "description"
+  | "policies"
+  | "capacity"
+  | "roomInventory"
+  | "cancellation"
+  | "checkIn"
+  | "checkOut"
+  | "childPolicy"
+  | "petPolicy"
+  | "dressCode"
+  | "factSheet";
 
 // Menu item types
-export type MenuItemId = 
-  | 'description'
-  | 'age-categories'
-  | 'policies'
-  | 'capacity'
-  | 'mealPlan'
-  | 'markets'
-  | 'currency'
-  | 'periodAndMlos'
-  | 'ratesConfig'
-  | 'rateSeasons'
-  | 'roomInventory'
-  | 'contract'
-  | 'contracts'
-  | 'rates'
-  | 'roomTypes'
-  | 'supplements'
-  | 'specialOffers'
-  | 'rateOffers'
-  | 'rateScenarios'
-  | 'allotments'
-  | 'availability';
+export type MenuItemId =
+  | "description"
+  | "age-categories"
+  | "policies"
+  | "capacity"
+  | "mealPlan"
+  | "markets"
+  | "currency"
+  | "periodAndMlos"
+  | "ratesConfig"
+  | "rateSeasons"
+  | "roomInventory"
+  | "contract"
+  | "contracts"
+  | "rates"
+  | "roomTypes"
+  | "supplements"
+  | "specialOffers"
+  | "rateOffers"
+  | "rateScenarios"
+  | "allotments"
+  | "availability";
 
 export interface MenuItem {
   id: MenuItemId;
@@ -644,9 +644,9 @@ export interface HotelCapacity {
 
 // Room inventory management
 export enum RoomStatus {
-  AVAILABLE = 'available',
-  LIMITED = 'limited',
-  FULL = 'full'
+  AVAILABLE = "available",
+  LIMITED = "limited",
+  FULL = "full",
 }
 
 export interface RoomInventory {
@@ -663,14 +663,14 @@ export interface RoomInventory {
 
 // Spa related types
 export enum SpaServiceType {
-  MASSAGE = 'Massage',
-  FACIAL = 'Facial',
-  BODY_TREATMENT = 'Body Treatment',
-  YOGA = 'Yoga',
-  MEDITATION = 'Meditation',
-  BEAUTY = 'Beauty Services',
-  WELLNESS = 'Wellness Consultation',
-  HYDROTHERAPY = 'Hydrotherapy'
+  MASSAGE = "Massage",
+  FACIAL = "Facial",
+  BODY_TREATMENT = "Body Treatment",
+  YOGA = "Yoga",
+  MEDITATION = "Meditation",
+  BEAUTY = "Beauty Services",
+  WELLNESS = "Wellness Consultation",
+  HYDROTHERAPY = "Hydrotherapy",
 }
 
 export interface SpaService {
@@ -698,9 +698,9 @@ export interface AgeCategoryRate {
 }
 
 export enum SeasonType {
-  PEAK = 'peak',
-  SHOULDER = 'shoulder',
-  LOW = 'low'
+  PEAK = "peak",
+  SHOULDER = "shoulder",
+  LOW = "low",
 }
 
 export interface RateConfiguration {
@@ -717,9 +717,9 @@ export interface RateConfiguration {
 
 // Cancellation policy types
 export enum CancellationChargeType {
-  PERCENTAGE = 'percentage',
-  FIXED = 'fixed',
-  NIGHTS = 'nights'
+  PERCENTAGE = "percentage",
+  FIXED = "fixed",
+  NIGHTS = "nights",
 }
 
 export interface RoomOccupancy {
@@ -745,16 +745,16 @@ export interface RateCalculationResult {
 }
 
 export interface Offer {
-    id: number;
-    name: string;
-    description: string;
-    discount: number;
-    hotelId: number;
-    roomTypeIds: number[];
-    marketIds: number[];
-    seasonIds: number[];
-    validFrom: string;
-    validTo: string;
-    isCombinable: boolean;
-    isCumulative: boolean;
+  id: number;
+  name: string;
+  description: string;
+  discount: number;
+  hotelId: number;
+  roomTypeIds: number[];
+  marketIds: number[];
+  seasonIds: number[];
+  validFrom: string;
+  validTo: string;
+  isCombinable: boolean;
+  isCumulative: boolean;
 }
