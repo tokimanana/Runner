@@ -11,8 +11,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 130,
-              2: 180,
+              1: 180,
+              2: 130,
             },
           },
           child: {
@@ -40,10 +40,10 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 120,
-              2: 140,
-              3: 160,
-              4: 220,
+              1: 220,
+              2: 160,
+              3: 140,
+              4: 120,
             },
           },
           child: {
@@ -139,16 +139,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
-              3: 130,
-              4: 110,
+              1: 110,
+              2: 130,
+              3: 150,
+              4: 200,
             },
           },
           child: {
             rates: {
-              1: 70,
-              2: 55,
+              1: 55,
+              2: 70,
+
             },
           },
           infant: {
@@ -171,16 +172,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 280,
-              2: 230,
-              3: 200,
-              4: 180,
+              1: 180,
+              2: 200,
+              3: 230,
+              4: 280,
             },
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90, 
             },
           },
           infant: {
@@ -209,8 +210,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
+              1: 150,
+              2: 200,
             },
           },
           child: {
@@ -238,16 +239,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 250,
-              2: 180,
-              3: 160,
-              4: 140,
+              1: 140,
+              2: 160,
+              3: 180,
+              4: 250,
             },
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90,
             },
           },
           infant: {
@@ -270,16 +271,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 320,
-              2: 270,
-              3: 240,
-              4: 220,
+              1: 220,
+              2: 240,
+              3: 270,
+              4: 320,
             },
           },
           child: {
             rates: {
-              1: 110,
-              2: 90,
+              1: 90,
+              2: 110,
             },
           },
           infant: {
@@ -308,8 +309,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 170,
-              2: 120,
+              1: 120,
+              2: 170,
             },
           },
           child: {
@@ -337,16 +338,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 210,
-              2: 155,
-              3: 135,
-              4: 115,
+              1: 115,
+              2: 135,
+              3: 155,
+              4: 210,
             },
           },
           child: {
             rates: {
-              1: 75,
-              2: 60,
+              1: 60,
+              2: 75,
             },
           },
           infant: {
@@ -369,16 +370,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 290,
-              2: 240,
-              3: 210,
-              4: 190,
+              1: 190,
+              2: 210,
+              3: 240,
+              4: 290,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,  
             },
           },
           infant: {
@@ -557,26 +558,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 180,
-              2: 180,
-            },
-          },
-          child: {
-            rates: {
-              1: 90,
-              2: 90,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:180,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 18, child: 9, infant: 0 },
@@ -662,26 +645,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 180,
-              2: 180,
-            },
-          },
-          child: {
-            rates: {
-              1: 90,
-              2: 90,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:180,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 18, child: 9, infant: 0 },
@@ -791,8 +756,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 160,
-              2: 120,
+              1: 120,
+              2: 160,
             },
           },
           child: {
@@ -820,16 +785,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
-              3: 130,
-              4: 110,
+              1: 110,
+              2: 130,
+              3: 150,
+              4: 200,
             },
           },
           child: {
             rates: {
-              1: 70,
-              2: 55,
+              1: 55,
+              2: 70,
             },
           },
           infant: {
@@ -852,16 +817,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 280,
-              2: 230,
-              3: 200,
-              4: 180,
+              1: 180,
+              2: 200,
+              3: 230,
+              4: 280,
             },
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90,
             },
           },
           infant: {
@@ -884,17 +849,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 220,
-              2: 180,
-              3: 160,
-              4: 140,
+              1: 140,
+              2: 160,
+              3: 180,
+              4: 220,
             },
           },
           child: {
             rates: {
-              1: 80,
+              1: 40,
               2: 60,
-              3: 40,
+              3: 80,
             },
           },
           infant: {
@@ -917,14 +882,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 300,
-              2: 250,
+              1: 250,
+              2: 300,
+
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
+
             },
           },
           infant: {
@@ -953,8 +920,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 180,
-              2: 130,
+              1: 130,
+              2: 180,
             },
           },
           child: {
@@ -982,16 +949,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 220,
-              2: 160,
-              3: 140,
-              4: 120,
+              1: 120,
+              2: 140,
+              3: 160,
+              4: 220,
             },
           },
           child: {
             rates: {
-              1: 80,
-              2: 60,
+              1: 60,
+              2: 80,
+
             },
           },
           infant: {
@@ -1014,16 +982,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 300,
-              2: 250,
-              3: 220,
-              4: 200,
+              1: 200,
+              2: 220,
+              3: 250,
+              4: 300,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
             },
           },
           infant: {
@@ -1046,17 +1014,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 250,
-              2: 200,
-              3: 180,
-              4: 160,
+              1: 160,
+              2: 180,
+              3: 200,
+              4: 250,
             },
           },
           child: {
             rates: {
-              1: 90,
+              1: 50,
               2: 70,
-              3: 50,
+              3: 90,
             },
           },
           infant: {
@@ -1079,14 +1047,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 350,
-              2: 300,
+              1: 300,
+              2: 350,
             },
           },
           child: {
             rates: {
-              1: 120,
-              2: 100,
+              1: 100,
+              2: 120,
             },
           },
           infant: {
@@ -1115,8 +1083,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
+              1: 150,
+              2: 200,
             },
           },
           child: {
@@ -1144,16 +1112,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 250,
-              2: 180,
-              3: 160,
-              4: 140,
-            },
+              1: 140,
+              2: 160,
+              3: 180,
+              4: 250,
+            },  
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90,
             },
           },
           infant: {
@@ -1176,16 +1144,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 320,
-              2: 270,
-              3: 240,
-              4: 220,
+              1: 220,
+              2: 240,
+              3: 270,
+              4: 320,
             },
           },
           child: {
             rates: {
-              1: 110,
-              2: 90,
+              1: 90,
+              2: 110,
             },
           },
           infant: {
@@ -1208,17 +1176,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 280,
-              2: 230,
-              3: 200,
-              4: 180,
+              1: 180,
+              2: 200,
+              3: 230,
+              4: 280,
             },
           },
           child: {
             rates: {
-              1: 100,
+              1: 60,
               2: 80,
-              3: 60,
+              3: 100,
             },
           },
           infant: {
@@ -1241,14 +1209,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 400,
-              2: 320,
+              1: 320,
+              2: 400,
             },
           },
           child: {
             rates: {
-              1: 130,
-              2: 110,
+              1: 110,
+              2: 130,
             },
           },
           infant: {
@@ -1277,8 +1245,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 170,
-              2: 120,
+              1: 120,
+              2: 170,
             },
           },
           child: {
@@ -1306,16 +1274,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 210,
-              2: 155,
-              3: 135,
-              4: 115,
+              1: 115,
+              2: 135,
+              3: 155,
+              4: 210,
             },
           },
           child: {
             rates: {
-              1: 75,
-              2: 60,
+              1: 60,
+              2: 75,
             },
           },
           infant: {
@@ -1338,16 +1306,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 290,
-              2: 240,
-              3: 210,
-              4: 190,
+              1: 190,
+              2: 210,
+              3: 240,
+              4: 290,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
             },
           },
           infant: {
@@ -1370,17 +1338,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 240,
-              2: 190,
-              3: 170,
-              4: 150,
+              1: 150,
+              2: 170,
+              3: 190,
+              4: 240,
             },
           },
           child: {
             rates: {
-              1: 80,
+              1: 40,
               2: 60,
-              3: 40,
+              3: 80,
             },
           },
           infant: {
@@ -1403,14 +1371,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 320,
-              2: 280,
+              1: 280,
+              2: 320,
             },
           },
           child: {
             rates: {
-              1: 110,
-              2: 90,
+              1: 90,
+              2: 110,
             },
           },
           infant: {
@@ -1439,8 +1407,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 160,
-              2: 120,
+              1: 120,
+              2: 160,
             },
           },
           child: {
@@ -1468,16 +1436,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
-              3: 130,
-              4: 110,
+              1: 110,
+              2: 130,
+              3: 150,
+              4: 200,
             },
           },
           child: {
             rates: {
-              1: 70,
-              2: 55,
+              1: 55,
+              2: 70,
             },
           },
           infant: {
@@ -1500,16 +1468,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 280,
-              2: 230,
-              3: 200,
-              4: 180,
+              1: 180,
+              2: 200,
+              3: 230,
+              4: 280,
             },
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90,
             },
           },
           infant: {
@@ -1532,17 +1500,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 220,
-              2: 180,
-              3: 160,
-              4: 140,
+              1: 140,
+              2: 160,
+              3: 180,
+              4: 220,
             },
           },
           child: {
             rates: {
-              1: 80,
+              1: 40,
               2: 60,
-              3: 40,
+              3: 80,
             },
           },
           infant: {
@@ -1565,14 +1533,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 300,
-              2: 250,
+              1: 250,
+              2: 300,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
             },
           },
           infant: {
@@ -1591,26 +1559,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 180,
-              2: 180,
-            },
-          },
-          child: {
-            rates: {
-              1: 90,
-              2: 90,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:180,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 18, child: 9, infant: 0 },
@@ -1631,8 +1581,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 180,
-              2: 130,
+              1: 130,
+              2: 180,
             },
           },
           child: {
@@ -1660,16 +1610,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 220,
-              2: 160,
-              3: 140,
-              4: 120,
+              1: 120,
+              2: 140,
+              3: 160,
+              4: 220,
             },
           },
           child: {
             rates: {
-              1: 80,
-              2: 60,
+              1: 60,
+              2: 80,
             },
           },
           infant: {
@@ -1692,16 +1642,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 300,
-              2: 250,
-              3: 220,
-              4: 200,
+              1: 200,
+              2: 220,
+              3: 250,
+              4: 300,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
             },
           },
           infant: {
@@ -1724,17 +1674,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 250,
-              2: 200,
-              3: 180,
-              4: 160,
+              1: 160,
+              2: 180,
+              3: 200,
+              4: 250,
             },
           },
           child: {
             rates: {
-              1: 90,
+              1: 50,
               2: 70,
-              3: 50,
+              3: 90,
             },
           },
           infant: {
@@ -1757,14 +1707,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 350,
-              2: 300,
+              1: 300,
+              3: 350,
             },
           },
           child: {
             rates: {
-              1: 120,
-              2: 100,
+              1: 100,
+              2: 120,
             },
           },
           infant: {
@@ -1783,26 +1733,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 200,
-              2: 180,
-            },
-          },
-          child: {
-            rates: {
-              1: 100,
-              2: 90,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:180,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 20, child: 10, infant: 0 },
@@ -1823,8 +1755,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 200,
-              2: 150,
+              1: 150,
+              2: 200,
             },
           },
           child: {
@@ -1852,16 +1784,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 250,
-              2: 180,
-              3: 160,
-              4: 140,
+              1: 140,
+              2: 160,
+              3: 180,
+              4: 250,
             },
           },
           child: {
             rates: {
-              1: 90,
-              2: 70,
+              1: 70,
+              2: 90,
             },
           },
           infant: {
@@ -1884,16 +1816,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 320,
-              2: 270,
-              3: 240,
-              4: 220,
+              1: 220,
+              2: 240,
+              3: 270,
+              4: 320,
             },
           },
           child: {
             rates: {
-              1: 110,
-              2: 90,
+              1: 90,
+              2: 110,
             },
           },
           infant: {
@@ -1916,17 +1848,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 280,
-              2: 230,
-              3: 200,
-              4: 180,
+              1: 180,
+              2: 200,
+              3: 230,
+              4: 280,
             },
           },
           child: {
             rates: {
-              1: 100,
+              1: 60,
               2: 80,
-              3: 60,
+              3: 100,
             },
           },
           infant: {
@@ -1949,14 +1881,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 400,
-              2: 320,
+              1: 320,
+              2: 400,
             },
           },
           child: {
             rates: {
-              1: 130,
-              2: 110,
+              1: 110,
+              2: 130,
             },
           },
           infant: {
@@ -1975,26 +1907,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 220,
-              2: 200,
-            },
-          },
-          child: {
-            rates: {
-              1: 110,
-              2: 100,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:200,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 22, child: 11, infant: 0 },
@@ -2015,8 +1929,8 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 170,
-              2: 120,
+              1: 120,
+              2: 170,
             },
           },
           child: {
@@ -2044,16 +1958,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 210,
-              2: 155,
-              3: 135,
-              4: 115,
+              1: 115,
+              2: 135,
+              3: 155,
+              4: 210,
             },
           },
           child: {
             rates: {
-              1: 75,
-              2: 60,
+              1: 60,
+              2: 75,
             },
           },
           infant: {
@@ -2076,16 +1990,16 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 290,
-              2: 240,
-              3: 210,
-              4: 190,
+              1: 190,
+              2: 210,
+              3: 240,
+              4: 290,
             },
           },
           child: {
             rates: {
-              1: 100,
-              2: 80,
+              1: 80,
+              2: 100,
             },
           },
           infant: {
@@ -2108,17 +2022,17 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 240,
-              2: 190,
-              3: 170,
-              4: 150,
+              1: 150,
+              2: 170,
+              3: 190,
+              4: 240,
             },
           },
           child: {
             rates: {
-              1: 80,
+              1: 40,
               2: 60,
-              3: 40,
+              3: 80,
             },
           },
           infant: {
@@ -2141,14 +2055,14 @@ export const contractRates: ContractPeriodRate[] = [
         personTypeRates: {
           adult: {
             rates: {
-              1: 320,
-              2: 280,
+              1: 280,
+              2: 320,
             },
           },
           child: {
             rates: {
-              1: 110,
-              2: 90,
+              1: 90,
+              2: 110,
             },
           },
           infant: {
@@ -2167,26 +2081,8 @@ export const contractRates: ContractPeriodRate[] = [
       },
       {
         roomTypeId: 6,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 200,
-              2: 180,
-            },
-          },
-          child: {
-            rates: {
-              1: 100,
-              2: 90,
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
+        rateType: "per_villa",
+        villaRate:180,
         mealPlanRates: {
           "default-ro": { adult: 0, child: 0, infant: 0 },
           "default-bb": { adult: 20, child: 10, infant: 0 },
