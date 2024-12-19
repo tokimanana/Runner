@@ -1,5 +1,5 @@
 // src/data/mock/contracts.mock.ts
-import { Contract, ContractStatus } from "../../models/types";
+import { Contract, ContractStatus, MealPlanType} from "../../models/types";
 
 export const contracts: Contract[] = [
   {
@@ -12,7 +12,8 @@ export const contracts: Contract[] = [
     seasonId: 1,
     marketId: 1,
     selectedRoomTypes: [1, 2, 3], // Classic Mediterranean, Superior Sea View, Deluxe Terrace Suite
-    selectedMealPlans: ["BB", "HB", "FB", "AI"],
+    selectedMealPlans: ["RO" ,"BB", "FB", "AI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: true,
   },
   {
@@ -26,7 +27,8 @@ export const contracts: Contract[] = [
     seasonId: 2,
     marketId: 2,
     selectedRoomTypes: [4, 5, 6], // Water Villa, Beach Villa, Presidential Suite
-    selectedMealPlans: ["AI", "UAI"],
+    selectedMealPlans: ["RO" ,"BB", "FB", "AI", "UAI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: true,
   },
   {
@@ -39,7 +41,8 @@ export const contracts: Contract[] = [
     seasonId: 1,
     marketId: 3,
     selectedRoomTypes: [1, 2, 3, 4], // All available room types
-    selectedMealPlans: ["BB", "HB", "FB"],
+    selectedMealPlans: ["RO" ,"BB", "FB", "AI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: false,
   },
   {
@@ -52,7 +55,8 @@ export const contracts: Contract[] = [
     seasonId: 2,
     marketId: 4,
     selectedRoomTypes: [4, 5, 6, 7], // All luxury rooms
-    selectedMealPlans: ["AI", "UAI"],
+    selectedMealPlans: [ "RO" ,"BB", "FB","AI", "UAI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: false,
   },
   {
@@ -65,7 +69,8 @@ export const contracts: Contract[] = [
     seasonId: 1,
     marketId: 5,
     selectedRoomTypes: [1, 2, 3, 4, 5], // All room types
-    selectedMealPlans: ["BB", "HB"],
+    selectedMealPlans: [ "RO" ,"BB", "FB", "AI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: true,
   },
   {
@@ -78,7 +83,8 @@ export const contracts: Contract[] = [
     seasonId: 2,
     marketId: 6,
     selectedRoomTypes: [5, 6, 7, 8], // Premium rooms only
-    selectedMealPlans: ["AI", "UAI"],
+    selectedMealPlans: [ "RO" ,"BB", "FB", "AI", "UAI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: false,
   },
   {
@@ -91,7 +97,8 @@ export const contracts: Contract[] = [
     seasonId: 1,
     marketId: 1,
     selectedRoomTypes: [1, 2, 3, 4, 5, 6], // All room categories
-    selectedMealPlans: ["BB", "HB", "FB", "AI"],
+    selectedMealPlans: [ "RO" ,"BB", "FB", "AI"],
+    baseMealPlan: MealPlanType.HB,
     isRatesConfigured: true,
   },
   {
@@ -104,7 +111,8 @@ export const contracts: Contract[] = [
     seasonId: 2,
     marketId: 2,
     selectedRoomTypes: [4, 5, 6, 7, 8, 9], // All premium categories
-    selectedMealPlans: ["BB", "HB", "FB", "AI", "UAI"],
-    isRatesConfigured: true,
+    selectedMealPlans: [ "RO" ,"BB", "FB", "AI", "UAI"],
+    baseMealPlan: MealPlanType.HB,
+    isRatesConfigured: false,
   },
 ];

@@ -398,20 +398,22 @@ export class MockApiService {
 
       // Reset global data not tied to specific hotels
       const globalResetOperations = [
-        // Resets currency settings to initial state
         this.setStorageData(
           this.STORAGE_KEYS.CURRENCY_SETTINGS,
           initialCurrencySettings
         ),
-        // Resets market groups to default configuration
         this.setStorageData(
           this.STORAGE_KEYS.MARKET_GROUPS,
           initialMarketGroups
         ),
-        // Resets markets
         this.setStorageData(this.STORAGE_KEYS.MARKETS, initialMarkets),
-        // Resets contracts
         this.setStorageData(this.STORAGE_KEYS.CONTRACTS, initialContracts),
+        this.setStorageData(this.STORAGE_KEYS.OFFERS, initialOffers),
+        this.setStorageData(this.STORAGE_KEYS.CONTRACT_RATES, contractRates),
+        this.setStorageData(
+          this.STORAGE_KEYS.HOTEL_MEAL_PLANS,
+          initialMealPlans.hotelSpecific
+        ),
       ];
 
       // Execute all reset operations in parallel
@@ -1355,56 +1357,72 @@ export class MockApiService {
     throw new Error("Contract not found");
   }
 
-
-
   static async getOffers(): Promise<SpecialOffer[]> {
     this.initializeStorage();
     const offers = localStorage.getItem(this.STORAGE_KEYS.OFFERS);
-    return Promise.resolve(JSON.parse(offers || '[]'));
+    return Promise.resolve(JSON.parse(offers || "[]"));
   }
-  
+
   static async getOfferById(id: number): Promise<SpecialOffer | null> {
     this.initializeStorage();
-    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
-    return Promise.resolve(offers.find((offer: SpecialOffer) => offer.id === id) || null);
+    const offers = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.OFFERS) || "[]"
+    );
+    return Promise.resolve(
+      offers.find((offer: SpecialOffer) => offer.id === id) || null
+    );
   }
-  
-  static async createOffer(offer: Omit<SpecialOffer, 'id'>): Promise<SpecialOffer> {
+
+  static async createOffer(
+    offer: Omit<SpecialOffer, "id">
+  ): Promise<SpecialOffer> {
     this.initializeStorage();
-    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    const offers = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.OFFERS) || "[]"
+    );
     const newId = Math.max(0, ...offers.map((o: SpecialOffer) => o.id)) + 1;
-  
+
     const newOffer = {
       ...offer,
-      id: newId
+      id: newId,
     };
-  
+
     offers.push(newOffer);
     localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(offers));
     return Promise.resolve(newOffer);
   }
-  
-  static async updateOffer(id: number, offerData: Partial<SpecialOffer>): Promise<SpecialOffer> {
+
+  static async updateOffer(
+    id: number,
+    offerData: Partial<SpecialOffer>
+  ): Promise<SpecialOffer> {
     this.initializeStorage();
-    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
+    const offers = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.OFFERS) || "[]"
+    );
     const index = offers.findIndex((offer: SpecialOffer) => offer.id === id);
-  
+
     if (index === -1) {
-      throw new Error('Offer not found');
+      throw new Error("Offer not found");
     }
-  
+
     offers[index] = { ...offers[index], ...offerData };
     localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(offers));
     return Promise.resolve(offers[index]);
   }
-  
+
   static async deleteOffer(id: number): Promise<void> {
     this.initializeStorage();
-    const offers = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.OFFERS) || '[]');
-    const filteredOffers = offers.filter((offer: SpecialOffer) => offer.id !== id);
-    localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(filteredOffers));
+    const offers = JSON.parse(
+      localStorage.getItem(this.STORAGE_KEYS.OFFERS) || "[]"
+    );
+    const filteredOffers = offers.filter(
+      (offer: SpecialOffer) => offer.id !== id
+    );
+    localStorage.setItem(
+      this.STORAGE_KEYS.OFFERS,
+      JSON.stringify(filteredOffers)
+    );
     return Promise.resolve();
   }
 }
-
-

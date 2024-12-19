@@ -9,14 +9,24 @@
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Code</mat-label>
-            <input matInput formControlName="code" required uppercase
-              placeholder="Enter a unique offer code (e.g., SUMMER24)" />
+            <input
+              matInput
+              formControlName="code"
+              required
+              uppercase
+              placeholder="Enter a unique offer code (e.g., SUMMER24)"
+            />
             <mat-icon matSuffix>code</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Name</mat-label>
-            <input matInput formControlName="name" required placeholder="Enter a descriptive name for the offer" />
+            <input
+              matInput
+              formControlName="name"
+              required
+              placeholder="Enter a descriptive name for the offer"
+            />
             <mat-icon matSuffix>label</mat-icon>
           </mat-form-field>
         </div>
@@ -40,8 +50,13 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" required rows="3"
-            placeholder="Describe the offer details and benefits"></textarea>
+          <textarea
+            matInput
+            formControlName="description"
+            required
+            rows="3"
+            placeholder="Describe the offer details and benefits"
+          ></textarea>
         </mat-form-field>
 
         <div class="step-actions">
@@ -76,32 +91,57 @@
             Discount Values
           </h3>
 
-          <div *ngFor="let value of discountValues.controls; let i = index" [formGroupName]="i"
-            class="discount-value-row mat-elevation-z1">
+          <div
+            *ngFor="let value of discountValues.controls; let i = index"
+            [formGroupName]="i"
+            class="discount-value-row mat-elevation-z1"
+          >
             <mat-form-field appearance="outline">
               <mat-label>Nights</mat-label>
-              <input matInput type="number" formControlName="nights" required min="1" />
+              <input
+                matInput
+                type="number"
+                formControlName="nights"
+                required
+                min="1"
+              />
               <mat-icon matSuffix>nights_stay</mat-icon>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Value</mat-label>
-              <input matInput type="number" formControlName="value" required min="0" />
+              <input
+                matInput
+                type="number"
+                formControlName="value"
+                required
+                min="0"
+              />
               <span matSuffix>{{
                 offerForm.get("discountType")?.value === "percentage"
-                ? "%"
-                : "€"
-                }}</span>
+                  ? "%"
+                  : "€"
+              }}</span>
             </mat-form-field>
 
-            <button type="button" mat-mini-fab color="warn" (click)="removeDiscountValue(i)"
-              matTooltip="Remove this discount value">
+            <button
+              type="button"
+              mat-mini-fab
+              color="warn"
+              (click)="removeDiscountValue(i)"
+              matTooltip="Remove this discount value"
+            >
               <mat-icon>remove</mat-icon>
             </button>
           </div>
 
-          <button type="button" mat-stroked-button color="primary" (click)="addDiscountValue()"
-            class="add-value-button">
+          <button
+            type="button"
+            mat-stroked-button
+            color="primary"
+            (click)="addDiscountValue()"
+            class="add-value-button"
+          >
             <mat-icon>add</mat-icon>
             Add Discount Value
           </button>
@@ -131,15 +171,31 @@
           <div class="form-row">
             <mat-form-field appearance="outline">
               <mat-label>Start Date</mat-label>
-              <input matInput [matDatepicker]="startPicker" formControlName="startDate" required />
-              <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+              <input
+                matInput
+                [matDatepicker]="startPicker"
+                formControlName="startDate"
+                required
+              />
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="startPicker"
+              ></mat-datepicker-toggle>
               <mat-datepicker #startPicker></mat-datepicker>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>End Date</mat-label>
-              <input matInput [matDatepicker]="endPicker" formControlName="endDate" required />
-              <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+              <input
+                matInput
+                [matDatepicker]="endPicker"
+                formControlName="endDate"
+                required
+              />
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="endPicker"
+              ></mat-datepicker-toggle>
               <mat-datepicker #endPicker></mat-datepicker>
             </mat-form-field>
           </div>
@@ -154,7 +210,12 @@
           <div class="form-row">
             <mat-form-field appearance="outline">
               <mat-label>Minimum Nights</mat-label>
-              <input matInput type="number" formControlName="minimumNights" min="1" />
+              <input
+                matInput
+                type="number"
+                formControlName="minimumNights"
+                min="1"
+              />
               <mat-icon matSuffix>nights_stay</mat-icon>
             </mat-form-field>
           </div>
@@ -162,16 +223,33 @@
           <div class="form-section">
             <h3>Conditions</h3>
             <div formArrayName="conditions">
-              <div *ngFor="let condition of conditions.controls; let i=index" class="condition-row">
+              <div
+                *ngFor="let condition of conditions.controls; let i = index"
+                class="condition-row"
+              >
                 <mat-form-field class="full-width">
-                  <input matInput [formControlName]="i" placeholder="Enter condition">
+                  <input
+                    matInput
+                    [formControlName]="i"
+                    placeholder="Enter condition"
+                  />
                 </mat-form-field>
-                <button type="button" mat-icon-button color="warn" (click)="removeCondition(i)">
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeCondition(i)"
+                >
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </div>
-            <button type="button" mat-button color="primary" (click)="addCondition()">
+            <button
+              type="button"
+              mat-button
+              color="primary"
+              (click)="addCondition()"
+            >
               <mat-icon>add</mat-icon> Add Condition
             </button>
           </div>
@@ -183,16 +261,30 @@
               </button>
             </div>
             <div class="right-actions">
-              <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-              <button mat-button matStepperNext color="primary" *ngIf="!isLastStep">
+              <button mat-button color="warn" (click)="onCancel()">
+                Cancel
+              </button>
+              <button
+                mat-button
+                matStepperNext
+                color="primary"
+                *ngIf="!isLastStep"
+              >
                 Next
               </button>
-              <button mat-raised-button color="primary" type="submit" [disabled]="!offerForm.valid" *ngIf="isLastStep">
+              <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                [disabled]="!offerForm.valid"
+                *ngIf="isLastStep"
+              >
                 {{ isEdit ? "Update" : "Create" }} Offer
               </button>
             </div>
           </div>
         </div>
+      </div>
     </mat-step>
   </mat-stepper>
 </form>
