@@ -29,7 +29,14 @@ export class ContractRateService extends BaseDataService<Contract> {
   ): Promise<Contract> {
     try {
       this.validateRates(rates, contractId);
-      return await MockApiService.updateContractRates(contractId, rates);
+      await MockApiService.updateContractRates(contractId, rates);
+      
+      // Update the contract's isRatesConfigured status
+      const contract = await MockApiService.getContracts(contractId);
+      return await MockApiService.updateContract(contractId, {
+        ...contract,
+        isRatesConfigured: true
+      });
     } catch (error) {
       this.handleError(`Failed to update contract rates for contract ID ${contractId}`, error);
       throw error;
@@ -48,7 +55,7 @@ export class ContractRateService extends BaseDataService<Contract> {
 
   private validatePeriodRates(period: ContractPeriodRate, contractId: number): void {
     if (!period.roomRates || !Array.isArray(period.roomRates)) {
-        throw new Error(`Invalid rate configuration: Room rates array is missing or not an array for contract ID ${contractId} and period ID ${period.periodId}`);
+      throw new Error(`Invalid rate configuration: Room rates array is missing or not an array for contract ID ${contractId} and period ID ${period.periodId}`);
     }
 
     for (const roomRate of period.roomRates) {
@@ -73,13 +80,13 @@ export class ContractRateService extends BaseDataService<Contract> {
   }
 
   private validatePerPaxRate(roomRate: RoomTypeRate, contractId: number, periodId: number): void {
-      if (!roomRate.personTypeRates) {
-          throw new Error(`Invalid rate configuration: Person type rates are missing for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
-      }
+    if (!roomRate.personTypeRates) {
+      throw new Error(`Invalid rate configuration: Person type rates are missing for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+    }
 
-      if (!this.hasValidPersonTypeRates(roomRate.personTypeRates)) {
-          throw new Error(`Invalid rate configuration: No valid person type rates found for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
-      }
+    if (!this.hasValidPersonTypeRates(roomRate.personTypeRates)) {
+      throw new Error(`Invalid rate configuration: No valid person type rates found for contract ID ${contractId}, period ID ${periodId}, and room type ID ${roomRate.roomTypeId}`);
+    }
   }
 
   private hasValidPersonTypeRates(personTypeRates: PersonTypeRates): boolean {

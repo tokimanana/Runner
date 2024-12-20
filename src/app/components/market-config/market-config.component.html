@@ -37,18 +37,24 @@
 
       <mat-card-content>
         <div class="markets-grid">
-          <mat-card *ngFor="let marketId of group.markets" 
-                    class="market-card" 
-                    [class.has-rate]="hasRates()(marketId)">
+          <mat-card
+            *ngFor="let marketId of group.markets"
+            class="market-card"
+            [class.has-rate]="hasRates()(marketId)"
+          >
             <div class="market-header">
               <div class="market-title">
                 <mat-icon class="market-icon">location_city</mat-icon>
                 <div class="market-info">
                   <div class="market-name-row">
-                    <span class="market-name">{{getMarketName(marketId)}}</span>
-                    <mat-icon *ngIf="hasRates()(marketId)" 
-                             class="rate-indicator"
-                             matTooltip="Market has configured rates">
+                    <span class="market-name">{{
+                      getMarketName(marketId)
+                    }}</span>
+                    <mat-icon
+                      *ngIf="hasRates()(marketId)"
+                      class="rate-indicator"
+                      matTooltip="Market has configured rates"
+                    >
                       check_circle
                     </mat-icon>
                   </div>
@@ -58,7 +64,10 @@
                 <mat-icon>more_vert</mat-icon>
               </button>
               <mat-menu #marketMenu="matMenu">
-                <button mat-menu-item (click)="openMarketModal(getMarket(marketId), group)">
+                <button
+                  mat-menu-item
+                  (click)="openMarketModal(getMarket(marketId), group)"
+                >
                   <mat-icon>edit</mat-icon>
                   <span>Edit Market</span>
                 </button>
@@ -69,10 +78,13 @@
               <div class="market-details">
                 <div class="market-currency">
                   <span class="label">Currency:</span>
-                  <mat-chip>{{getMarketCurrency(marketId)}}</mat-chip>
+                  <mat-chip>{{ getMarketCurrency(marketId) }}</mat-chip>
                 </div>
-                <p *ngIf="getMarketDescription(marketId)" class="market-description">
-                  {{getMarketDescription(marketId)}}
+                <p
+                  *ngIf="getMarketDescription(marketId)"
+                  class="market-description"
+                >
+                  {{ getMarketDescription(marketId) }}
                 </p>
               </div>
             </mat-card-content>
@@ -82,7 +94,11 @@
           <div *ngIf="group.markets.length === 0" class="empty-markets">
             <mat-icon>info</mat-icon>
             <p>No markets added to this region</p>
-            <button mat-stroked-button color="primary" (click)="openMarketModal(undefined, group)">
+            <button
+              mat-stroked-button
+              color="primary"
+              (click)="openMarketModal(undefined, group)"
+            >
               <mat-icon>add</mat-icon>
               Add Market
             </button>
@@ -93,100 +109,143 @@
   </div>
 
   <!-- Market Group Modal -->
-  <app-modal 
+  <app-modal
     *ngIf="showGroupModal()"
     [show]="showGroupModal()"
     [title]="modalTitle()"
-    (close)="closeModals()">
-    <div class="modal-body">
+    (close)="closeModals()"
+  >
+    <div class="modal-body" [formGroup]="groupForm">
       <div class="form-group">
         <label for="groupName">Region Name</label>
-        <input id="groupName" 
-               type="text" 
-               [(ngModel)]="groupForm().name" 
-               placeholder="e.g., European Markets">
+        <input
+          id="groupName"
+          type="text"
+          formControlName="name"
+          placeholder="e.g., European Markets"
+        />
+        <div
+          class="error-message"
+          *ngIf="groupForm.get('name')?.errors?.['required'] && groupForm.get('name')?.touched"
+        >
+          Region name is required
+        </div>
       </div>
+
       <div class="form-group">
         <label for="groupRegion">Region</label>
-        <input id="groupRegion" 
-               type="text" 
-               [(ngModel)]="groupForm().region" 
-               placeholder="e.g., Europe">
+        <input
+          id="groupRegion"
+          type="text"
+          formControlName="region"
+          placeholder="e.g., Europe"
+        />
       </div>
+
       <div class="form-group">
         <label for="groupCurrency">Default Currency</label>
-        <select id="groupCurrency" 
-                [(ngModel)]="groupForm().defaultCurrency">
-          <option *ngFor="let currency of currencySettings()" 
-                  [value]="currency.code">
-            {{currency.name}} ({{currency.code}})
+        <select id="groupCurrency" formControlName="defaultCurrency">
+          <option
+            *ngFor="let currency of currencySettings()"
+            [value]="currency.code"
+          >
+            {{ currency.name }} ({{ currency.code }})
           </option>
         </select>
       </div>
+
       <div class="form-group">
         <label for="groupDescription">Description</label>
-        <textarea id="groupDescription" 
-                  [(ngModel)]="groupForm().description" 
-                  placeholder="Region description..."
-                  rows="3">
+        <textarea
+          id="groupDescription"
+          formControlName="description"
+          placeholder="Region description..."
+          rows="3"
+        >
         </textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button (click)="closeModals()">Cancel</button>
-      <button (click)="saveMarketGroup(groupForm())">Save</button>
+      <button (click)="saveMarketGroup()" [disabled]="groupForm.invalid">
+        Save
+      </button>
     </div>
   </app-modal>
 
   <!-- Market Modal -->
-  <app-modal 
+  <app-modal
     *ngIf="showMarketModal()"
     [show]="showMarketModal()"
     [title]="modalTitle()"
-    (close)="closeModals()">
-    <div class="modal-body">
+    (close)="closeModals()"
+  >
+    <div class="modal-body" [formGroup]="marketForm">
       <div class="form-group">
         <label for="marketName">Market Name</label>
-        <input id="marketName" 
-               type="text" 
-               [(ngModel)]="marketForm().name" 
-               placeholder="e.g., France">
+        <input
+          id="marketName"
+          type="text"
+          formControlName="name"
+          placeholder="e.g., France"
+        />
+        <div
+          class="error-message"
+          *ngIf="marketForm.get('name')?.errors?.['required'] && marketForm.get('name')?.touched"
+        >
+          Market name is required
+        </div>
       </div>
+
       <div class="form-group">
         <label for="marketCode">Market Code</label>
-        <input id="marketCode" 
-               type="text" 
-               [(ngModel)]="marketForm().code" 
-               placeholder="e.g., FR">
+        <input
+          id="marketCode"
+          type="text"
+          formControlName="code"
+          placeholder="e.g., FR"
+        />
       </div>
+
       <div class="form-group">
         <label for="marketCurrency">Currency</label>
-        <select id="marketCurrency" 
-                [(ngModel)]="marketForm().currency">
-          <option *ngFor="let currency of currencySettings()" 
-                  [value]="currency.code">
-            {{currency.name}} ({{currency.code}})
+        <select id="marketCurrency" formControlName="currency">
+          <option
+            *ngFor="let currency of currencySettings()"
+            [value]="currency.code"
+          >
+            {{ currency.name }} ({{ currency.code }})
           </option>
         </select>
       </div>
+
       <div class="form-group">
         <label for="marketRegion">Region</label>
-        <input id="marketRegion" 
-               type="text" 
-               [(ngModel)]="marketForm().region" 
-               placeholder="e.g., Europe">
+        <input
+          id="marketRegion"
+          type="text"
+          formControlName="region"
+          placeholder="e.g., Europe"
+        />
       </div>
+
       <div class="form-group">
         <label for="marketDescription">Description</label>
-        <textarea id="marketDescription" 
-                  [(ngModel)]="marketForm().description" 
-                  placeholder="Market description..."
-                  rows="3">
+        <textarea
+          id="marketDescription"
+          formControlName="description"
+          placeholder="Market description..."
+          rows="3"
+        >
         </textarea>
       </div>
     </div>
-    
+
+    <div class="modal-footer">
       <button (click)="closeModals()">Cancel</button>
-      <button (click)="saveMarket(marketForm())">Save</button>
+      <button (click)="saveMarket()" [disabled]="marketForm.invalid">
+        Save
+      </button>
+    </div>
   </app-modal>
 </div>

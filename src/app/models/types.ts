@@ -559,6 +559,7 @@ export type HotelDataKey =
   | "markets"
   | "seasons"
   | "contracts"
+  | "contractRates"
   | "rateConfigurations"
   | "marketTemplates"
   | "menuItems"

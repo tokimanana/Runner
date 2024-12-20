@@ -1,64 +1,115 @@
-// src/app/services/market.service.ts
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { Market, MarketGroup } from '../models/types';
-import { MockApiService } from './mock/mock-api.service';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, Observable } from "rxjs";
+import { Market, MarketGroup } from "../models/types";
+import { MockApiService } from "./mock/mock-api.service";
+import { BaseDataService } from "./base-data.service";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
-export class MarketService {
+export class MarketService extends BaseDataService<Market> {
+  // State management
   private marketsSubject = new BehaviorSubject<Market[]>([]);
   private marketGroupsSubject = new BehaviorSubject<MarketGroup[]>([]);
-  
-  markets$ = this.marketsSubject.asObservable();
-  marketGroups$ = this.marketGroupsSubject.asObservable();
+  private loading = new BehaviorSubject<boolean>(false);
+  private initialized = false;
+  private error = new BehaviorSubject<string | null>(null);
+
+  // Public observables
+  override readonly loading$ = this.loading.asObservable();
+  override readonly error$ = this.error.asObservable();
+  readonly markets$ = this.dataSubject.asObservable();
+  readonly marketGroups$ = this.marketGroupsSubject.asObservable();
 
   constructor() {
-    this.initializeData();
+    super();
+    this.initialize();
   }
 
-  private async initializeData() {
+  private async initializeData(): Promise<void> {
+    if (this.initialized || this.loading.value) {
+      return;
+    }
+
     try {
+      this.loading.next(true);
       const [markets, groups] = await Promise.all([
         MockApiService.getMarkets(),
-        MockApiService.getMarketGroups()
+        MockApiService.getMarketGroups(),
       ]);
-      
+
       this.marketsSubject.next(markets);
       this.marketGroupsSubject.next(groups);
+      this.initialized = true;
     } catch (error) {
-      console.error('Error initializing market data:', error);
+      console.error("Error loading market data:", error);
+      this.marketsSubject.next([]);
+      this.marketGroupsSubject.next([]);
+      throw error;
+    } finally {
+      this.loading.next(false);
     }
   }
 
-  // Market Operations
-  async createMarket(market: Omit<Market, 'id'>): Promise<Market> {
+  private async initialize() {
+    if (!this.initialized) {
+      await this.loadInitialData();
+      this.initialized = true;
+    }
+  }
+
+  private async loadInitialData(): Promise<void> {
     try {
-      const newMarket = await MockApiService.createMarket(market);
-      const currentMarkets = this.marketsSubject.value;
-      this.marketsSubject.next([...currentMarkets, newMarket]);
-      return newMarket;
+      const [markets, groups] = await Promise.all([
+        MockApiService.getMarkets(),
+        MockApiService.getMarketGroups(),
+      ]);
+
+      this.dataSubject.next(markets);
+      this.marketGroupsSubject.next(groups);
     } catch (error) {
-      console.error('Error creating market:', error);
+      console.error("Error loading initial market data:", error);
+      this.dataSubject.next([]);
+      this.marketGroupsSubject.next([]);
       throw error;
     }
   }
 
-  async updateMarket(id: number, marketData: Partial<Market>): Promise<Market> {
+  // Market Operations
+  getMarkets(): Observable<Market[]> {
+    // Trigger initialization on first data request
+    if (!this.initialized) {
+      this.initializeData().catch((error) => {
+        console.error("Failed to initialize market data:", error);
+      });
+    }
+    return this.markets$;
+  }
+
+  async createMarket(market: Omit<Market, "id">): Promise<Market> {
     try {
-      const updatedMarket = await MockApiService.updateMarket(id, marketData);
-      const currentMarkets = this.marketsSubject.value;
-      const index = currentMarkets.findIndex(m => m.id === id);
-      
+      const newMarket = await MockApiService.createMarket(market);
+      const currentMarkets = this.dataSubject.value;
+      this.dataSubject.next([...currentMarkets, newMarket]);
+      return newMarket;
+    } catch (error) {
+      console.error("Error creating market:", error);
+      throw error;
+    }
+  }
+
+  async updateMarket(id: number, updates: Partial<Market>): Promise<Market> {
+    try {
+      const updatedMarket = await MockApiService.updateMarket(id, updates);
+      const currentMarkets = this.dataSubject.value;
+      const index = currentMarkets.findIndex((m) => m.id === id);
       if (index !== -1) {
         currentMarkets[index] = updatedMarket;
-        this.marketsSubject.next([...currentMarkets]);
+        this.dataSubject.next([...currentMarkets]);
       }
-      
       return updatedMarket;
     } catch (error) {
-      console.error('Error updating market:', error);
+      console.error("Error updating market:", error);
       throw error;
     }
   }
@@ -66,41 +117,58 @@ export class MarketService {
   async deleteMarket(id: number): Promise<void> {
     try {
       await MockApiService.deleteMarket(id);
-      const currentMarkets = this.marketsSubject.value;
-      this.marketsSubject.next(currentMarkets.filter(m => m.id !== id));
+      const currentMarkets = this.dataSubject.value;
+      this.dataSubject.next(currentMarkets.filter((m) => m.id !== id));
     } catch (error) {
-      console.error('Error deleting market:', error);
+      console.error("Error deleting market:", error);
       throw error;
     }
   }
 
   // Market Group Operations
-  async createMarketGroup(group: Omit<MarketGroup, 'id'>): Promise<MarketGroup> {
+  getMarketGroups(): Observable<MarketGroup[]> {
+    if (!this.initialized) {
+      this.initializeData().catch((error) => {
+        console.error("Failed to initialize market data:", error);
+      });
+    }
+    return this.marketGroups$;
+  }
+
+  async createMarketGroup(
+    group: Omit<MarketGroup, "id">
+  ): Promise<MarketGroup> {
     try {
       const newGroup = await MockApiService.createMarketGroup(group);
       const currentGroups = this.marketGroupsSubject.value;
       this.marketGroupsSubject.next([...currentGroups, newGroup]);
       return newGroup;
     } catch (error) {
-      console.error('Error creating market group:', error);
+      console.error("Error creating market group:", error);
       throw error;
     }
   }
 
-  async updateMarketGroup(id: number, groupData: Partial<MarketGroup>): Promise<MarketGroup> {
+  async updateMarketGroup(
+    id: number,
+    groupData: Partial<MarketGroup>
+  ): Promise<MarketGroup> {
     try {
-      const updatedGroup = await MockApiService.updateMarketGroup(id, groupData);
+      const updatedGroup = await MockApiService.updateMarketGroup(
+        id,
+        groupData
+      );
       const currentGroups = this.marketGroupsSubject.value;
-      const index = currentGroups.findIndex(g => g.id === id);
-      
+      const index = currentGroups.findIndex((g) => g.id === id);
+
       if (index !== -1) {
         currentGroups[index] = updatedGroup;
         this.marketGroupsSubject.next([...currentGroups]);
       }
-      
+
       return updatedGroup;
     } catch (error) {
-      console.error('Error updating market group:', error);
+      console.error("Error updating market group:", error);
       throw error;
     }
   }
@@ -109,52 +177,70 @@ export class MarketService {
     try {
       await MockApiService.deleteMarketGroup(id);
       const currentGroups = this.marketGroupsSubject.value;
-      this.marketGroupsSubject.next(currentGroups.filter(g => g.id !== id));
+      this.marketGroupsSubject.next(currentGroups.filter((g) => g.id !== id));
     } catch (error) {
-      console.error('Error deleting market group:', error);
+      console.error("Error deleting market group:", error);
       throw error;
     }
   }
 
   // Helper Methods
-  getMarketsByGroup(groupId: number): Observable<Market[]> {
-    return new Observable(subscriber => {
-      const markets = this.marketsSubject.value.filter(
-        market => market.groupId === groupId
-      );
-      subscriber.next(markets);
-      subscriber.complete();
-    });
+  getMarketById(id: number): Market | undefined {
+    return this.dataSubject.value.find((m) => m.id === id);
   }
 
-  getMarketById(id: number): Observable<Market | null> {
-    return new Observable(subscriber => {
-      const market = this.marketsSubject.value.find(m => m.id === id);
-      subscriber.next(market || null);
-      subscriber.complete();
-    });
+  getMarketGroupById(id: number): MarketGroup | undefined {
+    return this.marketGroupsSubject.value.find((g) => g.id === id);
   }
 
-  getMarketGroupById(id: number): Observable<MarketGroup | null> {
-    return new Observable(subscriber => {
-      const group = this.marketGroupsSubject.value.find(g => g.id === id);
-      subscriber.next(group || null);
-      subscriber.complete();
-    });
+  getMarketsByGroup(groupId: number): Market[] {
+    return this.dataSubject.value.filter(
+      (market) => market.groupId === groupId
+    );
   }
 
-  // Utility methods
-  async refresh(): Promise<void> {
-    await this.initializeData();
+  // Status and Utility Methods
+  async updateMarketStatus(id: number, isActive: boolean): Promise<Market> {
+    try {
+      const updatedMarket = await MockApiService.updateMarket(id, { isActive });
+      const currentMarkets = this.dataSubject.value;
+      const index = currentMarkets.findIndex((m) => m.id === id);
+
+      if (index !== -1) {
+        currentMarkets[index] = updatedMarket;
+        this.dataSubject.next([...currentMarkets]);
+      }
+
+      return updatedMarket;
+    } catch (error) {
+      console.error("Error updating market status:", error);
+      throw error;
+    }
+  }
+
+  isMarketActive(id: number): boolean {
+    const market = this.getMarketById(id);
+    return market ? market.isActive : false;
   }
 
   isMarketInUse(marketId: number): boolean {
     const groups = this.marketGroupsSubject.value;
-    return groups.some(group => group.markets.includes(marketId));
+    return groups.some((group) => group.markets.includes(marketId));
   }
 
   getMarketName(marketId: number): string {
-    const market = this.marketsSubject.value.find(m => m.id === marketId);
-    return market?.name || '';
+    const market = this.getMarketById(marketId);
+    return market?.name || "";
+  }
+
+  // Error handling
+  protected override handleError(message: string, error: any): void {
+    console.error('Market service error:', message, error);
+    super.handleError(message, error);
+  }
+
+  // Refresh functionality
+  async refresh(): Promise<void> {
+    await this.loadInitialData();
   }
 }

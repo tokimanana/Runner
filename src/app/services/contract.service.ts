@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, from, map } from 'rxjs';
 import { Contract, ContractRate, ContractPeriodRate, RateConfiguration, ContractStatus } from '../models/types';
 import { MockApiService } from './mock/mock-api.service';
 import { BaseDataService } from './base-data.service';
+import { ContractRateService } from './contract-rates.service';
 
 interface PaginatedContracts {
   contracts: Contract[];
@@ -27,7 +28,9 @@ export class ContractService extends BaseDataService<Contract> {
   
   data$ = this.dataSubject.asObservable();
   total$ = this.totalSubject.asObservable();
-  constructor() {
+  constructor(
+    private contractRateService: ContractRateService
+  ) {
     super();
     this.loadContracts();
   }
@@ -98,6 +101,10 @@ export class ContractService extends BaseDataService<Contract> {
       return false;
     }
 
+    if (!contract.baseMealPlan || !contract.selectedMealPlans.includes(contract.baseMealPlan)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -159,21 +166,34 @@ export class ContractService extends BaseDataService<Contract> {
   }
 
   async updateContractStatus(id: number, contract: Contract): Promise<Contract> {
-    let newStatus: ContractStatus;
-    
-    // Check if rates are not configured
-    if (!contract.isRatesConfigured) {
-      newStatus = 'draft';
-    } 
-    // Check if contract period is expired
-    else if (contract.validityPeriod && new Date(contract.validityPeriod.endDate) < new Date()) {
-      newStatus = 'expired';
-    } 
-    // Contract has rates and is within validity period
-    else {
-      newStatus = 'active';
+    try {
+      let newStatus: ContractStatus;
+      
+      // Check if rates are configured by actually checking rates existence
+      const rates = await this.contractRateService.getContractRates(id);
+      const hasRates = rates && rates.length > 0;
+      
+      if (!hasRates) {
+        newStatus = 'draft';
+      } 
+      // Check if contract period is expired
+      else if (contract.validityPeriod && new Date(contract.validityPeriod.endDate) < new Date()) {
+        newStatus = 'expired';
+      } 
+      // Contract has rates and is within validity period
+      else {
+        newStatus = 'active';
+      }
+      
+      return this.updateContract(id, { 
+        status: newStatus,
+        isRatesConfigured: hasRates 
+      });
+    } catch (error) {
+      console.error('Error updating contract status:', error);
+      throw error;
     }
-    return this.updateContract(id, { status: newStatus });
   }
+  
   
 }

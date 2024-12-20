@@ -42,9 +42,11 @@ export class ModalComponent {
   // Initialize form data when initialValues changes
   constructor() {
     // Watch for changes in initialValues
-    // effect(() => {
-    //   this.formData.update(() => ({...this.initialValues()}));
-    // });
+    effect(() => {
+      if (this.show()) {
+        this.formData.set({...this.initialValues()});
+      }
+    });
   }
 
   ngOnChanges() {
@@ -59,11 +61,19 @@ export class ModalComponent {
     }
   }
 
-  updateFormData(key: string, value: any) {
-    this.formData.update(current => ({
-      ...current,
-      [key]: value
-    }));
+  updateFormData(key: string, event: Event): void {
+    // Safely cast the event target to HTMLInputElement or HTMLSelectElement
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    if (target) {
+      this.formData.update(current => ({
+        ...current,
+        [key]: target.value
+      }));
+    }
+  }
+
+  getFieldValue(fieldName: string): any {
+    return this.formData()?.[fieldName];
   }
 
   handleSubmit() {

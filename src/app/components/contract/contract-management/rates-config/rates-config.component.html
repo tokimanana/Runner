@@ -1,244 +1,156 @@
-<!-- src/app/components/contract/contract-management/rates-config/rates-config.component.html -->
 <div class="rates-config-container">
   <h2>Configure Rates for {{ data.contract.name }}</h2>
 
+  <!-- Loading State -->
   <div *ngIf="loading()" class="loading-container">
     <mat-spinner diameter="48"></mat-spinner>
     <p>Loading rates configuration...</p>
   </div>
 
+  <!-- Error State -->
   <div *ngIf="error()" class="error-container">
     <p class="error-message">{{ error() }}</p>
   </div>
 
-  <mat-tab-group *ngIf="!loading() && !error()">
-    <mat-tab *ngFor="let roomType of data.roomTypes" [label]="roomType.name + ' ' + roomType.capacityLabel + ''">
-      <div class="room-type-rates">
+  <!-- Main Content -->
+  <div *ngIf="!loading() && !error()" class="rates-content">
+    <!-- Room Type Tabs -->
+    <mat-tab-group>
+      <mat-tab *ngFor="let roomType of data.roomTypes">
+        <!-- Tab Label with Room Type Info -->
+        <ng-template mat-tab-label>
+          <div class="room-type-label">
+            <span class="room-name">{{ roomType.name }}</span>
+            <span class="room-capacity">({{ getCapacityString(roomType) }})</span>
+          </div>
+        </ng-template>
+
+        <!-- Period Panels -->
         <mat-accordion>
           <mat-expansion-panel *ngFor="let period of data.periods">
+            <!-- Period Header -->
             <mat-expansion-panel-header>
               <mat-panel-title>
-                {{ period.name }} ({{ period.startDate }} -
-                {{ period.endDate }})
+                {{ period.name }}
+                <span class="period-dates">
+                  ({{ period.startDate | date }} - {{ period.endDate | date }})
+                </span>
               </mat-panel-title>
             </mat-expansion-panel-header>
 
-            <form
-              [formGroup]="
-                ratesForms[getFormControlName(roomType.id, period.id)]
-              "
-            >
-              <div class="rate-type-selection">
-                <mat-form-field>
-                  <mat-label>Rate Type</mat-label>
-                  <mat-select formControlName="rateType">
-                    <mat-option value="per_pax">Per Person</mat-option>
-                    <mat-option value="per_villa">Per Villa</mat-option>
-                  </mat-select>
-                </mat-form-field>
-              </div>
-
-              <ng-container
-                [ngSwitch]="
-                  ratesForms[getFormControlName(roomType.id, period.id)].get(
-                    'rateType'
-                  )?.value
-                "
-              >
-                <!-- Per Person Rates -->
-
-                <div
-                  *ngSwitchCase="'per_pax'"
-                  class="per-person-rates"
-                  formGroupName="personTypeRates"
-                >
-                  <!-- Adult Rates -->
-                  <h4>Adult Rates</h4>
-                  <table class="rates-table">
-                    <thead>
-                      <tr>
-                        <th>Occupancy</th>
-                        <th>Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody formGroupName="adult">
-                      <ng-container
-                        *ngFor="
-                          let i of [].constructor(roomType.maxOccupancy.adults);
-                          let index = index
-                        "
-                      >
-                        <tr>
-                          <td>{{ getOccupancyLabel(index + 1) }}</td>
-                          <td>
-                            <mat-form-field>
-                              <input
-                                matInput
-                                type="number"
-                                [formControlName]="index + 1"
-                              />
-                            </mat-form-field>
-                          </td>
-                        </tr>
-                      </ng-container>
-                    </tbody>
-                  </table>
-
-                  <!-- Child Rates -->
-                  <ng-container *ngIf="roomType.maxOccupancy.children > 0">
-                    <h4>Child Rates</h4>
-                    <table class="rates-table">
-                      <thead>
-                        <tr>
-                          <th>Child</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody formGroupName="child">
-                        <ng-container
-                          *ngFor="
-                            let i of [].constructor(
-                              roomType.maxOccupancy.children
-                            );
-                            let index = index
-                          "
-                        >
-                          <tr>
-                            <td>{{ getChildLabel(index + 1) }}</td>
-                            <td>
-                              <mat-form-field>
-                                <input
-                                  matInput
-                                  type="number"
-                                  [formControlName]="index + 1"
-                                />
-                              </mat-form-field>
-                            </td>
-                          </tr>
-                        </ng-container>
-                      </tbody>
-                    </table>
-                  </ng-container>
-                  <!-- Infant Rates -->
-                  <ng-container *ngIf="roomType.maxOccupancy.infants > 0">
-                    <h4>Infant Rates</h4>
-                    <table class="rates-table">
-                      <thead>
-                        <tr>
-                          <th>Infant</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody formGroupName="infant">
-                        <ng-container
-                          *ngFor="
-                            let i of [].constructor(
-                              roomType.maxOccupancy.infants
-                            );
-                            let index = index
-                          "
-                        >
-                          <tr>
-                            <td>{{ getInfantLabel(index + 1) }}</td>
-                            <td>
-                              <mat-form-field>
-                                <input
-                                  matInput
-                                  type="number"
-                                  [formControlName]="index + 1"
-                                />
-                              </mat-form-field>
-                            </td>
-                          </tr>
-                        </ng-container>
-                      </tbody>
-                    </table>
-                  </ng-container>
-
-                  <!-- Infant Rates -->
-                  <!-- <ng-container *ngIf="roomType.maxOccupancy.infants > 0">
-                    <h4>Infant Rates</h4>
-                    <table class="rates-table">
-                      <thead>
-                        <tr>
-                          <th>Infant</th>
-                          <th>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody formGroupName="infant">
-                        <ng-container
-                          *ngFor="
-                            let i of [].constructor(
-                              roomType.maxOccupancy.infants
-                            );
-                            let index = index
-                          "
-                        >
-                          <tr>
-                            <td>Per Infant</td>
-                            <td>
-                              <mat-form-field>
-                                <input
-                                  matInput
-                                  type="number"
-                                  [formControlName]="index"
-                                />
-                              </mat-form-field>
-                            </td>
-                          </tr>
-                        </ng-container>
-                      </tbody>
-                    </table>
-                  </ng-container> -->
+            <!-- Rate Configuration Form -->
+            <ng-container *ngIf="ratesForms[getFormControlName(roomType.id, period.id)] as rateForm">
+              <form [formGroup]="rateForm" class="rate-form">
+                <!-- Rate Type Selection -->
+                <div class="rate-type-section">
+                  <mat-form-field>
+                    <mat-label>Rate Type</mat-label>
+                    <mat-select formControlName="rateType">
+                      <mat-option value="per_pax">Per Person</mat-option>
+                      <mat-option value="per_villa">Per Villa</mat-option>
+                    </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <!-- Per Villa Rate -->
-                <div *ngSwitchCase="'per_villa'" class="per-villa-rate">
+                <div *ngIf="rateForm.get('rateType')?.value === 'per_villa'" 
+                     class="villa-rate-section">
                   <mat-form-field>
                     <mat-label>Villa Rate</mat-label>
-                    <input matInput type="number" formControlName="villaRate" />
+                    <input matInput type="number" formControlName="villaRate">
                   </mat-form-field>
                 </div>
-              </ng-container>
 
-              <!-- Meal Plan Rates -->
-              <div class="meal-plan-rates" formGroupName="mealPlanRates">
-                <h4>Meal Plan Rates</h4>
-                <table class="rates-table">
-                  <thead>
-                    <tr>
-                      <th>Meal Plan</th>
-                      <th>Adult</th>
-                      <th>Child</th>
-                      <th>Infant</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let mealPlan of data.mealPlans" [formGroupName]="mealPlan">
-                      <td>{{mealPlan}}</td>
-                      <td><mat-form-field><input matInput type="number" formControlName="adult"></mat-form-field></td>
-                      <td><mat-form-field><input matInput type="number" formControlName="child"></mat-form-field></td>
-                      <td><mat-form-field><input matInput type="number" formControlName="infant"></mat-form-field></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </form>
+                <!-- Per Person Rates -->
+                <div *ngIf="rateForm.get('rateType')?.value === 'per_pax'" 
+                     class="person-rates-section" 
+                     formGroupName="personTypeRates">
+                  <!-- Adult Rates -->
+                  <div class="rate-category">
+                    <h4>Adult Rates</h4>
+                    <div class="rate-grid" formGroupName="adult">
+                      <div *ngFor="let i of getOccupancyRange(roomType.maxOccupancy.adults)"
+                           class="rate-item">
+                        <mat-form-field>
+                          <mat-label>{{ getOccupancyLabel(i) }}</mat-label>
+                          <input matInput type="number" [formControlName]="i.toString()">
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Child Rates -->
+                  <div *ngIf="roomType.maxOccupancy.children > 0" 
+                       class="rate-category">
+                    <h4>Child Rates</h4>
+                    <div class="rate-grid" formGroupName="child">
+                      <div *ngFor="let i of getOccupancyRange(roomType.maxOccupancy.children)"
+                           class="rate-item">
+                        <mat-form-field>
+                          <mat-label>{{ getChildLabel(i) }}</mat-label>
+                          <input matInput type="number" [formControlName]="i.toString()">
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Infant Rates -->
+                  <div *ngIf="roomType.maxOccupancy.infants > 0" 
+                       class="rate-category">
+                    <h4>Infant Rates</h4>
+                    <div class="rate-grid" formGroupName="infant">
+                      <div *ngFor="let i of getOccupancyRange(roomType.maxOccupancy.infants)"
+                           class="rate-item">
+                        <mat-form-field>
+                          <mat-label>{{ getInfantLabel(i) }}</mat-label>
+                          <input matInput type="number" [formControlName]="i.toString()">
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Meal Plan Rates -->
+                <div class="meal-plan-section" formGroupName="mealPlanRates">
+                  <h4>Meal Plan Rates</h4>
+                  <div class="meal-plan-grid">
+                    <div *ngFor="let mealPlan of data.mealPlans" 
+                         [formGroupName]="mealPlan" 
+                         class="meal-plan-item">
+                      <h5>{{ getMealPlanLabel(mealPlan) }}</h5>
+                      <div class="meal-plan-rates">
+                        <mat-form-field>
+                          <mat-label>Adult</mat-label>
+                          <input matInput type="number" formControlName="adult">
+                        </mat-form-field>
+                        <mat-form-field>
+                          <mat-label>Child</mat-label>
+                          <input matInput type="number" formControlName="child">
+                        </mat-form-field>
+                        <mat-form-field>
+                          <mat-label>Infant</mat-label>
+                          <input matInput type="number" formControlName="infant">
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </ng-container>
           </mat-expansion-panel>
         </mat-accordion>
-      </div>
-    </mat-tab>
-  </mat-tab-group>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
 
+  <!-- Action Buttons -->
   <div class="action-buttons">
     <button mat-button (click)="close()">Cancel</button>
-    <button
-      mat-raised-button
-      color="primary"
-      (click)="saveRates()"
-      [disabled]="saving() || loading()"
-    >
-      {{ saving() ? "Saving..." : "Save Rates" }}
+    <button mat-raised-button 
+            color="primary" 
+            (click)="saveRates()" 
+            [disabled]="saving() || loading()">
+      {{ saving() ? 'Saving...' : 'Save Rates' }}
     </button>
   </div>
 </div>

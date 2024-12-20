@@ -7,6 +7,7 @@ import {
   FormArray,
   ReactiveFormsModule,
   Validators,
+  FormControl,
 } from "@angular/forms";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MatTabsModule } from "@angular/material/tabs";
@@ -24,6 +25,7 @@ import {
   Period,
   RoomType,
   PersonTypeRates,
+  MealPlanRates,
 } from "../../../../models/types";
 import { ContractRateService } from "../../../../services/contract-rates.service";
 
@@ -44,6 +46,23 @@ interface RateFormData {
       infant: number;
     };
   };
+}
+
+interface RateFormGroup {
+  rateType: FormControl<"per_pax" | "per_villa">;
+  villaRate: FormControl<number>;
+  personTypeRates: FormGroup<{
+    adult: FormGroup<{ [key: string]: FormControl<number> }>;
+    child: FormGroup<{ [key: string]: FormControl<number> }>;
+    infant: FormGroup<{ [key: string]: FormControl<number> }>;
+  }>;
+  mealPlanRates: FormGroup<{
+    [key: string]: FormGroup<{
+      adult: FormControl<number>;
+      child: FormControl<number>;
+      infant: FormControl<number>;
+    }>;
+  }>;
 }
 
 @Component({
@@ -68,7 +87,7 @@ export class RatesConfigComponent implements OnInit {
   error = signal<string | null>(null);
   saving = signal(false);
 
-  ratesForms: { [key: string]: FormGroup } = {};
+  ratesForms: { [key: string]: FormGroup<RateFormGroup> } = {};
 
   constructor(
     @Inject(MAT_DIALOG_DATA)
@@ -84,160 +103,197 @@ export class RatesConfigComponent implements OnInit {
   ) {}
 
   // In rates-config.component.ts
-async ngOnInit() {
-  try {
-    this.loading.set(true);
-    console.log('ngOnInit - data:', this.data);
-    // First verify the data is available
-    if (!this.data?.roomTypes || !this.data?.periods) {
-      throw new Error('Required data is missing: room types or periods');
+  async ngOnInit() {
+    try {
+      this.loading.set(true);
+      console.log('ngOnInit - data:', this.data);
+      
+      if (!this.data?.roomTypes || !this.data?.periods) {
+        throw new Error('Required data is missing: room types or periods');
+      }
+  
+      const rates = await this.contractRateService.getContractRates(
+        this.data.contract.id
+      );
+      
+      // Initialize forms only after data is loaded
+      await this.initializeForms(rates);
+      
+    } catch (error) {
+      this.error.set('Failed to load rates: ' + (error as Error).message);
+      console.error(error);
+    } finally {
+      this.loading.set(false);
     }
-    
-    const rates = await this.contractRateService.getContractRates(
-      this.data.contract.id
-    );
-    console.log('ngOnInit - rates:', rates);
-    this.initializeForms(rates);
-  } catch (error) {
-    this.error.set('Failed to load rates: ' + (error as Error).message);
-    console.error(error);
-  } finally {
-    this.loading.set(false);
   }
-}
-
-
-  private initializeForms(existingRates: ContractPeriodRate[]) {
-    console.log('initializeForms - existingRates:', existingRates);
+  private async initializeForms(existingRates: ContractPeriodRate | ContractPeriodRate[]) {
+    console.log('Initializing forms with rates:', existingRates);
+    
     this.data.roomTypes.forEach((roomType) => {
-      // Populate capacityLabel here, excluding the category
-      roomType.capacityLabel = `(${this.getCapacityString(roomType)})`;
       this.data.periods.forEach((period) => {
         const existingRate = this.findExistingRate(
           existingRates,
           roomType.id,
           period.id
         );
-        // Fix: Pass roomType as first parameter, existingRate as second
-        const formKey = `${roomType.id}-${period.id}`;
-        this.ratesForms[formKey] = this.createRateForm(roomType, existingRate);        
+  
+        const formGroup = this.createPersonTypeRatesGroup(
+          roomType,
+          existingRate?.personTypeRates
+        );
+  
+        const formKey = this.getFormControlName(roomType.id, period.id);
+        this.ratesForms[formKey] = formGroup;
       });
     });
   }
 
   private findExistingRate(
-    rates: ContractPeriodRate[],
+    rates: ContractPeriodRate | ContractPeriodRate[] | undefined,
     roomTypeId: number,
     periodId: number
   ): RoomTypeRate | undefined {
-    const foundRate = rates.find((r) => r.periodId === periodId)?.roomRates.find((rr) => rr.roomTypeId === roomTypeId);
-    console.log('findExistingRate - roomTypeId:', roomTypeId, 'periodId:', periodId, 'foundRate:', foundRate);
-    return foundRate;
+    if (!rates) return undefined;
+  
+    // Handle single rate object
+    if (!Array.isArray(rates)) {
+      const singleRate = rates as ContractPeriodRate;
+      if (singleRate.periodId === periodId) {
+        return singleRate.roomRates.find(rr => rr.roomTypeId === roomTypeId);
+      }
+      return undefined;
+    }
+  
+    // Handle array of rates
+    const periodRate = rates.find(r => r.periodId === periodId);
+    return periodRate?.roomRates.find(rr => rr.roomTypeId === roomTypeId);
   }
 
-  private createRateForm(roomType: RoomType, existingRate?: RoomTypeRate): FormGroup {
-    const form = this.fb.group({
-      rateType: [existingRate?.rateType || "per_pax", Validators.required],
-      villaRate: [existingRate?.villaRate || null],
-      personTypeRates: this.fb.group({
-        adult: this.createPersonTypeRatesGroup(
-          roomType,
-          existingRate?.personTypeRates?.["adult"]
+  private createPersonTypeRatesGroup(
+    roomType: RoomType,
+    existing?: PersonTypeRates
+  ): FormGroup<RateFormGroup> {
+    return this.fb.nonNullable.group<RateFormGroup>({
+      rateType: this.fb.nonNullable.control<"per_pax" | "per_villa">("per_pax"),
+      villaRate: this.fb.nonNullable.control(0),
+      personTypeRates: this.fb.nonNullable.group({
+        adult: this.createOccupancyRatesGroup(
+          roomType.maxOccupancy.adults,
+          existing?.["adult"]?.["rates"]
         ),
-        child: roomType.maxOccupancy.children > 0 ? 
-          this.createPersonTypeRatesGroup(
-            {...roomType, maxOccupancy: { 
-              adults: roomType.maxOccupancy.children,
-              children: roomType.maxOccupancy.children,
-              infants: roomType.maxOccupancy.infants 
-            }},
-            existingRate?.personTypeRates?.["child"]
-          ) : null,
-        infant: roomType.maxOccupancy.infants > 0 ?
-          this.createPersonTypeRatesGroup(
-            {...roomType, maxOccupancy: { 
-              adults: roomType.maxOccupancy.infants,
-              children: roomType.maxOccupancy.children,
-              infants: roomType.maxOccupancy.infants 
-            }},
-            existingRate?.personTypeRates?.["infant"]
-          ) : null,
+        child: this.createOccupancyRatesGroup(
+          roomType.maxOccupancy.children || 1,
+          existing?.["child"]?.["rates"]
+        ),
+        infant: this.createOccupancyRatesGroup(
+          roomType.maxOccupancy.infants || 1,
+          existing?.["infant"]?.["rates"]
+        ),
       }),
-      mealPlanRates: this.createMealPlanRatesGroup(existingRate?.mealPlanRates),
+      mealPlanRates: this.createMealPlanRatesGroup(
+        this.convertToMealPlanRates(existing?.["mealPlanRates"])
+      ),
     });
-    
-    return form;
-}
-
-
-
-
-
-private createPersonTypeRatesGroup(roomType: RoomType, existing?: {
-  rates: { [key: number]: number };
-}) {
-  const { maxOccupancy } = roomType;
-  const formGroup: { [key: number]: any[] } = {}; // Add type annotation
-  
-  for (let i = 1; i <= maxOccupancy.adults; i++) {
-      formGroup[i] = [existing?.rates[i] || null];
   }
 
-  return this.fb.group(formGroup);
-}
+  private createOccupancyRatesGroup(
+    maxOccupancy: number,
+    existingRates?: { [key: number]: number }
+  ): FormGroup<{ [key: string]: FormControl<number> }> {
+    const controls: { [key: string]: FormControl<number> } = {};
+    for (let i = 1; i <= maxOccupancy; i++) {
+      controls[i.toString()] = this.fb.nonNullable.control(
+        existingRates?.[i] ?? 0
+      );
+    }
+    return this.fb.nonNullable.group(controls);
+  }
 
+  getOccupancyRange(max: number): number[] {
+    return Array.from({ length: max }, (_, i) => i + 1);
+  }
 
-// Add to RatesConfigComponent class
-getOccupancyLabel(count: number): string {
-  const labels = ['Single', 'Double', 'Triple', 'Quad', 'Quint'];
-  return labels[count - 1] || `${count} Adults`;
-}
+  getMealPlanLabel(mealPlan: string): string {
+    // Add logic to format meal plan names for display
+    return mealPlan.toUpperCase();
+  }
 
-getChildLabel(count: number): string {
-  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
-  return `${ordinals[count - 1]} Child`;
-}
-getInfantLabel(count: number): string {
-  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
-  return `${ordinals[count - 1]} Infant`;
-}
+  // Add to RatesConfigComponent class
+  getOccupancyLabel(count: number): string {
+    const labels = ["Single", "Double", "Triple", "Quad", "Quint"];
+    return labels[count - 1] || `${count} Adults`;
+  }
 
-getCapacityString(roomType: RoomType): string {
-  const { maxOccupancy } = roomType;
-  const capacityParts = [];
-  
-  if (maxOccupancy.adults > 0) capacityParts.push(`${maxOccupancy.adults}A`);
-  if (maxOccupancy.children > 0) capacityParts.push(`${maxOccupancy.children}C`);
-  if (maxOccupancy.infants > 0) capacityParts.push(`${maxOccupancy.infants}I`);
-  
-  return capacityParts.join(' + ');
-}
+  getChildLabel(count: number): string {
+    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth"];
+    return `${ordinals[count - 1]} Child`;
+  }
+  getInfantLabel(count: number): string {
+    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth"];
+    return `${ordinals[count - 1]} Infant`;
+  }
 
-  private createMealPlanRatesGroup(existing?: {
-    [mealPlanId: string]: { [personType: string]: number };
-  }) {
-    const group: { [mealPlanId: string]: FormGroup } = {};
+  getCapacityString(roomType: RoomType): string {
+    const { maxOccupancy } = roomType;
+    const capacityParts = [];
+
+    if (maxOccupancy.adults > 0) capacityParts.push(`${maxOccupancy.adults}A`);
+    if (maxOccupancy.children > 0)
+      capacityParts.push(`${maxOccupancy.children}C`);
+    if (maxOccupancy.infants > 0)
+      capacityParts.push(`${maxOccupancy.infants}I`);
+
+    return capacityParts.join(" + ");
+  }
+
+  private createMealPlanRatesGroup(existingRates?: MealPlanRates): FormGroup {
+    const mealPlanRatesGroup = this.fb.nonNullable.group({});
 
     this.data.mealPlans.forEach((mealPlan) => {
-      group[mealPlan] = this.fb.group({
-        adult: [existing?.[mealPlan]?.["adult"] || 0],
-        child: [existing?.[mealPlan]?.["child"] || 0],
-        infant: [existing?.[mealPlan]?.["infant"] || 0],
-      });
+      const existingMealPlanRate = existingRates?.[mealPlan];
+
+      mealPlanRatesGroup.addControl(
+        mealPlan,
+        this.fb.nonNullable.group({
+          adult: this.fb.nonNullable.control(existingMealPlanRate?.adult ?? 0),
+          child: this.fb.nonNullable.control(existingMealPlanRate?.child ?? 0),
+          infant: this.fb.nonNullable.control(
+            existingMealPlanRate?.infant ?? 0
+          ),
+        })
+      );
     });
 
-    return this.fb.group(group);
+    return mealPlanRatesGroup;
+  }
+
+  private convertToMealPlanRates(existingRates?: any): MealPlanRates {
+    const converted: MealPlanRates = {};
+
+    if (!existingRates) return converted;
+
+    Object.entries(existingRates).forEach(([mealPlanType, rates]) => {
+      converted[mealPlanType] = {
+        adult: (rates as any)?.adult ?? 0,
+        child: (rates as any)?.child ?? 0,
+        infant: (rates as any)?.infant ?? 0,
+      };
+    });
+
+    return converted;
   }
 
   async saveRates() {
     try {
       this.saving.set(true);
       const rates = this.transformFormsToRates();
-      await this.contractRateService.updateContractRates(
-        this.data.contract.id,
-        rates
-      );
-      this.dialogRef.close(true);
+      const updatedContract =
+        await this.contractRateService.updateContractRates(
+          this.data.contract.id,
+          rates
+        );
+      // Pass the updated contract back to the parent component
+      this.dialogRef.close(updatedContract);
     } catch (error) {
       this.error.set("Failed to save rates");
       console.error(error);
@@ -253,37 +309,82 @@ getCapacityString(roomType: RoomType): string {
       const roomRates: RoomTypeRate[] = [];
 
       this.data.roomTypes.forEach((roomType) => {
-        const formKey = `${roomType.id}-${period.id}`;
-        const formValue = this.ratesForms[formKey].value;
+        const formKey = this.getFormControlName(roomType.id, period.id);
+        const formValue = this.ratesForms[formKey]?.value;
 
-        const mealPlanRates: { [key: string]: { adult: number, child: number, infant: number } } = {};
+        if (!formValue) {
+          console.warn(`No form value found for ${formKey}`);
+          return;
+        }
+
+        // Initialize meal plan rates with all configured meal plans
+        const mealPlanRates: {
+          [key: string]: { adult: number; child: number; infant: number };
+        } = {};
+
         if (formValue.mealPlanRates) {
-          for (const mealPlanId of this.data.mealPlans) {
-            mealPlanRates[mealPlanId] = {
-              adult: formValue.mealPlanRates[mealPlanId]?.adult,
-              child: formValue.mealPlanRates[mealPlanId]?.child,
-              infant: formValue.mealPlanRates[mealPlanId]?.infant,
+          Object.entries(formValue.mealPlanRates).forEach(
+            ([mealPlanId, rates]) => {
+              if (rates) {
+                mealPlanRates[mealPlanId] = {
+                  adult: rates.adult ?? 0,
+                  child: rates.child ?? 0,
+                  infant: rates.infant ?? 0,
+                };
+              } else {
+                mealPlanRates[mealPlanId] = {
+                  adult: 0,
+                  child: 0,
+                  infant: 0,
+                };
+              }
+            }
+          );
+        }
+
+        // Create room rate object based on rate type
+        const roomRate: RoomTypeRate = {
+          roomTypeId: roomType.id,
+          rateType: formValue.rateType ?? ("per_pax" as const),
+          mealPlanRates,
+        };
+
+        // Add specific rate type data
+        if (formValue.rateType === "per_villa") {
+          roomRate.villaRate = formValue.villaRate ?? 0;
+        } else {
+          if (formValue.personTypeRates) {
+            roomRate.personTypeRates = {
+              adult: {
+                rates: this.convertFormGroupToRates(
+                  formValue.personTypeRates?.adult
+                ),
+              },
+              child: {
+                rates: this.convertFormGroupToRates(
+                  formValue.personTypeRates?.child
+                ),
+              },
+              infant: {
+                rates: this.convertFormGroupToRates(
+                  formValue.personTypeRates?.infant
+                ),
+              },
+            };
+          } else {
+            roomRate.personTypeRates = {
+              adult: { rates: {} },
+              child: { rates: {} },
+              infant: { rates: {} },
             };
           }
         }
 
-
-        roomRates.push({
-          roomTypeId: roomType.id,
-          rateType: formValue.rateType,
-          villaRate:
-            formValue.rateType === "per_villa"
-              ? formValue.villaRate
-              : undefined,
-          personTypeRates:
-            formValue.rateType === "per_pax"
-              ? formValue.personTypeRates
-              : undefined,
-          mealPlanRates: mealPlanRates,
-        });
+        roomRates.push(roomRate);
       });
 
       periodRates.push({
+        id: this.data.contract.id,
         periodId: period.id,
         roomRates,
       });
@@ -292,11 +393,42 @@ getCapacityString(roomType: RoomType): string {
     return periodRates;
   }
 
+  private convertFormGroupToRates(formGroup: any): { [key: number]: number } {
+    if (!formGroup) {
+      return {};
+    }
+
+    const rates: { [key: number]: number } = {};
+    Object.entries(formGroup).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        rates[parseInt(key)] = value as number;
+      } else {
+        rates[parseInt(key)] = 0;
+      }
+    });
+    return rates;
+  }
+
   close() {
     this.dialogRef.close();
   }
 
   getFormControlName(roomTypeId: number, periodId: number): string {
     return `${roomTypeId}-${periodId}`;
+  }
+
+  getFormGroup(roomTypeId: number, periodId: number): FormGroup {
+    const key = this.getFormControlName(roomTypeId, periodId);
+    const form = this.ratesForms[key];
+    if (!form) {
+      throw new Error(
+        `Form group not found for room type ${roomTypeId} and period ${periodId}`
+      );
+    }
+    return form;
+  }
+
+  isFormInitialized(roomTypeId: number, periodId: number): boolean {
+    return !!this.getFormGroup(roomTypeId, periodId);
   }
 }

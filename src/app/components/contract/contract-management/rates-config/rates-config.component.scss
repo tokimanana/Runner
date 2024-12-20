@@ -1,115 +1,104 @@
 .rates-config-container {
-  padding: 24px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  max-width: 1200px;
-  margin: 0 auto;
-
-  h2 {
-    margin-bottom: 24px;
-    font-size: 1.5rem;
-    color: var(--mat-primary-color);
+  padding: 20px;
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px;
+  }
+  
+  .error-container {
+    color: #f44336;
+    padding: 16px;
+    border-radius: 4px;
+    background-color: #ffebee;
   }
 
-  .rates-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-radius: 8px;
-    overflow: hidden;
-
-    th, td {
-      padding: 12px 16px;
-      text-align: left;
-      border-bottom: 1px solid rgba(0,0,0,0.12);
-    }
-
-    th {
-      background: rgba(0,0,0,0.02);
-      font-weight: 500;
-      color: rgba(0,0,0,0.87);
-    }
-
-    td {
-      vertical-align: middle;
-    }
-
-    mat-form-field {
-      width: 120px;
-      margin: 0;
-    }
+  .rates-content {
+    margin-top: 20px;
   }
 
-  .per-person-rates, .per-villa-rate, .meal-plan-rates {
-    background: #fff;
-    padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    margin-bottom: 24px;
-
-    h4 {
-      color: var(--mat-primary-color);
-      font-size: 1.1rem;
-      margin-bottom: 16px;
-      font-weight: 500;
-    }
-  }
-
-  .rate-type-selection {
-    margin-bottom: 24px;
-    max-width: 200px;
-  }
-
-  mat-expansion-panel {
-    margin-bottom: 16px;
+  .room-type-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     
-    mat-expansion-panel-header {
-      height: 64px;
-      
-      mat-panel-title {
-        font-weight: 500;
+    .room-capacity {
+      font-size: 0.8em;
+      color: rgba(0, 0, 0, 0.6);
+    }
+  }
+
+  .rate-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px;
+
+    .rate-type-section {
+      width: 200px;
+    }
+
+    .rate-category {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+
+      h4 {
+        margin: 0 0 16px 0;
+        color: rgba(0, 0, 0, 0.87);
+      }
+    }
+
+    .rate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .meal-plan-section {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+
+      h4 {
+        margin: 0 0 16px 0;
+      }
+    }
+
+    .meal-plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .meal-plan-item {
+      background: white;
+      padding: 16px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+      h5 {
+        margin: 0 0 16px 0;
+      }
+
+      .meal-plan-rates {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
       }
     }
   }
 
   .action-buttons {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(0,0,0,0.12);
     display: flex;
     justify-content: flex-end;
     gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
   }
-
-  mat-tab-group {
-    ::ng-deep .mat-tab-body-wrapper {
-      padding: 24px 0;
-    }
-  }
-}
-
-// Loading and error states
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  
-  p {
-    margin-top: 16px;
-    color: rgba(0,0,0,0.54);
-  }
-}
-
-.error-message {
-  color: var(--mat-warn-color);
-  font-weight: 500;
 }

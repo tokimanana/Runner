@@ -12,26 +12,36 @@ export class CurrencyService extends BaseDataService<CurrencySetting> {
 
   constructor() {
     super();
+    this.initialize();
   }
 
-  protected override async loadData(): Promise<void> {
+  private async initialize() {
+    if (!this.initialized) {
+      await this.loadData(() => MockApiService.getCurrencySettings());
+      this.initialized = true;
+    }
+  }
+
+  
+
+  protected override async loadData(
+    fetchFunction: () => Promise<CurrencySetting[]>
+  ): Promise<void> {
     try {
-      this.loadingSubject.next(true);
-      const settings = await MockApiService.getCurrencySettings();
-      this.dataSubject.next(settings);
+      const data = await fetchFunction();
+      this.dataSubject.next(data);
     } catch (error) {
-      this.handleError("Failed to load currency settings", error);
-    } finally {
-      this.loadingSubject.next(false);
+      console.error('Error loading currency data:', error);
+      this.dataSubject.next([]);
+      throw error;
     }
   }
 
   getCurrencySettings(): Observable<CurrencySetting[]> {
     if (!this.initialized) {
-      this.initialized = true;
-      this.loadData();
+      this.initialize();
     }
-    return this.getData();
+    return this.dataSubject.asObservable();
   }
 
   async addCurrency(currency: Omit<CurrencySetting, "id">): Promise<CurrencySetting> {

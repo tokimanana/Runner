@@ -1,4 +1,4 @@
-import { MealPlanService } from './../../../../services/meal-plan.service';
+import { MealPlanService } from "./../../../../services/meal-plan.service";
 // src/app/components/contract/contract-management/contract-form/contract-form.component.ts
 import { CommonModule } from "@angular/common";
 import {
@@ -85,6 +85,7 @@ export class ContractFormComponent implements OnInit {
     status: ["draft"],
     selectedRooms: [[], Validators.required],
     selectedMealPlans: [[], Validators.required],
+    baseMealPlan: [null, Validators.required],
   });
 
   // State signals
@@ -122,7 +123,7 @@ export class ContractFormComponent implements OnInit {
       status: ["draft"],
       selectedRooms: [[], Validators.required],
       selectedMealPlans: [[], Validators.required],
-      terms: [""],
+      baseMealPlan: [null, Validators.required],
     });
   }
 
@@ -179,7 +180,9 @@ export class ContractFormComponent implements OnInit {
       const [roomTypes, seasons, mealPlans] = await Promise.all([
         firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId)),
         this.seasonService.getSeasonsByHotel(contract.hotelId),
-        firstValueFrom(this.MealPlanService.getMealPlansByHotel(contract.hotelId)) // Add this line
+        firstValueFrom(
+          this.MealPlanService.getMealPlansByHotel(contract.hotelId)
+        ),
       ]);
 
       this.roomTypes.set(roomTypes || []);
@@ -188,20 +191,25 @@ export class ContractFormComponent implements OnInit {
 
       // Patch form with existing values
       this.contractForm.patchValue({
-        ...contract,
+        name: contract.name,
+        hotelId: contract.hotelId,
+        marketId: contract.marketId,
+        seasonId: contract.seasonId,
+        description: contract.description,
+        status: contract.status,
         selectedRooms: roomTypes.filter((room) =>
           contract.selectedRoomTypes?.includes(room.id)
         ),
-        selectedMealPlans: mealPlans?.filter((mealPlan) =>
-          contract.selectedMealPlans?.includes(mealPlan.type)
-        ) || []
+        selectedMealPlans:
+          mealPlans?.filter((mealPlan) =>
+            contract.selectedMealPlans?.includes(mealPlan.type)
+          ) || [],
+        baseMealPlan: contract.baseMealPlan,
       });
-      
     } catch (error) {
       console.error("Error patching form data:", error);
     }
   }
-
 
   isRoomSelected(room: RoomType): boolean {
     const selectedRooms = this.contractForm.get("selectedRooms")?.value || [];
@@ -220,6 +228,7 @@ export class ContractFormComponent implements OnInit {
 
   onMealPlanChange(checked: boolean, mealPlan: MealPlan) {
     const selectedMealPlans = this.contractForm.value.selectedMealPlans || [];
+    const currentBaseMealPlan = this.contractForm.get("baseMealPlan")?.value;
     if (checked) {
       this.contractForm.patchValue({
         selectedMealPlans: [...selectedMealPlans, mealPlan],
@@ -231,6 +240,13 @@ export class ContractFormComponent implements OnInit {
         ),
       });
     }
+
+    if (
+      currentBaseMealPlan &&
+      !selectedMealPlans.includes(currentBaseMealPlan)
+    ) {
+      this.contractForm.patchValue({ baseMealPlan: null });
+    }
   }
 
   async onHotelChange(hotelId: number) {
@@ -239,24 +255,22 @@ export class ContractFormComponent implements OnInit {
     try {
       this.loading.set(true);
 
-      const [roomTypes, hotel, seasons] = await Promise.all([
+      const [roomTypes, seasons, mealPlans] = await Promise.all([
         firstValueFrom(this.hotelService.getRoomTypes(hotelId)),
-        this.hotelService.getHotelById(hotelId),
         this.seasonService.getSeasonsByHotel(hotelId),
+        firstValueFrom(this.MealPlanService.getMealPlansByHotel(hotelId)),
       ]);
 
       this.roomTypes.set(roomTypes || []);
       this.seasons.set(seasons || []);
-
-      if (hotel?.mealPlans) {
-        this.mealPlans.set(hotel.mealPlans);
-      }
+      this.mealPlans.set(mealPlans || []);
 
       // Reset dependent fields
       this.contractForm.patchValue({
         seasonId: null,
         selectedRooms: [],
         selectedMealPlans: [],
+        baseMealPlan: null,
       });
     } catch (error) {
       this.error.set("Failed to load hotel details");
@@ -265,6 +279,7 @@ export class ContractFormComponent implements OnInit {
       this.loading.set(false);
     }
   }
+
   onRoomTypeChange(checked: boolean, room: RoomType) {
     const selectedRooms = this.contractForm.value.selectedRooms || [];
     if (checked) {

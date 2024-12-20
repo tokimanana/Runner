@@ -1,3 +1,4 @@
+import { contractRates } from './../../../../data/mock/rates.mock';
 import {
   Component,
   OnInit,
@@ -21,6 +22,7 @@ import { BehaviorSubject, firstValueFrom, Subject } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import {
   Contract,
+  ContractPeriodRate,
   Hotel,
   Market,
   RoomType,
@@ -47,6 +49,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Router } from "@angular/router";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { RatesConfigComponent } from "../rates-config/rates-config.component";
+import { ContractRateService } from 'src/app/services/contract-rates.service';
 
 export interface ContractDialogData {
   mode: "create" | "edit";
@@ -77,13 +80,14 @@ export interface ContractDialogData {
   ],
 })
 export class ContractListComponent implements OnInit, OnDestroy {
-  displayedColumns = ["name", "hotel", "market", "season", "status", "actions"];
+  displayedColumns = ["name", "hotel", "market", "season", "baseMealPlan", "status", "actions"];
 
   // Service injections using inject()
   private contractService = inject(ContractService);
   private hotelService = inject(HotelService);
   private marketService = inject(MarketService);
   private seasonService = inject(SeasonService);
+  private contractRateService = inject(ContractRateService);
   private destroyRef = inject(DestroyRef);
 
   // State signals
@@ -92,6 +96,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
   markets = signal<Market[]>([]);
   seasons = signal<Season[]>([]);
   roomTypes = signal<RoomType[]>([]);
+  contractRates = signal<Map<number, ContractPeriodRate[]>>(new Map());
 
   // Pagination signals
   pageSize = signal(10);
@@ -99,6 +104,19 @@ export class ContractListComponent implements OnInit, OnDestroy {
   totalContracts = signal(0);
 
   private destroy$ = new Subject<void>();
+
+  async loadContractWithRates(contract: Contract) {
+    try {
+      const rates = await this.contractRateService.getContractRates(contract.id);
+      this.contractRates.update(map => {
+        const newMap = new Map(map);
+        newMap.set(contract.id, rates);
+        return newMap;
+      });
+    } catch (error) {
+      this.handleError('Error loading contract rates', error);
+    }
+  }
 
   // UI state signals
   loading = signal(false);
@@ -179,7 +197,6 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   private async loadContracts(pageIndex = 0) {
     try {
-      // First load all reference data
       await Promise.all([
         this.loadHotels(),
         this.loadMarkets(),
@@ -191,6 +208,9 @@ export class ContractListComponent implements OnInit, OnDestroy {
       );
 
       if (result) {
+        // Load rates for each contract
+        await Promise.all(result.map(contract => this.loadContractWithRates(contract)));
+
         this.contracts.set(
           result.map((contract) => ({
             ...contract,
@@ -295,16 +315,28 @@ export class ContractListComponent implements OnInit, OnDestroy {
       });
   }
 
-  openRatesConfigDialog(contract: Contract): void {
-    const dialogConfig = new MatDialogConfig();
-    dialogConfig.width = "90%";
-    dialogConfig.height = "90%";
-    dialogConfig.disableClose = true;
-    dialogConfig.data = {
-      contractId: contract.id,
-    };
+  async openRatesConfigDialog(contract: Contract) {
+    try {
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.width = "90%";
+      dialogConfig.height = "90%";
+      dialogConfig.disableClose = true;
+      dialogConfig.data = {
+        contractId: contract.id,
+        rates: this.contractRates().get(contract.id) || [],
+      };
 
-    this.dialog.open(RatesConfigComponent, dialogConfig);
+      const dialogRef = this.dialog.open(RatesConfigComponent, dialogConfig);
+
+      const result = await firstValueFrom(dialogRef.afterClosed());
+
+      if (result) {
+        await this.loadContracts();
+      }
+    } catch (error) {
+      console.error("Error configuring rates:", error);
+      this.error.set("Failed to configure rates. Please try again.");
+    }
   }
 
   viewRates(contract: Contract): void {
@@ -358,12 +390,13 @@ export class ContractListComponent implements OnInit, OnDestroy {
       const periods = await firstValueFrom(this.seasonService.periods$).then(
         (periodMap) => periodMap.get(contract.seasonId) || []
       );
-
+  
       const allRoomTypes = await firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId));
       const roomTypes = allRoomTypes.filter(room => contract.selectedRoomTypes.includes(room.id));
-
-      const mealPlans = contract.selectedMealPlans;
-
+  
+      // Load existing rates for the contract
+      const existingRates = await this.contractRateService.getContractRates(contract.id);
+  
       const dialogConfig = new MatDialogConfig();
       dialogConfig.width = "90vw";
       dialogConfig.maxWidth = "1200px";
@@ -372,14 +405,21 @@ export class ContractListComponent implements OnInit, OnDestroy {
         contract,
         periods,
         roomTypes,
-        mealPlans,
+        mealPlans: contract.selectedMealPlans,
+        rates: existingRates
       };
-
+  
       const dialogRef = this.dialog.open(RatesConfigComponent, dialogConfig);
-
+  
       const result = await firstValueFrom(dialogRef.afterClosed());
-
+  
       if (result) {
+        // Update contract rates in local state
+        this.contractRates.update(map => {
+          const newMap = new Map(map);
+          newMap.set(contract.id, result);
+          return newMap;
+        });
         // Refresh contracts list if rates were updated
         await this.loadContracts();
       }
@@ -388,6 +428,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
       this.error.set("Failed to configure rates. Please try again.");
     }
   }
+  
 
   private handleError(message: string, error: any) {
     const errorMessage =

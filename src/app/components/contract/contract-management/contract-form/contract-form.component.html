@@ -49,9 +49,9 @@
             <mat-label>Season</mat-label>
             <mat-select formControlName="seasonId" required>
               @for (season of seasons(); track season.id) {
-                <mat-option [value]="season.id">
-                  {{ season.name }}
-                </mat-option>
+              <mat-option [value]="season.id">
+                {{ season.name }}
+              </mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -64,25 +64,41 @@
           <div class="room-types-container">
             <label class="mat-mdc-form-field-label">Room Types</label>
             @for (room of roomTypes(); track room.id) {
-              <mat-checkbox
-                [checked]="isRoomSelected(room)"
-                (change)="onRoomTypeChange($event.checked, room)"
-              >
-                {{ room.name }}
-              </mat-checkbox>
+            <mat-checkbox
+              [checked]="isRoomSelected(room)"
+              (change)="onRoomTypeChange($event.checked, room)"
+            >
+              {{ room.name }}
+            </mat-checkbox>
             }
           </div>
-      
+
           <div class="meal-plans-section">
-            <label class="mat-mdc-form-field-label">Meal Plans</label>
+            <!-- Base Meal Plan Selection -->
+            <label class="mat-mdc-form-field-label">Base Meal Plan</label>
+            <mat-select formControlName="baseMealPlan" required>
+              @for (mealPlan of mealPlans(); track mealPlan.type) {
+              <mat-option [value]="mealPlan.type">
+                {{ mealPlan.name }} ({{ mealPlan.type }})
+              </mat-option>
+              }
+            </mat-select>
+
+            <!-- Other Meal Plans -->
+            <label class="mat-mdc-form-field-label"
+              >Additional Meal Plans</label
+            >
             <div class="meal-plans-container">
               @for (mealPlan of mealPlans(); track mealPlan.type) {
-                <mat-checkbox
-                  [checked]="isMealPlanSelected(mealPlan)"
-                  (change)="onMealPlanChange($event.checked, mealPlan)"
-                >
-                  {{ mealPlan.name }} ({{ mealPlan.type }})
-                </mat-checkbox>
+              <mat-checkbox
+                [checked]="isMealPlanSelected(mealPlan)"
+                (change)="onMealPlanChange($event.checked, mealPlan)"
+                [disabled]="
+                  mealPlan.type === contractForm.get('baseMealPlan')?.value
+                "
+              >
+                {{ mealPlan.name }} ({{ mealPlan.type }})
+              </mat-checkbox>
               }
             </div>
           </div>
