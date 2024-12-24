@@ -362,7 +362,7 @@ export interface Contract {
   marketId: number;
   baseMealPlan: MealPlanType;
   selectedRoomTypes: number[];
-  selectedMealPlans: string[];
+  selectedMealPlans: MealPlanType[];
   // Rate configuration flag
   isRatesConfigured: boolean;
 }
@@ -504,13 +504,13 @@ export type Currency = {
 export enum MealPlanType {
   RO = "RO",
   BB = "BB",
-  BB_PLUS = "BB+",
+  BB_PLUS = "BB_PLUS",
   HB = "HB",
-  HB_PLUS = "HB+",
+  HB_PLUS = "HB_PLUS",
   FB = "FB",
-  FB_PLUS = "FB+",
+  FB_PLUS = "FB_PLUS",
   AI = "AI",
-  AI_PLUS = "AI+",
+  AI_PLUS = "AI_PLUS",
   UAI = "UAI",
 }
 

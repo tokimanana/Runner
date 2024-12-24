@@ -1,204 +1,452 @@
-.reservation-container {
+.reservation-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
   padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+  height: calc(100vh - 64px);
+  overflow: hidden;
 
-  .search-form-card {
-    margin-bottom: 24px;
-    
-    .search-form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+  .reservation-content {
+    overflow-y: auto;
+    padding-right: 24px;
 
-      .form-row {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-
-        mat-form-field {
-          flex: 1;
-          min-width: 200px;
-        }
-      }
-
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 16px;
-      }
-    }
-  }
-
-  .results-section {
-    h2 {
+    .search-form-card {
       margin-bottom: 24px;
-      color: rgba(0, 0, 0, 0.87);
-    }
 
-    .rooms-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
-      
-      .room-card {
+      .search-form {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        gap: 16px;
 
-  padding-top: 16px;
-}
+        .form-row {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
 
-.final-price {
-  border-top: 1px solid #eee;
-  padding-top: 16px;
-  text-align: right;
-}
-
-.total {
-  font-size: 24px;
-  font-weight: bold;
-  color: #2196F3;
-}
-
-.savings {
-  color: #4CAF50;
-  font-weight: 500;
-}
-
-.rate-breakdown-card {
-  margin-top: 20px;
-
-  .rate-details {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .rate-section {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    padding-bottom: 16px;
-
-    h3 {
-      margin: 0 0 16px 0;
-      color: rgba(0, 0, 0, 0.87);
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    h4 {
-      margin: 16px 0 8px 0;
-      color: rgba(0, 0, 0, 0.67);
-      font-size: 14px;
-      font-weight: 500;
-    }
-  }
-
-  .rate-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    font-size: 14px;
-
-    &.total {
-      font-weight: 500;
-      font-size: 16px;
-      border-top: 1px dashed rgba(0, 0, 0, 0.12);
-      margin-top: 8px;
-      padding-top: 16px;
-    }
-  }
-
-  .offers-list {
-    display: column;
-    gap: 12px;
-
-    .offer-checkbox {
-      .offer-details {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-
-        .offer-type {
-          color: rgba(0, 0, 0, 0.54);
-          font-size: 12px;
+          mat-form-field {
+            flex: 1;
+            min-width: 200px;
+          }
         }
 
-        .offer-discount {
-          color: #2196F3;
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+      }
+    }
+
+    .available-rooms-container {
+      padding: 24px;
+
+      h2 {
+        font-size: 28px;
+        margin-bottom: 24px;
+        color: #1a237e;
+      }
+
+      .rooms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 24px;
+        padding: 16px 0;
+      }
+    }
+
+    .room-card {
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      mat-card-header {
+        padding: 16px;
+        background: #f5f5f5;
+
+        mat-card-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1a237e;
+        }
+
+        mat-card-subtitle {
+          color: #5c6bc0;
+        }
+      }
+
+      .rate-section {
+        padding: 24px;
+        background: linear-gradient(135deg, #1a237e, #3949ab);
+        color: white;
+        text-align: center;
+        margin: -8px -16px 16px;
+
+        .rate-amount {
+          display: flex;
+          justify-content: center;
+          align-items: baseline;
+          gap: 4px;
+
+          .currency {
+            font-size: 24px;
+            font-weight: 500;
+          }
+
+          .amount {
+            font-size: 36px;
+            font-weight: 700;
+          }
+
+          .per-night {
+            font-size: 16px;
+            opacity: 0.8;
+          }
+        }
+      }
+
+      .meal-plan-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 8px 16px;
+        border-radius: 20px;
+        margin-top: 12px;
+
+        mat-icon {
+          font-size: 20px;
+          height: 20px;
+          width: 20px;
+        }
+
+        span {
+          font-size: 14px;
           font-weight: 500;
         }
       }
-    }
-  }
 
-  .discount-group {
-    margin-bottom: 16px;
-  }
+      .room-details {
+        padding: 16px 0;
 
-  .final-price {
-    background: #f5f5f5;
-    padding: 16px;
-    border-radius: 4px;
-    margin-top: 16px;
+        .occupancy-info,
+        .room-size {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          color: #666;
 
-    .savings {
-      display: flex;
-      justify-content: space-between;
-      color: #4CAF50;
-      font-weight: 500;
-      margin-top: 8px;
-      font-size: 14px;
-    }
-  }
+          mat-icon {
+            color: #3949ab;
+          }
+        }
+      }
 
-  mat-card-actions {
-    padding: 16px;
-    gap: 8px;
-  }
+      .amenities {
+        margin-top: 16px;
 
-  .meal-plan-section {
-    .meal-plan-error {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      color: #f44336;
-      font-size: 14px;
-      
-      mat-icon {
-        font-size: 18px;
-        height: 18px;
-        width: 18px;
+        h4 {
+          font-size: 16px;
+          margin-bottom: 12px;
+          color: #1a237e;
+        }
+
+        .amenities-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+
+          .amenity-tag {
+            background: #e8eaf6;
+            color: #3949ab;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+          }
+        }
+      }
+
+      mat-card-actions {
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        border-top: 1px solid #eee;
       }
     }
 
-    .meal-plan-name {
-      color: #1976d2;
-      font-weight: 500;
+    // Customize Stay Step Styles
+    .room-summary {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+
+      .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+
+        h3 {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 500;
+        }
+
+        .base-rate {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a237e;
+        }
+      }
+
+      .meal-plan-base {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #666;
+      }
+    }
+
+    .supplements-section {
+      margin: 24px 0;
+
+      h4 {
+        margin-bottom: 16px;
+        color: #333;
+      }
+
+      .supplement-option {
+        .plan-info {
+          .plan-name {
+            font-weight: 500;
+            color: #333;
+          }
+
+          .rates {
+            display: flex;
+            gap: 16px;
+            margin-top: 4px;
+            color: #666;
+            font-size: 14px;
+          }
+        }
+      }
+    }
+
+    .step-actions {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      padding: 16px 0;
+      border-top: 1px solid #eee;
+      margin-top: 24px;
+
+      .total {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        .amount {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a237e;
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
     }
   }
 
-  .rate-warning {
+  // Cart Sidebar Styles
+  .cart-sidebar {
+    background: white;
+    border-left: 1px solid #eee;
+    padding: 24px;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #f44336;
-    padding: 8px;
-    background-color: #ffebee;
-    border-radius: 4px;
-    
-    mat-icon {
-      font-size: 20px;
-      height: 20px;
-      width: 20px;
+    flex-direction: column;
+    height: 100%;
+
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+
+      h3 {
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .item-count {
+        color: #666;
+      }
     }
-    
-    span {
-      font-size: 14px;
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+
+      .cart-item {
+        padding: 16px 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+
+        .room-name {
+          font-weight: 500;
+        }
+      }
+
+      .meal-plans {
+        font-size: 14px;
+        color: #666;
+
+        .supplement {
+          display: block;
+          margin-top: 4px;
+          color: #1a237e;
+        }
+      }
+    }
+  }
+
+  .cart-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-weight: 500;
+
+      .amount {
+        font-size: 20px;
+        color: #1a237e;
+      }
+    }
+
+    button {
+      width: 100%;
+      margin-bottom: 8px;
     }
   }
 }
+
+.booking-restrictions {
+  margin-bottom: 24px;
+
+  mat-card {
+    background-color: #fff3e0; // Light warning color
+
+    .warning-message {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+
+      mat-icon {
+        color: #f57c00; // Warning icon color
+      }
+
+      ul {
+        margin: 8px 0 0 0;
+        padding-left: 20px;
+
+        li {
+          margin-bottom: 4px;
+        }
+      }
+    }
+  }
 }
+
+.no-rate-message {
+  padding: 16px;
+  background: #fff3e0;
+  color: #f57c00;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px -16px 16px;
+  
+  mat-icon {
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
+  }
+  
+  span {
+    font-size: 14px;
+    font-weight: 500;
+  }
 }
+
+
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  button {
+    width: 100%;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1200px) {
+  .reservation-layout {
+    grid-template-columns: 1fr 250px;
+  }
+}
+
+@media (max-width: 992px) {
+  .reservation-layout {
+    grid-template-columns: 1fr;
+
+    .cart-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 300px;
+      height: 100vh;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+
+      &.show {
+        transform: translateX(0);
+      }
+    }
+  }
+
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rate-section {
+    padding: 16px;
+
+    .rate-amount {
+      .amount {
+        font-size: 32px;
+      }
+    }
+  }
 }
