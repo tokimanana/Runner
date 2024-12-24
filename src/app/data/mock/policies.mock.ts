@@ -264,7 +264,110 @@ export const policies: { [hotelId: number]: HotelPolicies } = {
         }
       ]
     }
-  }
+  },
+  3: {  // Le Tropical Paradise Resort & Spa
+    cancellation: {
+      ...policyTemplates.cancellation,
+      rules: [
+        {
+          daysBeforeArrival: 30,
+          charge: 25,
+          chargeType: CancellationChargeType.PERCENTAGE
+        },
+        {
+          daysBeforeArrival: 14,
+          charge: 50,
+          chargeType: CancellationChargeType.PERCENTAGE
+        },
+        {
+          daysBeforeArrival: 7,
+          charge: 100,
+          chargeType: CancellationChargeType.PERCENTAGE
+        }
+      ]
+    },
+    checkIn: {
+      standardTime: '14:00',
+      earliestTime: '12:00',
+      requirements: [
+        'Passport required',
+        'Credit card for deposit',
+        'Booking confirmation required'
+      ]
+    },
+    checkOut: {
+      standardTime: '11:00',
+      latestTime: '12:00',
+      requirements: [
+        'Room inspection required',
+        'All charges settled'
+      ]
+    },
+    child: {
+      maxChildAge: 11,
+      maxInfantAge: 2,
+      allowChildren: true,
+      childrenStayFree: true,
+      maxChildrenFree: 2,
+      requiresAdult: true,  // Added missing required property
+      minAdultAge: 18,     // Added missing required property
+      extraBedPolicy: {
+        available: true,
+        maxExtraBeds: 1,
+        charge: 40,
+        chargeType: 'per_night'
+      }
+    },
+    pet: {
+      allowPets: false,
+      maxPets: 0,
+      petTypes: [],        // Added missing required property
+      restrictions: [
+        'No pets allowed due to local regulations',
+        'Service animals allowed with proper documentation'
+      ]
+    },
+
+    dressCode: {
+      general: 'Smart casual attire in all public areas after 18:00',
+      restaurants: [
+        {
+          name: 'Creole Restaurant',
+          code: 'Smart Casual',
+          description: 'Smart casual attire required for dinner',
+          restrictions: [
+            'No beachwear',
+            'Closed shoes required for dinner',
+            'No sleeveless shirts for men'
+          ]
+        },
+        {
+          name: 'Seafood Grill',
+          code: 'Resort Casual',
+          description: 'Resort casual attire',
+          restrictions: [
+            'No wet swimwear',
+            'Footwear required'
+          ]
+        }
+      ],
+      publicAreas: [
+        {
+          area: 'Lobby & Reception',
+          code: 'Smart Casual',
+          description: 'Appropriate attire required',
+          restrictions: ['No beachwear', 'No bare feet']
+        },
+        {
+          area: 'Beach Bar',
+          code: 'Beach Casual',
+          description: 'Beach attire permitted',
+          restrictions: ['Cover-ups required']
+        }
+      ]
+    }
+}
+
 };
 
 export const getPolicyTemplate = (policyType: string): any => {

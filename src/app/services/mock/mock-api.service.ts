@@ -29,6 +29,7 @@ import {
   ContractRate,
   ContractPeriodRate,
   SpecialOffer,
+  ContractStatus,
 } from "../../models/types";
 import { contractRates } from "src/app/data/mock/rates.mock";
 
@@ -1255,20 +1256,17 @@ export class MockApiService {
     );
   
     const newId = Math.max(0, ...contracts.map((c: Contract) => c.id)) + 1;
-    const newContract = { 
+    const newContract: Contract = { 
       ...contractData, 
       id: newId,
-      baseMealPlan: contractData.baseMealPlan, // Ensure baseMealPlan is included
+      status: 'draft' as ContractStatus, // Explicitly type as ContractStatus
       isRatesConfigured: false 
     };
   
     contracts.push(newContract);
-    localStorage.setItem(
-      this.STORAGE_KEYS.CONTRACTS,
-      JSON.stringify(contracts)
-    );
+    localStorage.setItem(this.STORAGE_KEYS.CONTRACTS, JSON.stringify(contracts));
     return Promise.resolve(newContract);
-  }
+}
   
   static async updateContract(
     id: number,
@@ -1328,17 +1326,25 @@ export class MockApiService {
 
   static async getContractRates(contractId: number): Promise<ContractPeriodRate[]> {
     this.initializeStorage();
-    const ratesData = localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES);
     
-    if (!ratesData) {
-      return Promise.resolve([]);
+    // Get rates from mock data first
+    let rates = contractRates.filter(rate => rate.contractId === contractId);
+    
+    // If no rates in mock data, try localStorage
+    if (!rates.length) {
+      const storedRates = localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES);
+      if (storedRates) {
+        const parsedRates = JSON.parse(storedRates);
+        rates = parsedRates.filter((rate: ContractPeriodRate) => 
+          rate.contractId === contractId
+        );
+      }
     }
-
-    const rates = JSON.parse(ratesData);
     
-    // Ensure we return an array of rates for the specific contract
-    return Promise.resolve(rates[contractId] || []);
-}  
+    console.log(`Retrieved rates for contract ${contractId}:`, rates); // Debug log
+    return rates;
+  }
+  
 
   static async updateContractRates(
     contractId: number,

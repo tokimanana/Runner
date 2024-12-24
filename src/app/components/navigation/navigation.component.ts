@@ -36,6 +36,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     { id: "setup", label: "Configuration", icon: "settings" },
     { id: "rates", label: "Rate Management", icon: "attach_money" },
     { id: "inventory", label: "Inventory", icon: "inventory_2" },
+    { id: "bookings", label: "Bookings", icon: "book_online" },
   ];
 
   defaultMenuItems: { [key: string]: MenuItemId } = {
@@ -43,6 +44,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     setup: "currency",
     rates: "contract",
     inventory: "roomInventory",
+    bookings: "reservations",
   };
 
   menuItems: { [key: string]: MenuItem[] } = {
@@ -65,6 +67,9 @@ export class NavigationComponent implements OnInit, OnDestroy {
       { id: "rateOffers", icon: "price_change", label: "Rate Offers" },
     ],
     inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
+    bookings: [
+      { id: "reservations", icon: "event_available", label: "Reservations" },
+    ],
   };
 
   constructor(private hotelService: HotelService) {}

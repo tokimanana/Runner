@@ -89,44 +89,34 @@ export class RatesConfigComponent implements OnInit {
 
   ratesForms: { [key: string]: FormGroup<RateFormGroup> } = {};
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      contract: Contract;
-      periods: Period[];
-      roomTypes: RoomType[];
-      mealPlans: string[];
-    },
-    private dialogRef: MatDialogRef<RatesConfigComponent>,
-    private fb: FormBuilder,
-    private contractRateService: ContractRateService
-  ) {}
+  // In rates-config.component.ts
+constructor(
+  @Inject(MAT_DIALOG_DATA)
+  public data: {
+    contract: Contract;
+    periods: Period[];
+    roomTypes: RoomType[];
+    mealPlans: string[];
+    rates: ContractPeriodRate[];
+  },
+  private dialogRef: MatDialogRef<RatesConfigComponent>,
+  private fb: FormBuilder,
+  private contractRateService: ContractRateService
+) {}
+
 
   // In rates-config.component.ts
   async ngOnInit() {
-    try {
-      this.loading.set(true);
-      console.log('ngOnInit - data:', this.data);
-      
-      if (!this.data?.roomTypes || !this.data?.periods) {
-        throw new Error('Required data is missing: room types or periods');
-      }
-  
-      const rates = await this.contractRateService.getContractRates(
-        this.data.contract.id
-      );
-      
-      // Initialize forms only after data is loaded
-      await this.initializeForms(rates);
-      
-    } catch (error) {
-      this.error.set('Failed to load rates: ' + (error as Error).message);
-      console.error(error);
-    } finally {
-      this.loading.set(false);
-    }
+    console.log('Component data:', this.data);
+    
+    // Ensure rates is always an array
+    const rates = Array.isArray(this.data.rates) ? this.data.rates : [this.data.rates];
+    console.log('Initializing forms with rates:', rates);
+    
+    this.initializeForms(rates);
   }
-  private async initializeForms(existingRates: ContractPeriodRate | ContractPeriodRate[]) {
+  
+  private async initializeForms(existingRates: ContractPeriodRate[]) {
     console.log('Initializing forms with rates:', existingRates);
     
     this.data.roomTypes.forEach((roomType) => {
@@ -137,41 +127,27 @@ export class RatesConfigComponent implements OnInit {
           period.id
         );
   
+        console.log(`Initializing form for room ${roomType.id}, period ${period.id}:`, existingRate);
+  
         const formGroup = this.createPersonTypeRatesGroup(
           roomType,
-          existingRate?.personTypeRates
+          existingRate?.personTypeRates,
+          existingRate?.mealPlanRates
         );
   
         const formKey = this.getFormControlName(roomType.id, period.id);
         this.ratesForms[formKey] = formGroup;
       });
     });
-  }
 
-  private findExistingRate(
-    rates: ContractPeriodRate | ContractPeriodRate[] | undefined,
-    roomTypeId: number,
-    periodId: number
-  ): RoomTypeRate | undefined {
-    if (!rates) return undefined;
-  
-    // Handle single rate object
-    if (!Array.isArray(rates)) {
-      const singleRate = rates as ContractPeriodRate;
-      if (singleRate.periodId === periodId) {
-        return singleRate.roomRates.find(rr => rr.roomTypeId === roomTypeId);
-      }
-      return undefined;
-    }
-  
-    // Handle array of rates
-    const periodRate = rates.find(r => r.periodId === periodId);
-    return periodRate?.roomRates.find(rr => rr.roomTypeId === roomTypeId);
+    this.loading.set(false);
   }
-
+  
+  
   private createPersonTypeRatesGroup(
     roomType: RoomType,
-    existing?: PersonTypeRates
+    existing?: PersonTypeRates,
+    existingMealPlanRates?: MealPlanRates
   ): FormGroup<RateFormGroup> {
     return this.fb.nonNullable.group<RateFormGroup>({
       rateType: this.fb.nonNullable.control<"per_pax" | "per_villa">("per_pax"),
@@ -190,10 +166,38 @@ export class RatesConfigComponent implements OnInit {
           existing?.["infant"]?.["rates"]
         ),
       }),
-      mealPlanRates: this.createMealPlanRatesGroup(
-        this.convertToMealPlanRates(existing?.["mealPlanRates"])
-      ),
+      mealPlanRates: this.createMealPlanRatesGroup(existingMealPlanRates),
     });
+  }
+  
+  
+
+  private findExistingRate(
+    rates: ContractPeriodRate | ContractPeriodRate[],
+    roomTypeId: number,
+    periodId: number
+  ): RoomTypeRate | undefined {
+    if (!rates) return undefined;
+  
+    // Ensure rates is always treated as an array
+    const ratesArray = Array.isArray(rates) ? rates : [rates];
+    
+    console.log('Finding rate for:', { roomTypeId, periodId });
+    console.log('Available rates:', ratesArray);
+  
+    // Find the period rate
+    const periodRate = ratesArray.find(r => r.periodId === periodId);
+    
+    if (!periodRate) {
+      console.log(`No rates found for period ${periodId}`);
+      return undefined;
+    }
+  
+    // Find the room rate within the period
+    const roomRate = periodRate.roomRates.find(rr => rr.roomTypeId === roomTypeId);
+    console.log('Found room rate:', roomRate);
+    
+    return roomRate;
   }
 
   private createOccupancyRatesGroup(
@@ -203,7 +207,7 @@ export class RatesConfigComponent implements OnInit {
     const controls: { [key: string]: FormControl<number> } = {};
     for (let i = 1; i <= maxOccupancy; i++) {
       controls[i.toString()] = this.fb.nonNullable.control(
-        existingRates?.[i] ?? 0
+        existingRates?.[i] ?? 0 // Default value of 0 when no existing rates
       );
     }
     return this.fb.nonNullable.group(controls);
@@ -248,24 +252,26 @@ export class RatesConfigComponent implements OnInit {
 
   private createMealPlanRatesGroup(existingRates?: MealPlanRates): FormGroup {
     const mealPlanRatesGroup = this.fb.nonNullable.group({});
-
+  
+    console.log('Creating meal plan rates group with:', existingRates);
+  
     this.data.mealPlans.forEach((mealPlan) => {
       const existingMealPlanRate = existingRates?.[mealPlan];
-
+      console.log(`Meal plan ${mealPlan}:`, existingMealPlanRate);
+  
       mealPlanRatesGroup.addControl(
         mealPlan,
         this.fb.nonNullable.group({
-          adult: this.fb.nonNullable.control(existingMealPlanRate?.adult ?? 0),
-          child: this.fb.nonNullable.control(existingMealPlanRate?.child ?? 0),
-          infant: this.fb.nonNullable.control(
-            existingMealPlanRate?.infant ?? 0
-          ),
+          adult: [existingMealPlanRate?.adult ?? 0],
+          child: [existingMealPlanRate?.child ?? 0],
+          infant: [existingMealPlanRate?.infant ?? 0],
         })
       );
     });
-
+  
     return mealPlanRatesGroup;
   }
+  
 
   private convertToMealPlanRates(existingRates?: any): MealPlanRates {
     const converted: MealPlanRates = {};
@@ -384,7 +390,7 @@ export class RatesConfigComponent implements OnInit {
       });
 
       periodRates.push({
-        id: this.data.contract.id,
+        contractId: this.data.contract.id,
         periodId: period.id,
         roomRates,
       });

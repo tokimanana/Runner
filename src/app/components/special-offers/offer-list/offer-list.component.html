@@ -32,7 +32,7 @@
             <h4>Savings:</h4>
             <ul>
               <li *ngFor="let discount of offer.discountValues">
-                <strong>{{ discount.nights }} nights:</strong> 
+                <!-- <strong>{{ discount.nights }} nights:</strong>  -->
                 {{ discount.value }}{{ offer.discountType === 'percentage' ? '%' : ' €' }} off
                 <span *ngIf="discount.startDate" class="date-range">
                   ({{ discount.startDate | date }} - {{ discount.endDate | date }})

@@ -310,20 +310,22 @@ export class ContractFormComponent implements OnInit {
         (meal: MealPlan) => meal.type
       );
 
-      const formDataWithIds = {
+      const contractData = {
         ...formData,
-        selectedRooms: selectedRoomIds,
+        selectedRoomTypes: selectedRoomIds,  // Fix: Changed from selectedRooms to selectedRoomTypes
         selectedMealPlans: selectedMealPlanTypes,
+        status: "draft",  // Set initial status
+        isRatesConfigured: false  // Add this field
       };
 
       if (this.isEditMode()) {
         this.ensureContract(this.data.contract);
         await this.contractService.updateContract(
           this.data.contract.id,
-          formDataWithIds
+          contractData
         );
       } else {
-        await this.contractService.createContract(formDataWithIds);
+        await this.contractService.createContract(contractData);
       }
 
       this.dialogRef.close(true);
@@ -337,7 +339,8 @@ export class ContractFormComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-  }
+}
+
 
   onCancel() {
     this.dialogRef.close();
@@ -373,4 +376,6 @@ export class ContractFormComponent implements OnInit {
       },
     });
   }
+
+  
 }

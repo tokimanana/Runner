@@ -104,13 +104,15 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef>Status</th>
         <td mat-cell *matCellDef="let contract">
-          <mat-chip-set>
-            <mat-chip
-              [color]="contract.status === 'active' ? 'primary' : 'warn'"
-            >
-              {{ contract.status | titlecase }}
-            </mat-chip>
-          </mat-chip-set>
+          <span
+            [ngClass]="{
+              'status-draft': contract.status === 'draft',
+              'status-active': contract.status === 'active',
+              'status-expired': contract.status === 'expired'
+            }"
+          >
+            {{ contract.status || "Not found" }}
+          </span>
         </td>
       </ng-container>
 

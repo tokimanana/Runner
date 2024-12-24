@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Suppress health check connection errors -->
+  <script>
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+      const errorMessage = args.join(' ');
+      if (!errorMessage.includes('.well-known/health') && 
+          !errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+        originalConsoleError.apply(console, args);
+      }
+    };
+  </script>
   <meta charset="utf-8">
   <title>Hotel Management Console</title>
   <base href="/">

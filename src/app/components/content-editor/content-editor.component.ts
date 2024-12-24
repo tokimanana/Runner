@@ -18,6 +18,7 @@ import { DEFAULT_MENU_ITEM } from '../../config/menu.config';
 import { MatButtonModule } from '@angular/material/button';
 import { CurrencyComponent } from '../currency/currency.component';
 import { SpecialOffersComponent } from "../special-offers/special-offers.component";
+import { ReservationComponent } from "../reservation/reservation.component";
 
 @Component({
   selector: 'app-content-editor',
@@ -35,7 +36,8 @@ import { SpecialOffersComponent } from "../special-offers/special-offers.compone
     MarketConfigComponent,
     CurrencyComponent,
     ContractListComponent,
-    SpecialOffersComponent
+    SpecialOffersComponent,
+    ReservationComponent
 ],
   standalone: true
 })

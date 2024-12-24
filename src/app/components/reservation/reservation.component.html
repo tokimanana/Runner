@@ -1,0 +1,149 @@
+<div class="reservation-container">
+  <!-- Search Form Section -->
+  <mat-card class="search-form-card">
+    <mat-card-header>
+      <mat-card-title>Search Rooms</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="searchForm" (ngSubmit)="searchRooms()" class="search-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Select Hotel</mat-label>
+            <mat-select formControlName="hotelId" (selectionChange)="onHotelChange()">
+              <mat-option *ngFor="let hotel of hotels()" [value]="hotel.id">
+                {{hotel.name}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Market</mat-label>
+            <mat-select formControlName="marketId" (selectionChange)="onMarketChange()">
+              <mat-option *ngFor="let market of availableMarkets()" [value]="market.id">
+                {{market.name}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+            <mat-form-field appearance="outline">
+            <mat-label>Check-in Date</mat-label>
+            <input matInput 
+               [matDatepicker]="checkInPicker" 
+               formControlName="checkIn">
+            <mat-datepicker-toggle matSuffix [for]="checkInPicker"></mat-datepicker-toggle>
+            <mat-datepicker #checkInPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+            <mat-label>Check-out Date</mat-label>
+            <input matInput 
+               [matDatepicker]="checkOutPicker" 
+               formControlName="checkOut">
+            <mat-datepicker-toggle matSuffix [for]="checkOutPicker"></mat-datepicker-toggle>
+            <mat-datepicker #checkOutPicker></mat-datepicker>
+            </mat-form-field>
+
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Adults</mat-label>
+            <input matInput type="number" formControlName="adults" min="1">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Children</mat-label>
+            <input matInput type="number" formControlName="children" min="0">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Infants</mat-label>
+            <input matInput type="number" formControlName="infants" min="0">
+          </mat-form-field>
+        </div>
+
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="!searchForm.valid">
+            Search Rooms
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Results Section -->
+  <div class="results-section" *ngIf="filteredRooms().length > 0">
+    <h2>Available Rooms</h2>
+    <div class="rooms-grid">
+      <mat-card class="room-card" *ngFor="let room of filteredRooms()">
+        <mat-card-header>
+          <mat-card-title>{{room.name}}</mat-card-title>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="room-details">
+            <!-- Prominent Rate Display -->
+            <div class="rate-section">
+              <ng-container *ngIf="activeContract()?.isRatesConfigured; else noRates">
+              <div class="rate-amount">{{getRoomRate(room) | currency:getMarketCurrency()}}</div>
+              <div class="rate-label">per night</div>
+              </ng-container>
+              <ng-template #noRates>
+              <div class="rate-warning">
+                <mat-icon color="warn">warning</mat-icon>
+                <span>Rates not configured</span>
+              </div>
+              </ng-template>
+            </div>
+
+            <!-- Meal Plan Section -->
+            <div class="meal-plan-section">
+              <mat-icon>restaurant</mat-icon>
+              <ng-container *ngIf="!getBaseMealPlan(room).error; else mealPlanError">
+              <span class="meal-plan-name">{{getBaseMealPlan(room).value}}</span>
+              </ng-container>
+              <ng-template #mealPlanError>
+              <span class="meal-plan-error">
+                <mat-icon color="warn">warning</mat-icon>
+                {{getBaseMealPlan(room).error}}
+              </span>
+              </ng-template>
+            </div>
+
+
+            <mat-divider></mat-divider>
+
+            <!-- Other Details -->
+            <div class="occupancy-info">
+              <mat-icon>person</mat-icon>
+              <span>Max Occupancy: {{room.maxOccupancy.adults}} adults, 
+                {{room.maxOccupancy.children}} children</span>
+            </div>
+
+            <div class="amenities" *ngIf="room.amenities?.length">
+              <mat-chip-listbox>
+                <mat-chip *ngFor="let amenity of room.amenities">{{amenity}}</mat-chip>
+              </mat-chip-listbox>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions align="end">
+          <button mat-raised-button color="primary" (click)="selectRoom(room)">
+            Select Room
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- No Results Message -->
+  <mat-card class="no-results" *ngIf="searchForm.valid && filteredRooms().length === 0">
+    <mat-card-content>
+      <mat-icon>info</mat-icon>
+      <p>No rooms available for the selected criteria.</p>
+    </mat-card-content>
+  </mat-card>
+

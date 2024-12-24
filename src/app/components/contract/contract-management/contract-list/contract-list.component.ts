@@ -1,4 +1,4 @@
-import { contractRates } from './../../../../data/mock/rates.mock';
+import { contractRates } from "./../../../../data/mock/rates.mock";
 import {
   Component,
   OnInit,
@@ -49,7 +49,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Router } from "@angular/router";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { RatesConfigComponent } from "../rates-config/rates-config.component";
-import { ContractRateService } from 'src/app/services/contract-rates.service';
+import { ContractRateService } from "src/app/services/contract-rates.service";
 
 export interface ContractDialogData {
   mode: "create" | "edit";
@@ -80,7 +80,15 @@ export interface ContractDialogData {
   ],
 })
 export class ContractListComponent implements OnInit, OnDestroy {
-  displayedColumns = ["name", "hotel", "market", "season", "baseMealPlan", "status", "actions"];
+  displayedColumns = [
+    "name",
+    "hotel",
+    "market",
+    "season",
+    "baseMealPlan",
+    "status",
+    "actions",
+  ];
 
   // Service injections using inject()
   private contractService = inject(ContractService);
@@ -107,14 +115,16 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   async loadContractWithRates(contract: Contract) {
     try {
-      const rates = await this.contractRateService.getContractRates(contract.id);
-      this.contractRates.update(map => {
+      const rates = await this.contractRateService.getContractRates(
+        contract.id
+      );
+      this.contractRates.update((map) => {
         const newMap = new Map(map);
         newMap.set(contract.id, rates);
         return newMap;
       });
     } catch (error) {
-      this.handleError('Error loading contract rates', error);
+      this.handleError("Error loading contract rates", error);
     }
   }
 
@@ -209,7 +219,9 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
       if (result) {
         // Load rates for each contract
-        await Promise.all(result.map(contract => this.loadContractWithRates(contract)));
+        await Promise.all(
+          result.map((contract) => this.loadContractWithRates(contract))
+        );
 
         this.contracts.set(
           result.map((contract) => ({
@@ -243,14 +255,34 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   private async loadSeasons() {
     try {
-      const seasonMap = await firstValueFrom(this.seasonService.seasons$);
-      // Flatten all seasons from the map
-      const allSeasons = Array.from(seasonMap.values()).flat();
-      this.seasons.set(allSeasons);
+      // Make sure we have a selected hotel first
+      const selectedHotel = this.hotel;
+      if (!selectedHotel) {
+        console.warn('No hotel selected when loading seasons');
+        return;
+      }
+  
+      // Load seasons for the selected hotel
+      const hotelId = selectedHotel.id;
+      console.log('Loading seasons for hotel:', hotelId);
+  
+      const seasons = await this.seasonService.getSeasonsByHotel(hotelId);
+      console.log('Loaded seasons:', seasons);
+  
+      if (!seasons || seasons.length === 0) {
+        console.warn(`No seasons found for hotel ${hotelId}`);
+        this.seasons.set([]);
+        return;
+      }
+  
+      this.seasons.set(seasons);
     } catch (error) {
-      this.handleError("Error loading seasons", error);
+      console.error('Error loading seasons:', error);
+      this.handleError('Failed to load seasons', error);
     }
   }
+  
+  
 
   onPageChange(event: { pageIndex: number; pageSize: number }) {
     this.currentPage.set(event.pageIndex);
@@ -317,13 +349,32 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   async openRatesConfigDialog(contract: Contract) {
     try {
+      // Get the season periods
+      const periods =
+        this.seasons().find((s) => s.id === contract.seasonId)?.periods || [];
+
+      // Get room types
+      const roomTypes = this.roomTypes().filter((room) =>
+        contract.selectedRoomTypes.includes(room.id)
+      );
+
+      // Load existing rates for the contract
+      const existingRates = await this.contractRateService.getContractRates(
+        contract.id
+      );
+      console.log("Loaded existing rates:", existingRates); // Debug log
+
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.width = "90%";
-      dialogConfig.height = "90%";
+      dialogConfig.width = "90vw";
+      dialogConfig.maxWidth = "1200px";
+      dialogConfig.height = "90vh";
       dialogConfig.disableClose = true;
       dialogConfig.data = {
-        contractId: contract.id,
-        rates: this.contractRates().get(contract.id) || [],
+        contract, // Pass the full contract object
+        periods, // Pass the periods from the season
+        roomTypes, // Pass the filtered room types
+        mealPlans: contract.selectedMealPlans, // Pass the selected meal plans
+        rates: existingRates, // Pass the rates from the service
       };
 
       const dialogRef = this.dialog.open(RatesConfigComponent, dialogConfig);
@@ -331,6 +382,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
       const result = await firstValueFrom(dialogRef.afterClosed());
 
       if (result) {
+        // Refresh the contracts list if rates were updated
         await this.loadContracts();
       }
     } catch (error) {
@@ -390,13 +442,19 @@ export class ContractListComponent implements OnInit, OnDestroy {
       const periods = await firstValueFrom(this.seasonService.periods$).then(
         (periodMap) => periodMap.get(contract.seasonId) || []
       );
-  
-      const allRoomTypes = await firstValueFrom(this.hotelService.getRoomTypes(contract.hotelId));
-      const roomTypes = allRoomTypes.filter(room => contract.selectedRoomTypes.includes(room.id));
-  
+
+      const allRoomTypes = await firstValueFrom(
+        this.hotelService.getRoomTypes(contract.hotelId)
+      );
+      const roomTypes = allRoomTypes.filter((room) =>
+        contract.selectedRoomTypes.includes(room.id)
+      );
+
       // Load existing rates for the contract
-      const existingRates = await this.contractRateService.getContractRates(contract.id);
-  
+      const existingRates = await this.contractRateService.getContractRates(
+        contract.id
+      );
+
       const dialogConfig = new MatDialogConfig();
       dialogConfig.width = "90vw";
       dialogConfig.maxWidth = "1200px";
@@ -406,16 +464,24 @@ export class ContractListComponent implements OnInit, OnDestroy {
         periods,
         roomTypes,
         mealPlans: contract.selectedMealPlans,
-        rates: existingRates
+        rates: existingRates,
       };
-  
+
+      dialogConfig.ariaDescribedBy = null;
+
       const dialogRef = this.dialog.open(RatesConfigComponent, dialogConfig);
-  
+
+      dialogRef.afterClosed().subscribe((result) => {
+        if (result) {
+          this.loadContracts();
+        }
+      });
+
       const result = await firstValueFrom(dialogRef.afterClosed());
-  
+
       if (result) {
         // Update contract rates in local state
-        this.contractRates.update(map => {
+        this.contractRates.update((map) => {
           const newMap = new Map(map);
           newMap.set(contract.id, result);
           return newMap;
@@ -428,7 +494,6 @@ export class ContractListComponent implements OnInit, OnDestroy {
       this.error.set("Failed to configure rates. Please try again.");
     }
   }
-  
 
   private handleError(message: string, error: any) {
     const errorMessage =
@@ -469,9 +534,11 @@ export class ContractListComponent implements OnInit, OnDestroy {
       this.loading.set(true);
       await this.contractService.updateContractStatus(contract.id, contract);
       await this.loadContracts(this.currentPage()); // Refresh the contracts list
-      this.snackBar.open('Contract status updated successfully', 'Close', { duration: 3000 });
+      this.snackBar.open("Contract status updated successfully", "Close", {
+        duration: 3000,
+      });
     } catch (error) {
-      this.handleError('Error updating contract status', error);
+      this.handleError("Error updating contract status", error);
     } finally {
       this.loading.set(false);
     }

@@ -1,4 +1,3 @@
-<!-- src/app/components/special-offers/offer-form/offer-form.component.html -->
 <form [formGroup]="offerForm" (ngSubmit)="onSubmit()" class="offer-form">
   <h2>{{ data.title }}</h2>
 
@@ -96,27 +95,43 @@
             [formGroupName]="i"
             class="discount-value-row mat-elevation-z1"
           >
-            <mat-form-field appearance="outline">
-              <mat-label>Nights</mat-label>
+
+            <!-- Start Date Input -->
+            <mat-form-field>
+              <mat-label>Valid From</mat-label>
               <input
                 matInput
-                type="number"
-                formControlName="nights"
-                required
-                min="1"
+                [matDatepicker]="startPicker"
+                formControlName="startDate"
+                placeholder="Start date"
               />
-              <mat-icon matSuffix>nights_stay</mat-icon>
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="startPicker"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #startPicker></mat-datepicker>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Value</mat-label>
+            <!-- End Date Input -->
+            <mat-form-field>
+              <mat-label>Valid To</mat-label>
               <input
                 matInput
-                type="number"
-                formControlName="value"
-                required
-                min="0"
+                [matDatepicker]="endPicker"
+                formControlName="endDate"
+                placeholder="End date"
               />
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="endPicker"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #endPicker></mat-datepicker>
+            </mat-form-field>
+
+            <!-- Value Input -->
+            <mat-form-field>
+              <mat-label>Discount Value</mat-label>
+              <input matInput type="number" formControlName="value" required />
               <span matSuffix>{{
                 offerForm.get("discountType")?.value === "percentage"
                   ? "%"
@@ -124,21 +139,22 @@
               }}</span>
             </mat-form-field>
 
+            <!-- Remove Button -->
             <button
-              type="button"
-              mat-mini-fab
+              mat-icon-button
               color="warn"
+              type="button"
               (click)="removeDiscountValue(i)"
-              matTooltip="Remove this discount value"
+              matTooltip="Remove discount value"
             >
-              <mat-icon>remove</mat-icon>
+              <mat-icon>delete</mat-icon>
             </button>
           </div>
 
+          <!-- Add Button -->
           <button
-            type="button"
             mat-stroked-button
-            color="primary"
+            type="button"
             (click)="addDiscountValue()"
             class="add-value-button"
           >

@@ -52,6 +52,33 @@
     }
   }
 
+  .discount-values-section {
+    margin: 20px 0;
+
+    .discount-value-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 4px;
+
+      mat-form-field {
+        flex: 1;
+        margin-right: 8px;
+      }
+
+      button {
+        flex-shrink: 0;
+      }
+    }
+
+    .add-value-button {
+      margin-top: 8px;
+      width: 100%;
+    }
+  }
+
   .discount-values-section,
   .conditions-section {
     margin: 30px 0;
@@ -106,7 +133,6 @@
 
   // Material form field customizations
   ::ng-deep {
-
     .mat-mdc-form-field-subscript-wrapper {
       position: static;
     }
@@ -170,7 +196,7 @@
     .mat-mdc-select-value {
       text-align: center;
     }
-    
+
     .mat-mdc-select-value-text {
       text-align: center;
     }
@@ -180,7 +206,7 @@
   .mat-mdc-select-panel {
     .mat-mdc-option {
       text-align: center;
-      
+
       .mat-mdc-option-text {
         text-align: center;
       }

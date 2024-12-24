@@ -55,6 +55,16 @@
           *ngSwitchCase="'specialOffers'"
           [hotel]="selectedHotel"
         ></app-special-offers>
+
+        <!-- Add new Reservation component -->
+        <app-reservation
+          *ngSwitchCase="'reservations'"
+        ></app-reservation>
+
+        <!-- Default case -->
+        <div *ngSwitchDefault class="no-content">
+          <p>Select a menu item to view content</p>
+        </div>
       </ng-container>
     </div>
   </div>

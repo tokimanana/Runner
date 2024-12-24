@@ -98,7 +98,6 @@ export class OfferFormComponent implements OnInit {
 
   addDiscountValue(): void {
     const discountGroup = this.fb.group({
-      nights: ['', Validators.required],
       value: ['', Validators.required],
       startDate: [''],
       endDate: ['']
@@ -142,7 +141,6 @@ export class OfferFormComponent implements OnInit {
     // Populate discount values
     offer.discountValues.forEach(value => {
       this.discountValues.push(this.fb.group({
-        nights: [value.nights],
         value: [value.value],
         startDate: [value.startDate || ''],
         endDate: [value.endDate || '']

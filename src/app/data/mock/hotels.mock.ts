@@ -159,7 +159,103 @@ export const hotels: Hotel[] = [
       email: 'reservations@maldivesparadise.com',
       website: 'www.maldivesparadise.com'
     }
-  }
+  },
+  {
+    id: 3,
+    name: 'Le Tropical Paradise Resort & Spa',
+    description: "'Niché entre les eaux cristallines du lagon de Belle Mare et des jardins tropicaux luxuriants, Le Tropical Paradise Resort & Spa incarne l'élégance créole et le raffinement mauricien. Ce complexe de luxe offre une expérience unique combinant architecture coloniale, service personnalisé et une gastronomie locale exceptionnelle.'",
+    address: 'Coastal Road, Belle Mare',
+    city: 'Flacq',
+    country: 'Mauritius',
+    rating: 5,
+    yearBuilt: "2015",
+    lastRenovation: "2022",
+    totalRooms: 150,
+    airportDistance: "45 minutes from SSR International Airport",
+    cityCenterDistance: "15 minutes from Flacq Centre",
+    beachDistance: "Direct beach access",
+    languages: ["English", "French", "Creole", "Hindi"],
+    
+    checkInTime: '14:00',
+    checkOutTime: '11:00',
+    
+    amenities: {
+      [AmenityCategory.BEACH]: [
+        'Private Beach',
+        'Beach Butler Service',
+        'Water Sports Center',
+        'Beach Volleyball'
+      ],
+      [AmenityCategory.POOL]: [
+        'Infinity Pool',
+        'Adult-only Pool',
+        'Children\'s Pool',
+        'Swim-up Bar'
+      ],
+      [AmenityCategory.SPA]: [
+        'Tropical Spa',
+        'Yoga Pavilion',
+        'Meditation Garden',
+        'Fitness Center'
+      ],
+      [AmenityCategory.DINING]: [
+        'Creole Restaurant',
+        'Seafood Grill',
+        'Asian Fusion',
+        'Beach Bar',
+        'Rum Bar'
+      ],
+      [AmenityCategory.ACTIVITIES]: [
+        'Golf Course',
+        'Tennis Courts',
+        'Catamaran Cruises',
+        'Glass Bottom Boat',
+        'Cooking Classes',
+        'Kids Club'
+      ]
+    },
+    ageCategories: [
+      {
+        id: 1,
+        type: 'adult',
+        name: 'Adult',
+        label: `Adult (${12}+ years)`,
+        minAge: 12,
+        maxAge: 100,
+        description: 'Adult age category (12+ years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 2,
+        type: 'child',
+        name: 'Child',
+        label: `Child (${2}-${11} years)`,
+        minAge: 2,
+        maxAge: 11,
+        description: 'Child age category (2-11 years)',
+        defaultRate: 0,
+        isActive: true
+      },
+      {
+        id: 3,
+        type: 'infant',
+        name: 'Infant',
+        label: `Infant (${0}-${1} years)`,
+        minAge: 0,
+        maxAge: 1,
+        description: 'Infant age category (0-1 years)',
+        defaultRate: 0,
+        isActive: true
+      }
+    ],
+    contactInfo: {
+      phone: '+230 402 5000',
+      email: 'reservations@tropicalparadise.mu',
+      website: 'www.tropicalparadise-mauritius.com'
+    }
+}
+
 ];
 
 const defaultAgeCategories: AgeCategory[] = [

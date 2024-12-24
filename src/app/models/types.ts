@@ -367,10 +367,10 @@ export interface Contract {
   isRatesConfigured: boolean;
 }
 
-export type ContractStatus = "draft" | "active" | "inactive" | "expired";
+export type ContractStatus = "draft" | "active" | "expired";
 
 export interface ContractPeriodRate {
-  id: number;
+  contractId: number;
   periodId: number;
   roomRates: RoomTypeRate[];
 }
@@ -422,10 +422,9 @@ export interface RoomRate {
 
 // Special offers
 export interface DiscountValue {
-  nights: number; // Number of nights
-  value: number; // Discount value for these nights
-  startDate?: string; // Optional start date for this specific discount
-  endDate?: string; // Optional end date for this specific discount
+  value: number; // Discount value
+  startDate: string; // Optional start date for this specific discount
+  endDate: string; // Optional end date for this specific discount
 }
 
 export interface SpecialOffer {
@@ -604,6 +603,7 @@ export type MenuItemId =
   | "rateOffers"
   | "rateScenarios"
   | "allotments"
+  | "reservations"
   | "availability";
 
 export interface MenuItem {

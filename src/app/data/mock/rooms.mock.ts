@@ -234,5 +234,134 @@ export const rooms: RoomType[] = [
       'Private chef service'
     ],
     status: 'active'
+  },
+
+  // Le Tropical Paradise Resort & Spa
+  {
+    id: 11,
+    hotelId: 3,
+    name: 'Deluxe Garden View',
+    category: RoomCategory.DELUXE,
+    description: 'Chambre élégante avec vue sur les jardins tropicaux',
+    maxOccupancy: {
+      adults: 2,
+      children: 2,
+      infants: 1
+    },
+    baseOccupancy: 2,
+    size: 45, 
+    amenities: [
+      'Balcon privé',
+      'Climatisation',
+      'Coffre-fort',
+      'Mini-bar',
+      'TV LCD',
+      'WiFi gratuit',
+      'Salle de bain luxueuse',
+      'Articles de toilette haut de gamme'
+    ],
+    status: 'active'
+  },
+  {
+    id: 12,
+    hotelId: 3,
+    name: 'Premium Ocean View',
+    category: RoomCategory.PREMIUM,
+    description: 'Chambre luxueuse offrant une vue imprenable sur l\'océan Indien',
+    maxOccupancy: {
+      adults: 2,
+      children: 2,
+      infants: 1
+    },
+    baseOccupancy: 2,
+    size: 55,
+    amenities: [
+      'Terrasse aménagée',
+      'Climatisation',
+      'Machine Nespresso',
+      'Mini-bar premium',
+      'Smart TV',
+      'Service de majordome',
+      'Salle de bain spacieuse',
+      'Douche à effet pluie'
+    ],
+    status: 'active'
+  },
+  {
+    id: 13,
+    hotelId: 3,
+    name: 'Family Suite',
+    category: RoomCategory.FAMILY_ROOM,
+    description: 'Suite spacieuse idéale pour les familles avec espace de vie séparé',
+    maxOccupancy: {
+      adults: 2,
+      children: 3,
+      infants: 1
+    },
+    baseOccupancy: 4,
+    size: 75,
+    amenities: [
+      'Deux chambres séparées',
+      'Salon',
+      'Kitchenette',
+      'Salle de jeux enfants',
+      'Xbox Series X',
+      'Deux salles de bain',
+      'Machine à laver',
+      'Service de garde d\'enfants disponible'
+    ],
+    status: 'active'
+  },
+  {
+    id: 14,
+    hotelId: 3,
+    name: 'Beach Villa',
+    category: RoomCategory.VILLA,
+    description: 'Villa de luxe en front de mer avec piscine privée',
+    maxOccupancy: {
+      adults: 4,
+      children: 2,
+      infants: 1
+    },
+    baseOccupancy: 2,
+    size: 120,
+    amenities: [
+      'Piscine privée',
+      'Accès direct plage',
+      'Terrasse spacieuse',
+      'Cuisine équipée',
+      'Cave à vin',
+      'Service de majordome 24/7',
+      'Salle à manger extérieure',
+      'Système audio Bose',
+      'Espace barbecue'
+    ],
+    status: 'active'
+  },
+  {
+    id: 15,
+    hotelId: 3,
+    name: 'Royal Suite Océan',
+    category: RoomCategory.PENTHOUSE,
+    description: 'Suite royale au dernier étage avec vue panoramique sur l\'océan',
+    maxOccupancy: {
+      adults: 4,
+      children: 2,
+      infants: 2
+    },
+    baseOccupancy: 2,
+    size: 150,
+    amenities: [
+      'Terrasse panoramique privée',
+      'Piscine à débordement privée',
+      'Salle de cinéma privée',
+      'Salle de sport privée',
+      'Cave à vin climatisée',
+      'Service de chef privé disponible',
+      'Hélipad accès',
+      'Spa privé',
+      'Ascenseur privé'
+    ],
+    status: 'active'
   }
 ];
