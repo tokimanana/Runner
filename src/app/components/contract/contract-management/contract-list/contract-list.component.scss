@@ -131,6 +131,29 @@
       }
     }
   }
+
+  .contract-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: capitalize;
+    
+    &.configured {
+      background-color: #e6f4ea;
+      color: #1e4620;
+    }
+    
+    &.no_rate {
+      background-color: #fce8e6;
+      color: #c53929;
+    }
+    
+    &.expired {
+      background-color: #f3e5f5;
+      color: #7b1fa2;
+    }
+  }
+  
 }
 
 // Responsive adjustments

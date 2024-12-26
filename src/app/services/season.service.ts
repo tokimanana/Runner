@@ -42,17 +42,22 @@ export class SeasonService {
 
   async getSeasonsByHotel(hotelId: number): Promise<Season[]> {
     try {
+      console.log(`Fetching seasons for hotel ${hotelId}`);
       const seasons = await MockApiService.getSeasonsByHotel(hotelId);
+      console.log(`Seasons received for hotel ${hotelId}:`, seasons);
+  
       const currentMap = this.seasonsSubject.value;
       currentMap.set(hotelId, seasons);
       this.seasonsSubject.next(currentMap);
       this.updatePeriodsFromSeasons(currentMap);
+      
       return seasons;
     } catch (error) {
       console.error(`Error loading seasons for hotel ${hotelId}:`, error);
       throw error;
     }
   }
+  
 
   async createSeason(
     hotelId: number,

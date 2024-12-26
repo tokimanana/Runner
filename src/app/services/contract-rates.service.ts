@@ -6,8 +6,9 @@ import {
   PersonTypeRates,
 } from "../models/types";
 import { MockApiService } from "./mock/mock-api.service";
-import { BehaviorSubject, Observable } from "rxjs";
+import { BehaviorSubject, firstValueFrom, Observable } from "rxjs";
 import { BaseDataService } from "./base-data.service";
+import { SeasonService } from "./season.service";
 
 @Injectable({
   providedIn: "root",
@@ -15,7 +16,9 @@ import { BaseDataService } from "./base-data.service";
 export class ContractRateService extends BaseDataService<Contract> {
   protected override dataSubject = new BehaviorSubject<Contract[]>([]);
 
-  constructor() {
+  constructor(
+    private seasonService: SeasonService
+  ) {
     super();
   }
 
@@ -91,20 +94,37 @@ export class ContractRateService extends BaseDataService<Contract> {
     }
   }
 
-  protected validateRates(
-    rates: ContractPeriodRate[],
-    contractId: number
-  ): void {
-    if (!Array.isArray(rates) || rates.length === 0) {
-      throw new Error(
-        `Invalid rate configuration: Rates array is empty or not an array for contract ID ${contractId}`
-      );
+  async validateRates(rates: ContractPeriodRate[], contractId: number): Promise<boolean> {
+    // Get the specific contract, not all contracts
+    const contractResponse = await MockApiService.getContract(contractId);
+    
+    if (!contractResponse || !contractResponse.hotelId || !contractResponse.seasonId) {
+        throw new Error(`Invalid contract data for contract ${contractId}`);
     }
 
-    for (const period of rates) {
-      this.validatePeriodRates(period, contractId);
+    const seasonMap = await firstValueFrom(this.seasonService.seasons$);
+    const hotelSeasons = seasonMap.get(contractResponse.hotelId) || [];
+    const season = hotelSeasons.find(s => s.id === contractResponse.seasonId);
+    
+    if (!season) {
+        throw new Error(`Invalid season for contract ${contractId}`);
     }
-  }
+    
+    if (!season.periods) {
+        throw new Error(`No periods defined for season ${season.id}`);
+    }
+    
+    // Validate each rate's periodId exists in the season
+    for (const rate of rates) {
+        const periodExists = season.periods.some(p => p.id === rate.periodId);
+        if (!periodExists) {
+            throw new Error(`Invalid period ${rate.periodId} for season ${season.id}`);
+        }
+    }
+    
+    return true;
+}
+
 
   private validatePeriodRates(
     period: ContractPeriodRate,

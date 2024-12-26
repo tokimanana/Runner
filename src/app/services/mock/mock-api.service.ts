@@ -29,7 +29,6 @@ import {
   ContractRate,
   ContractPeriodRate,
   SpecialOffer,
-  ContractStatus,
 } from "../../models/types";
 import { contractRates } from "src/app/data/mock/rates.mock";
 
@@ -1259,7 +1258,6 @@ export class MockApiService {
     const newContract: Contract = { 
       ...contractData, 
       id: newId,
-      status: 'draft' as ContractStatus, // Explicitly type as ContractStatus
       isRatesConfigured: false 
     };
   
@@ -1449,4 +1447,16 @@ export class MockApiService {
     );
     return Promise.resolve();
   }
+
+  static async getContract(contractId: number): Promise<Contract> {
+    const contractsData = localStorage.getItem(this.STORAGE_KEYS.CONTRACTS);
+    const contracts = JSON.parse(contractsData || '[]');
+    const contract = contracts.find((c: Contract) => c.id === contractId);
+    
+    if (!contract) {
+        throw new Error(`Contract not found with id ${contractId}`);
+    }
+    
+    return contract;
+}
 }

@@ -158,7 +158,7 @@
               <!-- Room Rate Section -->
               <div class="rate-section" *ngIf="getRoomRate(room) !== null">
                 <div class="rate-amount">
-                  <span class="currency"> {{ getMarketCurrency() }}</span>
+                  <span class="currency"> {{ getCurrencySymbol() }}</span>
                   <span class="amount">{{ getRoomRate(room) }}</span>
                   <span class="per-night">per night</span>
                 </div>
@@ -244,12 +244,77 @@
         <div class="room-summary" *ngIf="currentStep()?.room as room">
           <div class="summary-header">
             <h3>{{ room.name }}</h3>
-            <span class="base-rate">€{{ currentStep().baseRate }}</span>
+            <span class="base-rate"
+              >{{ getCurrencySymbol() }}{{ currentStep().baseRate }}</span
+            >
           </div>
 
           <div class="meal-plan-base">
             <mat-icon>restaurant</mat-icon>
             <span>{{ getMealPlanDisplayName(getBaseMealPlan(room)) }}</span>
+            <span class="stay-dates">
+              {{ searchForm.value.checkIn | date:'mediumDate' }} - 
+              {{ searchForm.value.checkOut | date:'mediumDate' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Add Related Offers Section -->
+        <div class="offers-section" *ngIf="availableOffers()?.length">
+          <h3>Available Special Offers</h3>
+
+          <div class="offers-legend">
+            <div class="legend-item">
+              <span class="badge combinable">Combinable</span>
+              <span class="description">Can be combined with other offers</span>
+            </div>
+            <div class="legend-item">
+              <span class="badge cumulative">Cumulative</span>
+              <span class="description"
+                >Discount increases with longer stays</span
+              >
+            </div>
+          </div>
+
+          <div class="offers-grid">
+            <mat-card
+              *ngFor="let offer of availableOffers()"
+              [ngClass]="{ disabled: isOfferDisabled(offer) }"
+              class="offer-card"
+              [class.combinable]="offer.type === 'combinable'"
+              [class.cumulative]="offer.type === 'cumulative'"
+            >
+              <mat-card-header>
+                <div class="offer-type-badge" [class]="offer.type">
+                  {{ offer.type | titlecase }}
+                </div>
+                <mat-card-title>{{ offer.name }}</mat-card-title>
+              </mat-card-header>
+
+              <mat-card-content>
+                <p>{{offer.description}}</p>
+                <!-- Show applicable discount -->
+                <div class="discount-info">
+                  <div class="applicable-discount">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>
+                      {{ getApplicableDiscount(offer) }}
+                      {{ offer.discountType === 'percentage' ? '%' : getCurrencySymbol() }} off
+                    </span>
+                  </div>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <mat-checkbox
+                  [disabled]="isOfferDisabled(offer)"
+                  [checked]="isOfferSelected(offer)"
+                  (change)="toggleOffer(offer, $event.checked)"
+                >
+                  Select Offer
+                </mat-checkbox>
+              </mat-card-actions>
+            </mat-card>
           </div>
         </div>
 
@@ -273,9 +338,18 @@
                 <div class="plan-info">
                   <span class="plan-name">{{ supplement.name }}</span>
                   <div class="rates">
-                    <span>Adult: €{{ supplement.rates.adult }}</span>
-                    <span>Child: €{{ supplement.rates.child }}</span>
-                    <span>Infant: €{{ supplement.rates.infant }}</span>
+                    <span
+                      >Adult: {{ getCurrencySymbol()
+                      }}{{ supplement.rates.adult }}</span
+                    >
+                    <span
+                      >Child: {{ getCurrencySymbol()
+                      }}{{ supplement.rates.child }}</span
+                    >
+                    <span
+                      >Infant: {{ getCurrencySymbol()
+                      }}{{ supplement.rates.infant }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -287,7 +361,9 @@
         <div class="step-actions">
           <div class="total">
             <span>Total:</span>
-            <span class="amount">€{{ currentStep().total }}</span>
+            <span class="amount"
+              >{{ getCurrencySymbol() }}{{ currentStep().total }}</span
+            >
           </div>
 
           <div class="action-buttons">
@@ -314,7 +390,9 @@
       <div class="cart-item" *ngFor="let item of cartItems()">
         <div class="item-header">
           <span class="room-name">{{ item.room?.name }}</span>
-          <span class="item-total">€{{ item.total }}</span>
+          <span class="item-total"
+            >{{ getCurrencySymbol() }}{{ item.total }}</span
+          >
         </div>
         <div class="item-details">
           <div class="meal-plans">
@@ -335,7 +413,9 @@
     <div class="cart-footer">
       <div class="cart-total">
         <span>Total:</span>
-        <span class="amount">€{{ calculateCartTotal() }}</span>
+        <span class="amount"
+          >{{ getCurrencySymbol() }}{{ calculateCartTotal() }}</span
+        >
       </div>
 
       <div class="cart-actions">

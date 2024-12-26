@@ -1,0 +1,117 @@
+// src/app/components/cart/cart.component.scss
+
+.cart-layout {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .review-section {
+    padding: 24px 0;
+
+    h2 {
+      margin-bottom: 24px;
+      color: #1a237e;
+    }
+  }
+
+  .booking-items {
+    display: grid;
+    gap: 24px;
+    margin-bottom: 32px;
+
+    .booking-item {
+      mat-card-header {
+        margin-bottom: 16px;
+
+        mat-card-title {
+          font-size: 20px;
+          color: #1a237e;
+        }
+
+        mat-card-subtitle {
+          color: #666;
+        }
+      }
+
+      .meal-plans {
+        margin-bottom: 16px;
+
+        ul {
+          list-style: none;
+          padding-left: 16px;
+          margin: 8px 0;
+        }
+      }
+
+      .price-summary {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #eee;
+
+        .total {
+          font-size: 20px;
+          font-weight: 500;
+          color: #1a237e;
+        }
+      }
+    }
+  }
+
+  .booking-summary {
+    background: #f5f5f5;
+    padding: 24px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0 0 16px 0;
+      color: #1a237e;
+    }
+
+    .summary-details {
+      display: grid;
+      gap: 8px;
+
+      p {
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+      }
+    }
+  }
+
+  .step-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .guest-form,
+  .payment-form {
+    max-width: 600px;
+    margin: 24px 0;
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .cart-layout {
+    padding: 16px;
+
+    .form-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+}

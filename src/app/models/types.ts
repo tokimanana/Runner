@@ -56,6 +56,12 @@ interface ImageAsset {
   description?: string;
 }
 
+export enum PaymentMethod {
+  CREDIT_CARD = 'CREDIT_CARD',
+  DEBIT_CARD = 'DEBIT_CARD',
+  PAYPAL = 'PAYPAL'
+}
+
 export enum PolicyType {
   CANCELLATION = "cancellation",
   CHECK_IN = "checkIn",
@@ -346,6 +352,8 @@ export interface Season {
   endDate?: string; // Add optional endDate
 }
 
+export type ContractStatus = 'configured' | 'no_rate' | 'expired';
+
 // Contract management
 export interface Contract {
   id: number;
@@ -353,7 +361,7 @@ export interface Contract {
   name: string;
   hotelId: number;
   description?: string;
-  status: ContractStatus;
+  status?: ContractStatus,
   validityPeriod?: {
     startDate: string;
     endDate: string;
@@ -366,8 +374,6 @@ export interface Contract {
   // Rate configuration flag
   isRatesConfigured: boolean;
 }
-
-export type ContractStatus = "draft" | "active" | "expired";
 
 export interface ContractPeriodRate {
   contractId: number;
@@ -395,6 +401,7 @@ export interface RoomTypeRate {
 export interface MealPlanRates {
   [mealPlanId: string]: {
     adult: number;
+    teen?: number;
     child: number;
     infant: number;
   };

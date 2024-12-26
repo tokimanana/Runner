@@ -18,13 +18,15 @@ import {
   MatDialogConfig,
   MatDialogModule,
 } from "@angular/material/dialog";
-import { BehaviorSubject, firstValueFrom, Subject } from "rxjs";
-import { takeUntil } from "rxjs/operators";
+import { BehaviorSubject, firstValueFrom, from, Subject } from "rxjs";
+import { finalize, takeUntil } from "rxjs/operators";
 import {
   Contract,
   ContractPeriodRate,
+  ContractStatus,
   Hotel,
   Market,
+  Period,
   RoomType,
   Season,
 } from "../../../../models/types";
@@ -193,10 +195,18 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     try {
-      await this.loadInitialData();
-      this.setupSubscriptions();
+      this.loading.set(true);
+
+      // First load seasons
+      await this.loadSeasons();
+
+      // Then load contracts
+      await this.loadContracts();
+
+      this.loading.set(false);
     } catch (error) {
-      this.handleError("Failed to initialize contract list", error);
+      this.handleError("Error initializing component", error);
+      this.loading.set(false);
     }
   }
 
@@ -253,36 +263,34 @@ export class ContractListComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async loadSeasons() {
+  private loadSeasons() {
     try {
-      // Make sure we have a selected hotel first
-      const selectedHotel = this.hotel;
-      if (!selectedHotel) {
-        console.warn('No hotel selected when loading seasons');
-        return;
-      }
-  
-      // Load seasons for the selected hotel
-      const hotelId = selectedHotel.id;
-      console.log('Loading seasons for hotel:', hotelId);
-  
-      const seasons = await this.seasonService.getSeasonsByHotel(hotelId);
-      console.log('Loaded seasons:', seasons);
-  
-      if (!seasons || seasons.length === 0) {
-        console.warn(`No seasons found for hotel ${hotelId}`);
-        this.seasons.set([]);
-        return;
-      }
-  
-      this.seasons.set(seasons);
+        const hotelId = this.hotel.id;
+        console.log('Loading seasons for hotel:', hotelId);
+        this.loading.set(true);
+        
+        // Convert Promise to Observable and add proper types
+        from(this.seasonService.getSeasonsByHotel(hotelId))
+            .pipe(
+                finalize(() => this.loading.set(false))
+            )
+            .subscribe({
+                next: (seasons: Season[]) => {
+                    console.log('Loaded seasons:', seasons);
+                    this.seasons.set(seasons);
+                },
+                error: (error: Error) => {
+                    console.error('Error loading seasons:', error);
+                    this.snackBar.open('Error loading seasons', 'Close', { duration: 3000 });
+                }
+            });
     } catch (error) {
-      console.error('Error loading seasons:', error);
-      this.handleError('Failed to load seasons', error);
+        console.error('Error in loadSeasons:', error);
+        this.loading.set(false);
     }
-  }
-  
-  
+}
+
+
 
   onPageChange(event: { pageIndex: number; pageSize: number }) {
     this.currentPage.set(event.pageIndex);
@@ -436,6 +444,48 @@ export class ContractListComponent implements OnInit, OnDestroy {
     }
   }
 
+  getContractStatus(contract: Contract): ContractStatus {
+    if (!contract || !contract.seasonId) {
+        return 'no_rate';
+    }
+    
+    const now = new Date();
+
+    // Check rates configuration first
+    if (!contract.isRatesConfigured) {
+        return 'no_rate';
+    }
+
+    try {
+        // Get the associated season
+        const season = this.seasons().find(s => s.id === contract.seasonId);
+        
+        if (!season) {
+            console.warn(`Season not found for ID: ${contract.seasonId}`);
+            return 'no_rate';
+        }
+
+        if (!season.periods || season.periods.length === 0) {
+            return 'no_rate';
+        }
+
+        // Find the latest period end date
+        const latestEndDate = new Date(Math.max(
+            ...season.periods.map(p => new Date(p.endDate).getTime())
+        ));
+        
+        if (latestEndDate < now) {
+            return 'expired';
+        }
+        
+        return 'configured';
+    } catch (error) {
+        console.error('Error determining contract status:', error);
+        return 'no_rate';
+    }
+}
+
+
   async configureRates(contract: Contract) {
     try {
       // First ensure we have all required data
@@ -520,9 +570,12 @@ export class ContractListComponent implements OnInit, OnDestroy {
   }
 
   getSeasonName(seasonId: number): string {
-    return (
-      this.seasons().find((s) => s.id === seasonId)?.name || "Unknown Season"
-    );
+    const season = this.seasons().find((s) => s.id === seasonId);
+    if (!season) {
+      console.warn(`Season not found for ID: ${seasonId}`);
+      return "Unknown Season";
+    }
+    return season.name;
   }
 
   clearError() {

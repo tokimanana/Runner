@@ -1,4 +1,4 @@
-import { CurrencyService } from './../../services/currency.service';
+import { CurrencyService } from "./../../services/currency.service";
 // src/app/components/reservation/reservation.component.ts
 import { Component, Input, ViewChild, computed, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -43,6 +43,7 @@ import {
 } from "@angular/material/list";
 import { Router } from "@angular/router";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
+import { OffersService } from "src/app/services/offers.service";
 
 // Add interface for type safety
 interface RoomRateWithPeriod extends RoomTypeRate {
@@ -98,6 +99,16 @@ interface ReservationStep {
   total?: number;
 }
 
+interface MarketConfig {
+  currency: string;
+  // other market-specific configurations
+}
+
+interface PricingError extends Error {
+  code: string;
+  context?: any;
+}
+
 @Component({
   selector: "app-reservation",
   standalone: true,
@@ -123,7 +134,6 @@ interface ReservationStep {
 export class ReservationComponent {
   searchForm!: FormGroup;
   hotels = signal<Hotel[]>([]);
-
   markets = signal<Market[]>([]);
   availableMarkets = signal<Market[]>([]);
   activeContract = signal<Contract | null>(null);
@@ -132,6 +142,11 @@ export class ReservationComponent {
   roomTypes = signal<RoomType[]>([]);
   filteredRooms = signal<RoomType[]>([]);
   periods = signal<Period[]>([]);
+
+  selectedOffers = signal<SpecialOffer[]>([]);
+  private marketCurrency = signal<string | null>(null);
+
+  availableOffers = signal<SpecialOffer[]>([]);
 
   currentStep = signal<ReservationStep>({});
   cartItems = signal<ReservationStep[]>([]);
@@ -166,7 +181,8 @@ export class ReservationComponent {
     private contractRateService: ContractRateService,
     private router: Router,
     private snackBar: MatSnackBar,
-    private currencyService: CurrencyService
+    private currencyService: CurrencyService,
+    private offersService: OffersService
   ) {
     this.initForm();
   }
@@ -277,9 +293,7 @@ export class ReservationComponent {
           contracts
             .filter(
               (contract) =>
-                contract.status === "active" &&
-                contract.isRatesConfigured &&
-                contract.hotelId === hotelId
+                contract.isRatesConfigured && contract.hotelId === hotelId
             )
             .map((contract) => contract.marketId)
         ),
@@ -288,7 +302,7 @@ export class ReservationComponent {
       console.log("Active market IDs:", activeMarketIds);
 
       if (activeMarketIds.length === 0) {
-        console.log("No active contracts found for hotel:", hotelId);
+        console.log("No configured contracts found for hotel:", hotelId);
         this.availableMarkets.set([]);
         return;
       }
@@ -305,12 +319,10 @@ export class ReservationComponent {
       if (availableMarkets.length === 1) {
         const singleMarket = availableMarkets[0];
 
-        // Find the active contract for this market
+        // Find the configured contract for this market
         const marketContract = contracts.find(
           (contract) =>
-            contract.marketId === singleMarket.id &&
-            contract.status === "active" &&
-            contract.isRatesConfigured
+            contract.marketId === singleMarket.id && contract.isRatesConfigured
         );
 
         if (marketContract) {
@@ -342,7 +354,6 @@ export class ReservationComponent {
                   id: marketContract.id,
                   hotelId: marketContract.hotelId,
                   marketId: marketContract.marketId,
-                  status: marketContract.status,
                   selectedRoomTypes: marketContract.selectedRoomTypes,
                 },
               });
@@ -368,18 +379,6 @@ export class ReservationComponent {
               this.periods.set([]);
             }
           }
-
-          console.log("Automatically selected and loaded contract:", {
-            marketId: singleMarket.id,
-            marketName: singleMarket.name,
-            contract: {
-              id: marketContract.id,
-              hotelId: marketContract.hotelId,
-              marketId: marketContract.marketId,
-              status: marketContract.status,
-              selectedRoomTypes: marketContract.selectedRoomTypes,
-            },
-          });
         }
       }
     } catch (error) {
@@ -388,61 +387,21 @@ export class ReservationComponent {
     }
   }
 
-  async onMarketChange() {
-    const { hotelId, marketId } = this.searchForm.value;
-    if (!hotelId || !marketId) return;
+  protected getCurrencySymbol = computed(() => {
+    const currency = this.marketCurrency();
+    if (!currency) {
+      // Return a default currency symbol instead of throwing an error
+      return "€";
+    }
 
     try {
-      // Get active contract for selected hotel and market
-      const contract = await this.contractService.getActiveContract(
-        hotelId,
-        marketId
-      );
-      if (contract) {
-        this.activeContract.set(contract);
-
-        // Add detailed console logging about the selected contract
-        console.log("Selected Market ID:", marketId);
-        console.log("Selected Contract:", {
-          id: contract.id,
-          hotelId: contract.hotelId,
-          marketId: contract.marketId,
-          status: contract.status,
-          selectedRoomTypes: contract.selectedRoomTypes,
-        });
-
-        // Load contract rates
-        const rates = await this.contractRateService.getContractRates(
-          contract.id
-        );
-        this.contractRates.set(rates);
-
-        // Load periods for the contract's season
-        if (contract.seasonId) {
-          try {
-            const periods = await firstValueFrom(
-              this.contractService.getPeriods(contract.seasonId)
-            );
-            this.periods.set(periods);
-            console.log("Loaded periods:", periods);
-          } catch (error) {
-            console.error("Error loading periods:", error);
-            this.periods.set([]);
-          }
-        }
-
-        // Reset room selection since available rooms may have changed
-        this.searchForm.patchValue({ roomTypeId: null });
-      } else {
-        console.warn("No active contract found for hotel and market");
-        this.activeContract.set(null);
-        this.contractRates.set([]);
-        this.periods.set([]);
-      }
+      const currencySetting = this.currencyService.getCurrencyByCode(currency);
+      return currencySetting?.symbol || "€";
     } catch (error) {
-      console.error("Error loading contract data:", error);
+      console.warn("Error getting currency symbol:", error);
+      return "€";
     }
-  }
+  });
 
   private async loadActiveContract(): Promise<void> {
     const { hotelId, marketId } = this.searchForm.value;
@@ -480,47 +439,52 @@ export class ReservationComponent {
     }
   }
 
-  
-
   async searchRooms() {
     const { hotelId, marketId, checkIn, checkOut, adults, children, infants } =
       this.searchForm.value;
 
+    // Validate market and currency first
+    if (!marketId) {
+      throw new Error("Market must be selected");
+    }
+
+    const market = await firstValueFrom(this.marketService.markets$).then(
+      (markets) => markets.find((m) => m.id === marketId)
+    );
+
+    if (!market) {
+      throw new Error("Selected market not found");
+    }
+
+    if (!market.currency) {
+      throw new Error("Selected market has no currency configured");
+    }
+
     // Validate against initial booking if cart has items
     if (this.cartItems().length > 0) {
       const initial = this.initialBooking();
-      if (!initial) return;
-
-      // Validate hotel and market haven't changed
-      if (hotelId !== initial.hotelId || marketId !== initial.marketId) {
-        this.snackBar.open(
-          "You cannot change hotel or market while you have items in your cart",
-          "Close",
-          { duration: 5000 }
-        );
-        return;
+      if (!initial) {
+        throw new Error("Initial booking data not found");
       }
 
-      // Validate dates are within the same stay period
-      if (initial.checkIn && initial.checkOut) {
+      if (hotelId !== initial.hotelId || marketId !== initial.marketId) {
+        throw new Error("Cannot change hotel or market while cart has items");
+      }
+
+      if (initial.checkIn && initial.checkOut && checkIn && checkOut) {
         const newCheckIn = new Date(checkIn);
         const newCheckOut = new Date(checkOut);
 
         if (newCheckIn < initial.checkIn || newCheckOut > initial.checkOut) {
-          this.snackBar.open(
-            "New room dates must be within your initial stay period",
-            "Close",
-            { duration: 5000 }
-          );
-          return;
+          throw new Error("New room dates must be within initial stay period");
         }
       }
     }
 
-    if (!this.activeContract()) {
-      console.warn("No active contract found");
-      this.filteredRooms.set([]);
-      return;
+    // Continue with room search only if we have valid market and currency
+    const contract = this.activeContract();
+    if (!contract) {
+      throw new Error("No active contract found");
     }
 
     try {
@@ -581,61 +545,179 @@ export class ReservationComponent {
     );
   }
 
-  getRoomRate(room: RoomType): number | null {
-    // Changed return type to include null
-    const { checkIn, marketId, adults, children } = this.searchForm.value;
-    const contract = this.activeContract();
+  protected getRoomRate(room: RoomType): number | null {
+    try {
+      const { checkIn, marketId } = this.searchForm.value;
+      const contract = this.activeContract();
 
-    if (!contract || !checkIn) return null; // Return null instead of 0
+      if (!contract) {
+        console.warn("No active contract found when getting room rate");
+        return null;
+      }
 
-    // Get rates for the contract
-    const rates = this.contractRates();
-    if (!rates.length) return null; // Return null instead of 0
+      if (!checkIn) {
+        console.warn("Check-in date must be selected to get room rate");
+        return null;
+      }
 
-    // For now, we'll use the first available rate for the room
-    const periodRate = rates[0];
-    if (!periodRate) return null; // Return null instead of 0
+      const rates = this.contractRates();
+      if (!rates?.length) {
+        console.warn("No rates configured for contract:", contract.id);
+        return null;
+      }
 
-    // Find the room rate within the period
-    const roomRate = periodRate.roomRates.find((r) => r.roomTypeId === room.id);
-    if (!roomRate) return null; // Return null instead of 0
+      // Find the applicable period rate based on check-in date
+      const checkInDate = new Date(checkIn);
+      const periodRate = rates.find((rate) => {
+        const period = this.periods().find((p) => p.id === rate.periodId);
+        if (!period) return false;
 
-    // Calculate total rate based on rate type and occupancy
-    if (roomRate.rateType === "per_villa") {
-      return roomRate.villaRate || null; // Return null if villaRate is 0
-    } else {
-      // Handle per_pax rate calculation
-      const adultRates = Object.values(
-        roomRate.personTypeRates?.['adult']?.rates || {}
+        const startDate = new Date(period.startDate);
+        const endDate = new Date(period.endDate);
+        return checkInDate >= startDate && checkInDate <= endDate;
+      });
+
+      if (!periodRate) {
+        console.warn("No rate found for check-in date:", checkInDate);
+        return null;
+      }
+
+      // Find the room rate within the period
+      const roomRate = periodRate.roomRates.find(
+        (r) => r.roomTypeId === room.id
       );
-      if (!adultRates.length) return null;
+      if (!roomRate) {
+        console.warn("No room rate found for room:", room.id);
+        return null;
+      }
 
-      return adultRates[0] || null; // Return null if first adult rate is 0
+      // Calculate total rate based on rate type and occupancy
+      if (roomRate.rateType === "per_villa") {
+        return roomRate.villaRate || null;
+      } else {
+        // Handle per_pax rate calculation
+        const { adults = 1, children = 0, infants = 0 } = this.searchForm.value;
+
+        let total = 0;
+        const personTypeRates = roomRate.personTypeRates;
+
+        // Calculate adult rates
+        if (adults && personTypeRates?.["adult"]?.rates) {
+          for (let i = 1; i <= adults; i++) {
+            total += personTypeRates["adult"].rates[i] || 0;
+          }
+        }
+
+        // Calculate child rates
+        if (children && personTypeRates?.["child"]?.rates) {
+          for (let i = 1; i <= children; i++) {
+            total += personTypeRates["child"].rates[i] || 0;
+          }
+        }
+
+        // Calculate infant rates
+        if (infants && personTypeRates?.["infant"]?.rates) {
+          for (let i = 1; i <= infants; i++) {
+            total += personTypeRates["infant"].rates[i] || 0;
+          }
+        }
+
+        return total || null;
+      }
+    } catch (error) {
+      console.error("Error calculating room rate:", error);
+      return null;
     }
   }
 
-  getMarketCurrency(): string {
-    const marketId = this.searchForm.get('marketId')?.value;
-    if (!marketId) return '€'; // Default currency if no market selected
-    
-    const market = this.marketService.getMarketById(marketId);
-    const currencySetting = this.currencyService.getCurrencyByCode(market?.currency || 'EUR');
-    
-    return currencySetting?.symbol || '€'; // Return the currency symbol or default to € if not found
-  }
-  
-  private getActiveContractForRoom(
-    roomId: number,
-    marketId: number
-  ): Contract | null {
-    return (
-      this.contracts().find(
-        (contract) =>
-          contract.marketId === marketId &&
-          contract.selectedRoomTypes.includes(roomId) &&
-          contract.status === "active"
-      ) || null
-    );
+  async onMarketChange(): Promise<void> {
+    try {
+      const { hotelId, marketId } = this.searchForm.value;
+
+      // Reset all related data first
+      this.marketCurrency.set(null);
+      this.activeContract.set(null);
+      this.contractRates.set([]);
+      this.periods.set([]);
+
+      if (!marketId) {
+        console.warn("Market must be selected");
+        return;
+      }
+
+      // Load market data for currency
+      const market = await firstValueFrom(this.marketService.markets$).then(
+        (markets) => markets.find((m) => m.id === marketId)
+      );
+
+      if (!market) {
+        console.warn("Selected market not found:", marketId);
+        return;
+      }
+
+      if (!market.currency) {
+        console.warn("Selected market has no currency configured:", marketId);
+        this.marketCurrency.set(null); // Ensure marketCurrency is reset
+        return;
+      }
+
+      // Set market currency
+      this.marketCurrency.set(market.currency);
+
+      if (!hotelId) {
+        console.warn("Hotel must be selected");
+        return;
+      }
+
+      // Get active contract for selected hotel and market
+      const contract = await this.contractService.getActiveContract(
+        hotelId,
+        marketId
+      );
+      if (!contract) {
+        console.warn("No active contract found for hotel and market:", {
+          hotelId,
+          marketId,
+        });
+        return;
+      }
+
+      // Set active contract
+      this.activeContract.set(contract);
+      console.log("Active contract set:", {
+        id: contract.id,
+        hotelId: contract.hotelId,
+        marketId: contract.marketId,
+        selectedRoomTypes: contract.selectedRoomTypes,
+      });
+
+      // Load contract rates
+      const rates = await this.contractRateService.getContractRates(
+        contract.id
+      );
+      this.contractRates.set(rates);
+      console.log("Contract rates loaded:", rates);
+
+      // Load periods if available
+      if (contract.seasonId) {
+        const periods = await firstValueFrom(
+          this.contractService.getPeriods(contract.seasonId)
+        );
+        this.periods.set(periods);
+        console.log("Contract periods loaded:", periods);
+      }
+
+      // Reset room selection since available rooms may have changed
+      this.searchForm.patchValue({ roomTypeId: null });
+    } catch (error) {
+      console.error("Error in onMarketChange:", error);
+      // Reset all related data on error
+      this.marketCurrency.set(null);
+      this.activeContract.set(null);
+      this.contractRates.set([]);
+      this.periods.set([]);
+      throw error; // Re-throw for upper level handling
+    }
   }
 
   // private getMealPlanName(mealPlanType: MealPlanType): string {
@@ -645,33 +727,34 @@ export class ReservationComponent {
   selectRoom(room: RoomType): void {
     const contract = this.activeContract();
     if (!contract) return;
-  
+
     // Get base meal plan and rate
     const baseMealPlan = this.getBaseMealPlan(room);
     const baseRate = this.getRoomRate(room);
-    
+
     // Early return if no valid rate is found
     if (baseRate === null) {
-      console.warn('No valid rate found for room:', room);
+      console.warn("No valid rate found for room:", room);
       return;
     }
-    
+
     // Get available supplements
     const supplements = this.getAvailableMealPlanSupplements(room, contract);
-  
+
+    this.getAvailableOffers(room);
+
     // Update current step with non-null baseRate
     this.currentStep.set({
       room,
-      baseRate: baseRate, // Now we know baseRate is not null
+      baseRate: baseRate,
       supplementRates: supplements,
       selectedMealPlans: [],
-      total: baseRate, // Now we know baseRate is not null
+      total: baseRate,
     });
-  
+
     // Move to next step
     this.stepper.next();
   }
-  
 
   updateMealPlanSelection(options: MatListOption[]): void {
     const selectedPlans = options
@@ -737,7 +820,7 @@ export class ReservationComponent {
   } {
     const contract = this.activeContract();
     if (!contract) {
-      return { adult: 0, child: 0, infant: 0 };
+      throw new Error("No active contract found");
     }
 
     // Get the room's rate configuration from the contract
@@ -746,21 +829,27 @@ export class ReservationComponent {
     );
 
     if (!periodRate) {
-      return { adult: 0, child: 0, infant: 0 };
+      throw new Error("No rate configuration found for room");
     }
 
     // Find the specific room rate
     const roomRate = periodRate.roomRates.find(
       (rate) => rate.roomTypeId === room.id
     );
+    if (!roomRate) {
+      throw new Error("Room rate configuration not found");
+    }
 
     // Get the specific meal plan rates
-    const mealPlanRates = roomRate?.mealPlanRates?.[mealPlanType];
+    const mealPlanRates = roomRate.mealPlanRates?.[mealPlanType];
+    if (!mealPlanRates) {
+      throw new Error("Meal plan rates not configured");
+    }
 
     return {
-      adult: mealPlanRates?.adult || 0,
-      child: mealPlanRates?.child || 0,
-      infant: mealPlanRates?.infant || 0,
+      adult: mealPlanRates.adult,
+      child: mealPlanRates.child,
+      infant: mealPlanRates.infant,
     };
   }
 
@@ -855,7 +944,211 @@ export class ReservationComponent {
       return;
     }
 
-    // Navigate to cart page
-    this.router.navigate(["/cart"]);
+    // Save cart items to localStorage before navigation
+    try {
+      localStorage.setItem("bookingCart", JSON.stringify(this.cartItems()));
+
+      // Update the navigation path to include the booking prefix
+      this.router
+        .navigate(["/booking/cart"])
+        .then(() => {
+          console.log("Navigation to cart successful");
+        })
+        .catch((error) => {
+          console.error("Navigation error:", error);
+          this.snackBar.open("Error navigating to cart", "Close", {
+            duration: 3000,
+          });
+        });
+    } catch (error) {
+      console.error("Error saving cart data:", error);
+      this.snackBar.open("Error saving cart data", "Close", { duration: 3000 });
+    }
   }
+
+  getRelatedOffers(room: RoomType): SpecialOffer[] {
+    const { checkIn, checkOut } = this.searchForm.value;
+    if (!checkIn || !checkOut) return [];
+
+    return this.offersService.getApplicableOffers(
+      new Date(checkIn),
+      new Date(checkOut),
+      room.id
+    );
+  }
+
+  isOfferDisabled(offer: SpecialOffer): boolean {
+    const selectedOffers = this.selectedOffers();
+    
+    // If no offers are selected, none should be disabled
+    if (selectedOffers.length === 0) return false;
+    
+    // If combinable offers are selected, only disable cumulative offers
+    if (selectedOffers.some(o => o.type === 'combinable')) {
+        return offer.type === 'cumulative';
+    }
+    
+    // If a cumulative offer is selected, only disable combinable offers
+    if (selectedOffers.some(o => o.type === 'cumulative')) {
+        return offer.type === 'combinable';
+    }
+    
+    return false;
+}
+
+
+  getApplicableDiscount(offer: SpecialOffer): number {
+    const { checkIn, checkOut } = this.searchForm.value;
+    if (!checkIn || !checkOut) return 0;
+
+    // Calculate nights
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    const nights = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    // Find applicable discount value based on dates and conditions
+    const applicableValue = offer.discountValues.find((discount) => {
+      // If no specific dates, use the first discount value
+      if (!discount.startDate || !discount.endDate) return true;
+
+      const discountStart = new Date(discount.startDate);
+      const discountEnd = new Date(discount.endDate);
+
+      return (
+        start >= discountStart &&
+        end <= discountEnd &&
+        (!offer.minimumNights || nights >= offer.minimumNights)
+      );
+    });
+
+    return applicableValue?.value || offer.discountValues[0].value;
+  }
+
+  getStayDuration(): number {
+    const { checkIn, checkOut } = this.searchForm.value;
+    if (!checkIn || !checkOut) return 0;
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  isOfferSelected(offer: SpecialOffer): boolean {
+    return this.selectedOffers().some((o) => o.id === offer.id);
+  }
+
+  getAvailableOffers(room: RoomType): void {
+    const { checkIn, checkOut } = this.searchForm.value;
+    if (!checkIn || !checkOut) {
+      this.availableOffers.set([]);
+      return;
+    }
+
+    const offers = this.offersService.getApplicableOffers(
+      new Date(checkIn),
+      new Date(checkOut),
+      room.id
+    );
+    this.availableOffers.set(offers);
+  }
+
+  toggleOffer(offer: SpecialOffer, checked: boolean): void {
+    if (checked) {
+      // If selecting a cumulative offer, clear all other offers
+      if (offer.type === "cumulative") {
+        this.selectedOffers.set([offer]);
+      } else {
+        // If selecting a combinable offer, add it to the selection
+        this.selectedOffers.update((offers) => [...offers, offer]);
+      }
+    } else {
+      // Remove the offer from selection and enable all offers
+      this.selectedOffers.update((offers) =>
+        offers.filter((o) => o.id !== offer.id)
+      );
+    }
+
+    // Recalculate total with selected offers
+    this.updateTotalWithOffers();
+  }
+
+  private updateTotalWithOffers(): void {
+    const current = this.currentStep();
+    if (!current.room || !current.baseRate) return;
+
+    const totalBeforeOffers = this.calculateTotal(
+      current.baseRate,
+      current.selectedMealPlans || [],
+      current.supplementRates || []
+    );
+
+    // Apply offers to total
+    const finalTotal = this.applyOffers(totalBeforeOffers);
+
+    this.currentStep.set({
+      ...current,
+      total: finalTotal,
+    });
+  }
+
+  private applyOffers(total: number): number {
+    const selectedOffers = this.selectedOffers();
+    if (!selectedOffers.length) return total;
+
+    // Check if offers are cumulative (they should all be of the same type due to our selection logic)
+    const isCumulative = selectedOffers[0].type === 'cumulative';
+
+    if (isCumulative) {
+        // For cumulative offers, sum all percentages and apply once
+        const totalDiscountPercentage = selectedOffers.reduce((sum, offer) => {
+            const discountValue = this.getApplicableDiscount(offer);
+            return sum + (offer.discountType === 'percentage' ? discountValue : 0);
+        }, 0);
+
+        // Apply total percentage discount
+        const discountedTotal = total * (1 - totalDiscountPercentage / 100);
+
+        // Apply any fixed amounts after percentage
+        return selectedOffers.reduce((currentTotal, offer) => {
+            const discountValue = this.getApplicableDiscount(offer);
+            return offer.discountType === 'fixed' 
+                ? currentTotal - discountValue 
+                : currentTotal;
+        }, discountedTotal);
+
+    } else {
+        // For combinable offers, apply each discount sequentially
+        return selectedOffers.reduce((currentTotal, offer) => {
+            const discountValue = this.getApplicableDiscount(offer);
+            if (offer.discountType === 'percentage') {
+                return currentTotal * (1 - discountValue / 100);
+            }
+            return currentTotal - discountValue;
+        }, total);
+    }
+}
+
+
+  // private handlePricingError(error: PricingError) {
+  //   if (error.code === 'NO_CURRENCY_CONFIGURED') {
+  //     this.snackBar.open(
+  //       'Unable to display prices. Market currency not configured.',
+  //       'Close',
+  //       { duration: 5000 }
+  //     );
+  //   }
+  //   // Handle other pricing-related errors
+  // }
+
+  // protected displayPrice(amount: number): string {
+  //   try {
+  //     const currency = this.getCurrencySymbol();
+  //     return `${currency}${amount.toFixed(2)}`;
+  //   } catch (error) {
+  //     this.handlePricingError(error as PricingError);
+  //     throw error; // Re-throw to prevent displaying invalid pricing
+  //   }
+  // }
 }

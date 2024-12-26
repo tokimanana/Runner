@@ -1,0 +1,170 @@
+<div class="cart-layout">
+  <mat-stepper [linear]="true" #stepper>
+    <!-- Review Booking Step -->
+    <mat-step [completed]="reviewComplete">
+      <ng-template matStepLabel>Review Booking</ng-template>
+      <div class="review-section">
+        <h2>Review Your Booking</h2>
+
+        <div class="booking-items">
+          <mat-card
+            *ngFor="let item of cartItems(); let i = index"
+            class="booking-item"
+          >
+            <mat-card-header>
+              <mat-card-title>{{ item.room?.name }}</mat-card-title>
+              <mat-card-subtitle>
+                Base Rate: €{{ item.baseRate }}
+              </mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <div class="meal-plans">
+                <div class="base-plan">
+                  Base Meal Plan:
+                  {{ getMealPlanName(getBaseMealPlan(item.room!)) }}
+                </div>
+                <div class="supplements" *ngIf="item.selectedMealPlans?.length">
+                  <h4>Selected Supplements:</h4>
+                  <ul>
+                    <li *ngFor="let plan of item.selectedMealPlans">
+                      {{ MEAL_PLAN_NAMES[plan] }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="item-total">Total: €{{ item.total }}</div>
+            </mat-card-content>
+
+            <mat-card-actions>
+              <button mat-button color="warn" (click)="removeItem(i)">
+                Remove
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </div>
+
+        <div class="booking-summary">
+          <h3>Booking Summary</h3>
+          <div class="summary-details">
+            <p><strong>Total Rooms:</strong> {{ cartItems().length }}</p>
+            <p><strong>Total Amount:</strong> €{{ calculateTotal() }}</p>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button mat-button (click)="goBack()">Back to Search</button>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="stepper.next()"
+            [disabled]="cartItems().length === 0"
+          >
+            Continue to Guest Information
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- Guest Information Step -->
+    <mat-step [stepControl]="guestForm">
+      <ng-template matStepLabel>Guest Information</ng-template>
+
+      <form [formGroup]="guestForm">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" required />
+            <mat-error *ngIf="guestForm.get('firstName')?.hasError('required')">
+              First name is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" required />
+            <mat-error *ngIf="guestForm.get('lastName')?.hasError('required')">
+              Last name is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" required type="email" />
+            <mat-error *ngIf="guestForm.get('email')?.hasError('required')">
+              Email is required
+            </mat-error>
+            <mat-error *ngIf="guestForm.get('email')?.hasError('email')">
+              Please enter a valid email
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phone" required />
+            <mat-error *ngIf="guestForm.get('phone')?.hasError('required')">
+              Phone number is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="step-actions">
+          <button mat-stroked-button (click)="stepper.previous()">Back</button>
+          <button
+            mat-raised-button
+            color="primary"
+            [disabled]="!guestForm.valid"
+            (click)="stepper.next()"
+          >
+            Continue to Payment
+          </button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Payment Step -->
+    <mat-step [stepControl]="paymentForm">
+      <ng-template matStepLabel>Payment</ng-template>
+      <form [formGroup]="paymentForm" class="payment-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Card Number</mat-label>
+            <input matInput formControlName="cardNumber" required />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Expiry Date</mat-label>
+            <input
+              matInput
+              formControlName="expiryDate"
+              placeholder="MM/YY"
+              required
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>CVV</mat-label>
+            <input matInput type="password" formControlName="cvv" required />
+          </mat-form-field>
+        </div>
+
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="confirmBooking()"
+            [disabled]="!paymentForm.valid"
+          >
+            Confirm Booking
+          </button>
+        </div>
+      </form>
+    </mat-step>
+  </mat-stepper>
+</div>

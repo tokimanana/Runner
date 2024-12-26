@@ -6,7 +6,6 @@ import {
   ContractRate,
   ContractPeriodRate,
   RateConfiguration,
-  ContractStatus,
   Period,
 } from "../models/types";
 import { MockApiService } from "./mock/mock-api.service";
@@ -15,7 +14,10 @@ import { ContractRateService } from "./contract-rates.service";
 import { SeasonService } from "./season.service";
 
 // Define allowed filter keys
-type ContractFilterKeys = "name" | "status" | "hotelId" | "marketId";
+type ContractFilterKeys = "name" | "hotelId" | "marketId";
+
+// First, add this type definition at the top of your file or in your types.ts file
+type ContractStatus = 'configured' | 'no_rate' | 'expired';
 
 // Define the filter type
 type ContractFilters = {
@@ -100,22 +102,29 @@ export class ContractService extends BaseDataService<Contract> {
     try {
       const seasonMap = await firstValueFrom(this.seasonService.seasons$);
       const hotelSeasons = seasonMap.get(contract.hotelId) || [];
-
-      // Log for debugging
-      console.log("Validating season for contract:", {
-        contractId: contract.id,
-        hotelId: contract.hotelId,
-        seasonId: contract.seasonId,
-        availableSeasons: hotelSeasons,
-      });
-
-      const season = hotelSeasons.find((s) => s.id === contract.seasonId);
-      return !!season;
+      
+      const season = hotelSeasons.find(s => 
+        s.id === contract.seasonId && 
+        s.isActive === true
+      );
+      
+      if (!season) {
+        console.error('Invalid or inactive season:', {
+          contractId: contract.id,
+          hotelId: contract.hotelId,
+          seasonId: contract.seasonId,
+          availableSeasons: hotelSeasons
+        });
+        return false;
+      }
+      
+      return true;
     } catch (error) {
       console.error("Error validating contract season:", error);
       return false;
     }
-  }
+}
+
 
   async createContract(contract: Omit<Contract, "id">): Promise<Contract> {
     try {
@@ -258,7 +267,7 @@ export class ContractService extends BaseDataService<Contract> {
       const hasRates = await this.checkRatesWithCache(id);
 
       if (!hasRates) {
-        newStatus = "draft";
+        newStatus = "no_rate";
       }
       // Check if contract period is expired
       else if (
@@ -269,7 +278,7 @@ export class ContractService extends BaseDataService<Contract> {
       }
       // Contract has rates and is within validity period
       else {
-        newStatus = "active";
+        newStatus = "configured";
       }
 
       const updates = {
@@ -277,7 +286,7 @@ export class ContractService extends BaseDataService<Contract> {
         isRatesConfigured: hasRates,
       };
 
-      console.log("Updating contract status:", { id, updates }); // Add logging
+      console.log("Updating contract status:", { id, updates });
 
       return this.updateContract(id, updates);
     } catch (error) {
@@ -333,7 +342,7 @@ export class ContractService extends BaseDataService<Contract> {
         (c) =>
           c.hotelId === hotelId &&
           c.marketId === marketId &&
-          c.status === "active"
+          c.isRatesConfigured === true
       ) || null
     );
   }

@@ -14,7 +14,13 @@ export class OffersService extends BaseDataService<SpecialOffer> {
   constructor() {
     super();
     this.initializeOffers();
-  }
+    
+    // Debug log
+    this.offers$.subscribe(offers => {
+        console.log('Current offers in service:', offers);
+    });
+}
+
 
   // Get all offers
   get offers$(): Observable<SpecialOffer[]> {
@@ -193,24 +199,36 @@ protected validateData(data: SpecialOffer): boolean {
     const offers = this.offersSubject.value;
     const today = new Date();
     
+    console.log('Checking offers:', {
+        totalOffers: offers.length,
+        checkIn,
+        checkOut,
+        today
+    });
+    
     return offers.filter(offer => {
       const offerStartDate = new Date(offer.startDate);
       const offerEndDate = new Date(offer.endDate);
       
-      // Check if offer is valid for the booking dates
       const isValidDate = checkIn >= offerStartDate && checkOut <= offerEndDate;
-      
-      // Check booking window if exists
       const isWithinBookingWindow = !offer.bookingWindow || (
         today >= new Date(offer.bookingWindow.start) && 
         today <= new Date(offer.bookingWindow.end)
       );
-      
-      // Check minimum nights if specified
       const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
       const meetsMinNights = !offer.minimumNights || nights >= offer.minimumNights;
       
+      console.log('Offer check:', {
+          offerName: offer.name,
+          isValidDate,
+          isWithinBookingWindow,
+          meetsMinNights,
+          nights,
+          minimumNights: offer.minimumNights
+      });
+      
       return isValidDate && isWithinBookingWindow && meetsMinNights;
     });
-  }
+}
+
 }
