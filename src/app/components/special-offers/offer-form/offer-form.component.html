@@ -43,7 +43,6 @@
                 Cumulative (Increases with longer stays)
               </mat-option>
             </mat-select>
-            <!-- <mat-hint>Select how this offer can be applied</mat-hint> -->
           </mat-form-field>
         </div>
 
@@ -61,13 +60,20 @@
         <div class="step-actions">
           <div class="right-actions">
             <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-            <button mat-button matStepperNext color="primary">Next</button>
+            <button
+              mat-button
+              (click)="onNextClick()"
+              color="primary"
+              type="button"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
     </mat-step>
 
-    <!-- Discount Details Step -->
+    <!-- Discount Configuration Step -->
     <mat-step [stepControl]="offerForm" label="Discount Details">
       <div class="step-content">
         <mat-form-field appearance="outline">
@@ -90,86 +96,135 @@
             Discount Values
           </h3>
 
-          <div
-            *ngFor="let value of discountValues.controls; let i = index"
-            [formGroupName]="i"
-            class="discount-value-row mat-elevation-z1"
-          >
-
-            <!-- Start Date Input -->
-            <mat-form-field>
-              <mat-label>Valid From</mat-label>
-              <input
-                matInput
-                [matDatepicker]="startPicker"
-                formControlName="startDate"
-                placeholder="Start date"
-              />
-              <mat-datepicker-toggle
-                matSuffix
-                [for]="startPicker"
-              ></mat-datepicker-toggle>
-              <mat-datepicker #startPicker></mat-datepicker>
-            </mat-form-field>
-
-            <!-- End Date Input -->
-            <mat-form-field>
-              <mat-label>Valid To</mat-label>
-              <input
-                matInput
-                [matDatepicker]="endPicker"
-                formControlName="endDate"
-                placeholder="End date"
-              />
-              <mat-datepicker-toggle
-                matSuffix
-                [for]="endPicker"
-              ></mat-datepicker-toggle>
-              <mat-datepicker #endPicker></mat-datepicker>
-            </mat-form-field>
-
-            <!-- Value Input -->
-            <mat-form-field>
-              <mat-label>Discount Value</mat-label>
-              <input matInput type="number" formControlName="value" required />
-              <span matSuffix>{{
-                offerForm.get("discountType")?.value === "percentage"
-                  ? "%"
-                  : "€"
-              }}</span>
-            </mat-form-field>
-
-            <!-- Remove Button -->
-            <button
-              mat-icon-button
-              color="warn"
-              type="button"
-              (click)="removeDiscountValue(i)"
-              matTooltip="Remove discount value"
+          <div class="discount-values-container">
+            <div
+              *ngFor="let value of discountValues.controls; let i = index"
+              [formGroupName]="i"
+              class="discount-value-row mat-elevation-z1"
             >
-              <mat-icon>delete</mat-icon>
-            </button>
+              <!-- Start Date Input -->
+              <mat-form-field appearance="outline">
+                <mat-label>Valid From</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="startPicker"
+                  formControlName="startDate"
+                  required
+                />
+                <mat-datepicker-toggle
+                  matSuffix
+                  [for]="startPicker"
+                ></mat-datepicker-toggle>
+                <mat-datepicker #startPicker></mat-datepicker>
+                <mat-error *ngIf="value.get('startDate')?.hasError('required')">
+                  Start date is required
+                </mat-error>
+              </mat-form-field>
+
+              <!-- End Date Input -->
+              <mat-form-field appearance="outline">
+                <mat-label>Valid To</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="endPicker"
+                  formControlName="endDate"
+                  required
+                />
+                <mat-datepicker-toggle
+                  matSuffix
+                  [for]="endPicker"
+                ></mat-datepicker-toggle>
+                <mat-datepicker #endPicker></mat-datepicker>
+                <mat-error *ngIf="value.get('endDate')?.hasError('required')">
+                  End date is required
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Value Input -->
+              <mat-form-field appearance="outline">
+                <mat-label>Discount Value</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="value"
+                  required
+                  [min]="
+                    offerForm.get('discountType')?.value === 'percentage'
+                      ? 0
+                      : 1
+                  "
+                  [max]="
+                    offerForm.get('discountType')?.value === 'percentage'
+                      ? 100
+                      : null
+                  "
+                />
+                <span matSuffix>{{
+                  offerForm.get("discountType")?.value === "percentage"
+                    ? "%"
+                    : "€"
+                }}</span>
+                <mat-error *ngIf="value.get('value')?.hasError('required')">
+                  Value is required
+                </mat-error>
+                <mat-error *ngIf="value.get('value')?.hasError('min')">
+                  Must be greater than
+                  {{
+                    offerForm.get("discountType")?.value === "percentage"
+                      ? "0"
+                      : "1"
+                  }}
+                </mat-error>
+                <mat-error *ngIf="value.get('value')?.hasError('max')">
+                  Percentage cannot exceed 100
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Remove Button -->
+              <button
+                mat-icon-button
+                color="warn"
+                type="button"
+                (click)="removeDiscountValue(i)"
+                matTooltip="Remove discount value"
+                class="remove-button"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
           </div>
 
           <!-- Add Button -->
-          <button
-            mat-stroked-button
-            type="button"
-            (click)="addDiscountValue()"
-            class="add-value-button"
-          >
-            <mat-icon>add</mat-icon>
-            Add Discount Value
-          </button>
+          <div class="add-value-section">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="addDiscountValue()"
+              class="add-value-button"
+              [disabled]="discountValues.length >= 10"
+            >
+              <mat-icon>add</mat-icon>
+              Add Discount Value
+            </button>
+          </div>
         </div>
 
         <div class="step-actions">
           <div class="left-actions">
-            <button mat-button matStepperPrevious>Back</button>
+            <button mat-button type="button" (click)="onPreviousClick()">
+              Back
+            </button>
           </div>
           <div class="right-actions">
             <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-            <button mat-button matStepperNext color="primary">Next</button>
+            <button
+              mat-button
+              (click)="onNextClick()"
+              color="primary"
+              type="button"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
@@ -271,33 +326,18 @@
           </div>
 
           <div class="step-actions">
-            <div class="left-actions">
-              <button mat-button matStepperPrevious *ngIf="!isFirstStep">
-                Back
-              </button>
-            </div>
-            <div class="right-actions">
-              <button mat-button color="warn" (click)="onCancel()">
-                Cancel
-              </button>
-              <button
-                mat-button
-                matStepperNext
-                color="primary"
-                *ngIf="!isLastStep"
-              >
-                Next
-              </button>
-              <button
-                mat-raised-button
-                color="primary"
-                type="submit"
-                [disabled]="!offerForm.valid"
-                *ngIf="isLastStep"
-              >
-                {{ isEdit ? "Update" : "Create" }} Offer
-              </button>
-            </div>
+            <button mat-button type="button" (click)="onPreviousClick()">
+              Back
+            </button>
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              [disabled]="!offerForm.valid || loading"
+              (click)="onSubmit()"
+            >
+              {{ loading ? "Saving..." : isEdit ? "Update" : "Create" }} Offer
+            </button>
           </div>
         </div>
       </div>

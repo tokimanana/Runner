@@ -375,6 +375,39 @@ export interface Contract {
   isRatesConfigured: boolean;
 }
 
+export interface ReservationStep {
+  room?: RoomType;
+  selectedMealPlans?: MealPlanType[];
+  selectedOffers?: SpecialOffer[];
+  baseRate?: number;
+  supplementRates?: {
+    type: MealPlanType;
+    name: string;
+    rates: {
+      adult: number;
+      child: number;
+      infant: number;
+    };
+  }[];
+  total?: number;
+  applyOffersToMealPlans?: boolean;
+  appliedDiscounts?: {
+    offerName: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    savedAmount: number;
+  }[];
+  totalBeforeDiscounts?: number;
+  // Add this new property
+  occupancy?: {
+    adults: number;
+    children: number;
+    infants: number;
+  };
+}
+
+
+
 export interface ContractPeriodRate {
   contractId: number;
   periodId: number;

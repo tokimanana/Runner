@@ -124,6 +124,13 @@
                     min="0"
                   />
                 </mat-form-field>
+
+                <mat-error *ngIf="searchForm.errors?.['noOccupants']">
+                  Please add at least one adult or child
+                </mat-error>
+                <mat-error *ngIf="searchForm.errors?.['infantRequiresChild']">
+                  Infants must be accompanied by at least one child
+                </mat-error>
               </div>
 
               <div class="form-actions">
@@ -147,18 +154,22 @@
         >
           <h2>Available Rooms</h2>
           <div class="rooms-grid">
-            <!-- Your existing room cards with updated styling -->
-            <mat-card *ngFor="let room of filteredRooms()" class="room-card">
+            <!-- Only show rooms with available rates -->
+            <mat-card
+              *ngFor="let room of filteredRooms()"
+              class="room-card"
+              [class.disabled]="getRoomRate(room) === null"
+            >
               <!-- Room Header -->
               <mat-card-header>
                 <mat-card-title>{{ room.name }}</mat-card-title>
                 <mat-card-subtitle>{{ room.category }}</mat-card-subtitle>
               </mat-card-header>
 
-              <!-- Room Rate Section -->
+              <!-- Room Rate Section - Only show if rate is available -->
               <div class="rate-section" *ngIf="getRoomRate(room) !== null">
                 <div class="rate-amount">
-                  <span class="currency"> {{ getCurrencySymbol() }}</span>
+                  <span class="currency">{{ getCurrencySymbol() }}</span>
                   <span class="amount">{{ getRoomRate(room) }}</span>
                   <span class="per-night">per night</span>
                 </div>
@@ -170,12 +181,6 @@
                     getMealPlanDisplayName(getBaseMealPlan(room))
                   }}</span>
                 </div>
-              </div>
-
-              <!-- Show message if no rate is available -->
-              <div class="no-rate-message" *ngIf="getRoomRate(room) === null">
-                <mat-icon color="warn">warning</mat-icon>
-                <span>Rate not available for selected criteria</span>
               </div>
 
               <!-- Room Details -->
@@ -213,6 +218,7 @@
                   mat-raised-button
                   color="primary"
                   (click)="selectRoom(room)"
+                  [disabled]="getRoomRate(room) === null"
                 >
                   Select Room
                 </button>
@@ -253,8 +259,8 @@
             <mat-icon>restaurant</mat-icon>
             <span>{{ getMealPlanDisplayName(getBaseMealPlan(room)) }}</span>
             <span class="stay-dates">
-              {{ searchForm.value.checkIn | date:'mediumDate' }} - 
-              {{ searchForm.value.checkOut | date:'mediumDate' }}
+              {{ searchForm.value.checkIn | date : "mediumDate" }} -
+              {{ searchForm.value.checkOut | date : "mediumDate" }}
             </span>
           </div>
         </div>
@@ -292,14 +298,19 @@
               </mat-card-header>
 
               <mat-card-content>
-                <p>{{offer.description}}</p>
+                <p>{{ offer.description }}</p>
                 <!-- Show applicable discount -->
                 <div class="discount-info">
                   <div class="applicable-discount">
                     <mat-icon>check_circle</mat-icon>
                     <span>
                       {{ getApplicableDiscount(offer) }}
-                      {{ offer.discountType === 'percentage' ? '%' : getCurrencySymbol() }} off
+                      {{
+                        offer.discountType === "percentage"
+                          ? "%"
+                          : getCurrencySymbol()
+                      }}
+                      off
                     </span>
                   </div>
                 </div>
@@ -318,6 +329,21 @@
           </div>
         </div>
 
+        <div class="offer-preference">
+          <mat-checkbox
+            [checked]="currentStep().applyOffersToMealPlans"
+            (change)="toggleOfferApplicationPreference($event.checked)"
+          >
+            Apply discounts to meal plan supplements
+          </mat-checkbox>
+          <mat-icon
+            matTooltip="Choose whether to apply discounts to just the room rate or both room rate and meal plan supplements"
+            class="info-icon"
+          >
+            info
+          </mat-icon>
+        </div>
+
         <!-- Available Supplements -->
         <div
           class="supplements-section"
@@ -328,11 +354,14 @@
           <mat-selection-list
             #supplementList
             [multiple]="true"
-            (selectionChange)="updateMealPlanSelection($event.options)"
+            (selectionChange)="
+              updateMealPlanSelection(supplementList.selectedOptions.selected)
+            "
           >
             <mat-list-option
               *ngFor="let supplement of supplements"
               [value]="supplement.type"
+              [selected]="isSupplementSelected(supplement.type)"
             >
               <div class="supplement-option">
                 <div class="plan-info">
@@ -361,9 +390,10 @@
         <div class="step-actions">
           <div class="total">
             <span>Total:</span>
-            <span class="amount"
-              >{{ getCurrencySymbol() }}{{ currentStep().total }}</span
-            >
+            <span class="amount">{{
+              currentStep().total
+                | currency : getCurrencySymbol() : "symbol" : "1.2-2"
+            }}</span>
           </div>
 
           <div class="action-buttons">
@@ -390,21 +420,46 @@
       <div class="cart-item" *ngFor="let item of cartItems()">
         <div class="item-header">
           <span class="room-name">{{ item.room?.name }}</span>
-          <span class="item-total"
+          <span class="final-price"
             >{{ getCurrencySymbol() }}{{ item.total }}</span
           >
         </div>
+
         <div class="item-details">
-          <div class="meal-plans">
-            <span class="base-plan">
-              {{ getMealPlanDisplayName(getBaseMealPlan(item.room!)) }}
-            </span>
-            <span
-              class="supplement"
-              *ngFor="let plan of item.selectedMealPlans"
+          <!-- Prix original barré -->
+          <div class="original-price" *ngIf="item.appliedDiscounts?.length">
+            Original Price:
+            <span class="strikethrough"
+              >{{ getCurrencySymbol() }}{{ item.totalBeforeDiscounts }}</span
             >
-              + {{ MEAL_PLAN_NAMES[plan] }}
-            </span>
+          </div>
+
+          <!-- Meal Plan -->
+          <div class="meal-plan">
+            {{ getMealPlanDisplayName(getBaseMealPlan(item.room!)) }}
+          </div>
+
+          <!-- Applied Discounts -->
+          <div class="applied-discounts" *ngIf="item.appliedDiscounts?.length">
+            <h4>Applied Discounts:</h4>
+            <div
+              class="discount-item"
+              *ngFor="let discount of item.appliedDiscounts"
+            >
+              <div class="discount-name">{{ discount.offerName }}</div>
+              <div class="discount-value">
+                -{{ discount.discountValue
+                }}{{
+                  discount.discountType === "percentage"
+                    ? "%"
+                    : getCurrencySymbol()
+                }}
+              </div>
+              <div class="saved-amount">
+                Saved: {{ getCurrencySymbol()
+                }}{{ discount.savedAmount | number : "1.2-2" }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -422,7 +477,7 @@
         <button mat-raised-button color="primary" (click)="proceedToCart()">
           Go to Cart
         </button>
-        <button mat-stroked-button (click)="stepper.reset()">
+        <button mat-stroked-button (click)="addAnotherRoom()">
           Add Another Room
         </button>
         <button mat-button color="warn" (click)="clearCart()">

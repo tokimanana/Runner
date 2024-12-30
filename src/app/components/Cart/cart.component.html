@@ -1,11 +1,12 @@
 <div class="cart-layout">
   <mat-stepper [linear]="true" #stepper>
     <!-- Review Booking Step -->
-    <mat-step [completed]="reviewComplete">
+    <mat-step>
       <ng-template matStepLabel>Review Booking</ng-template>
       <div class="review-section">
         <h2>Review Your Booking</h2>
 
+        <!-- Cart Items -->
         <div class="booking-items">
           <mat-card
             *ngFor="let item of cartItems(); let i = index"
@@ -13,54 +14,121 @@
           >
             <mat-card-header>
               <mat-card-title>{{ item.room?.name }}</mat-card-title>
-              <mat-card-subtitle>
-                Base Rate: €{{ item.baseRate }}
-              </mat-card-subtitle>
+              <!-- Only show type if different from name
+              <mat-card-subtitle *ngIf="item.room?.type !== item.room?.name">
+                {{ item.room?.type }}
+              </mat-card-subtitle> -->
             </mat-card-header>
 
             <mat-card-content>
-              <div class="meal-plans">
-                <div class="base-plan">
-                  Base Meal Plan:
-                  {{ getMealPlanName(getBaseMealPlan(item.room!)) }}
+              <!-- Room Details -->
+              <div class="room-details">
+                <div class="occupancy">
+                  <mat-icon>people</mat-icon>
+                  {{ item.occupancy?.adults || 0 }} Adults,
+                  {{ item.occupancy?.children || 0 }} Children,
+                  {{ item.occupancy?.infants || 0 }} Infants
                 </div>
-                <div class="supplements" *ngIf="item.selectedMealPlans?.length">
-                  <h4>Selected Supplements:</h4>
-                  <ul>
-                    <li *ngFor="let plan of item.selectedMealPlans">
-                      {{ MEAL_PLAN_NAMES[plan] }}
-                    </li>
-                  </ul>
+
+                <!-- Meal Plans -->
+                <div class="meal-plans" *ngIf="item.selectedMealPlans?.length">
+                  <h4>Meal Plans</h4>
+                  <div
+                    *ngFor="let plan of item.selectedMealPlans"
+                    class="supplement-item"
+                  >
+                    {{ getMealPlanName(plan) }}
+                  </div>
+                </div>
+
+                <!-- Rate Breakdown -->
+                <div class="rate-breakdown">
+                  <div class="base-rate">
+                    <span>Base Rate:</span>
+                    <span>{{ item.baseRate | currency }}</span>
+                  </div>
+
+                  <!-- Applied Discounts -->
+                  <div class="discounts" *ngIf="item.appliedDiscounts?.length">
+                    <h4>Applied Discounts</h4>
+                    <div
+                      *ngFor="let discount of item.appliedDiscounts"
+                      class="discount-item"
+                    >
+                      <span>{{ discount.offerName }}</span>
+                      <span class="discount-value">
+                        -{{ discount.discountValue
+                        }}{{
+                          discount.discountType === "percentage" ? "%" : "€"
+                        }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="final-total">
+                    <span>Total:</span>
+                    <span>{{ item.total | currency }}</span>
+                  </div>
                 </div>
               </div>
-
-              <div class="item-total">Total: €{{ item.total }}</div>
             </mat-card-content>
 
-            <mat-card-actions>
+            <mat-card-actions align="end">
               <button mat-button color="warn" (click)="removeItem(i)">
+                <mat-icon>delete</mat-icon>
                 Remove
               </button>
             </mat-card-actions>
           </mat-card>
         </div>
 
-        <div class="booking-summary">
-          <h3>Booking Summary</h3>
-          <div class="summary-details">
-            <p><strong>Total Rooms:</strong> {{ cartItems().length }}</p>
-            <p><strong>Total Amount:</strong> €{{ calculateTotal() }}</p>
-          </div>
+        <!-- Empty Cart Message -->
+        <div class="empty-cart" *ngIf="!cartItems().length">
+          <mat-card>
+            <mat-card-content>
+              <h3>Your cart is empty</h3>
+              <p>Start adding rooms to your cart to see them here.</p>
+              <button
+                mat-raised-button
+                color="primary"
+                routerLink="/reservations"
+              >
+                Browse Rooms
+              </button>
+            </mat-card-content>
+          </mat-card>
         </div>
 
+        <!-- Booking Summary -->
+        <mat-card class="booking-summary" *ngIf="cartItems().length">
+          <mat-card-content>
+            <h3>Booking Summary</h3>
+            <div class="summary-details">
+              <div class="summary-row">
+                <span>Total Rooms:</span>
+                <span>{{ cartItems().length }}</span>
+              </div>
+              <div class="summary-row total">
+                <span>Total Amount:</span>
+                <span>{{ calculateCartTotal() | currency }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Step Actions -->
         <div class="step-actions">
-          <button mat-button (click)="goBack()">Back to Search</button>
+          <button mat-stroked-button routerLink="/reservations">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Search
+          </button>
           <button
             mat-raised-button
             color="primary"
             (click)="stepper.next()"
-            [disabled]="cartItems().length === 0"
+            [disabled]="!cartItems().length"
           >
+            <mat-icon>arrow_forward</mat-icon>
             Continue to Guest Information
           </button>
         </div>
@@ -70,8 +138,7 @@
     <!-- Guest Information Step -->
     <mat-step [stepControl]="guestForm">
       <ng-template matStepLabel>Guest Information</ng-template>
-
-      <form [formGroup]="guestForm">
+      <form [formGroup]="guestForm" class="guest-form">
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>First Name</mat-label>
@@ -97,9 +164,6 @@
             <mat-error *ngIf="guestForm.get('email')?.hasError('required')">
               Email is required
             </mat-error>
-            <mat-error *ngIf="guestForm.get('email')?.hasError('email')">
-              Please enter a valid email
-            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -112,56 +176,18 @@
         </div>
 
         <div class="step-actions">
-          <button mat-stroked-button (click)="stepper.previous()">Back</button>
-          <button
-            mat-raised-button
-            color="primary"
-            [disabled]="!guestForm.valid"
-            (click)="stepper.next()"
-          >
-            Continue to Payment
+          <button mat-stroked-button matStepperPrevious>
+            <mat-icon>arrow_back</mat-icon>
+            Back
           </button>
-        </div>
-      </form>
-    </mat-step>
-
-    <!-- Payment Step -->
-    <mat-step [stepControl]="paymentForm">
-      <ng-template matStepLabel>Payment</ng-template>
-      <form [formGroup]="paymentForm" class="payment-form">
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Card Number</mat-label>
-            <input matInput formControlName="cardNumber" required />
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Expiry Date</mat-label>
-            <input
-              matInput
-              formControlName="expiryDate"
-              placeholder="MM/YY"
-              required
-            />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>CVV</mat-label>
-            <input matInput type="password" formControlName="cvv" required />
-          </mat-form-field>
-        </div>
-
-        <div class="step-actions">
-          <button mat-button matStepperPrevious>Back</button>
           <button
             mat-raised-button
             color="primary"
-            (click)="confirmBooking()"
-            [disabled]="!paymentForm.valid"
+            matStepperNext
+            [disabled]="!guestForm.valid"
           >
-            Confirm Booking
+            <mat-icon>arrow_forward</mat-icon>
+            Continue to Payment
           </button>
         </div>
       </form>

@@ -1,249 +1,199 @@
-<!-- src/app/components/market-config/market-config.component.html -->
 <div class="market-config-container">
   <!-- Header -->
-  <div class="market-groups-header">
-    <h2>Market Regions Configuration</h2>
-    <div class="header-actions">
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>Market Regions Configuration</mat-card-title>
       <button mat-raised-button color="primary" (click)="openGroupModal()">
         <mat-icon>add</mat-icon>
         Add Region
       </button>
-    </div>
-  </div>
+    </mat-card-header>
+  </mat-card>
 
   <!-- Market Groups List -->
   <div class="market-groups">
-    <mat-card *ngFor="let group of marketGroups()">
-      <mat-card-header>
-        <div class="group-header">
-          <h3>{{ group.name }}</h3>
-          <div class="group-actions">
-            <button mat-icon-button [matMenuTriggerFor]="menu">
-              <mat-icon>more_vert</mat-icon>
+    <mat-card *ngFor="let group of marketGroups()" class="group-card">
+      <mat-card-header [style.backgroundColor]="getGroupColor(group.region)">
+        <mat-card-title>{{ group.name }}</mat-card-title>
+        <mat-card-subtitle>
+          <mat-icon>currency_exchange</mat-icon>
+          Default Currency: {{ group.defaultCurrency }}
+        </mat-card-subtitle>
+        <div class="group-actions">
+          <button mat-icon-button [matMenuTriggerFor]="menu" color="basic">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="openGroupModal(group)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit Region</span>
             </button>
-            <mat-menu #menu="matMenu">
-              <button mat-menu-item (click)="openGroupModal(group)">
-                <mat-icon>edit</mat-icon>
-                <span>Edit Region</span>
-              </button>
-              <button mat-menu-item (click)="openMarketModal(undefined, group)">
-                <mat-icon>add</mat-icon>
-                <span>Add Market</span>
-              </button>
-            </mat-menu>
-          </div>
+            <button mat-menu-item (click)="openMarketModal(undefined, group)">
+              <mat-icon>add</mat-icon>
+              <span>Add Market</span>
+            </button>
+          </mat-menu>
         </div>
       </mat-card-header>
 
       <mat-card-content>
         <div class="markets-grid">
-          <mat-card
-            *ngFor="let marketId of group.markets"
-            class="market-card"
-            [class.has-rate]="hasRates()(marketId)"
-          >
-            <div class="market-header">
-              <div class="market-title">
-                <mat-icon class="market-icon">location_city</mat-icon>
-                <div class="market-info">
-                  <div class="market-name-row">
-                    <span class="market-name">{{
-                      getMarketName(marketId)
-                    }}</span>
-                    <mat-icon
-                      *ngIf="hasRates()(marketId)"
-                      class="rate-indicator"
-                      matTooltip="Market has configured rates"
-                    >
-                      check_circle
-                    </mat-icon>
-                  </div>
-                </div>
-              </div>
+          <mat-card *ngFor="let marketId of group.markets" 
+                    class="market-card" 
+                    [class.has-rate]="hasRates()(marketId)">
+            <mat-card-header>
+              <mat-icon mat-card-avatar>location_city</mat-icon>
+              <mat-card-title>{{ getMarketName(marketId) }}</mat-card-title>
+              <mat-card-subtitle>
+                Code: {{ getMarket(marketId)?.code }}
+              </mat-card-subtitle>
               <button mat-icon-button [matMenuTriggerFor]="marketMenu">
                 <mat-icon>more_vert</mat-icon>
               </button>
-              <mat-menu #marketMenu="matMenu">
-                <button
-                  mat-menu-item
-                  (click)="openMarketModal(getMarket(marketId), group)"
-                >
-                  <mat-icon>edit</mat-icon>
-                  <span>Edit Market</span>
-                </button>
-              </mat-menu>
-            </div>
+            </mat-card-header>
 
             <mat-card-content>
               <div class="market-details">
-                <div class="market-currency">
-                  <span class="label">Currency:</span>
-                  <mat-chip>{{ getMarketCurrency(marketId) }}</mat-chip>
-                </div>
-                <p
-                  *ngIf="getMarketDescription(marketId)"
-                  class="market-description"
-                >
+                <mat-chip-listbox>
+                  <mat-chip>
+                    <mat-icon>attach_money</mat-icon>
+                    {{ getMarketCurrency(marketId) }}
+                  </mat-chip>
+                  <mat-chip *ngIf="hasRates()(marketId)" color="primary" selected>
+                    <mat-icon>check_circle</mat-icon>
+                    Rates Configured
+                  </mat-chip>
+                </mat-chip-listbox>
+                <p *ngIf="getMarketDescription(marketId)" class="market-description">
                   {{ getMarketDescription(marketId) }}
                 </p>
               </div>
             </mat-card-content>
+
+            <mat-menu #marketMenu="matMenu">
+              <button mat-menu-item (click)="openMarketModal(getMarket(marketId), group)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit Market</span>
+              </button>
+              <button mat-menu-item color="warn" (click)="deleteMarket(marketId)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete Market</span>
+              </button>
+            </mat-menu>
           </mat-card>
 
-          <!-- Empty state when no markets -->
-          <div *ngIf="group.markets.length === 0" class="empty-markets">
-            <mat-icon>info</mat-icon>
-            <p>No markets added to this region</p>
-            <button
-              mat-stroked-button
-              color="primary"
-              (click)="openMarketModal(undefined, group)"
-            >
-              <mat-icon>add</mat-icon>
-              Add Market
-            </button>
-          </div>
+          <!-- Empty state -->
+          <mat-card *ngIf="group.markets.length === 0" class="empty-state-card">
+            <mat-card-content class="empty-markets">
+              <mat-icon color="primary">info</mat-icon>
+              <p>No markets added to this region</p>
+              <button mat-stroked-button color="primary" (click)="openMarketModal(undefined, group)">
+                <mat-icon>add</mat-icon>
+                Add Market
+              </button>
+            </mat-card-content>
+          </mat-card>
         </div>
       </mat-card-content>
     </mat-card>
   </div>
 
   <!-- Market Group Modal -->
-  <app-modal
-    *ngIf="showGroupModal()"
-    [show]="showGroupModal()"
-    [title]="modalTitle()"
-    (close)="closeModals()"
-  >
-    <div class="modal-body" [formGroup]="groupForm">
-      <div class="form-group">
-        <label for="groupName">Region Name</label>
-        <input
-          id="groupName"
-          type="text"
-          formControlName="name"
-          placeholder="e.g., European Markets"
-        />
-        <div
-          class="error-message"
-          *ngIf="groupForm.get('name')?.errors?.['required'] && groupForm.get('name')?.touched"
-        >
-          Region name is required
-        </div>
-      </div>
+  <app-modal *ngIf="showGroupModal()" 
+             [show]="showGroupModal()" 
+             [title]="modalTitle()" 
+             (close)="closeModals()">
+    <div class="modal-content">
+      <form [formGroup]="groupForm" class="group-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Region Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., European Markets" required>
+          <mat-error *ngIf="groupForm.get('name')?.errors?.['required']">
+            Region name is required
+          </mat-error>
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="groupRegion">Region</label>
-        <input
-          id="groupRegion"
-          type="text"
-          formControlName="region"
-          placeholder="e.g., Europe"
-        />
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Region</mat-label>
+          <input matInput formControlName="region" placeholder="e.g., Europe">
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="groupCurrency">Default Currency</label>
-        <select id="groupCurrency" formControlName="defaultCurrency">
-          <option
-            *ngFor="let currency of currencySettings()"
-            [value]="currency.code"
-          >
-            {{ currency.name }} ({{ currency.code }})
-          </option>
-        </select>
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Default Currency</mat-label>
+          <mat-select formControlName="defaultCurrency" required>
+            <mat-option *ngFor="let currency of currencySettings()" [value]="currency.code">
+              {{ currency.name }} ({{ currency.code }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="groupDescription">Description</label>
-        <textarea
-          id="groupDescription"
-          formControlName="description"
-          placeholder="Region description..."
-          rows="3"
-        >
-        </textarea>
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" 
+                    placeholder="Region description..." 
+                    rows="3">
+          </textarea>
+        </mat-form-field>
+      </form>
     </div>
-    <div class="modal-footer">
-      <button (click)="closeModals()">Cancel</button>
-      <button (click)="saveMarketGroup()" [disabled]="groupForm.invalid">
+    <div class="modal-actions">
+      <button mat-button (click)="closeModals()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="saveMarketGroup()" 
+              [disabled]="groupForm.invalid">
         Save
       </button>
     </div>
   </app-modal>
 
   <!-- Market Modal -->
-  <app-modal
-    *ngIf="showMarketModal()"
-    [show]="showMarketModal()"
-    [title]="modalTitle()"
-    (close)="closeModals()"
-  >
-    <div class="modal-body" [formGroup]="marketForm">
-      <div class="form-group">
-        <label for="marketName">Market Name</label>
-        <input
-          id="marketName"
-          type="text"
-          formControlName="name"
-          placeholder="e.g., France"
-        />
-        <div
-          class="error-message"
-          *ngIf="marketForm.get('name')?.errors?.['required'] && marketForm.get('name')?.touched"
-        >
-          Market name is required
-        </div>
-      </div>
+  <app-modal *ngIf="showMarketModal()" 
+             [show]="showMarketModal()" 
+             [title]="modalTitle()" 
+             (close)="closeModals()">
+    <div class="modal-content">
+      <form [formGroup]="marketForm" class="market-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Market Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., France" required>
+          <mat-error *ngIf="marketForm.get('name')?.errors?.['required']">
+            Market name is required
+          </mat-error>
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="marketCode">Market Code</label>
-        <input
-          id="marketCode"
-          type="text"
-          formControlName="code"
-          placeholder="e.g., FR"
-        />
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Market Code</mat-label>
+          <input matInput formControlName="code" placeholder="e.g., FR" required>
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="marketCurrency">Currency</label>
-        <select id="marketCurrency" formControlName="currency">
-          <option
-            *ngFor="let currency of currencySettings()"
-            [value]="currency.code"
-          >
-            {{ currency.name }} ({{ currency.code }})
-          </option>
-        </select>
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Currency</mat-label>
+          <mat-select formControlName="currency" required>
+            <mat-option *ngFor="let currency of currencySettings()" [value]="currency.code">
+              {{ currency.name }} ({{ currency.code }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="marketRegion">Region</label>
-        <input
-          id="marketRegion"
-          type="text"
-          formControlName="region"
-          placeholder="e.g., Europe"
-        />
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Region</mat-label>
+          <input matInput formControlName="region" placeholder="e.g., Europe">
+        </mat-form-field>
 
-      <div class="form-group">
-        <label for="marketDescription">Description</label>
-        <textarea
-          id="marketDescription"
-          formControlName="description"
-          placeholder="Market description..."
-          rows="3"
-        >
-        </textarea>
-      </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" 
+                    placeholder="Market description..." 
+                    rows="3">
+          </textarea>
+        </mat-form-field>
+      </form>
     </div>
-
-    <div class="modal-footer">
-      <button (click)="closeModals()">Cancel</button>
-      <button (click)="saveMarket()" [disabled]="marketForm.invalid">
+    <div class="modal-actions">
+      <button mat-button (click)="closeModals()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="saveMarket()" 
+              [disabled]="marketForm.invalid">
         Save
       </button>
     </div>

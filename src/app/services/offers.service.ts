@@ -1,26 +1,27 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { SpecialOffer } from '../models/types';
-import { MockApiService } from './mock/mock-api.service';
-import { BaseDataService } from './base-data.service';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, Observable, map } from "rxjs";
+import { SpecialOffer } from "../models/types";
+import { MockApiService } from "./mock/mock-api.service";
+import { BaseDataService } from "./base-data.service";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class OffersService extends BaseDataService<SpecialOffer> {
   private offersSubject = new BehaviorSubject<SpecialOffer[]>([]);
-  private rateOffersMap = new BehaviorSubject<Map<number, SpecialOffer[]>>(new Map());
+  private rateOffersMap = new BehaviorSubject<Map<number, SpecialOffer[]>>(
+    new Map()
+  );
 
   constructor() {
     super();
     this.initializeOffers();
-    
-    // Debug log
-    this.offers$.subscribe(offers => {
-        console.log('Current offers in service:', offers);
-    });
-}
 
+    // Debug log
+    this.offers$.subscribe((offers) => {
+      console.log("Current offers in service:", offers);
+    });
+  }
 
   // Get all offers
   get offers$(): Observable<SpecialOffer[]> {
@@ -29,9 +30,7 @@ export class OffersService extends BaseDataService<SpecialOffer> {
 
   // Get offers for a specific rate
   getRateOffers$(rateId: number): Observable<SpecialOffer[]> {
-    return this.rateOffersMap.pipe(
-      map(map => map.get(rateId) || [])
-    );
+    return this.rateOffersMap.pipe(map((map) => map.get(rateId) || []));
   }
 
   // Initialize offers from mock storage
@@ -40,36 +39,47 @@ export class OffersService extends BaseDataService<SpecialOffer> {
       const offers = await MockApiService.getOffers();
       this.offersSubject.next(offers);
     } catch (error) {
-      this.handleError('Error initializing offers', error);
+      this.handleError("Error initializing offers", error);
     }
   }
 
   // Create new offer
-  async createOffer(offer: Omit<SpecialOffer, 'id'>): Promise<SpecialOffer | null> {
+  async createOffer(
+    offer: Omit<SpecialOffer, "id">
+  ): Promise<SpecialOffer | null> {
     try {
       const newOffer = await MockApiService.createOffer(offer);
       const currentOffers = this.offersSubject.value;
       this.offersSubject.next([...currentOffers, newOffer]);
       return newOffer;
     } catch (error) {
-      this.handleError('Error creating offer', error);
+      this.handleError("Error creating offer", error);
       return null;
     }
   }
 
   // Update existing offer
-  async updateOffer(id: number, offerData: Partial<SpecialOffer>): Promise<SpecialOffer | null> {
+  async updateOffer(
+    id: number,
+    offerData: Partial<SpecialOffer>
+  ): Promise<SpecialOffer | null> {
     try {
       const updatedOffer = await MockApiService.updateOffer(id, offerData);
+
+      // Update the local state
       const currentOffers = this.offersSubject.value;
-      const index = currentOffers.findIndex(o => o.id === id);
+      const index = currentOffers.findIndex((o) => o.id === id);
+
       if (index !== -1) {
         currentOffers[index] = updatedOffer;
         this.offersSubject.next([...currentOffers]);
       }
+
+      console.log("Offer updated successfully:", updatedOffer);
       return updatedOffer;
     } catch (error) {
-      this.handleError('Error updating offer', error);
+      console.error("Error updating offer:", error);
+      this.handleError("Error updating offer", error);
       return null;
     }
   }
@@ -79,18 +89,21 @@ export class OffersService extends BaseDataService<SpecialOffer> {
     try {
       await MockApiService.deleteOffer(id);
       const currentOffers = this.offersSubject.value;
-      this.offersSubject.next(currentOffers.filter(o => o.id !== id));
+      this.offersSubject.next(currentOffers.filter((o) => o.id !== id));
 
       // Remove offer from all rates
       const currentMap = this.rateOffersMap.value;
       currentMap.forEach((offers, rateId) => {
-        currentMap.set(rateId, offers.filter(o => o.id !== id));
+        currentMap.set(
+          rateId,
+          offers.filter((o) => o.id !== id)
+        );
       });
       this.rateOffersMap.next(new Map(currentMap));
 
       return true;
     } catch (error) {
-      this.handleError('Error deleting offer', error);
+      this.handleError("Error deleting offer", error);
       return false;
     }
   }
@@ -98,23 +111,26 @@ export class OffersService extends BaseDataService<SpecialOffer> {
   // Apply offer to rate
   async applyOfferToRate(rateId: number, offer: SpecialOffer): Promise<void> {
     try {
-        const currentMap = this.rateOffersMap.value;
-        const currentOffers = currentMap.get(rateId) || [];
-        if (!currentOffers.find(o => o.id === offer.id)) {
-            currentMap.set(rateId, [...currentOffers, offer]);
-            this.rateOffersMap.next(new Map(currentMap));
-        }
+      const currentMap = this.rateOffersMap.value;
+      const currentOffers = currentMap.get(rateId) || [];
+      if (!currentOffers.find((o) => o.id === offer.id)) {
+        currentMap.set(rateId, [...currentOffers, offer]);
+        this.rateOffersMap.next(new Map(currentMap));
+      }
     } catch (error) {
-        this.handleError('Error applying offer to rate', error);
-        throw error;
+      this.handleError("Error applying offer to rate", error);
+      throw error;
     }
-}
+  }
 
   // Remove offer from rate
   removeOfferFromRate(rateId: number, offerId: number): void {
     const currentMap = this.rateOffersMap.value;
     const currentOffers = currentMap.get(rateId) || [];
-    currentMap.set(rateId, currentOffers.filter(o => o.id !== offerId));
+    currentMap.set(
+      rateId,
+      currentOffers.filter((o) => o.id !== offerId)
+    );
     this.rateOffersMap.next(new Map(currentMap));
   }
 
@@ -124,7 +140,7 @@ export class OffersService extends BaseDataService<SpecialOffer> {
       await MockApiService.resetStorage();
       await this.initializeOffers();
     } catch (error) {
-      this.handleError('Error resetting offers', error);
+      this.handleError("Error resetting offers", error);
     }
   }
 
@@ -138,97 +154,132 @@ export class OffersService extends BaseDataService<SpecialOffer> {
 
   protected async saveData(data: any): Promise<void> {
     try {
-        if (data.id) {
-            await MockApiService.updateOffer(data.id, data);
-        } else {
-            await MockApiService.createOffer(data);
-        }
+      if (data.id) {
+        await MockApiService.updateOffer(data.id, data);
+      } else {
+        await MockApiService.createOffer(data);
+      }
     } catch (error) {
-        this.handleError('Error saving offer data', error);
-        throw error;
+      this.handleError("Error saving offer data", error);
+      throw error;
     }
-}
+  }
 
-protected validateData(data: SpecialOffer): boolean {
-  if (!data) return false;
-  if (!data.name || data.name.trim().length === 0) return false;
-  if (!data.description || data.description.trim().length === 0) return false;
+  protected validateData(data: SpecialOffer): boolean {
+    if (!data) return false;
+    if (!data.name || data.name.trim().length === 0) return false;
+    if (!data.description || data.description.trim().length === 0) return false;
 
-  // Validate discount values array
-  if (!data.discountValues || !Array.isArray(data.discountValues) || data.discountValues.length === 0) return false;
+    // Validate discount values array
+    if (
+      !data.discountValues ||
+      !Array.isArray(data.discountValues) ||
+      data.discountValues.length === 0
+    )
+      return false;
 
-  // Validate each discount value
-  return data.discountValues.every(discount => {
-      if (typeof discount.value !== 'number' || discount.value < 0) return false;
-      if (data.discountType === 'percentage' && discount.value > 100) return false;
+    // Validate each discount value
+    return data.discountValues.every((discount) => {
+      if (typeof discount.value !== "number" || discount.value < 0)
+        return false;
+      if (data.discountType === "percentage" && discount.value > 100)
+        return false;
       return true;
-  });
-}
+    });
+  }
 
   protected override handleError(message: string, error: any): void {
     console.error(message, error);
     super.handleError(message, error);
   }
 
-  calculateDiscount(baseRate: number, offer: SpecialOffer, nights: number, bookingDate: string): number {
+  calculateDiscount(
+    baseRate: number,
+    offer: SpecialOffer,
+    nights: number,
+    bookingDate: string
+  ): number {
     const reservationDate = new Date(bookingDate);
-    const offerStartDate = offer.bookingWindow?.start ? new Date(offer.bookingWindow.start) : offer.startDate ? new Date(offer.startDate) : null;
-    const offerEndDate = offer.bookingWindow?.end ? new Date(offer.bookingWindow.end) : offer.endDate ? new Date(offer.endDate) : null;
+    const offerStartDate = offer.bookingWindow?.start
+      ? new Date(offer.bookingWindow.start)
+      : offer.startDate
+      ? new Date(offer.startDate)
+      : null;
+    const offerEndDate = offer.bookingWindow?.end
+      ? new Date(offer.bookingWindow.end)
+      : offer.endDate
+      ? new Date(offer.endDate)
+      : null;
 
-    if (!offerStartDate || !offerEndDate || reservationDate < offerStartDate || reservationDate > offerEndDate) {
+    if (
+      !offerStartDate ||
+      !offerEndDate ||
+      reservationDate < offerStartDate ||
+      reservationDate > offerEndDate
+    ) {
       return baseRate; // Offer not applicable
     }
 
     let discountedRate = baseRate;
-    const applicableDiscount = offer.discountValues.find(discount => {
+    const applicableDiscount = offer.discountValues.find((discount) => {
       const discountStartDate = new Date(discount.startDate);
       const discountEndDate = new Date(discount.endDate);
-      return reservationDate >= discountStartDate && reservationDate <= discountEndDate;
+      return (
+        reservationDate >= discountStartDate &&
+        reservationDate <= discountEndDate
+      );
     });
 
     if (applicableDiscount) {
-      discountedRate = offer.discountType === 'percentage'
-        ? baseRate * (1 - applicableDiscount.value / 100)
-        : Math.max(0, baseRate - applicableDiscount.value);
+      discountedRate =
+        offer.discountType === "percentage"
+          ? baseRate * (1 - applicableDiscount.value / 100)
+          : Math.max(0, baseRate - applicableDiscount.value);
     }
 
     return discountedRate;
   }
 
-  getApplicableOffers(checkIn: Date, checkOut: Date, roomTypeId: number): SpecialOffer[] {
+  getApplicableOffers(
+    checkIn: Date,
+    checkOut: Date,
+    roomTypeId: number
+  ): SpecialOffer[] {
     const offers = this.offersSubject.value;
     const today = new Date();
-    
-    console.log('Checking offers:', {
-        totalOffers: offers.length,
-        checkIn,
-        checkOut,
-        today
+
+    console.log("Checking offers:", {
+      totalOffers: offers.length,
+      checkIn,
+      checkOut,
+      today,
     });
-    
-    return offers.filter(offer => {
+
+    return offers.filter((offer) => {
       const offerStartDate = new Date(offer.startDate);
       const offerEndDate = new Date(offer.endDate);
-      
+
       const isValidDate = checkIn >= offerStartDate && checkOut <= offerEndDate;
-      const isWithinBookingWindow = !offer.bookingWindow || (
-        today >= new Date(offer.bookingWindow.start) && 
-        today <= new Date(offer.bookingWindow.end)
+      const isWithinBookingWindow =
+        !offer.bookingWindow ||
+        (today >= new Date(offer.bookingWindow.start) &&
+          today <= new Date(offer.bookingWindow.end));
+      const nights = Math.ceil(
+        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
       );
-      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      const meetsMinNights = !offer.minimumNights || nights >= offer.minimumNights;
-      
-      console.log('Offer check:', {
-          offerName: offer.name,
-          isValidDate,
-          isWithinBookingWindow,
-          meetsMinNights,
-          nights,
-          minimumNights: offer.minimumNights
+      const meetsMinNights =
+        !offer.minimumNights || nights >= offer.minimumNights;
+
+      console.log("Offer check:", {
+        offerName: offer.name,
+        isValidDate,
+        isWithinBookingWindow,
+        meetsMinNights,
+        nights,
+        minimumNights: offer.minimumNights,
       });
-      
+
       return isValidDate && isWithinBookingWindow && meetsMinNights;
     });
-}
-
+  }
 }

@@ -1,26 +1,34 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
-import { distinctUntilChanged, map, tap, catchError, switchMap } from 'rxjs/operators';
-import { 
-  Hotel, 
-  AgeCategory, 
-  HotelPolicies, 
-  HotelCapacity, 
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, Observable, from, of, throwError } from "rxjs";
+import {
+  distinctUntilChanged,
+  map,
+  tap,
+  catchError,
+  switchMap,
+} from "rxjs/operators";
+import {
+  Hotel,
+  AgeCategory,
+  HotelPolicies,
+  HotelCapacity,
   MenuItemId,
   DressCodePolicy,
   HotelDataKey,
-  RoomType
-} from '../models/types';
-import { MockApiService } from './mock/mock-api.service';
-import { BaseDataService } from './base-data.service';
-import { RoomConfigurationService } from './room-configuration.service';
+  RoomType,
+} from "../models/types";
+import { MockApiService } from "./mock/mock-api.service";
+import { BaseDataService } from "./base-data.service";
+import { RoomConfigurationService } from "./room-configuration.service";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class HotelService extends BaseDataService<Hotel> {
   private selectedHotelSubject = new BehaviorSubject<Hotel | null>(null);
-  private selectedMenuItemSubject = new BehaviorSubject<MenuItemId | null>(null);
+  private selectedMenuItemSubject = new BehaviorSubject<MenuItemId | null>(
+    null
+  );
   private hotels$ = new BehaviorSubject<Hotel[]>([]);
   private activeTabSubject = new BehaviorSubject<string | null>(null);
 
@@ -31,16 +39,16 @@ export class HotelService extends BaseDataService<Hotel> {
 
   constructor(private roomConfigService: RoomConfigurationService) {
     super();
-    this.selectedHotel$.pipe(
-      distinctUntilChanged((prev, curr) => prev?.id === curr?.id)
-    ).subscribe(hotel => {
-      if (hotel) {
-        this.loadHotelData(hotel);
-      }
-    });
+    this.selectedHotel$
+      .pipe(distinctUntilChanged((prev, curr) => prev?.id === curr?.id))
+      .subscribe((hotel) => {
+        if (hotel) {
+          this.loadHotelData(hotel);
+        }
+      });
   }
 
-  protected override handleError<T>(operation = 'operation', result?: T) {
+  protected override handleError<T>(operation = "operation", result?: T) {
     return (error: any): Observable<T> => {
       console.error(`${operation} failed:`, error);
       return of(result as T);
@@ -51,7 +59,7 @@ export class HotelService extends BaseDataService<Hotel> {
       const hotels = await MockApiService.getHotels();
       this.hotels$.next(hotels);
     } catch (error) {
-      console.error('Failed to load hotels:', error);
+      console.error("Failed to load hotels:", error);
       throw error;
     }
   }
@@ -62,7 +70,7 @@ export class HotelService extends BaseDataService<Hotel> {
       const hotels = await MockApiService.getHotels();
       this.hotels$.next(hotels);
     } catch (error) {
-      console.error('Failed to initialize hotels:', error);
+      console.error("Failed to initialize hotels:", error);
     }
   }
 
@@ -72,7 +80,7 @@ export class HotelService extends BaseDataService<Hotel> {
       const fullHotelData = await MockApiService.getHotelById(hotel.id);
       if (fullHotelData) {
         this.selectedHotelSubject.next(fullHotelData);
-        console.log('Hotel data loaded:', fullHotelData);
+        console.log("Hotel data loaded:", fullHotelData);
       }
     } catch (error) {
       console.error(`Failed to load hotel data for hotel ${hotel.id}:`, error);
@@ -81,9 +89,9 @@ export class HotelService extends BaseDataService<Hotel> {
       try {
         await MockApiService.resetHotelsData();
         await this.loadHotels();
-        console.warn('Hotel data reset due to error.');
+        console.warn("Hotel data reset due to error.");
       } catch (resetError) {
-        console.error('Failed to reset hotel data:', resetError);
+        console.error("Failed to reset hotel data:", resetError);
       }
     }
   }
@@ -101,7 +109,7 @@ export class HotelService extends BaseDataService<Hotel> {
       }
       return hotel;
     } catch (error) {
-      console.error('Error fetching hotel:', error);
+      console.error("Error fetching hotel:", error);
       throw error;
     }
   }
@@ -120,13 +128,16 @@ export class HotelService extends BaseDataService<Hotel> {
   }
 
   // Update methods
-  async updateHotel(id: number, updates: Partial<Hotel>): Promise<Hotel | null> {
+  async updateHotel(
+    id: number,
+    updates: Partial<Hotel>
+  ): Promise<Hotel | null> {
     try {
       const updatedHotel = await MockApiService.updateHotel(id, updates);
-      
+
       // Update hotels list
       const currentHotels = this.hotels$.value;
-      const index = currentHotels.findIndex(h => h.id === id);
+      const index = currentHotels.findIndex((h) => h.id === id);
       if (index !== -1) {
         currentHotels[index] = updatedHotel;
         this.hotels$.next([...currentHotels]);
@@ -145,61 +156,73 @@ export class HotelService extends BaseDataService<Hotel> {
   }
 
   // Specific update methods
-   // Method to update age categories with validation
-   async updateHotelAgeCategories(hotelId: number, categories: AgeCategory[]): Promise<Hotel> {
+  // Method to update age categories with validation
+  async updateHotelAgeCategories(
+    hotelId: number,
+    categories: AgeCategory[]
+  ): Promise<Hotel> {
     try {
       // Validate categories before updating
       this.validateAgeCategories(categories);
-      
-      const updatedHotel = await MockApiService.updateHotelAgeCategories(hotelId, categories);
+
+      const updatedHotel = await MockApiService.updateHotelAgeCategories(
+        hotelId,
+        categories
+      );
       this.updateHotelInStore(updatedHotel);
       return updatedHotel;
     } catch (error) {
       // Convert error to string before passing to handleError
-      this.handleError(error instanceof Error ? error.message : 'Failed to update age categories');
+      this.handleError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update age categories"
+      );
       throw error;
     }
   }
-  
 
   private updateHotelInStore(updatedHotel: Hotel) {
     const currentHotels = this.hotels$.value;
-    const index = currentHotels.findIndex(h => h.id === updatedHotel.id);
+    const index = currentHotels.findIndex((h) => h.id === updatedHotel.id);
     if (index !== -1) {
       currentHotels[index] = updatedHotel;
       this.hotels$.next([...currentHotels]);
     }
   }
 
-  async updateHotelPolicies(hotelId: number, policies: HotelPolicies): Promise<Hotel | null> {
+  async updateHotelPolicies(
+    hotelId: number,
+    policies: HotelPolicies
+  ): Promise<Hotel | null> {
     return this.updateHotel(hotelId, { policies });
   }
 
   getHotelDescription(hotelId: number): Observable<string> {
-    return this.getHotelData<string>(hotelId, 'description').pipe(
-      map(description => description || ''),
-      catchError(error => {
-        console.error('Error loading hotel description:', error);
-        return of('');
+    return this.getHotelData<string>(hotelId, "description").pipe(
+      map((description) => description || ""),
+      catchError((error) => {
+        console.error("Error loading hotel description:", error);
+        return of("");
       })
     );
   }
-  
+
   getHotelDressCode(hotelId: number): Observable<DressCodePolicy | null> {
-    return this.getHotelData<DressCodePolicy>(hotelId, 'dressCode').pipe(
-      catchError(error => {
-        console.error('Error loading hotel dress code:', error);
+    return this.getHotelData<DressCodePolicy>(hotelId, "dressCode").pipe(
+      catchError((error) => {
+        console.error("Error loading hotel dress code:", error);
         return of(null);
       })
     );
   }
 
   getHotelFactSheet(hotelId: number): Observable<string> {
-    return this.getHotelData<string>(hotelId, 'factSheet').pipe(
-      map(factSheet => factSheet || ''),
-      catchError(error => {
-        console.error('Error loading hotel fact sheet:', error);
-        return of('');
+    return this.getHotelData<string>(hotelId, "factSheet").pipe(
+      map((factSheet) => factSheet || ""),
+      catchError((error) => {
+        console.error("Error loading hotel fact sheet:", error);
+        return of("");
       })
     );
   }
@@ -209,9 +232,25 @@ export class HotelService extends BaseDataService<Hotel> {
   // }
 
   // Storage management methods
-  saveHotelData<T>(hotelId: number, key: HotelDataKey, value: T): Observable<void> {
+  saveHotelData<T>(
+    hotelId: number,
+    key: HotelDataKey,
+    value: T
+  ): Observable<void> {
     return from(MockApiService.saveHotelData(hotelId, key, value)).pipe(
-      catchError(error => {
+      tap(() => {
+        // Update local cache if needed
+        if (key === "description") {
+          const currentHotel = this.selectedHotelSubject.value;
+          if (currentHotel && currentHotel.id === hotelId) {
+            this.selectedHotelSubject.next({
+              ...currentHotel,
+              description: value as string,
+            });
+          }
+        }
+      }),
+      catchError((error) => {
         console.error(`Failed to save hotel data for key ${key}:`, error);
         throw error;
       })
@@ -220,7 +259,7 @@ export class HotelService extends BaseDataService<Hotel> {
 
   getHotelData<T>(hotelId: number, key: HotelDataKey): Observable<T | null> {
     return from(MockApiService.getHotelData<T>(hotelId, key)).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error(`Error getting hotel data for key ${key}:`, error);
         return of(null);
       })
@@ -233,20 +272,20 @@ export class HotelService extends BaseDataService<Hotel> {
       await MockApiService.resetStorage();
       await this.loadHotels();
     } catch (error) {
-      console.error('Failed to reset hotels:', error);
+      console.error("Failed to reset hotels:", error);
     }
   }
 
   // Helper methods
   getHotelName(id: number): string {
-    return this.hotels$.value.find(h => h.id === id)?.name || '';
+    return this.hotels$.value.find((h) => h.id === id)?.name || "";
   }
 
   // New method to get age categories directly
   getHotelAgeCategories(hotelId: number): Observable<AgeCategory[]> {
     return from(MockApiService.getHotelAgeCategories(hotelId)).pipe(
-      map(categories => categories || []),
-      catchError(this.handleError('getHotelAgeCategories', []))
+      map((categories) => categories || []),
+      catchError(this.handleError("getHotelAgeCategories", []))
     );
   }
 
@@ -255,18 +294,18 @@ export class HotelService extends BaseDataService<Hotel> {
     categories.forEach((category, index) => {
       const nextCategory = categories[index + 1];
       if (nextCategory && category.maxAge >= nextCategory.minAge) {
-        throw new Error('Age categories cannot have overlapping ranges');
+        throw new Error("Age categories cannot have overlapping ranges");
       }
       // Ensure valid age ranges
       if (category.minAge < 0 || category.maxAge < category.minAge) {
-        throw new Error('Invalid age range');
+        throw new Error("Invalid age range");
       }
     });
-    
+
     // Ensure continuous coverage
     for (let i = 0; i < categories.length - 1; i++) {
       if (categories[i].maxAge + 1 !== categories[i + 1].minAge) {
-        throw new Error('Age categories must be continuous');
+        throw new Error("Age categories must be continuous");
       }
     }
   }

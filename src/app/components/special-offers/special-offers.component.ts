@@ -12,8 +12,7 @@ import { MatDivider } from "@angular/material/divider";
 import { MatCardModule } from "@angular/material/card";
 import { CommonModule } from "@angular/common";
 import { OfferFormComponent } from "./offer-form/offer-form.component";
-import { OfferListComponent } from './offer-list/offer-list.component';
-
+import { OfferListComponent } from "./offer-list/offer-list.component";
 
 @Component({
   selector: "app-special-offers",
@@ -26,7 +25,7 @@ import { OfferListComponent } from './offer-list/offer-list.component';
     MatCardModule,
     CommonModule,
     OfferFormComponent,
-    OfferListComponent
+    OfferListComponent,
   ],
 })
 export class SpecialOffersComponent implements OnInit, OnDestroy {
@@ -40,7 +39,7 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
   constructor(
     private offersService: OffersService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -91,9 +90,9 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
         },
       });
 
-      dialogRef.backdropClick().subscribe(() => {
-        dialogRef.close();
-      });
+    dialogRef.backdropClick().subscribe(() => {
+      dialogRef.close();
+    });
   }
 
   editOffer(offer: SpecialOffer): void {
@@ -105,7 +104,7 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
     dialogConfig.disableClose = true;
     dialogConfig.data = {
       title: "Edit Special Offer",
-      offer: { ...offer },
+      offer: { ...offer }, // Clone the offer
     };
 
     const dialogRef = this.dialog.open(OfferFormComponent, dialogConfig);
@@ -114,11 +113,24 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
       .afterClosed()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result) => {
+        next: async (result) => {
           if (result) {
-            this.snackBar.open("Offer updated successfully", "Close", {
-              duration: 3000,
-            });
+            try {
+              // Update the offer using the service
+              await this.offersService.updateOffer(offer.id, result);
+
+              // Reload offers to refresh the list
+              await this.offersService.load();
+
+              this.snackBar.open("Offer updated successfully", "Close", {
+                duration: 3000,
+              });
+            } catch (error) {
+              console.error("Error updating offer:", error);
+              this.snackBar.open("Error updating offer", "Close", {
+                duration: 3000,
+              });
+            }
           }
         },
         error: (error) => {
@@ -129,9 +141,9 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
         },
       });
 
-      dialogRef.backdropClick().subscribe(() => {
-        dialogRef.close();
-      });
+    dialogRef.backdropClick().subscribe(() => {
+      dialogRef.close();
+    });
   }
 
   async deleteOffer(offer: SpecialOffer): Promise<void> {
@@ -152,7 +164,7 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
     if (this.selectedOffer) {
       this.offersService.updateOffer(this.selectedOffer.id, offerData);
     } else {
-      this.offersService.createOffer(offerData as Omit<SpecialOffer, 'id'>);
+      this.offersService.createOffer(offerData as Omit<SpecialOffer, "id">);
     }
     this.showOfferForm = false;
     this.selectedOffer = null;

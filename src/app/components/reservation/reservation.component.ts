@@ -7,6 +7,9 @@ import {
   FormGroup,
   Validators,
   ReactiveFormsModule,
+  ValidatorFn,
+  AbstractControl,
+  ValidationErrors,
 } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
@@ -28,6 +31,7 @@ import {
   MEAL_PLAN_NAMES,
   MealPlanType,
   Period,
+  ReservationStep,
 } from "../../models/types";
 import { ContractService } from "src/app/services/contract.service";
 import { ContractRateService } from "src/app/services/contract-rates.service";
@@ -83,22 +87,6 @@ interface RoomRate {
   };
 }
 
-interface ReservationStep {
-  room?: RoomType;
-  selectedMealPlans?: MealPlanType[];
-  baseRate?: number;
-  supplementRates?: {
-    type: MealPlanType;
-    name: string;
-    rates: {
-      adult: number;
-      child: number;
-      infant: number;
-    };
-  }[];
-  total?: number;
-}
-
 interface MarketConfig {
   currency: string;
   // other market-specific configurations
@@ -150,6 +138,10 @@ export class ReservationComponent {
 
   currentStep = signal<ReservationStep>({});
   cartItems = signal<ReservationStep[]>([]);
+
+  isCartView = signal(false);
+
+  searchPerformed = signal(false);
 
   @ViewChild("stepper") stepper!: MatStepper;
 
@@ -204,15 +196,31 @@ export class ReservationComponent {
   }
 
   private initForm(): void {
-    this.searchForm = this.fb.group({
-      hotelId: ["", Validators.required],
-      marketId: ["", Validators.required],
-      checkIn: ["", [Validators.required]],
-      checkOut: ["", [Validators.required]],
-      adults: [1, [Validators.required, Validators.min(1)]],
-      children: [0, [Validators.required, Validators.min(0)]],
-      infants: [0, [Validators.required, Validators.min(0)]],
-    });
+    // Définir les dates par défaut
+    const today = new Date();
+    const checkIn = new Date(today);
+    checkIn.setDate(today.getDate() + 1); // Par défaut commence demain
+
+    const checkOut = new Date(checkIn);
+    checkOut.setDate(checkIn.getDate() + 2); // Séjour de 2 nuits par défaut
+
+    this.searchForm = this.fb.group(
+      {
+        hotelId: ["", Validators.required],
+        marketId: ["", Validators.required],
+        checkIn: [checkIn, Validators.required], // Pre-fill with tomorrow
+        checkOut: [checkOut, Validators.required], // Pre-fill with day after tomorrow
+        adults: [0, [Validators.min(0), Validators.max(4)]], // Allow 0 adults
+        children: [0, [Validators.min(0), Validators.max(3)]],
+        infants: [0, [Validators.min(0), Validators.max(2)]],
+      },
+      {
+        validators: [
+          this.validateDates(),
+          this.validateOccupancy(), // New occupancy validator
+        ],
+      }
+    );
 
     // Subscribe to check-in date changes
     this.searchForm.get("checkIn")?.valueChanges.subscribe((date) => {
@@ -220,6 +228,44 @@ export class ReservationComponent {
         this.updateCheckOutDate(new Date(date));
       }
     });
+  }
+
+  private validateOccupancy(): ValidatorFn {
+    return (formGroup: AbstractControl): ValidationErrors | null => {
+      const adults = formGroup.get("adults")?.value || 0;
+      const children = formGroup.get("children")?.value || 0;
+      const infants = formGroup.get("infants")?.value || 0;
+
+      // Au moins un enfant ou un adulte est requis
+      if (adults === 0 && children === 0) {
+        return { noOccupants: true };
+      }
+
+      // Si il y a des bébés, vérifier qu'il y a au moins un enfant
+      if (infants > 0 && children === 0) {
+        return { infantRequiresChild: true };
+      }
+
+      return null;
+    };
+  }
+
+  private validateDates(): ValidatorFn {
+    return (formGroup: AbstractControl): ValidationErrors | null => {
+      const checkIn = formGroup.get("checkIn")?.value;
+      const checkOut = formGroup.get("checkOut")?.value;
+
+      if (!checkIn || !checkOut) return null;
+
+      const checkInDate = new Date(checkIn);
+      const checkOutDate = new Date(checkOut);
+
+      if (checkOutDate <= checkInDate) {
+        return { invalidDateRange: true };
+      }
+
+      return null;
+    };
   }
 
   private updateCheckOutDate(checkInDate: Date): void {
@@ -489,20 +535,19 @@ export class ReservationComponent {
 
     try {
       // Temporarily skip date validation for testing
-      /* Comment out date validation for now
+      //Comment out date validation for now
       const checkInDate = new Date(checkIn);
-      const validPeriods = this.periods().filter(period => {
+      const validPeriods = this.periods().filter((period) => {
         const periodStart = new Date(period.startDate);
         const periodEnd = new Date(period.endDate);
         return checkInDate >= periodStart && checkInDate <= periodEnd;
       });
 
       if (validPeriods.length === 0) {
-        console.warn('No valid periods found for the selected check-in date');
+        console.warn("No valid periods found for the selected check-in date");
         this.filteredRooms.set([]);
         return;
       }
-      */
 
       // Get room types for the hotel
       await this.loadRoomTypes(hotelId);
@@ -725,8 +770,12 @@ export class ReservationComponent {
   // }
 
   selectRoom(room: RoomType): void {
+    // Check for active contract first
     const contract = this.activeContract();
-    if (!contract) return;
+    if (!contract) {
+      console.warn("No active contract found");
+      return;
+    }
 
     // Get base meal plan and rate
     const baseMealPlan = this.getBaseMealPlan(room);
@@ -738,9 +787,34 @@ export class ReservationComponent {
       return;
     }
 
+    // Store the previous search values
+    const previousSearch = {
+      checkIn: this.searchForm.get("checkIn")?.value,
+      checkOut: this.searchForm.get("checkOut")?.value,
+      adults: this.searchForm.get("adults")?.value,
+      children: this.searchForm.get("children")?.value,
+      infants: this.searchForm.get("infants")?.value,
+      hotelId: this.searchForm.get("hotelId")?.value,
+      marketId: this.searchForm.get("marketId")?.value,
+    };
+
+    // Reset the form but keep it pristine
+    this.searchForm.reset(previousSearch, { emitEvent: false });
+
+    // Reset the form status without marking fields as touched
+    Object.keys(this.searchForm.controls).forEach((key) => {
+      const control = this.searchForm.get(key);
+      control?.setErrors(null);
+      control?.markAsUntouched();
+    });
+
+    // Hide available rooms
+    this.filteredRooms.set([]);
+
     // Get available supplements
     const supplements = this.getAvailableMealPlanSupplements(room, contract);
 
+    // Load available offers for the room
     this.getAvailableOffers(room);
 
     // Update current step with non-null baseRate
@@ -756,26 +830,30 @@ export class ReservationComponent {
     this.stepper.next();
   }
 
-  updateMealPlanSelection(options: MatListOption[]): void {
-    const selectedPlans = options
+  updateMealPlanSelection(plans: MatListOption[]): void {
+    const current = this.currentStep();
+    if (!current) return;
+
+    console.log("Plans avant sélection:", current.selectedMealPlans);
+
+    const selectedPlans = plans
       .filter((option) => option.selected)
       .map((option) => option.value as MealPlanType);
 
-    const current = this.currentStep();
-    if (!current.room) return;
-
-    // Recalculate total with supplements
-    const total = this.calculateTotal(
-      current.baseRate!,
-      selectedPlans,
-      current.supplementRates!
-    );
+    console.log("Nouveaux plans sélectionnés:", selectedPlans);
 
     this.currentStep.set({
       ...current,
       selectedMealPlans: selectedPlans,
-      total,
     });
+
+    // Log l'état après mise à jour
+    console.log("État après mise à jour:", this.currentStep());
+
+    this.updateTotalWithOffers();
+
+    // Log le total final
+    console.log("Nouveau total:", this.currentStep().total);
   }
 
   private getAvailableMealPlanSupplements(
@@ -853,40 +931,6 @@ export class ReservationComponent {
     };
   }
 
-  private calculateTotal(
-    baseRate: number,
-    selectedPlans: MealPlanType[],
-    supplementRates: {
-      type: MealPlanType;
-      name: string;
-      rates: {
-        adult: number;
-        child: number;
-        infant: number;
-      };
-    }[]
-  ): number {
-    const supplementTotal = selectedPlans.reduce((total, planType) => {
-      const supplement = supplementRates.find((s) => s.type === planType);
-      if (!supplement) return total;
-
-      // Get occupancy from search form
-      const adults = this.searchForm.get("adults")?.value || 0;
-      const children = this.searchForm.get("children")?.value || 0;
-      const infants = this.searchForm.get("infants")?.value || 0;
-
-      // Calculate supplement total for all occupants
-      const supplementTotal =
-        adults * supplement.rates.adult +
-        children * supplement.rates.child +
-        infants * supplement.rates.infant;
-
-      return total + supplementTotal;
-    }, 0);
-
-    return baseRate + supplementTotal;
-  }
-
   public calculateCartTotal(): number {
     return this.cartItems().reduce(
       (total, item) => total + (item.total || 0),
@@ -895,33 +939,207 @@ export class ReservationComponent {
   }
 
   addToCart(): void {
-    const current = this.currentStep();
-    if (!current.room) return;
-
-    // If this is the first item being added to cart
-    if (this.cartItems().length === 0) {
-      // Store initial booking parameters
-      const { hotelId, marketId, checkIn, checkOut } = this.searchForm.value;
-      this.initialBooking.set({
-        hotelId,
-        marketId,
-        checkIn: checkIn ? new Date(checkIn) : undefined,
-        checkOut: checkOut ? new Date(checkOut) : undefined,
+    // First validate all required data
+    if (!this.validateCartData()) {
+      this.snackBar.open("Please complete all required selections", "Close", {
+        duration: 3000,
+        panelClass: ['warning-snackbar']
       });
+      return;
+    }
+  
+    const current = this.currentStep();
+    
+    try {
+      // If this is the first item being added to cart
+      if (this.cartItems().length === 0) {
+        const { hotelId, marketId, checkIn, checkOut } = this.searchForm.value;
+        this.initialBooking.set({
+          hotelId,
+          marketId,
+          checkIn: checkIn ? new Date(checkIn) : undefined,
+          checkOut: checkOut ? new Date(checkOut) : undefined
+        });
+      }
+  
+      // Get the current occupancy from the search form
+      const { adults, children, infants } = this.searchForm.value;
+  
+      // Create cart item with correct typing and occupancy
+      const cartItem: ReservationStep = {
+        room: current.room,
+        selectedMealPlans: current.selectedMealPlans || [],
+        selectedOffers: this.selectedOffers(),
+        baseRate: current.baseRate,
+        supplementRates: current.supplementRates,
+        total: current.total,
+        applyOffersToMealPlans: current.applyOffersToMealPlans,
+        appliedDiscounts: this.selectedOffers().map(offer => ({
+          offerName: offer.name,
+          discountType: offer.discountType === 'percentage' ? 'percentage' : 'fixed',
+          discountValue: this.getApplicableDiscount(offer),
+          savedAmount: current.totalBeforeDiscounts 
+            ? current.totalBeforeDiscounts - (current.total || 0)
+            : 0
+        })),
+        totalBeforeDiscounts: current.totalBeforeDiscounts,
+        // Add occupancy information
+        occupancy: {
+          adults: adults || 0,
+          children: children || 0,
+          infants: infants || 0
+        }
+      };
+  
+      // Add to cart
+      this.cartItems.update(items => [...items, cartItem]);
+      // Show success message with options
+      this.snackBar.open(
+        "Room added successfully! What would you like to do next?",
+        undefined,
+        {
+          duration: 5000,
+          panelClass: ["action-snackbar"],
+          horizontalPosition: "center",
+          verticalPosition: "bottom",
+        }
+      );
 
-      // Disable hotel and market selection in the form
+      // Add action buttons
+      const actions = [
+        {
+          label: "Add Another Room",
+          callback: () => {
+            this.resetForNewRoom();
+            this.snackBar.dismiss();
+          },
+        },
+        {
+          label: "View Cart",
+          callback: () => {
+            this.proceedToCart();
+            this.snackBar.dismiss();
+          },
+        },
+      ];
+
+      // Show actions in a new snackbar
+      actions.forEach((action) => {
+        this.snackBar
+          .open("", action.label, {
+            duration: 0,
+            panelClass: ["action-snackbar"],
+            horizontalPosition: "center",
+            verticalPosition: "bottom",
+          })
+          .onAction()
+          .subscribe(action.callback);
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      this.snackBar.open("Error adding room to cart", "Close", {
+        duration: 3000,
+        panelClass: ["error-snackbar"],
+      });
+    }
+  }
+
+  private resetForNewRoom(): void {
+    // Garder les critères de recherche actuels, y compris le market
+    const currentSearch = {
+      hotelId: this.initialBooking()?.hotelId,
+      marketId: this.initialBooking()?.marketId,
+      checkIn: this.searchForm.get("checkIn")?.value,
+      checkOut: this.searchForm.get("checkOut")?.value,
+      adults: this.searchForm.get("adults")?.value,
+      children: this.searchForm.get("children")?.value,
+      infants: this.searchForm.get("infants")?.value,
+    };
+
+    // Réinitialiser le stepper
+    this.stepper.reset();
+
+    // Réinitialiser l'étape courante
+    this.currentStep.set({});
+
+    // Effacer les offres sélectionnées
+    this.selectedOffers.set([]);
+
+    // Important: Réinitialiser le formulaire avec les valeurs actuelles
+    this.searchForm.patchValue(currentSearch, { emitEvent: false });
+
+    // S'assurer que les contrôles hotelId et marketId restent désactivés
+    if (this.cartItems().length > 0) {
       this.searchForm.get("hotelId")?.disable();
       this.searchForm.get("marketId")?.disable();
     }
 
-    this.cartItems.update((items) => [...items, current]);
-    this.currentStep.set({});
-    this.stepper.reset();
-
-    // Show success message
-    this.snackBar.open("Room added to cart successfully", "Close", {
-      duration: 3000,
+    // Réinitialiser le statut du formulaire sans marquer les champs comme touchés
+    Object.keys(this.searchForm.controls).forEach((key) => {
+      const control = this.searchForm.get(key);
+      if (control) {
+        control.markAsUntouched();
+        control.updateValueAndValidity();
+      }
     });
+  }
+
+  // Add method to clear booking and enable form
+  clearBooking(): void {
+    if (
+      confirm(
+        "Are you sure you want to cancel your booking? This will clear your cart."
+      )
+    ) {
+      // Clear cart
+      this.cartItems.set([]);
+
+      // Clear initial booking
+      this.initialBooking.set(null);
+
+      // Enable hotel and market selection
+      this.searchForm.get("hotelId")?.enable();
+      this.searchForm.get("marketId")?.enable();
+
+      // Reset form completely
+      this.searchForm.reset();
+      this.currentStep.set({});
+      this.selectedOffers.set([]);
+      this.stepper.reset();
+
+      this.snackBar.open("Booking cancelled", "Close", {
+        duration: 3000,
+      });
+    }
+  }
+
+  private validateCartData(): boolean {
+    const current = this.currentStep();
+    const formValues = this.searchForm.value;
+
+    // Vérifier qu'il y a au moins un enfant si pas d'adultes
+    const hasValidOccupancy = formValues.adults > 0 || formValues.children > 0;
+
+    const isValid = !!(
+      (
+        current &&
+        current.room &&
+        current.baseRate &&
+        current.total &&
+        hasValidOccupancy
+      ) // Nouvelle condition
+    );
+
+    if (!isValid) {
+      console.error("Invalid cart data:", {
+        hasRoom: !!current?.room,
+        hasBaseRate: !!current?.baseRate,
+        hasTotal: !!current?.total,
+        hasValidOccupancy: hasValidOccupancy,
+      });
+    }
+
+    return isValid;
   }
 
   clearCart(): void {
@@ -944,26 +1162,22 @@ export class ReservationComponent {
       return;
     }
 
+    // Set cart view to true
+    this.isCartView.set(true);
+
     // Save cart items to localStorage before navigation
     try {
       localStorage.setItem("bookingCart", JSON.stringify(this.cartItems()));
-
-      // Update the navigation path to include the booking prefix
-      this.router
-        .navigate(["/booking/cart"])
-        .then(() => {
-          console.log("Navigation to cart successful");
-        })
-        .catch((error) => {
-          console.error("Navigation error:", error);
-          this.snackBar.open("Error navigating to cart", "Close", {
-            duration: 3000,
-          });
-        });
+      // Navigate to cart
+      this.router.navigate(["/booking/cart"]);
     } catch (error) {
-      console.error("Error saving cart data:", error);
-      this.snackBar.open("Error saving cart data", "Close", { duration: 3000 });
+      console.error("Error saving cart to localStorage:", error);
+      this.snackBar.open("Error saving cart", "Close", { duration: 3000 });
     }
+  }
+
+  returnToRoomSelection(): void {
+    this.isCartView.set(false);
   }
 
   getRelatedOffers(room: RoomType): SpecialOffer[] {
@@ -978,53 +1192,39 @@ export class ReservationComponent {
   }
 
   isOfferDisabled(offer: SpecialOffer): boolean {
-    const selectedOffers = this.selectedOffers();
-    
-    // If no offers are selected, none should be disabled
-    if (selectedOffers.length === 0) return false;
-    
-    // If combinable offers are selected, only disable cumulative offers
-    if (selectedOffers.some(o => o.type === 'combinable')) {
-        return offer.type === 'cumulative';
-    }
-    
-    // If a cumulative offer is selected, only disable combinable offers
-    if (selectedOffers.some(o => o.type === 'cumulative')) {
-        return offer.type === 'combinable';
-    }
-    
-    return false;
-}
+    const currentOffers = this.selectedOffers();
 
+    // If no offers selected, none should be disabled
+    if (!currentOffers.length) return false;
+
+    // If there are cumulative offers selected, disable combinable offers
+    if (currentOffers.some((o) => o.type === "cumulative")) {
+      return offer.type === "combinable";
+    }
+
+    // If there are combinable offers selected, disable cumulative offers
+    if (currentOffers.some((o) => o.type === "combinable")) {
+      return offer.type === "cumulative";
+    }
+
+    return false;
+  }
 
   getApplicableDiscount(offer: SpecialOffer): number {
-    const { checkIn, checkOut } = this.searchForm.value;
-    if (!checkIn || !checkOut) return 0;
-
-    // Calculate nights
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const nights = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    // Find applicable discount value based on dates and conditions
-    const applicableValue = offer.discountValues.find((discount) => {
-      // If no specific dates, use the first discount value
-      if (!discount.startDate || !discount.endDate) return true;
-
+    const stayDate = new Date(this.searchForm.value.checkIn);
+    
+    // Find applicable discount based on stay date
+    const applicableDiscount = offer.discountValues.find(discount => {
       const discountStart = new Date(discount.startDate);
       const discountEnd = new Date(discount.endDate);
-
-      return (
-        start >= discountStart &&
-        end <= discountEnd &&
-        (!offer.minimumNights || nights >= offer.minimumNights)
-      );
+      return stayDate >= discountStart && stayDate <= discountEnd;
     });
-
-    return applicableValue?.value || offer.discountValues[0].value;
+  
+    // If no specific discount found, return 0
+    return applicableDiscount?.value ?? 0;
   }
+  
+
 
   getStayDuration(): number {
     const { checkIn, checkOut } = this.searchForm.value;
@@ -1036,7 +1236,10 @@ export class ReservationComponent {
   }
 
   isOfferSelected(offer: SpecialOffer): boolean {
-    return this.selectedOffers().some((o) => o.id === offer.id);
+    const current = this.currentStep();
+    if (!current?.selectedOffers) return false;
+
+    return current.selectedOffers.some((o) => o.id === offer.id);
   }
 
   getAvailableOffers(room: RoomType): void {
@@ -1056,80 +1259,235 @@ export class ReservationComponent {
 
   toggleOffer(offer: SpecialOffer, checked: boolean): void {
     if (checked) {
-      // If selecting a cumulative offer, clear all other offers
+      const currentOffers = this.selectedOffers();
+
       if (offer.type === "cumulative") {
-        this.selectedOffers.set([offer]);
-      } else {
-        // If selecting a combinable offer, add it to the selection
-        this.selectedOffers.update((offers) => [...offers, offer]);
+        // If selecting a cumulative offer, clear any combinable offers
+        this.selectedOffers.set([
+          ...currentOffers.filter((o) => o.type === "cumulative"),
+          offer,
+        ]);
+      } else if (offer.type === "combinable") {
+        // If selecting a combinable offer, clear any cumulative offers
+        this.selectedOffers.set([
+          ...currentOffers.filter((o) => o.type === "combinable"),
+          offer,
+        ]);
       }
     } else {
-      // Remove the offer from selection and enable all offers
-      this.selectedOffers.update((offers) =>
-        offers.filter((o) => o.id !== offer.id)
-      );
+      // If deselecting, simply remove the offer
+      const currentOffers = this.selectedOffers();
+      this.selectedOffers.set(currentOffers.filter((o) => o.id !== offer.id));
     }
 
-    // Recalculate total with selected offers
+    // Update the current step with the new selection
+    this.updateCurrentStepWithOffers();
+  }
+
+  private updateCurrentStepWithOffers(): void {
+    const current = this.currentStep();
+    if (!current) return;
+
+    this.currentStep.set({
+      ...current,
+      selectedOffers: this.selectedOffers(),
+    });
+
+    // Recalculate totals with the new offers
     this.updateTotalWithOffers();
+  }
+
+  isSupplementSelected(supplementType: MealPlanType): boolean {
+    const current = this.currentStep();
+    if (!current?.selectedMealPlans) return false;
+
+    return current.selectedMealPlans.includes(supplementType);
   }
 
   private updateTotalWithOffers(): void {
     const current = this.currentStep();
-    if (!current.room || !current.baseRate) return;
+    if (!current || !current.baseRate) return;
 
-    const totalBeforeOffers = this.calculateTotal(
-      current.baseRate,
+    // 1. Calculer d'abord le taux de base et les suppléments séparément
+    const baseRateBeforeOffers = current.baseRate;
+    const supplementsTotal = this.calculateSupplementsTotal(
       current.selectedMealPlans || [],
       current.supplementRates || []
     );
 
-    // Apply offers to total
-    const finalTotal = this.applyOffers(totalBeforeOffers);
+    // 2. Gérer l'application des offres
+    const selectedOffers = this.selectedOffers();
+    let finalTotal: number;
 
+    if (!selectedOffers.length) {
+      // Pas d'offres - additionner simplement base + suppléments
+      finalTotal = baseRateBeforeOffers + supplementsTotal;
+    } else {
+      if (current.applyOffersToMealPlans) {
+        // Appliquer les réductions au total global
+        finalTotal = this.applyOffers(baseRateBeforeOffers + supplementsTotal);
+      } else {
+        // Appliquer les réductions uniquement au taux de base
+        const discountedBaseRate = this.applyOffers(baseRateBeforeOffers);
+        finalTotal = discountedBaseRate + supplementsTotal;
+      }
+    }
+
+    // 3. Mettre à jour l'état avec les nouveaux totaux
     this.currentStep.set({
       ...current,
       total: finalTotal,
+      totalBeforeDiscounts: baseRateBeforeOffers + supplementsTotal,
+      selectedMealPlans: current.selectedMealPlans || [], // Maintenir la sélection actuelle
     });
   }
 
-  private applyOffers(total: number): number {
+  // Assurez-vous que cette méthode calcule correctement le total des suppléments
+  private calculateSupplementsTotal(
+    selectedPlans: MealPlanType[],
+    supplementRates: {
+      type: MealPlanType;
+      name: string;
+      rates: {
+        adult: number;
+        child: number;
+        infant: number;
+      };
+    }[]
+  ): number {
+    // Si aucun plan ou taux n'est sélectionné, retourner 0
+    if (!selectedPlans?.length || !supplementRates?.length) return 0;
+
+    return selectedPlans.reduce((total, planType) => {
+      const supplement = supplementRates.find((s) => s.type === planType);
+      if (!supplement) return total;
+
+      const { adults = 0, children = 0, infants = 0 } = this.searchForm.value;
+
+      // Calculer le total pour ce supplément
+      const supplementTotal =
+        supplement.rates.adult * (adults || 0) +
+        supplement.rates.child * (children || 0) +
+        supplement.rates.infant * (infants || 0);
+
+      return total + supplementTotal;
+    }, 0);
+  }
+
+  private applyOffers(amount: number): number {
     const selectedOffers = this.selectedOffers();
-    if (!selectedOffers.length) return total;
+    console.log("Offres sélectionnées:", selectedOffers);
 
-    // Check if offers are cumulative (they should all be of the same type due to our selection logic)
-    const isCumulative = selectedOffers[0].type === 'cumulative';
+    // Séparer les offres cumulatives et séquentielles
+    const cumulativeOffers = selectedOffers.filter(
+      (offer) => offer.type === "cumulative"
+    );
+    const sequentialOffers = selectedOffers.filter(
+      (offer) => offer.type !== "cumulative"
+    );
 
-    if (isCumulative) {
-        // For cumulative offers, sum all percentages and apply once
-        const totalDiscountPercentage = selectedOffers.reduce((sum, offer) => {
-            const discountValue = this.getApplicableDiscount(offer);
-            return sum + (offer.discountType === 'percentage' ? discountValue : 0);
-        }, 0);
+    let finalAmount = amount;
 
-        // Apply total percentage discount
-        const discountedTotal = total * (1 - totalDiscountPercentage / 100);
-
-        // Apply any fixed amounts after percentage
-        return selectedOffers.reduce((currentTotal, offer) => {
-            const discountValue = this.getApplicableDiscount(offer);
-            return offer.discountType === 'fixed' 
-                ? currentTotal - discountValue 
-                : currentTotal;
-        }, discountedTotal);
-
-    } else {
-        // For combinable offers, apply each discount sequentially
-        return selectedOffers.reduce((currentTotal, offer) => {
-            const discountValue = this.getApplicableDiscount(offer);
-            if (offer.discountType === 'percentage') {
-                return currentTotal * (1 - discountValue / 100);
-            }
-            return currentTotal - discountValue;
-        }, total);
+    // Appliquer d'abord les offres cumulatives si il y en a
+    if (cumulativeOffers.length > 0) {
+      const totalCumulativeDiscount = cumulativeOffers.reduce((sum, offer) => {
+        const discount = this.getApplicableDiscount(offer);
+        console.log(`Applying cumulative discount: ${discount}%`);
+        return sum + discount;
+      }, 0);
+      console.log("Total cumulative discount:", totalCumulativeDiscount);
+      finalAmount = finalAmount * (1 - totalCumulativeDiscount / 100);
     }
-}
 
+    // Puis appliquer les offres séquentielles
+    if (sequentialOffers.length > 0) {
+      finalAmount = sequentialOffers.reduce((total, offer) => {
+        const discount = this.getApplicableDiscount(offer);
+        console.log(`Applying sequential discount: ${discount}%`);
+        return total * (1 - discount / 100);
+      }, finalAmount);
+    }
+
+    console.log("Final amount:", finalAmount);
+    return finalAmount;
+  }
+
+  toggleOfferApplicationPreference(checked: boolean): void {
+    const current = this.currentStep();
+    if (!current) return;
+
+    this.currentStep.set({
+      ...current,
+      applyOffersToMealPlans: checked,
+    });
+
+    // Recalculate total with new preference
+    this.updateTotalWithOffers();
+  }
+
+  addAnotherRoom(): void {
+    // Store current search criteria
+    const currentSearch = {
+      checkIn: this.searchForm.get("checkIn")?.value,
+      checkOut: this.searchForm.get("checkOut")?.value,
+      adults: this.searchForm.get("adults")?.value || 1, // Default to 1 adult
+      children: this.searchForm.get("children")?.value || 0,
+      infants: this.searchForm.get("infants")?.value || 0,
+      hotelId: this.searchForm.get("hotelId")?.value,
+      marketId: this.searchForm.get("marketId")?.value,
+    };
+
+    // Reset the stepper to first step
+    this.stepper.reset();
+
+    // Reset form with current values but keep it pristine
+    this.searchForm.reset(currentSearch, { emitEvent: false });
+
+    // Reset form status without marking fields as touched
+    Object.keys(this.searchForm.controls).forEach((key) => {
+      const control = this.searchForm.get(key);
+      control?.setErrors(null);
+      control?.markAsUntouched();
+    });
+
+    // Clear current room selection
+    this.currentStep.set({});
+
+    // Clear selected offers
+    this.selectedOffers.set([]);
+
+    // Reset available offers
+    this.availableOffers.set([]);
+
+    // Hide available rooms
+    this.filteredRooms.set([]);
+  }
+
+  updateSelectedOffers(offer: SpecialOffer, isSelected: boolean): void {
+    const current = this.currentStep();
+    if (!current) return;
+
+    let updatedOffers = [...(current.selectedOffers || [])];
+
+    if (isSelected) {
+      // Si l'offre n'est pas déjà sélectionnée, l'ajouter
+      if (!updatedOffers.find((o) => o.id === offer.id)) {
+        updatedOffers.push(offer);
+      }
+    } else {
+      // Si l'offre est désélectionnée, la retirer
+      updatedOffers = updatedOffers.filter((o) => o.id !== offer.id);
+    }
+
+    // Mettre à jour l'état avec les nouvelles offres sélectionnées
+    this.currentStep.set({
+      ...current,
+      selectedOffers: updatedOffers,
+    });
+
+    // Recalculer le total avec les nouvelles offres
+    this.updateTotalWithOffers();
+  }
 
   // private handlePricingError(error: PricingError) {
   //   if (error.code === 'NO_CURRENCY_CONFIGURED') {

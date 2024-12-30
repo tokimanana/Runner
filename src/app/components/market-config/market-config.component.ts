@@ -1,29 +1,49 @@
-import { Component, ElementRef, Input, OnInit, OnDestroy, signal, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { RouterModule } from '@angular/router';
-import { takeUntil } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import {
+  Component,
+  ElementRef,
+  Input,
+  OnInit,
+  OnDestroy,
+  signal,
+  computed,
+  input,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
+import { MatCardModule } from "@angular/material/card";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatChipListbox } from "@angular/material/chips";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatDialogModule } from "@angular/material/dialog";
+import { MatSelectModule } from "@angular/material/select";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { RouterModule } from "@angular/router";
+import { takeUntil } from "rxjs/operators";
+import { Subject } from "rxjs";
 
-import { MarketService } from '../../services/market.service';
-import { Market, MarketGroup, CurrencySetting, Hotel } from '../../models/types';
+import { MarketService } from "../../services/market.service";
+import {
+  Market,
+  MarketGroup,
+  CurrencySetting,
+  Hotel,
+} from "../../models/types";
 import { ModalComponent } from "../modal/modal.component";
-import { CurrencyService } from '../../services/currency.service';
+import { CurrencyService } from "../../services/currency.service";
 
 @Component({
-  selector: 'app-market-config',
-  templateUrl: './market-config.component.html',
-  styleUrls: ['./market-config.component.scss'],
+  selector: "app-market-config",
+  templateUrl: "./market-config.component.html",
+  styleUrls: ["./market-config.component.scss"],
   standalone: true,
   imports: [
     CommonModule,
@@ -39,13 +59,13 @@ import { CurrencyService } from '../../services/currency.service';
     MatSelectModule,
     MatFormFieldModule,
     RouterModule,
-    ModalComponent
-  ]
+    ModalComponent,
+  ],
 })
 export class MarketConfigComponent implements OnInit, OnDestroy {
   // Input signals
   hotel = input.required<Hotel>();
-  
+
   // State signals
   markets = signal<Market[]>([]);
   marketGroups = signal<MarketGroup[]>([]);
@@ -55,23 +75,22 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   isLoading = signal(false);
   error = signal<string | null>(null);
 
-  
   // Modal signals
   showMarketModal = signal(false);
   showGroupModal = signal(false);
-  
+
   // Computed values
   modalTitle = computed(() => {
     if (this.showMarketModal()) {
-      return this.selectedMarket() ? 'Edit Market' : 'Add Market';
+      return this.selectedMarket() ? "Edit Market" : "Add Market";
     }
-    return this.selectedMarketGroup() ? 'Edit Region' : 'Add Region';
+    return this.selectedMarketGroup() ? "Edit Region" : "Add Region";
   });
 
   // Forms
   marketForm!: FormGroup;
   groupForm!: FormGroup;
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -88,23 +107,23 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
 
   private initializeForms() {
     this.marketForm = this.fb.group({
-      name: ['', Validators.required],
-      code: ['', Validators.required],
-      currency: ['', Validators.required],
-      region: ['', Validators.required],
-      description: [''],
+      name: ["", Validators.required],
+      code: ["", Validators.required],
+      currency: ["", Validators.required],
+      region: ["", Validators.required],
+      description: [""],
       groupId: [null],
       isActive: [true],
-      hasRates: [false]
+      hasRates: [false],
     });
 
     this.groupForm = this.fb.group({
-      name: ['', Validators.required],
-      region: ['', Validators.required],
+      name: ["", Validators.required],
+      region: ["", Validators.required],
       markets: [[]],
-      defaultCurrency: ['', Validators.required],
-      description: [''],
-      isActive: [true]
+      defaultCurrency: ["", Validators.required],
+      description: [""],
+      isActive: [true],
     });
   }
 
@@ -114,15 +133,13 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
       this.error.set(null);
 
       // Subscribe to markets
-      this.marketService.markets$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (markets) => this.markets.set(markets),
-          error: (err) => {
-            console.error('Error loading markets:', err);
-            this.error.set('Failed to load markets');
-          }
-        });
+      this.marketService.markets$.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (markets) => this.markets.set(markets),
+        error: (err) => {
+          console.error("Error loading markets:", err);
+          this.error.set("Failed to load markets");
+        },
+      });
 
       // Subscribe to market groups
       this.marketService.marketGroups$
@@ -130,28 +147,28 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (groups) => this.marketGroups.set(groups),
           error: (err) => {
-            console.error('Error loading market groups:', err);
-            this.error.set('Failed to load market groups');
-          }
+            console.error("Error loading market groups:", err);
+            this.error.set("Failed to load market groups");
+          },
         });
 
       // Load currency settings
-      this.currencyService.getCurrencySettings()
+      this.currencyService
+        .getCurrencySettings()
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (currencies) => this.currencySettings.set(currencies),
           error: (err) => {
-            console.error('Error loading currencies:', err);
-            this.error.set('Failed to load currencies');
-          }
+            console.error("Error loading currencies:", err);
+            this.error.set("Failed to load currencies");
+          },
         });
 
       // Initial load of market data
       await this.marketService.refresh();
-      
     } catch (error) {
-      console.error('Error in data loading:', error);
-      this.error.set('Failed to load data');
+      console.error("Error in data loading:", error);
+      this.error.set("Failed to load data");
     } finally {
       this.isLoading.set(false);
     }
@@ -161,7 +178,7 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   openMarketModal(market?: Market, group?: MarketGroup) {
     this.selectedMarket.set(market || null);
     this.selectedMarketGroup.set(group || null);
-    
+
     if (market) {
       this.marketForm.patchValue(market);
     } else {
@@ -169,25 +186,25 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
         groupId: group?.id,
         currency: group?.defaultCurrency,
         isActive: true,
-        hasRates: false
+        hasRates: false,
       });
     }
-    
+
     this.showMarketModal.set(true);
   }
 
   openGroupModal(group?: MarketGroup) {
     this.selectedMarketGroup.set(group || null);
-    
+
     if (group) {
       this.groupForm.patchValue(group);
     } else {
       this.groupForm.reset({
         isActive: true,
-        markets: []
+        markets: [],
       });
     }
-    
+
     this.showGroupModal.set(true);
   }
 
@@ -206,17 +223,20 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
       try {
         this.isLoading.set(true);
         const formData = this.marketForm.value;
-        
+
         if (this.selectedMarket()) {
-          await this.marketService.updateMarket(this.selectedMarket()!.id, formData);
+          await this.marketService.updateMarket(
+            this.selectedMarket()!.id,
+            formData
+          );
         } else {
           await this.marketService.createMarket(formData);
         }
-        
+
         this.closeModals();
       } catch (error) {
-        console.error('Error saving market:', error);
-        this.error.set('Failed to save market');
+        console.error("Error saving market:", error);
+        this.error.set("Failed to save market");
       } finally {
         this.isLoading.set(false);
       }
@@ -228,20 +248,20 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
       try {
         this.isLoading.set(true);
         const formData = this.groupForm.value; // Get form values
-  
+
         if (this.selectedMarketGroup()) {
           await this.marketService.updateMarketGroup(
-            this.selectedMarketGroup()!.id, 
+            this.selectedMarketGroup()!.id,
             formData
           );
         } else {
           await this.marketService.createMarketGroup(formData);
         }
-        
+
         this.closeModals();
       } catch (error) {
-        console.error('Error saving market group:', error);
-        this.error.set('Failed to save market group');
+        console.error("Error saving market group:", error);
+        this.error.set("Failed to save market group");
       } finally {
         this.isLoading.set(false);
       }
@@ -249,19 +269,18 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   }
 
   getMarket(marketId: number): Market | undefined {
-    return this.markets().find(m => m.id === marketId);
+    return this.markets().find((m) => m.id === marketId);
   }
 
   getMarketDescription(marketId: number): string {
     const market = this.getMarket(marketId);
-    return market?.description || '';
+    return market?.description || "";
   }
-  
 
   // Helper methods
   getMarketCurrency(marketId: number): string {
     const market = this.marketService.getMarketById(marketId);
-    return market?.currency || '';
+    return market?.currency || "";
   }
 
   getMarketName(marketId: number): string {
@@ -270,7 +289,7 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
 
   hasRates = computed(() => {
     return (marketId: number) => {
-      const market = this.markets().find(m => m.id === marketId);
+      const market = this.markets().find((m) => m.id === marketId);
       return market?.hasRates || false;
     };
   });
@@ -288,5 +307,42 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   // Error handling
   retryLoad() {
     this.loadData();
+  }
+
+  getGroupColor(region: string): string {
+    // You can customize these colors based on your needs
+    const colorMap: { [key: string]: string } = {
+      Europe: "#e3f2fd",
+      "North America": "#f3e5f5",
+      Asia: "#e8f5e9",
+      "United Kingdom": "#fff3e0",
+      Default: "#f5f5f5",
+    };
+    return colorMap[region] || colorMap["Default"];
+  }
+
+  async deleteMarket(marketId: number) {
+    try {
+      if (!confirm("Are you sure you want to delete this market?")) {
+        return;
+      }
+
+      // Check if market is in use
+      if (this.isMarketInUse(marketId)) {
+        alert("Cannot delete market as it is currently in use.");
+        return;
+      }
+
+      this.isLoading.set(true);
+      await this.marketService.deleteMarket(marketId);
+
+      // Refresh the data after deletion
+      await this.loadData();
+    } catch (error) {
+      console.error("Error deleting market:", error);
+      this.error.set("Failed to delete market");
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 }

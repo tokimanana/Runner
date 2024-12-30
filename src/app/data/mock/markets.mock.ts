@@ -17,7 +17,7 @@ export const markets: Market[] = [
     code: "UK",
     isActive: true,
     currency: "GBP",
-    region: "Europe",
+    region: "United Kingdom",
     description: "UK and Ireland market"
   },
   {
@@ -63,7 +63,7 @@ export const marketGroups: MarketGroup[] = [
     id: 1,
     name: "European Markets",
     region: "Europe",
-    markets: [1, 2, 3], // References to France, UK, and Germany
+    markets: [1, 3], // References to France and Germany
     defaultCurrency: "EUR",
     description: "All European market regions",
     isActive: true
@@ -85,7 +85,16 @@ export const marketGroups: MarketGroup[] = [
     defaultCurrency: "USD",
     description: "Asian market regions",
     isActive: true
-  }
+  },
+  {
+    id: 4,
+    name: "British Markets",
+    region: "United Kingdom",
+    markets: [2], 
+    defaultCurrency: "GBP",
+    description: "United Kingdom and Ireland markets",
+    isActive: true
+  },
 ];
 
 // Helper functions

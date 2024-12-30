@@ -1,68 +1,81 @@
-<div class="modal-backdrop" 
-     [class.show]="isVisible()" 
-     (click)="onBackdropClick($event)">
-  <div class="modal-dialog">
+<div
+  class="modal-backdrop"
+  [class.show]="isVisible()"
+  (click)="onBackdropClick($event)"
+>
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
     <div class="modal-content">
+      <!-- Header -->
       <div class="modal-header">
         <h5 class="modal-title">{{ title() }}</h5>
-        <button type="button" 
-                class="close" 
-                (click)="close.emit()">×</button>
+        <button type="button" class="close" (click)="close.emit()">×</button>
       </div>
-      
+
+      <!-- Body -->
       <div class="modal-body">
         <form (ngSubmit)="handleSubmit()">
           <ng-container *ngFor="let field of fields()">
             <div class="form-group">
-              <label [for]="field.name">{{ field.label }}</label>
-              
-              <!-- Handle different field types -->
+              <label [for]="field.name">
+                {{ field.label }}
+                <span *ngIf="field.required" class="required">*</span>
+              </label>
+
               <ng-container [ngSwitch]="field.type">
                 <!-- Text/Number input -->
-                <input *ngSwitchCase="'text'" 
-                       [type]="field.type"
-                       [id]="field.name"
-                       [name]="field.name"
-                       class="form-control"
-                       [required]="field.required ?? false"
-                       [(ngModel)]="formData()[field.name]">
-                
+                <input
+                  *ngSwitchCase="'text'"
+                  [type]="field.type"
+                  [id]="field.name"
+                  [name]="field.name"
+                  class="form-control"
+                  [required]="field.required"
+                  [value]="formData()[field.name]"
+                  (input)="updateFormData(field.name, $event)"
+                />
+
                 <!-- Textarea -->
-                <textarea *ngSwitchCase="'textarea'"
-                         [id]="field.name"
-                         [name]="field.name"
-                         class="form-control"
-                         [rows]="field.rows || 3"
-                         [required]="field.required ?? false"
-                         [(ngModel)]="formData()[field.name]">
+                <textarea
+                  *ngSwitchCase="'textarea'"
+                  [id]="field.name"
+                  [name]="field.name"
+                  class="form-control"
+                  [rows]="field.rows || 3"
+                  [required]="field.required"
+                  [value]="formData()[field.name]"
+                  (input)="updateFormData(field.name, $event)"
+                >
                 </textarea>
-                
+
                 <!-- Select -->
-                <select *ngSwitchCase="'select'"
-                        [id]="field.name"
-                        [name]="field.name"
-                        class="form-control"
-                        [required]="field.required ?? false"
-                        [(ngModel)]="formData()[field.name]">
-                  <option *ngFor="let option of field.options" 
-                          [value]="option">
+                <select
+                  *ngSwitchCase="'select'"
+                  [id]="field.name"
+                  [name]="field.name"
+                  class="form-control"
+                  [required]="field.required"
+                  [value]="formData()[field.name]"
+                  (change)="updateFormData(field.name, $event)"
+                >
+                  <option value="">Select...</option>
+                  <option *ngFor="let option of field.options" [value]="option">
                     {{ option }}
                   </option>
                 </select>
               </ng-container>
             </div>
           </ng-container>
-          
+
+          <!-- Footer -->
           <div class="modal-footer">
-            <button type="button" 
-                    class="btn btn-secondary" 
-                    (click)="close.emit()">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="close.emit()"
+            >
               Cancel
             </button>
-            <button type="submit" 
-                    class="btn btn-primary">
-              Save
-            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
           </div>
         </form>
       </div>

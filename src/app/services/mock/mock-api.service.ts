@@ -378,7 +378,7 @@ export class MockApiService {
         "policies",
         "capacity",
         "roomInventory",
-        "contractRates"  // Added contractRates to hotel-specific data types
+        "contractRates", // Added contractRates to hotel-specific data types
       ];
 
       // Get all hotel IDs
@@ -431,7 +431,6 @@ export class MockApiService {
       return Promise.reject(new Error("Failed to reset storage"));
     }
   }
-
 
   static async getTotalContracts(): Promise<number> {
     this.initializeStorage();
@@ -1248,24 +1247,29 @@ export class MockApiService {
     );
   }
 
-  static async createContract(contractData: Omit<Contract, "id">): Promise<Contract> {
+  static async createContract(
+    contractData: Omit<Contract, "id">
+  ): Promise<Contract> {
     this.initializeStorage();
     const contracts = JSON.parse(
       localStorage.getItem(this.STORAGE_KEYS.CONTRACTS) || "[]"
     );
-  
+
     const newId = Math.max(0, ...contracts.map((c: Contract) => c.id)) + 1;
-    const newContract: Contract = { 
-      ...contractData, 
+    const newContract: Contract = {
+      ...contractData,
       id: newId,
-      isRatesConfigured: false 
+      isRatesConfigured: false,
     };
-  
+
     contracts.push(newContract);
-    localStorage.setItem(this.STORAGE_KEYS.CONTRACTS, JSON.stringify(contracts));
+    localStorage.setItem(
+      this.STORAGE_KEYS.CONTRACTS,
+      JSON.stringify(contracts)
+    );
     return Promise.resolve(newContract);
-}
-  
+  }
+
   static async updateContract(
     id: number,
     updates: Partial<Contract>
@@ -1277,25 +1281,25 @@ export class MockApiService {
     const index = contracts.findIndex(
       (contract: Contract) => contract.id === id
     );
-  
+
     if (index === -1) {
       throw new Error("Contract not found");
     }
-  
+
     // Ensure baseMealPlan is properly updated if provided
-    contracts[index] = { 
-      ...contracts[index], 
+    contracts[index] = {
+      ...contracts[index],
       ...updates,
-      baseMealPlan: updates.baseMealPlan || contracts[index].baseMealPlan 
+      baseMealPlan: updates.baseMealPlan || contracts[index].baseMealPlan,
     };
-    
+
     localStorage.setItem(
       this.STORAGE_KEYS.CONTRACTS,
       JSON.stringify(contracts)
     );
     return Promise.resolve(contracts[index]);
   }
-  
+
   static async deleteContract(id: number): Promise<void> {
     this.initializeStorage();
     const contracts = JSON.parse(
@@ -1322,34 +1326,37 @@ export class MockApiService {
     );
   }
 
-  static async getContractRates(contractId: number): Promise<ContractPeriodRate[]> {
+  static async getContractRates(
+    contractId: number
+  ): Promise<ContractPeriodRate[]> {
     this.initializeStorage();
-    
+
     // Get rates from mock data first
-    let rates = contractRates.filter(rate => rate.contractId === contractId);
-    
+    let rates = contractRates.filter((rate) => rate.contractId === contractId);
+
     // If no rates in mock data, try localStorage
     if (!rates.length) {
-      const storedRates = localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES);
+      const storedRates = localStorage.getItem(
+        this.STORAGE_KEYS.CONTRACT_RATES
+      );
       if (storedRates) {
         const parsedRates = JSON.parse(storedRates);
-        rates = parsedRates.filter((rate: ContractPeriodRate) => 
-          rate.contractId === contractId
+        rates = parsedRates.filter(
+          (rate: ContractPeriodRate) => rate.contractId === contractId
         );
       }
     }
-    
+
     console.log(`Retrieved rates for contract ${contractId}:`, rates); // Debug log
     return rates;
   }
-  
 
   static async updateContractRates(
     contractId: number,
     rates: ContractPeriodRate[]
   ): Promise<Contract> {
     this.initializeStorage();
-  
+
     const ratesData =
       localStorage.getItem(this.STORAGE_KEYS.CONTRACT_RATES) || "{}";
     const allRates = JSON.parse(ratesData);
@@ -1367,7 +1374,7 @@ export class MockApiService {
     if (!contract) {
       throw new Error("Contract not found");
     }
-    
+
     // Update isRatesConfigured flag
     contract.isRatesConfigured = true;
     localStorage.setItem(
@@ -1377,7 +1384,6 @@ export class MockApiService {
 
     return Promise.resolve(contract);
   }
-
 
   static async getOffers(): Promise<SpecialOffer[]> {
     this.initializeStorage();
@@ -1450,13 +1456,13 @@ export class MockApiService {
 
   static async getContract(contractId: number): Promise<Contract> {
     const contractsData = localStorage.getItem(this.STORAGE_KEYS.CONTRACTS);
-    const contracts = JSON.parse(contractsData || '[]');
+    const contracts = JSON.parse(contractsData || "[]");
     const contract = contracts.find((c: Contract) => c.id === contractId);
-    
+
     if (!contract) {
-        throw new Error(`Contract not found with id ${contractId}`);
+      throw new Error(`Contract not found with id ${contractId}`);
     }
-    
+
     return contract;
-}
+  }
 }
