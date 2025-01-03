@@ -203,7 +203,7 @@ export const contractRates: ContractPeriodRate[] = [
   // Mid Peak Period (2025-04-01 to 2025-06-30) - 15% increase from Period 1
   {
     contractId: 1,
-    periodId: 2,
+    periodId: 3,
     roomRates: [
       // Classic Mediterranean Room (id: 1)
       {
@@ -302,105 +302,105 @@ export const contractRates: ContractPeriodRate[] = [
   },
 
   // Late Peak Period (2025-07-01 to 2025-09-30) - 25% increase from Period 1
-  {
-    contractId: 1,
-    periodId: 3,
-    roomRates: [
-      // Classic Mediterranean Room (id: 1)
-      {
-        roomTypeId: 1,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 225, // Single (+25%)
-              2: 275, // Double (+25%)
-            },
-          },
-          child: {
-            rates: {
-              1: 100, // One child (+25%)
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
-        mealPlanRates: {
-          RO: { adult: 0, child: 0, infant: 0 },
-          BB: { adult: 31, child: 16, infant: 0 },
-          HB: { adult: 56, child: 29, infant: 0 },
-          FB: { adult: 69, child: 35, infant: 0 },
-          AI: { adult: 88, child: 44, infant: 0 },
-        },
-      },
-      // Superior Sea View (id: 2)
-      {
-        roomTypeId: 2,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 275, // Single (+25%)
-              2: 350, // Double (+25%)
-            },
-          },
-          child: {
-            rates: {
-              1: 113, // First child (+25%)
-              2: 100, // Second child (+25%)
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
-        mealPlanRates: {
-          RO: { adult: 0, child: 0, infant: 0 },
-          BB: { adult: 31, child: 16, infant: 0 },
-          HB: { adult: 56, child: 29, infant: 0 },
-          FB: { adult: 69, child: 35, infant: 0 },
-          AI: { adult: 88, child: 44, infant: 0 },
-        },
-      },
-      // Deluxe Terrace Suite (id: 3)
-      {
-        roomTypeId: 3,
-        rateType: "per_pax",
-        personTypeRates: {
-          adult: {
-            rates: {
-              1: 375, // Single (+25%)
-              2: 475, // Double (+25%)
-              3: 563, // Triple (+25%)
-            },
-          },
-          child: {
-            rates: {
-              1: 125, // First child (+25%)
-              2: 113, // Second child (+25%)
-            },
-          },
-          infant: {
-            rates: {
-              1: 0,
-            },
-          },
-        },
-        mealPlanRates: {
-          RO: { adult: 0, child: 0, infant: 0 },
-          BB: { adult: 31, child: 16, infant: 0 },
-          HB: { adult: 56, child: 29, infant: 0 },
-          FB: { adult: 69, child: 35, infant: 0 },
-          AI: { adult: 88, child: 44, infant: 0 },
-        },
-      },
-    ],
-  },
+  // {
+  //   contractId: 1,
+  //   periodId: 4,
+  //   roomRates: [
+  //     // Classic Mediterranean Room (id: 1)
+  //     {
+  //       roomTypeId: 1,
+  //       rateType: "per_pax",
+  //       personTypeRates: {
+  //         adult: {
+  //           rates: {
+  //             1: 225, // Single (+25%)
+  //             2: 275, // Double (+25%)
+  //           },
+  //         },
+  //         child: {
+  //           rates: {
+  //             1: 100, // One child (+25%)
+  //           },
+  //         },
+  //         infant: {
+  //           rates: {
+  //             1: 0,
+  //           },
+  //         },
+  //       },
+  //       mealPlanRates: {
+  //         RO: { adult: 0, child: 0, infant: 0 },
+  //         BB: { adult: 31, child: 16, infant: 0 },
+  //         HB: { adult: 56, child: 29, infant: 0 },
+  //         FB: { adult: 69, child: 35, infant: 0 },
+  //         AI: { adult: 88, child: 44, infant: 0 },
+  //       },
+  //     },
+  //     // Superior Sea View (id: 2)
+  //     {
+  //       roomTypeId: 2,
+  //       rateType: "per_pax",
+  //       personTypeRates: {
+  //         adult: {
+  //           rates: {
+  //             1: 275, // Single (+25%)
+  //             2: 350, // Double (+25%)
+  //           },
+  //         },
+  //         child: {
+  //           rates: {
+  //             1: 113, // First child (+25%)
+  //             2: 100, // Second child (+25%)
+  //           },
+  //         },
+  //         infant: {
+  //           rates: {
+  //             1: 0,
+  //           },
+  //         },
+  //       },
+  //       mealPlanRates: {
+  //         RO: { adult: 0, child: 0, infant: 0 },
+  //         BB: { adult: 31, child: 16, infant: 0 },
+  //         HB: { adult: 56, child: 29, infant: 0 },
+  //         FB: { adult: 69, child: 35, infant: 0 },
+  //         AI: { adult: 88, child: 44, infant: 0 },
+  //       },
+  //     },
+  //     // Deluxe Terrace Suite (id: 3)
+  //     {
+  //       roomTypeId: 3,
+  //       rateType: "per_pax",
+  //       personTypeRates: {
+  //         adult: {
+  //           rates: {
+  //             1: 375, // Single (+25%)
+  //             2: 475, // Double (+25%)
+  //             3: 563, // Triple (+25%)
+  //           },
+  //         },
+  //         child: {
+  //           rates: {
+  //             1: 125, // First child (+25%)
+  //             2: 113, // Second child (+25%)
+  //           },
+  //         },
+  //         infant: {
+  //           rates: {
+  //             1: 0,
+  //           },
+  //         },
+  //       },
+  //       mealPlanRates: {
+  //         RO: { adult: 0, child: 0, infant: 0 },
+  //         BB: { adult: 31, child: 16, infant: 0 },
+  //         HB: { adult: 56, child: 29, infant: 0 },
+  //         FB: { adult: 69, child: 35, infant: 0 },
+  //         AI: { adult: 88, child: 44, infant: 0 },
+  //       },
+  //     },
+  //   ],
+  // },
 
   // Period 7: Peak Season (2025-01-10 to 2025-03-15)
   {

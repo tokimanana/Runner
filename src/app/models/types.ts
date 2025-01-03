@@ -404,6 +404,16 @@ export interface ReservationStep {
     children: number;
     infants: number;
   };
+  periodBreakdown?: PeriodBreakdown[];
+}
+
+export interface PeriodBreakdown {
+  periodName: string;
+  rate: number;
+  nights: number;
+  subtotal: number;
+  startDate: Date;
+  endDate: Date;
 }
 
 
@@ -798,4 +808,11 @@ export interface Offer {
   validTo: string;
   isCombinable: boolean;
   isCumulative: boolean;
+}
+
+export interface PeriodRateInfo {
+  name: string;
+  startDate: string;
+  endDate: string;
+  rate: number;
 }

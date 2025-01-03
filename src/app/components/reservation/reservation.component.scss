@@ -91,35 +91,60 @@
         }
       }
 
-      .rate-section {
-        padding: 24px;
-        background: linear-gradient(135deg, #1a237e, #3949ab);
-        color: white;
-        text-align: center;
-        margin: -8px -16px 16px;
-
-        .rate-amount {
-          display: flex;
-          justify-content: center;
-          align-items: baseline;
-          gap: 4px;
-
-          .currency {
-            font-size: 24px;
-            font-weight: 500;
-          }
-
-          .amount {
-            font-size: 36px;
-            font-weight: 700;
-          }
-
-          .per-night {
-            font-size: 16px;
-            opacity: 0.8;
-          }
-        }
+      .room-summary {
+        border: 1px solid #ccc;
+        padding: 20px;
+        margin-bottom: 20px;
       }
+      
+      .summary-header {
+        margin-bottom: 10px;
+      }
+      
+      .summary-header h3 {
+        margin: 0;
+        font-size: 1.2em;
+      }
+      
+      .meal-plan-base {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      
+      .meal-plan-base mat-icon {
+        margin-right: 5px;
+      }
+      
+      .meal-plan-base .stay-dates {
+        margin-left: auto; 
+        font-size: 0.9em;
+        color: #666;
+      }
+      
+      .period-breakdown {
+        margin-bottom: 10px;
+      }
+      
+      .period-rate {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+      
+      .period-info {
+        font-weight: bold;
+      }
+      
+      .period-subtotal {
+        text-align: right;
+      }
+      
+      .total-rate {
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+      
 
       .meal-plan-badge {
         display: inline-flex;

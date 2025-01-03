@@ -124,13 +124,6 @@
                     min="0"
                   />
                 </mat-form-field>
-
-                <mat-error *ngIf="searchForm.errors?.['noOccupants']">
-                  Please add at least one adult or child
-                </mat-error>
-                <mat-error *ngIf="searchForm.errors?.['infantRequiresChild']">
-                  Infants must be accompanied by at least one child
-                </mat-error>
               </div>
 
               <div class="form-actions">
@@ -166,12 +159,28 @@
                 <mat-card-subtitle>{{ room.category }}</mat-card-subtitle>
               </mat-card-header>
 
-              <!-- Room Rate Section - Only show if rate is available -->
-              <div class="rate-section" *ngIf="getRoomRate(room) !== null">
-                <div class="rate-amount">
-                  <span class="currency">{{ getCurrencySymbol() }}</span>
-                  <span class="amount">{{ getRoomRate(room) }}</span>
-                  <span class="per-night">per night</span>
+              <!-- Room Rate Section with Period Details -->
+              <div
+                class="rate-section"
+                *ngIf="roomRates().get(room.id)?.length"
+              >
+                <h4>Rate Breakdown:</h4>
+                <div
+                  class="period-rates"
+                  *ngFor="let periodRate of roomRates().get(room.id)"
+                >
+                  <div class="period-info">
+                    <span class="period-name">{{ periodRate.name }}</span>
+                    <span class="period-dates">
+                      {{ periodRate.startDate | date : "dd/MM/yy" }} -
+                      {{ periodRate.endDate | date : "dd/MM/yy" }} :
+                    </span>
+                  </div>
+                  <div class="rate-amount">
+                    <span class="currency">{{ getCurrencySymbol() }}</span>
+                    <span class="amount">{{ periodRate.rate }}</span>
+                    <span class="per-night">per night</span>
+                  </div>
                 </div>
 
                 <!-- Meal Plan Badge -->
@@ -250,9 +259,6 @@
         <div class="room-summary" *ngIf="currentStep()?.room as room">
           <div class="summary-header">
             <h3>{{ room.name }}</h3>
-            <span class="base-rate"
-              >{{ getCurrencySymbol() }}{{ currentStep().baseRate }}</span
-            >
           </div>
 
           <div class="meal-plan-base">
@@ -263,146 +269,167 @@
               {{ searchForm.value.checkOut | date : "mediumDate" }}
             </span>
           </div>
-        </div>
 
-        <!-- Add Related Offers Section -->
-        <div class="offers-section" *ngIf="availableOffers()?.length">
-          <h3>Available Special Offers</h3>
-
-          <div class="offers-legend">
-            <div class="legend-item">
-              <span class="badge combinable">Combinable</span>
-              <span class="description">Can be combined with other offers</span>
-            </div>
-            <div class="legend-item">
-              <span class="badge cumulative">Cumulative</span>
-              <span class="description"
-                >Discount increases with longer stays</span
-              >
-            </div>
-          </div>
-
-          <div class="offers-grid">
-            <mat-card
-              *ngFor="let offer of availableOffers()"
-              [ngClass]="{ disabled: isOfferDisabled(offer) }"
-              class="offer-card"
-              [class.combinable]="offer.type === 'combinable'"
-              [class.cumulative]="offer.type === 'cumulative'"
+          <!-- Period Rate Breakdown -->
+          <div class="period-breakdown">
+            <div
+              *ngFor="let breakdown of calculatePeriodBreakdown(room)"
+              class="period-rate"
             >
-              <mat-card-header>
-                <div class="offer-type-badge" [class]="offer.type">
-                  {{ offer.type | titlecase }}
-                </div>
-                <mat-card-title>{{ offer.name }}</mat-card-title>
-              </mat-card-header>
-
-              <mat-card-content>
-                <p>{{ offer.description }}</p>
-                <!-- Show applicable discount -->
-                <div class="discount-info">
-                  <div class="applicable-discount">
-                    <mat-icon>check_circle</mat-icon>
-                    <span>
-                      {{ getApplicableDiscount(offer) }}
-                      {{
-                        offer.discountType === "percentage"
-                          ? "%"
-                          : getCurrencySymbol()
-                      }}
-                      off
-                    </span>
-                  </div>
-                </div>
-              </mat-card-content>
-
-              <mat-card-actions>
-                <mat-checkbox
-                  [disabled]="isOfferDisabled(offer)"
-                  [checked]="isOfferSelected(offer)"
-                  (change)="toggleOffer(offer, $event.checked)"
-                >
-                  Select Offer
-                </mat-checkbox>
-              </mat-card-actions>
-            </mat-card>
-          </div>
-        </div>
-
-        <div class="offer-preference">
-          <mat-checkbox
-            [checked]="currentStep().applyOffersToMealPlans"
-            (change)="toggleOfferApplicationPreference($event.checked)"
-          >
-            Apply discounts to meal plan supplements
-          </mat-checkbox>
-          <mat-icon
-            matTooltip="Choose whether to apply discounts to just the room rate or both room rate and meal plan supplements"
-            class="info-icon"
-          >
-            info
-          </mat-icon>
-        </div>
-
-        <!-- Available Supplements -->
-        <div
-          class="supplements-section"
-          *ngIf="currentStep()?.supplementRates as supplements"
-        >
-          <h4>Available Meal Plan Supplements</h4>
-
-          <mat-selection-list
-            #supplementList
-            [multiple]="true"
-            (selectionChange)="
-              updateMealPlanSelection(supplementList.selectedOptions.selected)
-            "
-          >
-            <mat-list-option
-              *ngFor="let supplement of supplements"
-              [value]="supplement.type"
-              [selected]="isSupplementSelected(supplement.type)"
-            >
-              <div class="supplement-option">
-                <div class="plan-info">
-                  <span class="plan-name">{{ supplement.name }}</span>
-                  <div class="rates">
-                    <span
-                      >Adult: {{ getCurrencySymbol()
-                      }}{{ supplement.rates.adult }}</span
-                    >
-                    <span
-                      >Child: {{ getCurrencySymbol()
-                      }}{{ supplement.rates.child }}</span
-                    >
-                    <span
-                      >Infant: {{ getCurrencySymbol()
-                      }}{{ supplement.rates.infant }}</span
-                    >
-                  </div>
-                </div>
+              <div class="period-info">
+                {{ breakdown.periodName }}: {{ getCurrencySymbol()
+                }}{{ breakdown.rate }} x {{ breakdown.nights }} nights
               </div>
-            </mat-list-option>
-          </mat-selection-list>
-        </div>
-
-        <!-- Total and Actions -->
-        <div class="step-actions">
-          <div class="total">
-            <span>Total:</span>
-            <span class="amount">{{
-              currentStep().total
-                | currency : getCurrencySymbol() : "symbol" : "1.2-2"
-            }}</span>
+              <div class="period-subtotal">
+                {{ getCurrencySymbol() }}{{ breakdown.subtotal }}
+              </div>
+            </div>
+            <div class="total-rate">
+              Total Stay: {{ getCurrencySymbol() }}{{ totalRate() }}
+            </div>
           </div>
 
-          <div class="action-buttons">
-            <button mat-stroked-button (click)="stepper.previous()">
-              Back
-            </button>
-            <button mat-raised-button color="primary" (click)="addToCart()">
-              Add to Cart
-            </button>
+          <!-- Add Related Offers Section -->
+          <div class="offers-section" *ngIf="availableOffers()?.length">
+            <h3>Available Special Offers</h3>
+
+            <div class="offers-legend">
+              <div class="legend-item">
+                <span class="badge combinable">Combinable</span>
+                <span class="description"
+                  >Can be combined with other offers</span
+                >
+              </div>
+              <div class="legend-item">
+                <span class="badge cumulative">Cumulative</span>
+                <span class="description"
+                  >Discount increases with longer stays</span
+                >
+              </div>
+            </div>
+
+            <div class="offers-grid">
+              <mat-card
+                *ngFor="let offer of availableOffers()"
+                [ngClass]="{ disabled: isOfferDisabled(offer) }"
+                class="offer-card"
+                [class.combinable]="offer.type === 'combinable'"
+                [class.cumulative]="offer.type === 'cumulative'"
+              >
+                <mat-card-header>
+                  <div class="offer-type-badge" [class]="offer.type">
+                    {{ offer.type | titlecase }}
+                  </div>
+                  <mat-card-title>{{ offer.name }}</mat-card-title>
+                </mat-card-header>
+
+                <mat-card-content>
+                  <p>{{ offer.description }}</p>
+                  <!-- Show applicable discount -->
+                  <div class="discount-info">
+                    <div class="applicable-discount">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>
+                        {{ getApplicableDiscount(offer) }}
+                        {{
+                          offer.discountType === "percentage"
+                            ? "%"
+                            : getCurrencySymbol()
+                        }}
+                        off
+                      </span>
+                    </div>
+                  </div>
+                </mat-card-content>
+
+                <mat-card-actions>
+                  <mat-checkbox
+                    [disabled]="isOfferDisabled(offer)"
+                    [checked]="isOfferSelected(offer)"
+                    (change)="toggleOffer(offer, $event.checked)"
+                  >
+                    Select Offer
+                  </mat-checkbox>
+                </mat-card-actions>
+              </mat-card>
+            </div>
+          </div>
+
+          <div class="offer-preference">
+            <mat-checkbox
+              [checked]="currentStep().applyOffersToMealPlans"
+              (change)="toggleOfferApplicationPreference($event.checked)"
+            >
+              Apply discounts to meal plan supplements
+            </mat-checkbox>
+            <mat-icon
+              matTooltip="Choose whether to apply discounts to just the room rate or both room rate and meal plan supplements"
+              class="info-icon"
+            >
+              info
+            </mat-icon>
+          </div>
+
+          <!-- Available Supplements -->
+          <div
+            class="supplements-section"
+            *ngIf="currentStep()?.supplementRates as supplements"
+          >
+            <h4>Available Meal Plan Supplements</h4>
+
+            <mat-selection-list
+              #supplementList
+              [multiple]="true"
+              (selectionChange)="
+                updateMealPlanSelection(supplementList.selectedOptions.selected)
+              "
+            >
+              <mat-list-option
+                *ngFor="let supplement of supplements"
+                [value]="supplement.type"
+                [selected]="isSupplementSelected(supplement.type)"
+              >
+                <div class="supplement-option">
+                  <div class="plan-info">
+                    <span class="plan-name">{{ supplement.name }}</span>
+                    <div class="rates">
+                      <span
+                        >Adult: {{ getCurrencySymbol()
+                        }}{{ supplement.rates.adult }}</span
+                      >
+                      <span
+                        >Child: {{ getCurrencySymbol()
+                        }}{{ supplement.rates.child }}</span
+                      >
+                      <span
+                        >Infant: {{ getCurrencySymbol()
+                        }}{{ supplement.rates.infant }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </mat-list-option>
+            </mat-selection-list>
+          </div>
+
+          <!-- Total and Actions -->
+          <div class="step-actions">
+            <div class="total">
+              <span>Total:</span>
+              <span class="amount">{{
+                currentStep().total
+                  | currency : getCurrencySymbol() : "symbol" : "1.2-2"
+              }}</span>
+            </div>
+
+            <div class="action-buttons">
+              <button mat-stroked-button (click)="stepper.previous()">
+                Back
+              </button>
+              <button mat-raised-button color="primary" (click)="addToCart()">
+                Add to Cart
+              </button>
+            </div>
           </div>
         </div>
       </mat-step>
