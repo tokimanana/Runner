@@ -1,6 +1,6 @@
 // src/app/services/contract.service.ts
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, firstValueFrom, from, map } from "rxjs";
+import { BehaviorSubject, Observable, firstValueFrom, from, map, tap } from "rxjs";
 import {
   Contract,
   ContractRate,
@@ -81,6 +81,17 @@ export class ContractService extends BaseDataService<Contract> {
       })
     );
   }
+
+  getAllContracts(): Observable<Contract[]> {
+    return from(MockApiService.getAllContracts()).pipe(
+      tap(result => {
+        this.dataSubject.next(result.contracts);
+        this.totalSubject.next(result.total);
+      }),
+      map(result => result.contracts)
+    );
+  }
+  
 
   private applyFilters(
     contracts: Contract[],
@@ -332,20 +343,21 @@ export class ContractService extends BaseDataService<Contract> {
     );
   }
 
-  async getActiveContract(
-    hotelId: number,
-    marketId: number
-  ): Promise<Contract | null> {
-    const contracts = await firstValueFrom(this.getContracts());
-    return (
-      contracts.find(
-        (c) =>
-          c.hotelId === hotelId &&
-          c.marketId === marketId &&
-          c.isRatesConfigured === true
-      ) || null
+  async getActiveContract(hotelId: number, marketId: number): Promise<Contract | null> {
+    console.log("Searching for active contract:", { hotelId, marketId });
+    const contracts = await firstValueFrom(this.data$);
+    console.log("Available contracts:", contracts);
+    
+    const activeContract = contracts.find(
+      (c) => c.hotelId === hotelId && 
+             c.marketId === marketId && 
+             c.isRatesConfigured
     );
+    
+    console.log("Found active contract:", activeContract);
+    return activeContract || null;
   }
+  
 
   getPeriods(seasonId: number): Observable<Period[]> {
     // Use the seasonService to get periods for the season

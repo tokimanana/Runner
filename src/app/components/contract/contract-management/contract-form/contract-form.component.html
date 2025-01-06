@@ -1,18 +1,14 @@
-<!-- contract-form.component.html -->
 <div class="contract-form">
   <h2>{{ formTitle() }}</h2>
 
-  @if (loading()) {
-  <div class="loading-overlay">
+  <div *ngIf="loading()" class="loading-overlay">
     <mat-spinner diameter="40"></mat-spinner>
   </div>
-  } @if (error()) {
-  <mat-error class="error-message">{{ error() }}</mat-error>
-  }
+
+  <mat-error class="error-message" *ngIf="error()">{{ error() }}</mat-error>
 
   <form [formGroup]="contractForm" (ngSubmit)="onSubmit()">
     <mat-tab-group>
-      <!-- Basic Details Tab -->
       <mat-tab label="Basic Details">
         <div class="tab-content">
           <mat-form-field appearance="outline">
@@ -30,83 +26,77 @@
               (selectionChange)="onHotelChange($event.value)"
               required
             >
-              @for (hotel of hotels(); track hotel.id) {
-              <mat-option [value]="hotel.id">{{ hotel.name }}</mat-option>
-              }
+              <mat-option *ngFor="let hotel of hotels()" [value]="hotel.id">
+                {{ hotel.name }}
+              </mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Market</mat-label>
             <mat-select formControlName="marketId" required>
-              @for (market of markets(); track market.id) {
-              <mat-option [value]="market.id">{{ market.name }}</mat-option>
-              }
+              <mat-option *ngFor="let market of markets()" [value]="market.id">
+                {{ market.name }}
+              </mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Season</mat-label>
             <mat-select formControlName="seasonId" required>
-              @for (season of seasons(); track season.id) {
-              <mat-option [value]="season.id">
+              <mat-option *ngFor="let season of seasons()" [value]="season.id">
                 {{ season.name }}
               </mat-option>
-              }
             </mat-select>
           </mat-form-field>
         </div>
       </mat-tab>
 
-      <!-- Room Types & Meal Plans Tab -->
       <mat-tab label="Room Types & Meal Plans">
         <div class="tab-content">
-          <div class="room-types-container">
-            <label class="mat-mdc-form-field-label">Room Types</label>
-            @for (room of roomTypes(); track room.id) {
-            <mat-checkbox
-              [checked]="isRoomSelected(room)"
-              (change)="onRoomTypeChange($event.checked, room)"
-            >
-              {{ room.name }}
-            </mat-checkbox>
-            }
+          <div class="selection-container">
+            <mat-form-field appearance="outline">
+              <mat-label>Room Types</mat-label>
+              <mat-select formControlName="selectedRoomTypes" multiple>
+                <mat-option *ngFor="let room of roomTypes()" [value]="room.id">
+                  {{ room.name }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
 
-          <div class="meal-plans-section">
-            <!-- Base Meal Plan Selection -->
-            <label class="mat-mdc-form-field-label">Base Meal Plan</label>
-            <mat-select formControlName="baseMealPlan" required>
-              @for (mealPlan of mealPlans(); track mealPlan.type) {
-              <mat-option [value]="mealPlan.type">
-                {{ mealPlan.name }} ({{ mealPlan.type }})
-              </mat-option>
-              }
-            </mat-select>
+          <div class="selection-container">
+            <mat-form-field appearance="outline">
+              <mat-label>Base Meal Plan</mat-label>
+              <mat-select formControlName="baseMealPlan" required>
+                <mat-option
+                  *ngFor="let mealPlan of mealPlans()"
+                  [value]="mealPlan.type"
+                >
+                  {{ mealPlan.name }} ({{ mealPlan.type }})
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
 
-            <!-- Other Meal Plans -->
-            <label class="mat-mdc-form-field-label"
-              >Additional Meal Plans</label
-            >
-            <div class="meal-plans-container">
-              @for (mealPlan of mealPlans(); track mealPlan.type) {
-              <mat-checkbox
-                [checked]="isMealPlanSelected(mealPlan)"
-                (change)="onMealPlanChange($event.checked, mealPlan)"
-                [disabled]="
-                  mealPlan.type === contractForm.get('baseMealPlan')?.value
-                "
-              >
-                {{ mealPlan.name }} ({{ mealPlan.type }})
-              </mat-checkbox>
-              }
-            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Additional Meal Plans</mat-label>
+              <mat-select formControlName="selectedMealPlans" multiple>
+                <mat-option
+                  *ngFor="let mealPlan of mealPlans()"
+                  [value]="mealPlan.type"
+                  [disabled]="
+                    mealPlan.type === contractForm.get('baseMealPlan')?.value
+                  "
+                >
+                  {{ mealPlan.name }} ({{ mealPlan.type }})
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
         </div>
       </mat-tab>
     </mat-tab-group>
 
-    <!-- Form Actions -->
     <div class="form-actions">
       <button mat-button type="button" (click)="onCancel()">Cancel</button>
       <button

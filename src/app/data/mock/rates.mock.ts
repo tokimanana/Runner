@@ -665,4 +665,352 @@ export const contractRates: ContractPeriodRate[] = [
       },
     ],
   },
+
+  // Pre-Christmas Period (Period ID: 25, 2025-12-01 to 2025-12-22)
+  {
+    contractId: 11,
+    periodId: 25,
+    roomRates: [
+      // Deluxe Garden View (id: 11)
+      {
+        roomTypeId: 11,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 200, // Single Occupancy
+              2: 150, // Double Occupancy (per person)
+            },
+          },
+          child: {
+            rates: {
+              1: 75, // First child
+              2: 60, // Second child
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Premium Ocean View (id: 12)
+      {
+        roomTypeId: 12,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 280,
+              2: 210,
+            },
+          },
+          child: {
+            rates: {
+              1: 105,
+              2: 90,
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Family Suite (id: 13)
+      {
+        roomTypeId: 13,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 350,
+              2: 260,
+            },
+          },
+          child: {
+            rates: {
+              1: 130,
+              2: 110,
+              3: 90,
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Beach Villa (id: 14)
+      {
+        roomTypeId: 14,
+        rateType: "per_villa",
+        villaRate: 1200, // Example base rate per villa
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 50, child: 25, infant: 0 },
+          AI: { adult: 80, child: 40, infant: 0 },
+          AI_PLUS: { adult: 120, child: 60, infant: 0 },
+        },
+      },
+    ],
+  },
+  // Christmas Period (Period ID: 26, 2025-12-23 to 2026-01-05) - Increased Rates
+  {
+    contractId: 11,
+    periodId: 26,
+    roomRates: [
+      // Deluxe Garden View (id: 11)
+      {
+        roomTypeId: 11,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 250, // Single Occupancy (increased)
+              2: 188, // Double Occupancy (per person, increased)
+            },
+          },
+          child: {
+            rates: {
+              1: 94, // First child (increased)
+              2: 75, // Second child (increased)
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
+          FB: { adult: 38, child: 19, infant: 0 }, // Increased
+          AI: { adult: 69, child: 35, infant: 0 }, // Increased
+          AI_PLUS: { adult: 94, child: 47, infant: 0 }, // Increased
+        },
+      },
+      // Premium Ocean View (id: 12)
+      {
+        roomTypeId: 12,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 350, // Increased
+              2: 263, // Increased
+            },
+          },
+          child: {
+            rates: {
+              1: 131, // Increased
+              2: 113, // Increased
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 38, child: 19, infant: 0 }, // Increased
+          AI: { adult: 69, child: 35, infant: 0 }, // Increased
+          AI_PLUS: { adult: 94, child: 47, infant: 0 }, // Increased
+        },
+      },
+      // Family Suite (id: 13)
+      {
+        roomTypeId: 13,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 438, // Increased
+              2: 325, // Increased
+            },
+          },
+          child: {
+            rates: {
+              1: 163, // Increased
+              2: 138, // Increased
+              3: 113, // Increased
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 38, child: 19, infant: 0 }, // Increased
+          AI: { adult: 69, child: 35, infant: 0 }, // Increased
+          AI_PLUS: { adult: 94, child: 47, infant: 0 }, // Increased
+        },
+      },
+      // Beach Villa (id: 14)
+      {
+        roomTypeId: 14,
+        rateType: "per_villa",
+        villaRate: 1500, // Example base rate per villa - increased
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 }, // No additional cost for HB (base)
+          FB: { adult: 63, child: 31, infant: 0 }, // Example FB supplement per person
+          AI: { adult: 100, child: 50, infant: 0 }, // Example AI supplement per person
+          AI_PLUS: { adult: 150, child: 75, infant: 0 }, // Example AI PLUS supplement
+        },
+      },
+    ],
+  },
+  {
+    contractId: 11,
+    periodId: 27,
+    roomRates: [
+      // Deluxe Garden View (id: 11)
+      {
+        roomTypeId: 11,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 250, // Single Occupancy
+              2: 190, // Double Occupancy (per person)
+            },
+          },
+          child: {
+            rates: {
+              1: 90, // First child
+              2: 75, // Second child
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Premium Ocean View (id: 12)
+      {
+        roomTypeId: 12,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 330,
+              2: 250,
+            },
+          },
+          child: {
+            rates: {
+              1: 120,
+              2: 105,
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Family Suite (id: 13)
+      {
+        roomTypeId: 13,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 400,
+              2: 300,
+            },
+          },
+          child: {
+            rates: {
+              1: 150,
+              2: 125,
+              3: 100,
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+      // Beach Villa (id: 14)
+      {
+        roomTypeId: 14,
+        rateType: "per_pax",
+        personTypeRates: {
+          adult: {
+            rates: {
+              1: 480,
+              2: 360,
+            },
+          },
+          child: {
+            rates: {
+              1: 190,
+              2: 165,
+            },
+          },
+          infant: {
+            rates: {
+              1: 0,
+            },
+          },
+        },
+        mealPlanRates: {
+          HB: { adult: 0, child: 0, infant: 0 },
+          FB: { adult: 30, child: 15, infant: 0 },
+          AI: { adult: 55, child: 28, infant: 0 },
+          AI_PLUS: { adult: 75, child: 38, infant: 0 },
+        },
+      },
+    ],
+  },
 ];

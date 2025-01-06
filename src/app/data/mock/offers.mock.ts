@@ -43,7 +43,6 @@ export const offersMock: SpecialOffer[] = [
       end: "2025-11-30",
     },
   },
-
   {
     id: 2,
     code: "LONGSTAY25",
@@ -52,40 +51,40 @@ export const offersMock: SpecialOffer[] = [
     description:
       "Additional savings for extended stays - The longer you stay, the more you save",
     discountType: "percentage",
-    startDate: "2025-01-01", // Add overall offer validity period
-    endDate: "2025-12-31", // Add overall offer validity period
-    bookingWindow: {
-      // Move booking window to top level
-      start: "2024-06-01",
-      end: "2025-03-31",
-    },
     discountValues: [
       {
+        value: 5,
+        startDate: "2024-04-01", // Booking 9+ months in advance
+        endDate: "2024-05-31",
+      },
+      {
         value: 10,
-        startDate: "2025-01-01",
-        endDate: "2025-12-31",
+        startDate: "2024-06-01", // Booking 6-9 months in advance
+        endDate: "2024-09-30",
       },
       {
         value: 15,
-        startDate: "2025-01-01",
-        endDate: "2025-12-31",
+        startDate: "2024-10-01", // Booking 3-6 months in advance
+        endDate: "2025-01-31",
       },
       {
         value: 20,
-        startDate: "2025-01-01",
-        endDate: "2025-12-31",
+        startDate: "2025-02-01", // Booking 0-3 months in advance
+        endDate: "2025-03-31",
       },
     ],
+    startDate: "2025-01-01",
+    endDate: "2025-12-31",
     conditions: [
-      "10% off when booking 1-3 months in advance",
+      "5% off when booking 9+ months in advance", // Add condition for 5%
+      "10% off when booking 6-9 months in advance",
       "15% off when booking 3-6 months in advance",
-      "20% off when booking 6+ months in advance",
+      "20% off when booking 0-3 months in advance",
       "Valid for all room types",
       "Full prepayment required at booking",
     ],
     minimumNights: 2,
   },
-
   {
     id: 3,
     code: "HONEYMOON25",

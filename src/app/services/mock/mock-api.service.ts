@@ -1247,6 +1247,19 @@ export class MockApiService {
     );
   }
 
+  static async getAllContracts(): Promise<{
+    contracts: Contract[];
+    total: number;
+  }> {
+    this.initializeStorage();
+    const contracts = localStorage.getItem(this.STORAGE_KEYS.CONTRACTS);
+    const parsedContracts = JSON.parse(contracts || "[]");
+    return {
+      contracts: parsedContracts,
+      total: parsedContracts.length,
+    };
+  }
+
   static async createContract(
     contractData: Omit<Contract, "id">
   ): Promise<Contract> {

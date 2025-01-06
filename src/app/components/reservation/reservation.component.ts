@@ -1,4 +1,4 @@
-import { ReservationService } from './../../services/reservation.service';
+import { ReservationService } from "./../../services/reservation.service";
 import { SeasonService } from "src/app/services/season.service";
 import { CurrencyService } from "./../../services/currency.service";
 // src/app/components/reservation/reservation.component.ts
@@ -12,6 +12,7 @@ import {
   ValidatorFn,
   AbstractControl,
   ValidationErrors,
+  FormsModule,
 } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
@@ -35,7 +36,7 @@ import {
   Period,
   ReservationStep,
   PeriodRateInfo,
-  PeriodBreakdown
+  PeriodBreakdown,
 } from "../../models/types";
 import { ContractService } from "src/app/services/contract.service";
 import { ContractRateService } from "src/app/services/contract-rates.service";
@@ -67,8 +68,6 @@ interface RoomRateWithPeriod extends RoomTypeRate {
   periodEndDate: string;
 }
 
-
-
 interface MealPlanSupplement {
   type: MealPlanType;
   name: string;
@@ -91,8 +90,6 @@ interface MealPlanResult {
   error?: string;
 }
 
-
-
 interface RoomRate {
   roomTypeId: number;
   rateType: "per_villa" | "per_person";
@@ -104,7 +101,7 @@ interface RoomRate {
 }
 
 interface RoomWithRate extends RoomType {
-  periodRates: PeriodRateInfo[]; 
+  periodRates: PeriodRateInfo[];
 }
 
 interface MarketConfig {
@@ -123,6 +120,7 @@ interface PricingError extends Error {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatDatepickerModule,
@@ -175,6 +173,11 @@ export class ReservationComponent {
 
   roomRates = signal<Map<number, PeriodRateInfo[]>>(new Map());
 
+  christmasDinnerAdultPrice: number = 0;
+  christmasDinnerChildPrice: number = 0;
+  newYearsEveDinnerAdultPrice: number = 0;
+  newYearsEveDinnerChildPrice: number = 0;
+
   private initialBooking = signal<{
     hotelId?: number;
     marketId?: number;
@@ -195,6 +198,12 @@ export class ReservationComponent {
     [MealPlanType.UAI]: "Ultra All Inclusive",
   };
 
+  private getHolidayDates(year: number): { christmasEve: Date, newYearsEve: Date } {
+    const christmasEve = new Date(year, 11, 24); // Month is 0-indexed (December = 11)
+    const newYearsEve = new Date(year, 11, 31);
+    return { christmasEve, newYearsEve };
+  }
+
   constructor(
     private fb: FormBuilder,
     private hotelService: HotelService,
@@ -206,7 +215,7 @@ export class ReservationComponent {
     private currencyService: CurrencyService,
     private offersService: OffersService,
     private seasonService: SeasonService,
-    private reservationService: ReservationService,
+    private reservationService: ReservationService
   ) {
     this.initForm();
   }
@@ -216,6 +225,14 @@ export class ReservationComponent {
     this.hotelService.getHotels().subscribe((hotels) => {
       this.hotels.set(hotels);
     });
+
+    this.searchForm.get("checkIn")?.valueChanges.subscribe((date) => {
+      if (date) {
+        this.checkInDate.set(new Date(date));
+        this.updateCheckOutDate(new Date(date));
+      }
+    });
+  
 
     // Listen to hotel selection changes to update markets
     this.searchForm.get("hotelId")?.valueChanges.subscribe((hotelId) => {
@@ -320,12 +337,6 @@ export class ReservationComponent {
     }
   }
 
-  viewDetails(room: RoomType): void {
-    console.log("Viewing details for room:", room);
-    // Implement your room details view logic here
-    // For example, you might want to open a modal or navigate to a details page
-  }
-
   getBaseMealPlan(room: RoomType): MealPlanResult {
     try {
       const contract = this.activeContract();
@@ -364,7 +375,7 @@ export class ReservationComponent {
   private async loadMarketsForHotel(hotelId: number) {
     try {
       const contracts = await firstValueFrom(
-        this.contractService.getContractsByHotel(hotelId)
+        this.reservationService.getContractsForReservation(hotelId)
       );
 
       console.log("Found contracts for hotel:", contracts);
@@ -372,13 +383,20 @@ export class ReservationComponent {
       const activeMarketIds = [
         ...new Set(
           contracts
-            .filter(
-              (contract) =>
-                contract.isRatesConfigured && contract.hotelId === hotelId
-            )
+            .filter((contract) => {
+              console.log("Checking contract:", {
+                id: contract.id,
+                hotelId: contract.hotelId,
+                marketId: contract.marketId,
+                isRatesConfigured: contract.isRatesConfigured,
+                expectedHotelId: hotelId
+              });
+              return contract.isRatesConfigured && contract.hotelId === hotelId;
+            })
             .map((contract) => contract.marketId)
         ),
       ];
+      
 
       console.log("Active market IDs:", activeMarketIds);
 
@@ -452,10 +470,6 @@ export class ReservationComponent {
                   ).toLocaleDateString()}`,
                 }))
               );
-
-              console.log(
-                "Tip: Try searching with 1 adult to see all available rooms. You can then adjust occupancy as needed."
-              );
             } catch (error) {
               console.error("Error loading periods:", error);
               this.periods.set([]);
@@ -485,29 +499,6 @@ export class ReservationComponent {
     }
   });
 
-  private async loadActiveContract(): Promise<void> {
-    const { hotelId, marketId } = this.searchForm.value;
-    if (!hotelId || !marketId) return;
-
-    try {
-      // Get active contract for hotel and market
-      const contract = await this.contractService.getActiveContract(
-        hotelId,
-        marketId
-      );
-      if (contract) {
-        this.activeContract.set(contract);
-        // Load contract rates
-        const rates = await this.contractRateService.getContractRates(
-          contract.id
-        );
-        this.contractRates.set(rates);
-      }
-    } catch (error) {
-      console.error("Error loading contract:", error);
-    }
-  }
-
   // Computed value for available rooms based on occupancy
   async loadRoomTypes(hotelId: number) {
     try {
@@ -522,85 +513,95 @@ export class ReservationComponent {
   }
 
   private calculateExactRateForPeriod(
-    room: RoomType, 
-    period: Period, 
+    room: RoomType,
+    period: Period,
     occupancy: { adults: number; children: number; infants: number }
   ): number {
-    const contractRate = this.contractRates().find(rate => rate.periodId === period.id);
-    const roomRate = contractRate?.roomRates.find(rate => rate.roomTypeId === room.id);
-  
+    const contractRate = this.contractRates().find(
+      (rate) => rate.periodId === period.id
+    );
+    const roomRate = contractRate?.roomRates.find(
+      (rate) => rate.roomTypeId === room.id
+    );
+
     if (!roomRate?.personTypeRates) return 0;
-  
+
     let totalRate = 0;
     const { adult, child, infant } = roomRate.personTypeRates;
-  
+
     // Calculate adult rates using progressive pricing
     for (let i = 1; i <= occupancy.adults; i++) {
-      totalRate += adult?.rates[i] || 0;
+      totalRate = adult?.rates[i] || 0;
     }
-  
+
     // Calculate child rates using progressive pricing
     for (let i = 1; i <= occupancy.children; i++) {
       totalRate += child?.rates[i] || 0;
     }
-  
+
     // Calculate infant rates using progressive pricing
     for (let i = 1; i <= occupancy.infants; i++) {
       totalRate += infant?.rates[i] || 0;
     }
-  
+
     return totalRate;
   }
-  
-  
-  
 
   async searchRooms() {
-    const { hotelId, marketId, checkIn, checkOut, adults, children, infants } = this.searchForm.value;
+    const { hotelId, marketId, checkIn, checkOut, adults, children, infants } =
+      this.searchForm.value;
     const occupancy = { adults, children, infants };
-    
+
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    
+
     const seasonId = this.activeContract()?.seasonId;
-    
+
     if (seasonId) {
       const overlappingPeriods = await firstValueFrom(
-        this.reservationService.getPeriodsFromBooking(checkInDate, checkOutDate, seasonId)
+        this.reservationService.getPeriodsFromBooking(
+          checkInDate,
+          checkOutDate,
+          seasonId
+        )
       );
-      
+
       await this.loadRoomTypes(hotelId);
-      
+
       // Create a new Map to store rates for each room
       const ratesMap = new Map<number, PeriodRateInfo[]>();
-      
-      const filteredRooms = this.roomTypes().filter(room => {
-        const meetsOccupancy = 
+
+      const filteredRooms = this.roomTypes().filter((room) => {
+        const meetsOccupancy =
           room.maxOccupancy.adults >= occupancy.adults &&
           room.maxOccupancy.children >= occupancy.children &&
           room.maxOccupancy.infants >= occupancy.infants;
-          
-        const isInContract = this.activeContract()?.selectedRoomTypes.includes(room.id);
-        
-        const roomPeriodRates = overlappingPeriods.map(period => ({
+
+        const isInContract = this.activeContract()?.selectedRoomTypes.includes(
+          room.id
+        );
+
+        const roomPeriodRates = overlappingPeriods.map((period) => ({
           name: period.name,
           startDate: period.startDate,
           endDate: period.endDate,
-          rate: this.calculateExactRateForPeriod(room, period, occupancy)
+          rate: this.calculateExactRateForPeriod(room, period, occupancy),
         }));
-        
+
         // Store rates for this room
         ratesMap.set(room.id, roomPeriodRates);
-        
-        return meetsOccupancy && isInContract && roomPeriodRates.some(rate => rate.rate > 0);
+
+        return (
+          meetsOccupancy &&
+          isInContract &&
+          roomPeriodRates.some((rate) => rate.rate > 0)
+        );
       });
-  
+
       this.roomRates.set(ratesMap);
-    this.filteredRooms.set(filteredRooms);
+      this.filteredRooms.set(filteredRooms);
     }
   }
-  
-  
 
   private getPeriodForDate(checkInDate: Date, periodId: number): Period | null {
     return (
@@ -672,7 +673,7 @@ export class ReservationComponent {
         // Calculate adult rates
         if (adults && personTypeRates?.["adult"]?.rates) {
           for (let i = 1; i <= adults; i++) {
-            total += personTypeRates["adult"].rates[i] || 0;
+            total = personTypeRates["adult"].rates[i] || 0;
           }
         }
 
@@ -793,27 +794,25 @@ export class ReservationComponent {
     }
   }
 
-
-
   selectRoom(room: RoomType): void {
     const contract = this.activeContract();
     if (!contract) {
       console.warn("No active contract found");
       return;
     }
-  
+
     // Get base meal plan
     const baseMealPlan = this.getBaseMealPlan(room);
-  
+
     // Calculate total from period breakdown
     const periodBreakdown = this.calculatePeriodBreakdown(room);
     const totalRate = periodBreakdown.reduce((sum, b) => sum + b.subtotal, 0);
-  
+
     if (totalRate === 0) {
       console.warn("No valid rate found for room:", room);
       return;
     }
-  
+
     // Store the previous search values
     const previousSearch = {
       checkIn: this.searchForm.get("checkIn")?.value,
@@ -824,26 +823,26 @@ export class ReservationComponent {
       hotelId: this.searchForm.get("hotelId")?.value,
       marketId: this.searchForm.get("marketId")?.value,
     };
-  
+
     // Reset the form but keep it pristine
     this.searchForm.reset(previousSearch, { emitEvent: false });
-  
+
     // Reset form status without marking fields as touched
     Object.keys(this.searchForm.controls).forEach((key) => {
       const control = this.searchForm.get(key);
       control?.setErrors(null);
       control?.markAsUntouched();
     });
-  
+
     // Hide available rooms
     this.filteredRooms.set([]);
-  
+
     // Get available supplements
     const supplements = this.getAvailableMealPlanSupplements(room, contract);
-  
+
     // Load available offers for the room
     this.getAvailableOffers(room);
-  
+
     // Update current step with period-based total
     this.currentStep.set({
       room,
@@ -851,13 +850,12 @@ export class ReservationComponent {
       supplementRates: supplements,
       selectedMealPlans: [],
       total: totalRate,
-      periodBreakdown
+      periodBreakdown,
     });
-  
+
     // Move to next step
     this.stepper.next();
   }
-  
 
   updateMealPlanSelection(plans: MatListOption[]): void {
     const current = this.currentStep();
@@ -1335,42 +1333,52 @@ export class ReservationComponent {
   private updateTotalWithOffers(): void {
     const current = this.currentStep();
     if (!current || !current.baseRate) return;
-
-    // 1. Calculer d'abord le taux de base et les suppléments séparément
+  
+    // 1. Calculate base rate and supplements separately
     const baseRateBeforeOffers = current.baseRate;
     const supplementsTotal = this.calculateSupplementsTotal(
       current.selectedMealPlans || [],
       current.supplementRates || []
     );
-
-    // 2. Gérer l'application des offres
+  
+    // 2. Calculate compulsory supplements total
+    const christmasDinnerTotal = 
+      (this.christmasDinnerAdultPrice * (this.searchForm.value.adults || 0)) + 
+      (this.christmasDinnerChildPrice * (this.searchForm.value.children || 0));
+  
+    const newYearsEveDinnerTotal = 
+      (this.newYearsEveDinnerAdultPrice * (this.searchForm.value.adults || 0)) +
+      (this.newYearsEveDinnerChildPrice * (this.searchForm.value.children || 0));
+  
+    const compulsorySupplementsTotal = christmasDinnerTotal + newYearsEveDinnerTotal;
+  
+    // 3. Apply offers 
     const selectedOffers = this.selectedOffers();
     let finalTotal: number;
-
+  
     if (!selectedOffers.length) {
-      // Pas d'offres - additionner simplement base + suppléments
-      finalTotal = baseRateBeforeOffers + supplementsTotal;
+      // No offers - add base + supplements + compulsory supplements
+      finalTotal = baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal;
     } else {
       if (current.applyOffersToMealPlans) {
-        // Appliquer les réductions au total global
-        finalTotal = this.applyOffers(baseRateBeforeOffers + supplementsTotal);
+        // Apply discounts to the overall total
+        finalTotal = this.applyOffers(baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal);
       } else {
-        // Appliquer les réductions uniquement au taux de base
+        // Apply discounts only to the base rate
         const discountedBaseRate = this.applyOffers(baseRateBeforeOffers);
-        finalTotal = discountedBaseRate + supplementsTotal;
+        finalTotal = discountedBaseRate + supplementsTotal + compulsorySupplementsTotal;
       }
     }
-
-    // 3. Mettre à jour l'état avec les nouveaux totaux
+  
+    // 4. Update state with new totals
     this.currentStep.set({
       ...current,
       total: finalTotal,
-      totalBeforeDiscounts: baseRateBeforeOffers + supplementsTotal,
-      selectedMealPlans: current.selectedMealPlans || [], // Maintenir la sélection actuelle
+      totalBeforeDiscounts: baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal, 
+      selectedMealPlans: current.selectedMealPlans || [], // Keep current selection
     });
   }
-
-  // Assurez-vous que cette méthode calcule correctement le total des suppléments
+  
   private calculateSupplementsTotal(
     selectedPlans: MealPlanType[],
     supplementRates: {
@@ -1385,22 +1393,23 @@ export class ReservationComponent {
   ): number {
     // Si aucun plan ou taux n'est sélectionné, retourner 0
     if (!selectedPlans?.length || !supplementRates?.length) return 0;
-
+  
+    const { adults = 0, children = 0, infants = 0 } = this.searchForm.value;
+  
     return selectedPlans.reduce((total, planType) => {
       const supplement = supplementRates.find((s) => s.type === planType);
       if (!supplement) return total;
-
-      const { adults = 0, children = 0, infants = 0 } = this.searchForm.value;
-
+  
       // Calculer le total pour ce supplément
       const supplementTotal =
-        supplement.rates.adult * (adults || 0) +
-        supplement.rates.child * (children || 0) +
-        supplement.rates.infant * (infants || 0);
-
+        supplement.rates.adult * adults +
+        supplement.rates.child * children +
+        supplement.rates.infant * infants;
+  
       return total + supplementTotal;
     }, 0);
   }
+  
 
   private applyOffers(amount: number): number {
     const selectedOffers = this.selectedOffers();
@@ -1517,27 +1526,6 @@ export class ReservationComponent {
     this.updateTotalWithOffers();
   }
 
-  // private handlePricingError(error: PricingError) {
-  //   if (error.code === 'NO_CURRENCY_CONFIGURED') {
-  //     this.snackBar.open(
-  //       'Unable to display prices. Market currency not configured.',
-  //       'Close',
-  //       { duration: 5000 }
-  //     );
-  //   }
-  //   // Handle other pricing-related errors
-  // }
-
-  // protected displayPrice(amount: number): string {
-  //   try {
-  //     const currency = this.getCurrencySymbol();PeriodRateInfo
-  //     return `${currency}${amount.toFixed(2)}`;
-  //   } catch (error) {
-  //     this.handlePricingError(error as PricingError);
-  //     throw error; // Re-throw to prevent displaying invalid pricing
-  //   }
-  // }
-
   getRoomPeriodRates(room: RoomType): Observable<PeriodRateInfo[]> {
     console.log("Getting period rates for room:", room);
 
@@ -1636,54 +1624,101 @@ export class ReservationComponent {
     const checkInDate = this.checkInDate();
     const checkOutDate = this.checkOutDate();
     const seasonId = this.activeContract()?.seasonId || 0;
-  
-    if (checkInDate && checkOutDate) { 
-      const relevantPeriods = await firstValueFrom(this.reservationService.getPeriodsFromBooking(
-        checkInDate, 
-        checkOutDate,
-        seasonId
-      ));
-  
-      const rates = this.mapPeriodRates(relevantPeriods, this.contractRates() || [], room);
+
+    if (checkInDate && checkOutDate) {
+      const relevantPeriods = await firstValueFrom(
+        this.reservationService.getPeriodsFromBooking(
+          checkInDate,
+          checkOutDate,
+          seasonId
+        )
+      );
+
+      const rates = this.mapPeriodRates(
+        relevantPeriods,
+        this.contractRates() || [],
+        room
+      );
       this.periodRates.set(rates);
     } else {
-      console.warn("Check-in date and check-out date must be selected to calculate room period rates.");
+      console.warn(
+        "Check-in date and check-out date must be selected to calculate room period rates."
+      );
       // Handle the case where dates are not selected, e.g., set periodRates to an empty array
-      this.periodRates.set([]); 
+      this.periodRates.set([]);
     }
   }
-  
+
   calculatePeriodBreakdown(room: RoomType): PeriodBreakdown[] {
-    const checkIn = new Date(this.searchForm.get('checkIn')?.value);
-    const checkOut = new Date(this.searchForm.get('checkOut')?.value);
+    const checkIn = new Date(this.searchForm.get("checkIn")?.value);
+    const checkOut = new Date(this.searchForm.get("checkOut")?.value);
     const roomRates = this.roomRates().get(room.id) || [];
-    
-    return roomRates.map(periodRate => {
-      const periodStart = new Date(periodRate.startDate);
-      const periodEnd = new Date(periodRate.endDate);
-      
-      // Calculate overlap between booking and period
-      const overlapStart = new Date(Math.max(checkIn.getTime(), periodStart.getTime()));
-      const overlapEnd = new Date(Math.min(checkOut.getTime(), periodEnd.getTime()));
-      
-      // Calculate nights in this period
-      const nights = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
-      
-      return {
-        periodName: periodRate.name,
-        rate: periodRate.rate,
-        nights,
-        subtotal: periodRate.rate * nights,
-        startDate: overlapStart,
-        endDate: overlapEnd
-      };
-    }).filter(breakdown => breakdown.nights > 0);
+
+    return roomRates
+      .map((periodRate) => {
+        const periodStart = new Date(periodRate.startDate);
+        const periodEnd = new Date(periodRate.endDate);
+
+        // Calculate overlap between booking and period
+        const overlapStart = new Date(
+          Math.max(checkIn.getTime(), periodStart.getTime())
+        );
+        const overlapEnd = new Date(
+          Math.min(checkOut.getTime(), periodEnd.getTime())
+        );
+
+        // Calculate nights in this period
+        const nights = Math.max(
+          0,
+          Math.ceil(
+            (overlapEnd.getTime() - overlapStart.getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        );
+
+        return {
+          periodName: periodRate.name,
+          rate: periodRate.rate,
+          nights,
+          subtotal: periodRate.rate * nights,
+          startDate: overlapStart,
+          endDate: overlapEnd,
+        };
+      })
+      .filter((breakdown) => breakdown.nights > 0);
   }
-  
+
   totalRate = computed(() => {
     const room = this.currentStep()?.room;
     if (!room) return 0;
-    return this.calculatePeriodBreakdown(room).reduce((sum, b) => sum + b.subtotal, 0);
+    return this.calculatePeriodBreakdown(room).reduce(
+      (sum, b) => sum + b.subtotal,
+      0
+    );
   });
-  
+
+  // Computed property to check if Christmas Eve falls within the stay period
+showChristmasDinner = computed(() => {
+  const checkIn = new Date(this.searchForm.value.checkIn);
+  const checkOut = new Date(this.searchForm.value.checkOut);
+  const { christmasEve } = this.getHolidayDates(checkIn.getFullYear());
+  return christmasEve >= checkIn && christmasEve < checkOut;
+});
+
+// Computed property to check if New Year's Eve falls within the stay period
+showNewYearsEveDinner = computed(() => {
+  const checkIn = new Date(this.searchForm.value.checkIn);
+  const checkOut = new Date(this.searchForm.value.checkOut);
+  const { newYearsEve } = this.getHolidayDates(checkIn.getFullYear());
+  return newYearsEve >= checkIn && newYearsEve < checkOut;
+});
+
+onChristmasDinnerRateChange() {
+  this.updateTotalWithOffers();
+}
+
+onNewYearsDinnerRateChange() {
+  this.updateTotalWithOffers();
+}
+
 }

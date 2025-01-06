@@ -1,160 +1,68 @@
-// Variables
-$primary-color: #1976d2;
-$border-color: #e0e0e0;
-$background-light: #f5f5f5;
-$overlay-bg: rgba(255, 255, 255, 0.7);
-$text-primary: #333;
-$spacing-unit: 8px;
-$border-radius: 8px;
-
-// Mixins
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@mixin flex-end {
-  display: flex;
-  justify-content: flex-end;
-}
-
-@mixin grid-layout($columns) {
-  display: grid;
-  grid-template-columns: $columns;
-  gap: $spacing-unit * 2;
-}
-
 .contract-form {
-  padding: $spacing-unit * 2.5;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   h2 {
-    margin-bottom: $spacing-unit * 3;
-    color: $text-primary;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10; // Ensure it's above other elements
+  }
+
+  .error-message {
+    color: red;
+    margin-bottom: 10px;
   }
 
   .tab-content {
-    padding: $spacing-unit * 3 0;
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-unit * 2;
-  }
-
-  .meal-plans-section {
-    margin-bottom: $spacing-unit * 2;
-
-    .meal-plans-container {
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-unit;
-      margin-top: $spacing-unit;
-    }
+    padding: 20px;
   }
 
   mat-form-field {
     width: 100%;
+    margin-bottom: 16px;
   }
 
-  .date-range {
-    @include grid-layout(1fr 1fr);
+  .selection-container {
+    display: flex;
+    gap: 16px; 
+
+    mat-form-field {
+      flex: 1; // Allow selection fields to take equal width
+    }
   }
 
   .form-actions {
-    margin-top: $spacing-unit * 3;
-    @include flex-end;
-    gap: $spacing-unit * 1.5;
-  }
-
-  textarea {
-    min-height: 100px;
-  }
-
-  .loading-overlay {
-    @include flex-center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: $overlay-bg;
-    z-index: 1000;
-  }
-
-  // Deep style overrides for Angular Material
-  ::ng-deep {
-    .mat-mdc-select-panel {
-      max-height: 300px !important;
-    }
-
-    .mat-mdc-option {
-      height: 48px !important;
-      line-height: 48px !important;
-    }
-
-    .mat-mdc-select-value {
-      max-width: 90%;
-    }
-
-    .mat-mdc-select-multiple {
-      .mat-mdc-select-value {
-        padding: $spacing-unit 0;
-      }
-    }
-
-    .mat-mdc-select-value-text {
-      display: inline-block;
-      padding: calc($spacing-unit / 4) $spacing-unit;
-      margin: calc($spacing-unit / 4);
-      background: $background-light;
-      border-radius: calc($spacing-unit / 2);
-      font-size: 14px;
-    }
-
-    .mat-tab-body-content {
-      padding: $spacing-unit * 2 0;
-    }
-  }
-
-  // Warning message styles
-  .warning-message {
-    padding: $spacing-unit * 2;
-    background-color: #fff3e0;
-    border-radius: calc($border-radius / 2);
-    color: #e65100;
-    margin: $spacing-unit * 2 0;
-  }
-
-  // Room types styles
-  .room-types-container {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-unit;
-    margin-bottom: $spacing-unit * 2;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px; 
 
-    .mat-mdc-form-field-label {
-      margin-bottom: $spacing-unit;
-    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
 
-    mat-checkbox {
-      margin-bottom: calc($spacing-unit / 2);
-    }
-  }
-
-  // Responsive styles
-  @media (max-width: 599px) {
-    padding: $spacing-unit * 2;
-
-    .date-range {
-      grid-template-columns: 1fr;
-    }
-
-    .room-types-grid,
-    .meal-plans-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .form-section {
-      padding: $spacing-unit * 2;
+      &[mat-raised-button] {
+        background-color: #1976d2; 
+        color: white;
+      }
     }
   }
 }
+

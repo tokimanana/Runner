@@ -231,9 +231,6 @@
                 >
                   Select Room
                 </button>
-                <button mat-button (click)="viewDetails(room)">
-                  View Details
-                </button>
               </mat-card-actions>
             </mat-card>
           </div>
@@ -411,6 +408,46 @@
               </mat-list-option>
             </mat-selection-list>
           </div>
+
+          <div class="others-section">
+            <h3>Others</h3>
+            <h4>Compulsory Supplements:</h4>
+          
+            <div *ngIf="showChristmasDinner()" class="compulsory-supplement">
+              Christmas Dinner (24/12/{{checkInDate()?.getFullYear()}})
+              <div class="dinner-rates">
+                <mat-form-field>
+                  <mat-label>Adult Rate</mat-label>
+                  <input matInput type="number" [(ngModel)]="christmasDinnerAdultPrice" (ngModelChange)="onChristmasDinnerRateChange()">
+
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Child Rate</mat-label>
+                  <input matInput type="number" [(ngModel)]="christmasDinnerChildPrice" (ngModelChange)="onChristmasDinnerRateChange()">
+
+                </mat-form-field>
+              </div>
+            </div>
+          
+            <div *ngIf="showNewYearsEveDinner()" class="compulsory-supplement">
+              New Year's Eve Dinner (31/12/{{checkInDate()?.getFullYear()}})
+              <div class="dinner-rates">
+                <mat-form-field>
+                  <mat-label>Adult Rate</mat-label>
+                  <input matInput type="number" [(ngModel)]="newYearsEveDinnerAdultPrice" (ngModelChange)="onNewYearsDinnerRateChange()">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>Child Rate</mat-label>
+                  <input matInput type="number" [(ngModel)]="newYearsEveDinnerChildPrice" (ngModelChange)="onNewYearsDinnerRateChange()">
+                </mat-form-field>
+              </div>
+            </div>
+          
+            <p class="disclaimer">
+              Special offers do not apply to the Gala Dinner supplement, Extra Bed, or Compulsory Supplements.
+            </p>
+          </div>
+          
 
           <!-- Total and Actions -->
           <div class="step-actions">

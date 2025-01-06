@@ -199,4 +199,22 @@ export const contracts: Contract[] = [
     baseMealPlan: MealPlanType.HB,
     isRatesConfigured: false,
   },
+  {
+    id: 11, // Update with a new unique ID
+    code: "TPR-RU-CN25", 
+    name: "Tropical Paradise Christmas & New Year 2025-2026 - United Kingdom",
+    hotelId: 3, 
+    description: "Festive season contract for Russian market with premium rooms and villas",
+    seasonId: 9, 
+    marketId: 2, // United Kingdom market
+    selectedRoomTypes: [11, 12, 13, 14],
+    selectedMealPlans: [
+      MealPlanType.HB, 
+      MealPlanType.FB, 
+      MealPlanType.AI,
+      MealPlanType.AI_PLUS 
+    ],
+    baseMealPlan: MealPlanType.HB,
+    isRatesConfigured: true 
+  },
 ];

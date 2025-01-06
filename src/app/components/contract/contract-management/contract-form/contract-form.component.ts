@@ -11,6 +11,7 @@ import {
 } from "@angular/core";
 import {
   FormBuilder,
+  FormArray,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
@@ -44,6 +45,7 @@ import { SeasonService } from "src/app/services/season.service";
 import { ContractDialogData } from "../contract-list/contract-list.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { RatesConfigComponent } from "../rates-config/rates-config.component";
+import { MatListOption, MatSelectionList } from "@angular/material/list";
 
 @Component({
   selector: "app-contract-form",
@@ -62,7 +64,6 @@ import { RatesConfigComponent } from "../rates-config/rates-config.component";
     MatDatepickerModule,
     MatNativeDateModule,
     MatCheckboxModule,
-    // ... any other modules you need
   ],
 })
 export class ContractFormComponent implements OnInit {
@@ -83,7 +84,7 @@ export class ContractFormComponent implements OnInit {
     seasonId: [null, Validators.required],
     description: [""],
     status: ["draft"],
-    selectedRooms: [[], Validators.required],
+    selectedRoomTypes: this.fb.control([], Validators.required),
     selectedMealPlans: [[], Validators.required],
     baseMealPlan: [null, Validators.required],
   });
@@ -121,7 +122,7 @@ export class ContractFormComponent implements OnInit {
       seasonId: [null, Validators.required],
       description: [""],
       status: ["draft"],
-      selectedRooms: [[], Validators.required],
+      selectedRoomTypes: [[], Validators.required],
       selectedMealPlans: [[], Validators.required],
       baseMealPlan: [null, Validators.required],
     });
@@ -189,7 +190,14 @@ export class ContractFormComponent implements OnInit {
       this.seasons.set(seasons || []);
       this.mealPlans.set(mealPlans || []);
 
-      // Patch form with existing values
+      // *** Move selectedRooms calculation here ***
+      const selectedRooms = this.roomTypes().filter((room) =>
+        contract.selectedRoomTypes?.includes(room.id)
+      );
+
+      console.log("Selected rooms:", selectedRooms);
+
+      // Patch form with existing values, extracting IDs and types
       this.contractForm.patchValue({
         name: contract.name,
         hotelId: contract.hotelId,
@@ -197,13 +205,8 @@ export class ContractFormComponent implements OnInit {
         seasonId: contract.seasonId,
         description: contract.description,
         status: contract.status,
-        selectedRooms: roomTypes.filter((room) =>
-          contract.selectedRoomTypes?.includes(room.id)
-        ),
-        selectedMealPlans:
-          mealPlans?.filter((mealPlan) =>
-            contract.selectedMealPlans?.includes(mealPlan.type)
-          ) || [],
+        selectedRoomTypes: contract.selectedRoomTypes || [],
+        selectedMealPlans: contract.selectedMealPlans || [],
         baseMealPlan: contract.baseMealPlan,
       });
     } catch (error) {
@@ -281,14 +284,14 @@ export class ContractFormComponent implements OnInit {
   }
 
   onRoomTypeChange(checked: boolean, room: RoomType) {
-    const selectedRooms = this.contractForm.value.selectedRooms || [];
+    const selectedRoomTypes = this.contractForm.value.selectedRoomTypes || [];
     if (checked) {
       this.contractForm.patchValue({
-        selectedRooms: [...selectedRooms, room],
+        selectedRoomTypes: [...selectedRoomTypes, room],
       });
     } else {
       this.contractForm.patchValue({
-        selectedRooms: selectedRooms.filter(
+        selectedRoomTypes: selectedRoomTypes.filter(
           (selectedRoom: any) => selectedRoom.id !== room.id
         ),
       });
@@ -312,10 +315,10 @@ export class ContractFormComponent implements OnInit {
 
       const contractData = {
         ...formData,
-        selectedRoomTypes: selectedRoomIds,  // Fix: Changed from selectedRooms to selectedRoomTypes
+        selectedRoomTypes: selectedRoomIds, // Fix: Changed from selectedRooms to selectedRoomTypes
         selectedMealPlans: selectedMealPlanTypes,
-        status: "draft",  // Set initial status
-        isRatesConfigured: false  // Add this field
+        status: "draft", // Set initial status
+        isRatesConfigured: false, // Add this field
       };
 
       if (this.isEditMode()) {
@@ -339,8 +342,7 @@ export class ContractFormComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-}
-
+  }
 
   onCancel() {
     this.dialogRef.close();
@@ -376,6 +378,4 @@ export class ContractFormComponent implements OnInit {
       },
     });
   }
-
-  
 }
