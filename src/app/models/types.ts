@@ -816,3 +816,29 @@ export interface PeriodRateInfo {
   endDate: string;
   rate: number;
 }
+
+export interface PeriodCalculation {
+  originalRate: number;
+  discountedRate: number;
+  appliedOffers: {
+    name: string;
+    discount: number;
+  }[];
+}
+
+export interface PeriodCalculationDetail {
+  startDate: Date;
+  endDate: Date;
+  nights: number;
+  baseRate: number;
+  appliedOffers: {
+    name: string;
+    discount: number;
+    applicableDates: {
+      start: Date;
+      end: Date;
+    }
+  }[];
+  subtotal: number;
+  discountedRate: number;
+}

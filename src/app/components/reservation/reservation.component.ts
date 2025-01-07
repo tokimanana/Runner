@@ -37,6 +37,8 @@ import {
   ReservationStep,
   PeriodRateInfo,
   PeriodBreakdown,
+  PeriodCalculation,
+  PeriodCalculationDetail,
 } from "../../models/types";
 import { ContractService } from "src/app/services/contract.service";
 import { ContractRateService } from "src/app/services/contract-rates.service";
@@ -198,7 +200,10 @@ export class ReservationComponent {
     [MealPlanType.UAI]: "Ultra All Inclusive",
   };
 
-  private getHolidayDates(year: number): { christmasEve: Date, newYearsEve: Date } {
+  private getHolidayDates(year: number): {
+    christmasEve: Date;
+    newYearsEve: Date;
+  } {
     const christmasEve = new Date(year, 11, 24); // Month is 0-indexed (December = 11)
     const newYearsEve = new Date(year, 11, 31);
     return { christmasEve, newYearsEve };
@@ -232,7 +237,6 @@ export class ReservationComponent {
         this.updateCheckOutDate(new Date(date));
       }
     });
-  
 
     // Listen to hotel selection changes to update markets
     this.searchForm.get("hotelId")?.valueChanges.subscribe((hotelId) => {
@@ -389,14 +393,13 @@ export class ReservationComponent {
                 hotelId: contract.hotelId,
                 marketId: contract.marketId,
                 isRatesConfigured: contract.isRatesConfigured,
-                expectedHotelId: hotelId
+                expectedHotelId: hotelId,
               });
               return contract.isRatesConfigured && contract.hotelId === hotelId;
             })
             .map((contract) => contract.marketId)
         ),
       ];
-      
 
       console.log("Active market IDs:", activeMarketIds);
 
@@ -1333,52 +1336,58 @@ export class ReservationComponent {
   private updateTotalWithOffers(): void {
     const current = this.currentStep();
     if (!current || !current.baseRate) return;
-  
+
     // 1. Calculate base rate and supplements separately
     const baseRateBeforeOffers = current.baseRate;
     const supplementsTotal = this.calculateSupplementsTotal(
       current.selectedMealPlans || [],
       current.supplementRates || []
     );
-  
+
     // 2. Calculate compulsory supplements total
-    const christmasDinnerTotal = 
-      (this.christmasDinnerAdultPrice * (this.searchForm.value.adults || 0)) + 
-      (this.christmasDinnerChildPrice * (this.searchForm.value.children || 0));
-  
-    const newYearsEveDinnerTotal = 
-      (this.newYearsEveDinnerAdultPrice * (this.searchForm.value.adults || 0)) +
-      (this.newYearsEveDinnerChildPrice * (this.searchForm.value.children || 0));
-  
-    const compulsorySupplementsTotal = christmasDinnerTotal + newYearsEveDinnerTotal;
-  
-    // 3. Apply offers 
+    const christmasDinnerTotal =
+      this.christmasDinnerAdultPrice * (this.searchForm.value.adults || 0) +
+      this.christmasDinnerChildPrice * (this.searchForm.value.children || 0);
+
+    const newYearsEveDinnerTotal =
+      this.newYearsEveDinnerAdultPrice * (this.searchForm.value.adults || 0) +
+      this.newYearsEveDinnerChildPrice * (this.searchForm.value.children || 0);
+
+    const compulsorySupplementsTotal =
+      christmasDinnerTotal + newYearsEveDinnerTotal;
+
+    // 3. Apply offers
     const selectedOffers = this.selectedOffers();
     let finalTotal: number;
-  
+
     if (!selectedOffers.length) {
       // No offers - add base + supplements + compulsory supplements
-      finalTotal = baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal;
+      finalTotal =
+        baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal;
     } else {
       if (current.applyOffersToMealPlans) {
         // Apply discounts to the overall total
-        finalTotal = this.applyOffers(baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal);
+        finalTotal = this.applyOffers(
+          baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal
+        );
       } else {
         // Apply discounts only to the base rate
         const discountedBaseRate = this.applyOffers(baseRateBeforeOffers);
-        finalTotal = discountedBaseRate + supplementsTotal + compulsorySupplementsTotal;
+        finalTotal =
+          discountedBaseRate + supplementsTotal + compulsorySupplementsTotal;
       }
     }
-  
+
     // 4. Update state with new totals
     this.currentStep.set({
       ...current,
       total: finalTotal,
-      totalBeforeDiscounts: baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal, 
+      totalBeforeDiscounts:
+        baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal,
       selectedMealPlans: current.selectedMealPlans || [], // Keep current selection
     });
   }
-  
+
   private calculateSupplementsTotal(
     selectedPlans: MealPlanType[],
     supplementRates: {
@@ -1393,58 +1402,53 @@ export class ReservationComponent {
   ): number {
     // Si aucun plan ou taux n'est sélectionné, retourner 0
     if (!selectedPlans?.length || !supplementRates?.length) return 0;
-  
+
     const { adults = 0, children = 0, infants = 0 } = this.searchForm.value;
-  
+
     return selectedPlans.reduce((total, planType) => {
       const supplement = supplementRates.find((s) => s.type === planType);
       if (!supplement) return total;
-  
+
       // Calculer le total pour ce supplément
       const supplementTotal =
         supplement.rates.adult * adults +
         supplement.rates.child * children +
         supplement.rates.infant * infants;
-  
+
       return total + supplementTotal;
     }, 0);
   }
-  
 
   private applyOffers(amount: number): number {
     const selectedOffers = this.selectedOffers();
-    console.log("Offres sélectionnées:", selectedOffers);
-
-    // Séparer les offres cumulatives et séquentielles
-    const cumulativeOffers = selectedOffers.filter(
-      (offer) => offer.type === "cumulative"
-    );
-    const sequentialOffers = selectedOffers.filter(
-      (offer) => offer.type !== "cumulative"
-    );
-
+    console.log("Selected offers:", selectedOffers);
+  
+    // Separate combinable and cumulative offers
+    const combinableOffers = selectedOffers.filter(offer => offer.type === 'combinable');
+    const cumulativeOffers = selectedOffers.filter(offer => offer.type === 'cumulative');
+  
     let finalAmount = amount;
-
-    // Appliquer d'abord les offres cumulatives si il y en a
-    if (cumulativeOffers.length > 0) {
-      const totalCumulativeDiscount = cumulativeOffers.reduce((sum, offer) => {
+  
+    // For combinable offers: sum all discounts first, then apply once
+    if (combinableOffers.length > 0) {
+      const totalCombinableDiscount = combinableOffers.reduce((sum, offer) => {
         const discount = this.getApplicableDiscount(offer);
-        console.log(`Applying cumulative discount: ${discount}%`);
+        console.log(`Adding combinable discount: ${discount}%`);
         return sum + discount;
       }, 0);
-      console.log("Total cumulative discount:", totalCumulativeDiscount);
-      finalAmount = finalAmount * (1 - totalCumulativeDiscount / 100);
+      console.log("Total combinable discount:", totalCombinableDiscount);
+      finalAmount = finalAmount * (1 - totalCombinableDiscount / 100);
     }
-
-    // Puis appliquer les offres séquentielles
-    if (sequentialOffers.length > 0) {
-      finalAmount = sequentialOffers.reduce((total, offer) => {
+  
+    // For cumulative offers: apply each discount sequentially
+    if (cumulativeOffers.length > 0) {
+      finalAmount = cumulativeOffers.reduce((total, offer) => {
         const discount = this.getApplicableDiscount(offer);
-        console.log(`Applying sequential discount: ${discount}%`);
+        console.log(`Applying cumulative discount: ${discount}%`);
         return total * (1 - discount / 100);
       }, finalAmount);
     }
-
+  
     console.log("Final amount:", finalAmount);
     return finalAmount;
   }
@@ -1652,6 +1656,10 @@ export class ReservationComponent {
   calculatePeriodBreakdown(room: RoomType): PeriodBreakdown[] {
     const checkIn = new Date(this.searchForm.get("checkIn")?.value);
     const checkOut = new Date(this.searchForm.get("checkOut")?.value);
+
+    // Set checkout time to end of day (23:59:59)
+    checkOut.setHours(23, 59, 59);
+
     const roomRates = this.roomRates().get(room.id) || [];
 
     return roomRates
@@ -1659,7 +1667,6 @@ export class ReservationComponent {
         const periodStart = new Date(periodRate.startDate);
         const periodEnd = new Date(periodRate.endDate);
 
-        // Calculate overlap between booking and period
         const overlapStart = new Date(
           Math.max(checkIn.getTime(), periodStart.getTime())
         );
@@ -1667,7 +1674,6 @@ export class ReservationComponent {
           Math.min(checkOut.getTime(), periodEnd.getTime())
         );
 
-        // Calculate nights in this period
         const nights = Math.max(
           0,
           Math.ceil(
@@ -1688,37 +1694,258 @@ export class ReservationComponent {
       .filter((breakdown) => breakdown.nights > 0);
   }
 
+  private checkOfferValidity(
+    offer: SpecialOffer,
+    startDate: Date,
+    endDate: Date
+  ): boolean {
+    const offerStart = new Date(offer.startDate);
+    const offerEnd = new Date(offer.endDate);
+    return startDate <= offerEnd && endDate >= offerStart;
+  }
+
+  private getOfferDiscount(offer: SpecialOffer, amount: number): number {
+    const discountValue = offer.discountValues[0].value;
+    return offer.discountType === "percentage"
+      ? (amount * discountValue) / 100
+      : discountValue;
+  }
+
   totalRate = computed(() => {
-    const room = this.currentStep()?.room;
-    if (!room) return 0;
-    return this.calculatePeriodBreakdown(room).reduce(
-      (sum, b) => sum + b.subtotal,
-      0
-    );
+    const current = this.currentStep();
+    if (!current?.room) return 0;
+  
+    const periodBreakdowns = this.calculatePeriodBreakdown(current.room);
+    const baseTotal = periodBreakdowns.reduce((sum, breakdown) => {
+      const details = this.calculatePeriodWithOffers(breakdown);
+      return sum + details.reduce((periodSum, detail) => periodSum + detail.discountedRate, 0);
+    }, 0);
+  
+    return baseTotal;
   });
 
   // Computed property to check if Christmas Eve falls within the stay period
-showChristmasDinner = computed(() => {
-  const checkIn = new Date(this.searchForm.value.checkIn);
-  const checkOut = new Date(this.searchForm.value.checkOut);
-  const { christmasEve } = this.getHolidayDates(checkIn.getFullYear());
-  return christmasEve >= checkIn && christmasEve < checkOut;
-});
+  showChristmasDinner = computed(() => {
+    const checkIn = new Date(this.searchForm.value.checkIn);
+    const checkOut = new Date(this.searchForm.value.checkOut);
+    const { christmasEve } = this.getHolidayDates(checkIn.getFullYear());
+    return christmasEve >= checkIn && christmasEve < checkOut;
+  });
 
-// Computed property to check if New Year's Eve falls within the stay period
-showNewYearsEveDinner = computed(() => {
-  const checkIn = new Date(this.searchForm.value.checkIn);
-  const checkOut = new Date(this.searchForm.value.checkOut);
-  const { newYearsEve } = this.getHolidayDates(checkIn.getFullYear());
-  return newYearsEve >= checkIn && newYearsEve < checkOut;
-});
+  // Computed property to check if New Year's Eve falls within the stay period
+  showNewYearsEveDinner = computed(() => {
+    const checkIn = new Date(this.searchForm.value.checkIn);
+    const checkOut = new Date(this.searchForm.value.checkOut);
+    const { newYearsEve } = this.getHolidayDates(checkIn.getFullYear());
+    return newYearsEve >= checkIn && newYearsEve < checkOut;
+  });
 
-onChristmasDinnerRateChange() {
-  this.updateTotalWithOffers();
-}
+  onChristmasDinnerRateChange() {
+    this.updateTotalWithOffers();
+  }
 
-onNewYearsDinnerRateChange() {
-  this.updateTotalWithOffers();
-}
+  onNewYearsDinnerRateChange() {
+    this.updateTotalWithOffers();
+  }
 
+  hasCompulsorySupplement(): boolean {
+    return this.showChristmasDinner() || this.showNewYearsEveDinner();
+  }
+
+  readonly offersWithAvailability = computed(() => {
+    const checkIn = new Date(this.searchForm.get("checkIn")?.value);
+    const checkOut = new Date(this.searchForm.get("checkOut")?.value);
+
+    return this.availableOffers()
+      .map((offer) => ({
+        ...offer,
+        applicableDateRange: this.getOfferDateRange(offer, checkIn, checkOut),
+        discount: this.getApplicableDiscount(offer),
+      }))
+      .filter((offer) => offer.discount > 0); // Only show offers with actual discounts
+  });
+
+  private getOfferDateRange(
+    offer: SpecialOffer,
+    checkIn: Date,
+    checkOut: Date
+  ): string {
+    const start = new Date(
+      Math.max(checkIn.getTime(), new Date(offer.startDate).getTime())
+    );
+    const end = new Date(
+      Math.min(checkOut.getTime(), new Date(offer.endDate).getTime())
+    );
+
+    return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+  }
+
+  private getOfferApplicableDates(
+    offer: SpecialOffer,
+    checkIn: Date,
+    checkOut: Date
+  ): Date[] {
+    const dates: Date[] = [];
+    let currentDate = new Date(checkIn);
+
+    while (currentDate <= checkOut) {
+      if (this.isDateInRange(currentDate, offer.startDate, offer.endDate)) {
+        dates.push(new Date(currentDate));
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  private isDateInRange(date: Date, start: string, end: string): boolean {
+    return date >= new Date(start) && date <= new Date(end);
+  }
+
+ 
+
+  calculatePeriodWithOffers(breakdown: PeriodBreakdown): PeriodCalculationDetail[] {
+    const selectedOffers = this.selectedOffers();
+    
+    // Split offers by type
+    const combinableOffers = selectedOffers.filter(offer => offer.type === 'combinable');
+    const cumulativeOffers = selectedOffers.filter(offer => offer.type === 'cumulative');
+    
+    let finalRate = breakdown.subtotal;
+    
+    // For combinable offers: sum all discounts first, then apply once
+    if (combinableOffers.length > 0) {
+      const totalCombinableDiscount = combinableOffers.reduce((sum, offer) => 
+        sum + this.getApplicableDiscount(offer), 0);
+      finalRate = finalRate * (1 - totalCombinableDiscount / 100);
+    }
+    
+    // For cumulative offers: apply each discount sequentially
+    cumulativeOffers.forEach(offer => {
+      const discount = this.getApplicableDiscount(offer);
+      finalRate = finalRate * (1 - discount / 100);
+    });
+  
+    return [{
+      startDate: breakdown.startDate,
+      endDate: breakdown.endDate,
+      nights: breakdown.nights,
+      baseRate: breakdown.rate,
+      appliedOffers: [...combinableOffers, ...cumulativeOffers].map(offer => ({
+        name: offer.name,
+        discount: this.getApplicableDiscount(offer),
+        applicableDates: {
+          start: breakdown.startDate,
+          end: breakdown.endDate
+        }
+      })),
+      subtotal: breakdown.subtotal,
+      discountedRate: finalRate
+    }];
+  }
+  
+  
+  private getDateRangesWithOffers(start: Date, end: Date, offers: SpecialOffer[]): Array<{
+    start: Date;
+    end: Date;
+    nights: number;
+    offers: SpecialOffer[];
+  }> {
+    const ranges: Array<{
+      start: Date;
+      end: Date;
+      nights: number;
+      offers: SpecialOffer[];
+    }> = [];
+  
+    // Create array of all significant dates (start, end, and offer boundaries)
+    const dates = new Set<number>();
+    dates.add(start.getTime());
+    dates.add(end.getTime());
+    
+    offers.forEach(offer => {
+      dates.add(new Date(offer.startDate).getTime());
+      dates.add(new Date(offer.endDate).getTime());
+    });
+  
+    // Convert to array and sort
+    const sortedDates = Array.from(dates).sort((a, b) => a - b);
+  
+    // Create ranges between consecutive dates
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const rangeStart = new Date(sortedDates[i]);
+      const rangeEnd = new Date(sortedDates[i + 1]);
+  
+      // Skip if range is outside the period
+      if (rangeEnd <= start || rangeStart >= end) continue;
+  
+      // Find applicable offers for this range
+      const applicableOffers = offers.filter(offer => {
+        const offerStart = new Date(offer.startDate);
+        const offerEnd = new Date(offer.endDate);
+        return rangeStart >= offerStart && rangeEnd <= offerEnd;
+      });
+  
+      // Calculate nights in this range
+      const nights = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24));
+  
+      if (nights > 0) {
+        ranges.push({
+          start: rangeStart,
+          end: rangeEnd,
+          nights,
+          offers: applicableOffers
+        });
+      }
+    }
+  
+    return ranges;
+  }
+  
+  
+
+  private datesOverlap(
+    start1: Date,
+    end1: Date,
+    start2: Date,
+    end2: Date
+  ): boolean {
+    return start1 <= end2 && start2 <= end1;
+  }
+
+  private calculateSegment(
+    startDate: Date,
+    endDate: Date,
+    baseRate: number,
+    offers: SpecialOffer[]
+  ): PeriodCalculationDetail {
+    const nights = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const subtotal = baseRate * nights;
+
+    const appliedOffers = offers.map((offer) => ({
+      name: offer.name,
+      discount: (this.getApplicableDiscount(offer) * subtotal) / 100,
+      applicableDates: {
+        start: startDate,
+        end: endDate,
+      },
+    }));
+
+    const totalDiscount = appliedOffers.reduce(
+      (sum, offer) => sum + offer.discount,
+      0
+    );
+
+    return {
+      startDate,
+      endDate,
+      nights,
+      baseRate,
+      appliedOffers,
+      subtotal,
+      discountedRate: subtotal - totalDiscount,
+    };
+  }
 }

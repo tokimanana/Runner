@@ -10,9 +10,9 @@
     overflow-y: auto;
     padding-right: 24px;
 
+    // Search Form Section
     .search-form-card {
       margin-bottom: 24px;
-
       .search-form {
         display: flex;
         flex-direction: column;
@@ -22,7 +22,6 @@
           display: flex;
           gap: 16px;
           flex-wrap: wrap;
-
           mat-form-field {
             flex: 1;
             min-width: 200px;
@@ -38,693 +37,551 @@
     }
 
     .available-rooms-container {
-      padding: 24px;
+      .rate-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 20px;
 
-      h2 {
-        font-size: 28px;
-        margin-bottom: 24px;
-        color: #1a237e;
-      }
-
-      .rooms-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-        gap: 24px;
-        padding: 16px 0;
-      }
-    }
-
-    .room-card {
-      border-radius: 12px;
-      overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s;
-
-      &.disabled {
-        opacity: 0.7;
-        pointer-events: none;
-
-        .mat-card-actions {
-          button {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-        }
-      }
-
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      mat-card-header {
-        padding: 16px;
-        background: #f5f5f5;
-
-        mat-card-title {
-          font-size: 20px;
-          font-weight: 600;
-          color: #1a237e;
-        }
-
-        mat-card-subtitle {
-          color: #5c6bc0;
-        }
-      }
-
-      .room-summary {
-        border: 1px solid #ccc;
-        padding: 20px;
-        margin-bottom: 20px;
-      }
-      
-      .summary-header {
-        margin-bottom: 10px;
-      }
-      
-      .summary-header h3 {
-        margin: 0;
-        font-size: 1.2em;
-      }
-      
-      .meal-plan-base {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-      }
-      
-      .meal-plan-base mat-icon {
-        margin-right: 5px;
-      }
-      
-      .meal-plan-base .stay-dates {
-        margin-left: auto; 
-        font-size: 0.9em;
-        color: #666;
-      }
-      
-      .period-breakdown {
-        margin-bottom: 10px;
-      }
-      
-      .period-rate {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-      }
-      
-      .period-info {
-        font-weight: bold;
-      }
-      
-      .period-subtotal {
-        text-align: right;
-      }
-      
-      .total-rate {
-        font-weight: bold;
-        font-size: 1.1em;
-      }
-      
-
-      .meal-plan-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.15);
-        padding: 8px 16px;
-        border-radius: 20px;
-        margin-top: 12px;
-
-        mat-icon {
-          font-size: 20px;
-          height: 20px;
-          width: 20px;
-        }
-
-        span {
-          font-size: 14px;
+        h4 {
+          font-size: 18px;
           font-weight: 500;
+          color: #1a237e;
+          margin-bottom: 20px;
+        }
+
+        .period-rates {
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 12px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+          transition: transform 0.2s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+          }
+
+          .period-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+
+            .period-name {
+              font-weight: 500;
+              color: #2c3e50;
+              font-size: 16px;
+            }
+
+            .period-dates {
+              font-size: 0.9em;
+              color: #666;
+              margin-left: 8px;
+            }
+          }
+
+          .rate-amount {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+
+            .currency {
+              color: #1976d2;
+              font-weight: 500;
+            }
+
+            .amount {
+              font-size: 24px;
+              font-weight: 600;
+              color: #1976d2;
+            }
+
+            .per-night {
+              color: #666;
+              font-size: 14px;
+              margin-left: 4px;
+            }
+          }
         }
       }
 
       .room-details {
-        padding: 16px 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        padding: 16px;
 
-        .occupancy-info,
+        .occupancy-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          mat-icon {
+            color: #666;
+            font-size: 20px;
+          }
+
+          .occupancy-text {
+            font-size: 14px;
+            color: #424242;
+          }
+        }
+
         .room-size {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 12px;
-          color: #666;
 
           mat-icon {
-            color: #3949ab;
+            color: #666;
+          }
+
+          span {
+            font-size: 14px;
+            color: #424242;
           }
         }
-      }
 
-      .amenities {
-        margin-top: 16px;
+        .amenities {
+          padding: 20px;
+          background: #ffffff;
+          border-radius: 8px;
+          margin: 16px 0;
 
-        h4 {
-          font-size: 16px;
-          margin-bottom: 12px;
-          color: #1a237e;
-        }
-
-        .amenities-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-
-          .amenity-tag {
-            background: #e8eaf6;
-            color: #3949ab;
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 13px;
+          h4 {
+            color: #1a237e;
+            font-size: 16px;
             font-weight: 500;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e3f2fd;
+          }
+
+          .amenities-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+
+            .amenity-tag {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 12px 16px;
+              background: #f5f5f5;
+              border-radius: 8px;
+              transition: all 0.2s ease;
+
+              &:before {
+                content: "•";
+                color: #1976d2;
+                font-size: 20px;
+              }
+
+              &:hover {
+                background: #e3f2fd;
+                transform: translateY(-2px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              }
+            }
           }
         }
       }
 
-      mat-card-actions {
-        padding: 16px;
+      .mat-card-actions {
         display: flex;
-        gap: 12px;
         justify-content: flex-end;
-        border-top: 1px solid #eee;
+        padding: 16px;
+        margin-top: 16px;
+        border-top: 1px solid #e0e0e0;
+
+        button {
+          min-width: 120px;
+        }
       }
     }
 
-    // Customize Stay Step Styles
     .room-summary {
-      background: #f5f5f5;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
+      padding: 24px;
+      background: #ffffff;
+      border-radius: 12px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
       .summary-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-
+        margin-bottom: 20px;
         h3 {
-          margin: 0;
+          color: #1a237e;
           font-size: 20px;
           font-weight: 500;
-        }
-
-        .base-rate {
-          font-size: 24px;
-          font-weight: 600;
-          color: #1a237e;
         }
       }
 
       .meal-plan-base {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
+        padding: 16px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        margin-bottom: 20px;
+
+        mat-icon {
+          color: #1976d2;
+        }
 
         .stay-dates {
-          margin-left: 16px;
           color: #666;
-          font-size: 0.9em;
-          &::before {
-            content: "|";
-            margin-right: 16px;
-            color: #ddd;
+          margin-left: auto;
+        }
+      }
+
+      .rate-breakdown-container {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+
+        .period-breakdown {
+          .period-rate-row {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e9ecef;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .period-details {
+              .period-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
+
+                .period-name {
+                  font-weight: 500;
+                  color: #2c3e50;
+                }
+
+                .period-dates {
+                  color: #6c757d;
+                  font-size: 0.9rem;
+                }
+              }
+
+              .rate-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .rate-calculation {
+                  color: #495057;
+                  font-size: 0.95rem;
+                }
+
+                .period-amount {
+                  font-weight: 500;
+                  color: #2c3e50;
+                }
+              }
+
+              .discount-details {
+                margin-top: 0.5rem;
+                padding-left: 1rem;
+                border-left: 2px solid #e0e0e0;
+
+                .discount-application {
+                  margin: 0.5rem 0;
+                  font-size: 0.9rem;
+
+                  .date-range {
+                    color: #666;
+                    font-weight: 500;
+                  }
+
+                  .applied-offers {
+                    margin-left: 1rem;
+
+                    .offer-detail {
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+
+                      .offer-name {
+                        color: #2196f3;
+                      }
+
+                      .discount-value {
+                        color: #4caf50;
+                        font-weight: 500;
+                      }
+                    }
+                  }
+
+                  .discounted-amount {
+                    text-align: right;
+                    font-weight: 600;
+                    color: #1976d2;
+                  }
+                }
+              }
+            }
           }
         }
       }
-    }
 
-    .meal-plan-base {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      .total-stay-summary {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
-      .stay-dates {
-        margin-left: 16px;
-        color: #666;
-        font-size: 0.9em;
-        &::before {
-          content: "|";
-          margin-right: 16px;
-          color: #ddd;
+        .total-stay {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          .total-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2c3e50;
+          }
+
+          .total-amounts {
+            text-align: right;
+
+            .original-amount {
+              display: block;
+              text-decoration: line-through;
+              color: #6c757d;
+              font-size: 0.9rem;
+              margin-bottom: 0.25rem;
+            }
+
+            .final-amount {
+              font-size: 1.25rem;
+              font-weight: 600;
+              color: #2c3e50;
+            }
+          }
         }
       }
-    }
 
-    .applicable-discount {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f5f5f5;
-      padding: 8px 12px;
-      border-radius: 4px;
-      margin-top: 12px;
+      .offer-preference {
+        margin: 20px 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
 
-      mat-icon {
-        color: #4caf50;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+        .info-icon {
+          color: #666;
+          cursor: help;
+        }
       }
 
-      span {
-        font-weight: 500;
+      .step-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+        .total {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+
+          span {
+            font-size: 16px;
+            color: #424242;
+            font-weight: 500;
+
+            &.amount {
+              font-size: 24px;
+              color: #1976d2;
+              font-weight: 600;
+            }
+          }
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 16px;
+
+          button {
+            min-width: 120px;
+
+            &[mat-stroked-button] {
+              border-color: #1976d2;
+              color: #1976d2;
+            }
+
+            &[mat-raised-button] {
+              background: #1976d2;
+              color: white;
+
+              &:hover {
+                background: #1565c0;
+              }
+            }
+          }
+        }
       }
     }
 
     .supplements-section {
       margin: 24px 0;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
       h4 {
-        margin-bottom: 16px;
-        color: #333;
+        color: #1a237e;
+        margin-bottom: 20px;
+        font-size: 1.1em;
       }
 
       .supplement-option {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 20px;
+        padding: 16px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        margin-bottom: 12px;
+        align-items: center;
+
         .plan-info {
           .plan-name {
             font-weight: 500;
-            color: #333;
+            color: #2c3e50;
+            margin-bottom: 4px;
           }
 
           .rates {
             display: flex;
             gap: 16px;
-            margin-top: 4px;
             color: #666;
-            font-size: 14px;
+            font-size: 0.9em;
           }
         }
-      }
-    }
 
-    .step-actions {
-      position: sticky;
-      bottom: 0;
-      background: white;
-      padding: 16px 0;
-      border-top: 1px solid #eee;
-      margin-top: 24px;
-
-      .total {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-
-        .amount {
-          font-size: 24px;
-          font-weight: 600;
-          color: #1a237e;
+        &:hover {
+          background: #e3f2fd;
+          transform: translateY(-1px);
+          transition: all 0.2s ease;
         }
       }
+    }
 
-      .action-buttons {
+    // Offers Section
+    .offers-section {
+      margin: 24px 0;
+
+      .offers-legend {
         display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-      }
-    }
-  }
+        gap: 20px;
+        margin-bottom: 20px;
+        padding: 12px;
+        background: #f5f5f5;
+        border-radius: 4px;
 
-  .offer-preference {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #f5f5f5;
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 16px;
-
-    .info-icon {
-      color: #666;
-      font-size: 18px;
-      cursor: help;
-    }
-
-    mat-checkbox {
-      font-size: 0.9em;
-    }
-  }
-
-  // Cart Sidebar Styles
-  .cart-sidebar {
-    background: white;
-    border-left: 1px solid #eee;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-
-    .cart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-
-      h3 {
-        margin: 0;
-        font-weight: 500;
-      }
-
-      .item-count {
-        color: #666;
-      }
-    }
-
-    .cart-items {
-      flex: 1;
-      overflow-y: auto;
-
-      .cart-item {
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-
-        .item-header {
+        .legend-item {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
+          gap: 8px;
 
-          .room-name {
+          .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: 500;
-            font-size: 1.1em;
-          }
 
-          .final-price {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
+            &.combinable {
+              background-color: #e3f2fd;
+              color: #1565c0;
+            }
+
+            &.cumulative {
+              background-color: #e8f5e9;
+              color: #2e7d32;
+            }
           }
         }
+      }
 
-        .item-details {
-          .original-price {
-            color: #666;
-            margin-bottom: 8px;
+      .offers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
 
-            .strikethrough {
-              text-decoration: line-through;
-              color: #999;
+        .offer-card {
+          position: relative;
+
+          &.combinable {
+            border-left: 4px solid #1565c0;
+          }
+
+          &.cumulative {
+            border-left: 4px solid #2e7d32;
+          }
+
+          .offer-type-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+
+            &.combinable {
+              background-color: #e3f2fd;
+              color: #1565c0;
+            }
+
+            &.cumulative {
+              background-color: #e8f5e9;
+              color: #2e7d32;
             }
           }
 
-          .meal-plan {
-            color: #666;
-            margin-bottom: 12px;
-          }
-
-          .applied-discounts {
+          .applicable-dates {
             margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
 
-            h4 {
-              font-size: 0.9em;
-              color: #666;
-              margin-bottom: 8px;
+            .date-range {
+              background: #e3f2fd;
+              padding: 4px 12px;
+              border-radius: 16px;
+              font-size: 13px;
+              color: #1976d2;
             }
 
-            .discount-item {
-              background: #f5f5f5;
-              padding: 8px 12px;
-              border-radius: 4px;
-              margin-bottom: 8px;
-
-              .discount-name {
-                font-weight: 500;
-                color: #333;
-                margin-bottom: 4px;
-              }
-
-              .discount-value {
-                color: #e53935;
-                font-weight: 500;
-                margin-bottom: 2px;
-              }
-
-              .saved-amount {
-                font-size: 0.9em;
-                color: #4caf50;
-              }
+            mat-icon {
+              color: #666;
+              font-size: 20px;
             }
           }
         }
       }
-
-      .meal-plans {
-        font-size: 14px;
-        color: #666;
-
-        .supplement {
-          display: block;
-          margin-top: 4px;
-          color: #1a237e;
-        }
-      }
-    }
-  }
-
-  .cart-footer {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid #eee;
-
-    .cart-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      font-weight: 500;
-
-      .amount {
-        font-size: 20px;
-        color: #1a237e;
-      }
-    }
-
-    button {
-      width: 100%;
-      margin-bottom: 8px;
     }
   }
 }
 
-.booking-restrictions {
-  margin-bottom: 24px;
-
-  mat-card {
-    background-color: #fff3e0; // Light warning color
-
-    .warning-message {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-
-      mat-icon {
-        color: #f57c00; // Warning icon color
-      }
-
-      ul {
-        margin: 8px 0 0 0;
-        padding-left: 20px;
-
-        li {
-          margin-bottom: 4px;
-        }
-      }
-    }
-  }
-}
-
-.no-rate-message {
-  padding: 16px;
-  background: #fff3e0;
-  color: #f57c00;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: -8px -16px 16px;
-
-  mat-icon {
-    font-size: 20px;
-    height: 20px;
-    width: 20px;
-  }
-
-  span {
-    font-size: 14px;
-    font-weight: 500;
-  }
-}
-
-.offers-section {
-  margin: 20px 0;
-
-  .offers-legend {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 20px;
-    padding: 10px;
-    background: #f5f5f5;
-    border-radius: 4px;
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-
-        &.combinable {
-          background-color: #e3f2fd;
-          color: #1565c0;
-        }
-
-        &.cumulative {
-          background-color: #e8f5e9;
-          color: #2e7d32;
-        }
-      }
-    }
-  }
-
-  .offers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-
-    .offer-card {
-      position: relative;
-      transition: all 0.3s ease;
-
-      &.disabled {
-        opacity: 0.6;
-        pointer-events: none;
-      }
-
-      &.combinable {
-        border-left: 4px solid #1565c0;
-      }
-
-      &.cumulative {
-        border-left: 4px solid #2e7d32;
-      }
-
-      .offer-type-badge {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-
-        &.combinable {
-          background-color: #e3f2fd;
-          color: #1565c0;
-        }
-
-        &.cumulative {
-          background-color: #e8f5e9;
-          color: #2e7d32;
-        }
-      }
-
-      .discount-info {
-        margin-top: 12px;
-
-        .discount-value {
-          display: inline-block;
-          padding: 4px 8px;
-          background: #f5f5f5;
-          border-radius: 4px;
-          margin-right: 8px;
-          font-weight: 500;
-        }
-      }
-    }
-  }
-}
-
-.cart-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  button {
-    width: 100%;
-  }
-}
-
-::ng-deep {
-  .success-snackbar {
-    background: #4caf50;
-    color: white;
-
-    .mat-button {
-      color: white;
-      margin: 0 8px;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-    }
-  }
-
-  :host ::ng-deep {
-    .success-snackbar {
-      background: #4caf50;
-      color: white;
-    }
-
-    .action-snackbar {
-      background: #2196f3;
-      color: white;
-
-      .mat-simple-snackbar-action {
-        color: white;
-      }
-    }
-
-    .view-cart-action {
-      margin-left: 8px;
-    }
-
-    .error-snackbar {
-      background: #f44336;
-      color: white;
-    }
-
-    .warning-snackbar {
-      background: #ff9800;
-      color: white;
-    }
-  }
-
-  .error-snackbar {
-    background: #f44336;
-    color: white;
-  }
-
-  .warning-snackbar {
-    background: #ff9800;
-    color: white;
-  }
-}
-
-// Responsive adjustments
+// Responsive Design
 @media (max-width: 1200px) {
   .reservation-layout {
     grid-template-columns: 1fr 250px;
@@ -735,33 +592,8 @@
   .reservation-layout {
     grid-template-columns: 1fr;
 
-    .cart-sidebar {
-      position: fixed;
-      right: 0;
-      top: 0;
-      width: 300px;
-      height: 100vh;
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-
-      &.show {
-        transform: translateX(0);
-      }
-    }
-  }
-
-  .rooms-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .rate-section {
-    padding: 16px;
-
-    .rate-amount {
-      .amount {
-        font-size: 32px;
-      }
+    .rooms-grid {
+      grid-template-columns: 1fr;
     }
   }
 }

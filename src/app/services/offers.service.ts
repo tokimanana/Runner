@@ -193,93 +193,55 @@ export class OffersService extends BaseDataService<SpecialOffer> {
     super.handleError(message, error);
   }
 
-  calculateDiscount(
-    baseRate: number,
-    offer: SpecialOffer,
-    nights: number,
-    bookingDate: string
-  ): number {
+  calculateDiscount(baseRate: number, offer: SpecialOffer, nights: number, bookingDate: string): number {
     const reservationDate = new Date(bookingDate);
-    const offerStartDate = offer.bookingWindow?.start
-      ? new Date(offer.bookingWindow.start)
-      : offer.startDate
-      ? new Date(offer.startDate)
-      : null;
-    const offerEndDate = offer.bookingWindow?.end
-      ? new Date(offer.bookingWindow.end)
-      : offer.endDate
-      ? new Date(offer.endDate)
-      : null;
-
-    if (
-      !offerStartDate ||
-      !offerEndDate ||
-      reservationDate < offerStartDate ||
-      reservationDate > offerEndDate
-    ) {
-      return baseRate; // Offer not applicable
-    }
-
-    let discountedRate = baseRate;
-    const applicableDiscount = offer.discountValues.find((discount) => {
-      const discountStartDate = new Date(discount.startDate);
-      const discountEndDate = new Date(discount.endDate);
-      return (
-        reservationDate >= discountStartDate &&
-        reservationDate <= discountEndDate
-      );
-    });
-
-    if (applicableDiscount) {
-      discountedRate =
-        offer.discountType === "percentage"
+    let totalDiscountedRate = 0;
+    
+    for (let night = 0; night < nights; night++) {
+      const currentNightDate = new Date(reservationDate);
+      currentNightDate.setDate(currentNightDate.getDate() + night);
+      
+      const applicableDiscount = offer.discountValues.find(discount => {
+        const discountStartDate = new Date(discount.startDate);
+        const discountEndDate = new Date(discount.endDate);
+        return currentNightDate >= discountStartDate && currentNightDate <= discountEndDate;
+      });
+  
+      if (applicableDiscount) {
+        const nightRate = offer.discountType === 'percentage' 
           ? baseRate * (1 - applicableDiscount.value / 100)
           : Math.max(0, baseRate - applicableDiscount.value);
+        totalDiscountedRate += nightRate;
+      } else {
+        totalDiscountedRate += baseRate;
+      }
     }
-
-    return discountedRate;
+  
+    return totalDiscountedRate;
   }
+  
 
-  getApplicableOffers(
-    checkIn: Date,
-    checkOut: Date,
-    roomTypeId: number
-  ): SpecialOffer[] {
+  getApplicableOffers(checkIn: Date, checkOut: Date, roomTypeId: number): SpecialOffer[] {
     const offers = this.offersSubject.value;
     const today = new Date();
-
-    console.log("Checking offers:", {
-      totalOffers: offers.length,
-      checkIn,
-      checkOut,
-      today,
-    });
-
-    return offers.filter((offer) => {
+    const stayDuration = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+  
+    return offers.filter(offer => {
       const offerStartDate = new Date(offer.startDate);
       const offerEndDate = new Date(offer.endDate);
-
-      const isValidDate = checkIn >= offerStartDate && checkOut <= offerEndDate;
-      const isWithinBookingWindow =
-        !offer.bookingWindow ||
-        (today >= new Date(offer.bookingWindow.start) &&
-          today <= new Date(offer.bookingWindow.end));
-      const nights = Math.ceil(
-        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const meetsMinNights =
-        !offer.minimumNights || nights >= offer.minimumNights;
-
-      console.log("Offer check:", {
-        offerName: offer.name,
-        isValidDate,
-        isWithinBookingWindow,
-        meetsMinNights,
-        nights,
-        minimumNights: offer.minimumNights,
-      });
-
-      return isValidDate && isWithinBookingWindow && meetsMinNights;
+  
+      // Check for any overlap between stay period and offer period
+      const hasOverlap = checkIn <= offerEndDate && checkOut >= offerStartDate;
+      
+      const isWithinBookingWindow = !offer.bookingWindow || 
+        (today >= new Date(offer.bookingWindow.start) && 
+         today <= new Date(offer.bookingWindow.end));
+  
+      // Allow partial application of minimum nights
+      const meetsMinNights = !offer.minimumNights || stayDuration >= offer.minimumNights;
+  
+      return hasOverlap && isWithinBookingWindow && meetsMinNights;
     });
   }
+  
 }

@@ -267,27 +267,60 @@
             </span>
           </div>
 
-          <!-- Period Rate Breakdown -->
-          <div class="period-breakdown">
-            <div
-              *ngFor="let breakdown of calculatePeriodBreakdown(room)"
-              class="period-rate"
-            >
-              <div class="period-info">
-                {{ breakdown.periodName }}: {{ getCurrencySymbol()
-                }}{{ breakdown.rate }} x {{ breakdown.nights }} nights
-              </div>
-              <div class="period-subtotal">
-                {{ getCurrencySymbol() }}{{ breakdown.subtotal }}
+          <div class="rate-breakdown-container">
+            <div class="period-breakdown">
+              <div class="period-rate-row" *ngFor="let breakdown of calculatePeriodBreakdown(room)">
+                <div class="period-details">
+                  <!-- Original period info -->
+                  <div class="period-header">
+                    <span class="period-name">{{ breakdown.periodName }}</span>
+                    <span class="period-dates">
+                      ({{ breakdown.startDate | date:'MMM d' }} - {{ breakdown.endDate | date:'MMM d, y' }})
+                    </span>
+                  </div>
+                  
+                  <!-- Base rate -->
+                  <div class="rate-info">
+                    <div class="rate-calculation">
+                      {{ getCurrencySymbol() }}{{ breakdown.rate }} × {{ breakdown.nights }} nights
+                    </div>
+                    <div class="period-amount">{{ getCurrencySymbol() }}{{ breakdown.subtotal }}</div>
+                  </div>
+            
+                  <!-- Discounted calculations -->
+                  <div class="discount-details" *ngFor="let detail of calculatePeriodWithOffers(breakdown)">
+                    <div class="date-range">
+                      {{ detail.startDate | date:'MMM d' }} - {{ detail.endDate | date:'MMM d' }}:
+                    </div>
+                    <div class="final-amount">{{ getCurrencySymbol() }}{{ detail.discountedRate | number:'1.2-2' }}</div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="total-rate">
-              Total Stay: {{ getCurrencySymbol() }}{{ totalRate() }}
-            </div>
+            
+            
           </div>
 
+          <div class="total-stay-summary">
+            <div class="total-stay">
+              <span class="total-label">Total Stay</span>
+              <div class="total-amounts">
+                <ng-container *ngIf="selectedOffers().length; else noOffers">
+                  <span class="original-amount">{{ getCurrencySymbol() }}{{ currentStep().baseRate | number:'1.2-2' }}</span>
+                  <span class="final-amount">{{ getCurrencySymbol() }}{{ totalRate() | number:'1.2-2' }}</span>
+                </ng-container>
+                <ng-template #noOffers>
+                  <span class="final-amount">{{ getCurrencySymbol() }}{{ currentStep().baseRate | number:'1.2-2' }}</span>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+          
+          
+          
+
           <!-- Add Related Offers Section -->
-          <div class="offers-section" *ngIf="availableOffers()?.length">
+          <div class="offers-section" *ngIf="offersWithAvailability()?.length">
             <h3>Available Special Offers</h3>
 
             <div class="offers-legend">
@@ -307,7 +340,7 @@
 
             <div class="offers-grid">
               <mat-card
-                *ngFor="let offer of availableOffers()"
+                *ngFor="let offer of offersWithAvailability()"
                 [ngClass]="{ disabled: isOfferDisabled(offer) }"
                 class="offer-card"
                 [class.combinable]="offer.type === 'combinable'"
@@ -336,6 +369,13 @@
                         off
                       </span>
                     </div>
+                  </div>
+                  <!-- Add applicable dates -->
+                  <div class="applicable-dates">
+                    <mat-icon>date_range</mat-icon>
+                    <span class="date-range"
+                      >Valid: {{ offer.applicableDateRange }}</span
+                    >
                   </div>
                 </mat-card-content>
 
@@ -409,45 +449,85 @@
             </mat-selection-list>
           </div>
 
-          <div class="others-section">
+          <div class="others-section" *ngIf="hasCompulsorySupplement()">
             <h3>Others</h3>
-            <h4>Compulsory Supplements:</h4>
-          
-            <div *ngIf="showChristmasDinner()" class="compulsory-supplement">
-              Christmas Dinner (24/12/{{checkInDate()?.getFullYear()}})
-              <div class="dinner-rates">
-                <mat-form-field>
-                  <mat-label>Adult Rate</mat-label>
-                  <input matInput type="number" [(ngModel)]="christmasDinnerAdultPrice" (ngModelChange)="onChristmasDinnerRateChange()">
 
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>Child Rate</mat-label>
-                  <input matInput type="number" [(ngModel)]="christmasDinnerChildPrice" (ngModelChange)="onChristmasDinnerRateChange()">
+            <div
+              class="compulsory-supplements"
+              *ngIf="showChristmasDinner() || showNewYearsEveDinner()"
+            >
+              <h4>Compulsory Supplements:</h4>
 
-                </mat-form-field>
+              <div *ngIf="showChristmasDinner()" class="compulsory-supplement">
+                <div class="supplement-header">
+                  <span class="dinner-title">Christmas Dinner</span>
+                  <span class="dinner-date"
+                    >(24/12/{{ checkInDate()?.getFullYear() }})</span
+                  >
+                </div>
+                <div class="dinner-rates">
+                  <mat-form-field>
+                    <mat-label>Adult Rate</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="christmasDinnerAdultPrice"
+                      (ngModelChange)="onChristmasDinnerRateChange()"
+                    />
+                  </mat-form-field>
+                  <mat-form-field>
+                    <mat-label>Child Rate</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="christmasDinnerChildPrice"
+                      (ngModelChange)="onChristmasDinnerRateChange()"
+                    />
+                  </mat-form-field>
+                </div>
               </div>
-            </div>
-          
-            <div *ngIf="showNewYearsEveDinner()" class="compulsory-supplement">
-              New Year's Eve Dinner (31/12/{{checkInDate()?.getFullYear()}})
-              <div class="dinner-rates">
-                <mat-form-field>
-                  <mat-label>Adult Rate</mat-label>
-                  <input matInput type="number" [(ngModel)]="newYearsEveDinnerAdultPrice" (ngModelChange)="onNewYearsDinnerRateChange()">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>Child Rate</mat-label>
-                  <input matInput type="number" [(ngModel)]="newYearsEveDinnerChildPrice" (ngModelChange)="onNewYearsDinnerRateChange()">
-                </mat-form-field>
+
+              <div
+                *ngIf="showNewYearsEveDinner()"
+                class="compulsory-supplement"
+              >
+                <div class="supplement-header">
+                  <span class="dinner-title">New Year's Eve Dinner</span>
+                  <span class="dinner-date"
+                    >(31/12/{{ checkInDate()?.getFullYear() }})</span
+                  >
+                </div>
+                <div class="dinner-rates">
+                  <mat-form-field>
+                    <mat-label>Adult Rate</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="newYearsEveDinnerAdultPrice"
+                      (ngModelChange)="onNewYearsDinnerRateChange()"
+                    />
+                  </mat-form-field>
+                  <mat-form-field>
+                    <mat-label>Child Rate</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="newYearsEveDinnerChildPrice"
+                      (ngModelChange)="onNewYearsDinnerRateChange()"
+                    />
+                  </mat-form-field>
+                </div>
               </div>
+
+              <p
+                class="disclaimer"
+                *ngIf="showChristmasDinner() || showNewYearsEveDinner()"
+              >
+                Special offers do not apply to the Gala Dinner supplement, Extra
+                Bed, or Compulsory Supplements.
+              </p>
             </div>
-          
-            <p class="disclaimer">
-              Special offers do not apply to the Gala Dinner supplement, Extra Bed, or Compulsory Supplements.
-            </p>
           </div>
-          
 
           <!-- Total and Actions -->
           <div class="step-actions">
