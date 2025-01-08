@@ -268,126 +268,176 @@
           </div>
 
           <div class="rate-breakdown-container">
-            <div class="period-breakdown">
-              <div class="period-rate-row" *ngFor="let breakdown of calculatePeriodBreakdown(room)">
-                <div class="period-details">
-                  <!-- Original period info -->
-                  <div class="period-header">
-                    <span class="period-name">{{ breakdown.periodName }}</span>
-                    <span class="period-dates">
-                      ({{ breakdown.startDate | date:'MMM d' }} - {{ breakdown.endDate | date:'MMM d, y' }})
-                    </span>
+            <!-- Base Rate Breakdown -->
+            <div class="period-breakdown" *ngFor="let period of calculateDetailedBreakdown()">
+              <!-- Period Header -->
+              <div class="period-header">
+                <h4>{{ period.periodName }}</h4>
+                <span class="period-dates">{{ period.dateRange }}</span>
+              </div>
+          
+              <!-- Base Rate Calculation -->
+              <div class="base-calculation">
+                <div class="rate-info">
+                  {{ getCurrencySymbol() }}{{ period.baseRate | number:'1.0-0' }} × {{ period.nights }} nights
+                </div>
+                <div class="subtotal">
+                  {{ getCurrencySymbol() }}{{ period.baseSubtotal | number:'1.2-2' }}
+                </div>
+              </div>
+          
+              <!-- Offer Applications -->
+              <div class="offer-breakdowns" *ngIf="period.offerBreakdowns.length > 0">
+                <div class="breakdown-item" *ngFor="let breakdown of period.offerBreakdowns">
+                  <!-- Sub-period Date Range -->
+                  <div class="sub-period-header">
+                    <span class="date-range">{{ breakdown.dateRange }}</span>
+                    <span class="nights-info">{{ breakdown.nights }} night{{ breakdown.nights !== 1 ? 's' : '' }}</span>
+                  </div>
+          
+                  <!-- Base Amount -->
+                  <div class="amount-row base-amount">
+                    <span class="label">Base Rate:</span>
+                    <span class="amount">{{ getCurrencySymbol() }}{{ breakdown.baseAmount | number:'1.2-2' }}</span>
                   </div>
                   
-                  <!-- Base rate -->
-                  <div class="rate-info">
-                    <div class="rate-calculation">
-                      {{ getCurrencySymbol() }}{{ breakdown.rate }} × {{ breakdown.nights }} nights
+                  <!-- Applied Offers -->
+                  <ng-container *ngIf="breakdown.appliedOffers.length > 0">
+                    <div class="offers-applied">
+                      <!-- Combinable Offers -->
+                      <div class="offer-group" *ngIf="hasOfferType(breakdown.appliedOffers, 'combinable')">
+                        <div class="group-header">
+                          <mat-icon>local_offer</mat-icon>
+                          <span>Combinable Offers:</span>
+                        </div>
+                        <div class="offer-item" *ngFor="let offer of getOffersByType(breakdown.appliedOffers, 'combinable')">
+                          <span class="offer-name">{{ offer.name }}</span>
+                          <span class="discount-value">-{{ offer.discount }}%</span>
+                        </div>
+                      </div>
+                      
+                      <!-- Cumulative Offers -->
+                      <div class="offer-group" *ngIf="hasOfferType(breakdown.appliedOffers, 'cumulative')">
+                        <div class="group-header">
+                          <mat-icon>local_offer</mat-icon>
+                          <span>Cumulative Offers:</span>
+                        </div>
+                        <div class="offer-item" *ngFor="let offer of getOffersByType(breakdown.appliedOffers, 'cumulative')">
+                          <span class="offer-name">{{ offer.name }}</span>
+                          <span class="discount-value">-{{ offer.discount }}%</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="period-amount">{{ getCurrencySymbol() }}{{ breakdown.subtotal }}</div>
-                  </div>
-            
-                  <!-- Discounted calculations -->
-                  <div class="discount-details" *ngFor="let detail of calculatePeriodWithOffers(breakdown)">
-                    <div class="date-range">
-                      {{ detail.startDate | date:'MMM d' }} - {{ detail.endDate | date:'MMM d' }}:
+          
+                    <!-- Final Amount After Discounts -->
+                    <div class="amount-row final-amount" [class.discounted]="breakdown.finalAmount !== breakdown.baseAmount">
+                      <span class="label">Discounted Amount:</span>
+                      <div class="amount-details">
+                        <span class="original-amount" *ngIf="breakdown.finalAmount !== breakdown.baseAmount">
+                          {{ getCurrencySymbol() }}{{ breakdown.baseAmount | number:'1.2-2' }}
+                        </span>
+                        <span class="final-value">
+                          {{ getCurrencySymbol() }}{{ breakdown.finalAmount | number:'1.2-2' }}
+                        </span>
+                      </div>
                     </div>
-                    <div class="final-amount">{{ getCurrencySymbol() }}{{ detail.discountedRate | number:'1.2-2' }}</div>
+                  </ng-container>
+          
+                  <!-- No Offers Applied -->
+                  <div class="amount-row final-amount" *ngIf="!breakdown.appliedOffers.length">
+                    <span class="label">Final Amount:</span>
+                    <span class="amount">{{ getCurrencySymbol() }}{{ breakdown.finalAmount | number:'1.2-2' }}</span>
                   </div>
                 </div>
               </div>
+          
+              <!-- Period Total -->
+              <div class="period-total">
+                <span class="label">Period Total:</span>
+                <span class="amount">{{ getCurrencySymbol() }}{{ period.finalTotal | number:'1.2-2' }}</span>
+              </div>
             </div>
-            
-            
-          </div>
-
-          <div class="total-stay-summary">
-            <div class="total-stay">
-              <span class="total-label">Total Stay</span>
-              <div class="total-amounts">
-                <ng-container *ngIf="selectedOffers().length; else noOffers">
-                  <span class="original-amount">{{ getCurrencySymbol() }}{{ currentStep().baseRate | number:'1.2-2' }}</span>
-                  <span class="final-amount">{{ getCurrencySymbol() }}{{ totalRate() | number:'1.2-2' }}</span>
-                </ng-container>
-                <ng-template #noOffers>
-                  <span class="final-amount">{{ getCurrencySymbol() }}{{ currentStep().baseRate | number:'1.2-2' }}</span>
-                </ng-template>
+          
+            <!-- Overall Stay Summary -->
+            <div class="total-stay-summary">
+              <div class="total-before-discounts" *ngIf="hasAnyDiscounts()">
+                <span class="label">Original Total:</span>
+                <span class="amount strikethrough">
+                  {{ getCurrencySymbol() }}{{ totalBeforeDiscounts() | number:'1.2-2' }}
+                </span>
+              </div>
+              <div class="final-total">
+                <span class="label">Total Stay:</span>
+                <span class="amount">{{ getCurrencySymbol() }}{{ finalTotal() | number:'1.2-2' }}</span>
               </div>
             </div>
           </div>
-          
-          
-          
 
           <!-- Add Related Offers Section -->
-          <div class="offers-section" *ngIf="offersWithAvailability()?.length">
-            <h3>Available Special Offers</h3>
-
-            <div class="offers-legend">
-              <div class="legend-item">
-                <span class="badge combinable">Combinable</span>
-                <span class="description"
-                  >Can be combined with other offers</span
-                >
-              </div>
-              <div class="legend-item">
-                <span class="badge cumulative">Cumulative</span>
-                <span class="description"
-                  >Discount increases with longer stays</span
-                >
-              </div>
-            </div>
-
+          <div class="offers-section" *ngIf="offersWithAvailability().length > 0">
+            <h3>Available Offers</h3>
             <div class="offers-grid">
-              <mat-card
-                *ngFor="let offer of offersWithAvailability()"
-                [ngClass]="{ disabled: isOfferDisabled(offer) }"
+              <mat-card 
+                *ngFor="let offer of offersWithAvailability()" 
                 class="offer-card"
-                [class.combinable]="offer.type === 'combinable'"
-                [class.cumulative]="offer.type === 'cumulative'"
+                [class.disabled]="isOfferDisabled(offer)"
               >
                 <mat-card-header>
-                  <div class="offer-type-badge" [class]="offer.type">
+                  <mat-card-title>
+                    <mat-checkbox
+                      [checked]="isOfferSelected(offer)"
+                      (change)="toggleOffer(offer, $event.checked)"
+                      [disabled]="isOfferDisabled(offer)"
+                    >
+                      {{ offer.name }}
+                    </mat-checkbox>
+                  </mat-card-title>
+                  <span class="offer-type-badge" [ngClass]="offer.type">
                     {{ offer.type | titlecase }}
-                  </div>
-                  <mat-card-title>{{ offer.name }}</mat-card-title>
+                  </span>
                 </mat-card-header>
-
+          
                 <mat-card-content>
                   <p>{{ offer.description }}</p>
-                  <!-- Show applicable discount -->
-                  <div class="discount-info">
-                    <div class="applicable-discount">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>
-                        {{ getApplicableDiscount(offer) }}
-                        {{
-                          offer.discountType === "percentage"
-                            ? "%"
-                            : getCurrencySymbol()
-                        }}
-                        off
-                      </span>
+                  <div class="offer-details">
+                    <div class="discount-info">
+                      <strong>Discount:</strong> {{ getApplicableDiscount(offer) }}%
                     </div>
+
+                  <!-- Show valid date ranges -->
+                  <div class="valid-ranges" *ngIf="offer.validRanges?.length">
+                    <strong>Valid during:</strong>
+                    <ul>
+                      <li *ngFor="let range of offer.validRanges">
+                        {{ range.start | date }} - {{ range.end | date }}
+                      </li>
+                    </ul>
                   </div>
-                  <!-- Add applicable dates -->
-                  <div class="applicable-dates">
-                    <mat-icon>date_range</mat-icon>
-                    <span class="date-range"
-                      >Valid: {{ offer.applicableDateRange }}</span
-                    >
+
+                  <!-- Show blackout dates warning -->
+                  <div
+                    class="blackout-warning"
+                    *ngIf="offer.blackoutDates?.length"
+                  >
+                    <mat-icon color="warn">warning</mat-icon>
+                    <span>Not available during:</span>
+                    <ul>
+                      <li *ngFor="let blackout of offer.blackoutDates">
+                        {{ blackout.start | date }} - {{ blackout.end | date }}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <!-- Show conditions -->
+                  <div class="offer-conditions">
+                    <ul>
+                      <li *ngFor="let condition of offer.conditions">
+                        {{ condition }}
+                      </li>
+                    </ul>
+                  </div>
                   </div>
                 </mat-card-content>
-
-                <mat-card-actions>
-                  <mat-checkbox
-                    [disabled]="isOfferDisabled(offer)"
-                    [checked]="isOfferSelected(offer)"
-                    (change)="toggleOffer(offer, $event.checked)"
-                  >
-                    Select Offer
-                  </mat-checkbox>
-                </mat-card-actions>
               </mat-card>
             </div>
           </div>

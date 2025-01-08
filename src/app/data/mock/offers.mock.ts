@@ -42,6 +42,12 @@ export const offersMock: SpecialOffer[] = [
       start: "2024-12-01", // Starting from current month
       end: "2025-11-30",
     },
+    blackoutDates: [
+      {
+        start: "2025-12-24",
+        end: "2025-12-31",
+      },
+    ],
   },
   {
     id: 2,
@@ -84,58 +90,60 @@ export const offersMock: SpecialOffer[] = [
       "Full prepayment required at booking",
     ],
     minimumNights: 2,
-  },
-  {
-    id: 3,
-    code: "HONEYMOON25",
-    name: "Honeymoon Package",
-    type: "combinable",
-    description:
-      "Special perks and savings for honeymooners - Book your romantic getaway",
-    discountType: "percentage",
-    discountValues: [
-      {
-        value: 30,
-        startDate: "2025-06-01",
-        endDate: "2025-08-31",
-      },
-      {
-        value: 25,
-        startDate: "2025-01-01",
-        endDate: "2025-05-31",
-      },
-      {
-        value: 25,
-        startDate: "2025-09-01",
-        endDate: "2025-12-31",
-      },
-    ],
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    conditions: [
-      "Valid marriage certificate required (within 6 months of wedding date)",
-      "Booking must be made within 3 months of wedding date",
-      "Complimentary room upgrade subject to availability at check-in",
-      "Minimum stay of 5 nights required",
-      "Not valid during festive season (24-31 December)",
-      "Names on marriage certificate must match travel documents",
-    ],
-    minimumNights: 5,
-    bookingWindow: {
-      start: "2024-12-01",
-      end: "2025-12-15",
-    },
     blackoutDates: [
-      "2025-12-24",
-      "2025-12-25",
-      "2025-12-26",
-      "2025-12-27",
-      "2025-12-28",
-      "2025-12-29",
-      "2025-12-30",
-      "2025-12-31",
+      {
+        start: "2025-12-20",
+        end: "2026-01-05",
+      },
     ],
   },
+  // {
+  //   id: 3,
+  //   code: "HONEYMOON25",
+  //   name: "Honeymoon Package",
+  //   type: "combinable",
+  //   description:
+  //     "Special perks and savings for honeymooners - Book your romantic getaway",
+  //   discountType: "percentage",
+  //   discountValues: [
+  //     {
+  //       value: 30,
+  //       startDate: "2025-06-01",
+  //       endDate: "2025-08-31",
+  //     },
+  //     {
+  //       value: 25,
+  //       startDate: "2025-01-01",
+  //       endDate: "2025-05-31",
+  //     },
+  //     {
+  //       value: 25,
+  //       startDate: "2025-09-01",
+  //       endDate: "2025-12-31",
+  //     },
+  //   ],
+  //   startDate: "2025-01-01",
+  //   endDate: "2025-12-31",
+  //   conditions: [
+  //     "Valid marriage certificate required (within 6 months of wedding date)",
+  //     "Booking must be made within 3 months of wedding date",
+  //     "Complimentary room upgrade subject to availability at check-in",
+  //     "Minimum stay of 5 nights required",
+  //     "Not valid during festive season (24-31 December)",
+  //     "Names on marriage certificate must match travel documents",
+  //   ],
+  //   minimumNights: 5,
+  //   bookingWindow: {
+  //     start: "2024-12-01",
+  //     end: "2025-12-15",
+  //   },
+  //   blackoutDates: [
+  //     {
+  //       start: "2025-12-24",
+  //       end: "2025-12-31"
+  //     }
+  //   ],
+  // },
 
   {
     id: 4,
@@ -172,7 +180,16 @@ export const offersMock: SpecialOffer[] = [
       "Blackout dates: July 15-17 and August 15",
     ],
     minimumNights: 7,
-    blackoutDates: ["2025-07-15", "2025-07-16", "2025-07-17", "2025-08-15"],
+    blackoutDates: [
+      {
+        start: "2025-07-15",
+        end: "2025-07-17",
+      },
+      {
+        start: "2025-08-15",
+        end: "2025-08-15",
+      },
+    ],
     bookingWindow: {
       start: "2024-12-01",
       end: "2025-07-31",
@@ -212,6 +229,12 @@ export const offersMock: SpecialOffer[] = [
       start: "2025-08-01",
       end: "2025-11-20",
     },
+    blackoutDates: [
+      {
+        start: "2025-12-21",
+        end: "2025-12-31",
+      },
+    ],
   },
 
   // ID 6: Flash Sale
@@ -243,6 +266,7 @@ export const offersMock: SpecialOffer[] = [
       "Subject to availability",
     ],
     minimumNights: 5,
+    blackoutDates: [],
   },
 
   // ID 7: Advanced Purchase 25
@@ -274,6 +298,12 @@ export const offersMock: SpecialOffer[] = [
       "Non-refundable and non-modifiable",
     ],
     minimumNights: 3,
+    blackoutDates: [
+      {
+        start: "2025-12-20",
+        end: "2026-01-10",
+      },
+    ],
   },
 
   // ID 8: Quick Start 2025
@@ -306,6 +336,12 @@ export const offersMock: SpecialOffer[] = [
       "Blackout dates apply during Easter holiday",
     ],
     minimumNights: 5,
+    blackoutDates: [
+      {
+        start: "2025-04-05",
+        end: "2025-04-15",
+      },
+    ],
   },
 
   // ID 9: Spring Progressive Discount
@@ -338,8 +374,13 @@ export const offersMock: SpecialOffer[] = [
       "Not valid during Easter holidays",
     ],
     minimumNights: 7,
+    blackoutDates: [
+      {
+        start: "2025-04-01",
+        end: "2025-04-15",
+      },
+    ],
   },
-
   // ID 10: New Year Extended Stay
   {
     id: 10,
@@ -371,5 +412,92 @@ export const offersMock: SpecialOffer[] = [
       "Non-refundable",
     ],
     minimumNights: 10,
+    blackoutDates: [],
+  },
+
+  // Add these to the offersMock array
+  {
+    id: 11,
+    code: "WINTER2025",
+    name: "Winter Special 2025",
+    type: "combinable",
+    description: "20% off for winter stays excluding festive period",
+    discountType: "percentage",
+    discountValues: [
+      {
+        value: 20,
+        startDate: "2025-01-01",
+        endDate: "2026-12-31",
+      },
+    ],
+    startDate: "2025-01-01",
+    endDate: "2026-12-31",
+    conditions: [
+      "20% off for stays until December 22nd 2025",
+      "20% off for stays from January 3rd onwards 2026",
+      "Not valid during festive period (December 23rd - January 2nd)",
+      "Valid for all room types",
+      "Combinable with other offers",
+    ],
+    minimumNights: 2,
+    blackoutDates: [
+      {
+        start: "2025-12-23",
+        end: "2026-01-02",
+      },
+    ],
+  },
+  {
+    id: 12,
+    code: "YEARROUND25",
+    name: "Year Round Bonus",
+    type: "combinable",
+    description: "Extra 5% savings throughout the year",
+    discountType: "percentage",
+    discountValues: [
+      {
+        value: 5,
+        startDate: "2025-01-01",
+        endDate: "2026-12-31",
+      },
+    ],
+    startDate: "2025-01-01",
+    endDate: "2026-12-31",
+    conditions: [
+      "5% off entire stay",
+      "Valid for all room types",
+      "Combinable with other offers",
+    ],
+    minimumNights: 1,
+    blackoutDates: [
+      {
+        start: "2025-12-20",
+        end: "2026-01-05",
+      },
+    ],
+  },
+  {
+    id: 13,
+    code: "EARLYBIRD",
+    name: "Early Bird Discount",
+    type: "combinable",
+    description: "Get 5% off when you book in advance!",
+    discountType: "percentage",
+    discountValues: [
+      {
+        value: 5,
+        startDate: "2023-01-01",
+        endDate: "2027-12-31",
+      },
+    ],
+    startDate: "2023-01-01",
+    endDate: "2027-12-31",
+    conditions: [
+      "5% off entire stay",
+      "Valid for all room types",
+      "Combinable with other offers",
+    ],
+    minimumNights: 1,
+    blackoutDates: [],
   },
 ];

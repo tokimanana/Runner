@@ -37,6 +37,8 @@ import {
   Season,
   RoomType,
   MealPlan,
+  ContractStatus,
+  MealPlanType,
 } from "src/app/models/types";
 import { ContractService } from "src/app/services/contract.service";
 import { HotelService } from "src/app/services/hotel.service";
@@ -302,47 +304,45 @@ export class ContractFormComponent implements OnInit {
     if (this.contractForm.invalid) return;
 
     try {
-      this.loading.set(true);
-      const formData = this.contractForm.value;
+        this.loading.set(true);
+        const formData = this.contractForm.value;
 
-      // Convert selectedRooms and selectedMealPlans back to IDs/types before submitting
-      const selectedRoomIds = formData.selectedRooms.map(
-        (room: RoomType) => room.id
-      );
-      const selectedMealPlanTypes = formData.selectedMealPlans.map(
-        (meal: MealPlan) => meal.type
-      );
+        const contractData = {
+            name: formData.name,
+            code: `CNT-${Date.now()}`,
+            hotelId: Number(formData.hotelId),
+            marketId: Number(formData.marketId),
+            seasonId: Number(formData.seasonId),
+            description: formData.description || '',
+            status: 'no_rate' as ContractStatus,
+            selectedRoomTypes: formData.selectedRoomTypes,
+            selectedMealPlans: [MealPlanType.HB], // Use enum value
+            baseMealPlan: MealPlanType.HB, // Use enum value
+            isRatesConfigured: false,
+            validityPeriod: {
+                startDate: new Date().toISOString(),
+                endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString()
+            }
+        };
 
-      const contractData = {
-        ...formData,
-        selectedRoomTypes: selectedRoomIds, // Fix: Changed from selectedRooms to selectedRoomTypes
-        selectedMealPlans: selectedMealPlanTypes,
-        status: "draft", // Set initial status
-        isRatesConfigured: false, // Add this field
-      };
+        console.log('Submitting contract data:', contractData);
 
-      if (this.isEditMode()) {
-        this.ensureContract(this.data.contract);
-        await this.contractService.updateContract(
-          this.data.contract.id,
-          contractData
-        );
-      } else {
-        await this.contractService.createContract(contractData);
-      }
+        if (this.isEditMode()) {
+            this.ensureContract(this.data.contract);
+            await this.contractService.updateContract(this.data.contract.id, contractData);
+        } else {
+            await this.contractService.createContract(contractData);
+        }
 
-      this.dialogRef.close(true);
+        this.dialogRef.close(true);
     } catch (error) {
-      this.error.set(
-        this.isEditMode()
-          ? "Failed to update contract"
-          : "Failed to create contract"
-      );
-      console.error(error);
+        this.error.set(this.isEditMode() ? "Failed to update contract" : "Failed to create contract");
+        console.error('Contract submission error:', error);
     } finally {
-      this.loading.set(false);
+        this.loading.set(false);
     }
-  }
+}
+
 
   onCancel() {
     this.dialogRef.close();

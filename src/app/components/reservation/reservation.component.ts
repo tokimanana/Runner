@@ -80,11 +80,65 @@ interface MealPlanSupplement {
   };
 }
 
+interface PeriodRateBreakdown {
+  periodName: string;
+  startDate: Date;
+  endDate: Date;
+  rate: number;
+  nights: number;
+  subtotal: number;
+}
+
+interface OfferApplicationBreakdown {
+  dateRange: string;
+  startDate: Date;
+  endDate: Date;
+  baseRate: number;
+  nights: number;
+  baseAmount: number;
+  appliedOffers: {
+    name: string;
+    type: "combinable" | "cumulative";
+    discount: number;
+  }[];
+  finalAmount: number;
+}
+
+interface DetailedPeriodBreakdown {
+  periodName: string;
+  dateRange: string;
+  baseRate: number;
+  nights: number;
+  baseSubtotal: number;
+  offerBreakdowns: OfferApplicationBreakdown[];
+  finalTotal: number;
+}
+
 interface PersonTypeRates {
   rates: {
     [key: number]: number;
     extra: number;
   };
+}
+
+interface PeriodDetail {
+  periodName: string;
+  dateRange: string;
+  baseRate: number;
+  nights: number;
+  subtotal: number;
+  offerBreakdowns: Array<{
+    dateRange: string;
+    nights: number;
+    baseAmount: number;
+    appliedOffers: Array<{
+      name: string;
+      type: string;
+      discount: number;
+    }>;
+    finalAmount: number;
+  }>;
+  periodTotal: number;
 }
 
 interface MealPlanResult {
@@ -1228,17 +1282,25 @@ export class ReservationComponent {
     // If no offers selected, none should be disabled
     if (!currentOffers.length) return false;
 
-    // If there are cumulative offers selected, disable combinable offers
-    if (currentOffers.some((o) => o.type === "cumulative")) {
-      return offer.type === "combinable";
-    }
+    // If this offer is already selected, it shouldn't be disabled
+    if (currentOffers.some((o) => o.id === offer.id)) return false;
 
     // If there are combinable offers selected, disable cumulative offers
     if (currentOffers.some((o) => o.type === "combinable")) {
       return offer.type === "cumulative";
     }
 
+    // If there are cumulative offers selected, disable combinable offers
+    if (currentOffers.some((o) => o.type === "cumulative")) {
+      return offer.type === "combinable";
+    }
+
     return false;
+  }
+
+  // Update isOfferSelected method to be more precise
+  isOfferSelected(offer: SpecialOffer): boolean {
+    return this.selectedOffers().some((o) => o.id === offer.id);
   }
 
   getApplicableDiscount(offer: SpecialOffer): number {
@@ -1264,13 +1326,6 @@ export class ReservationComponent {
     return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  isOfferSelected(offer: SpecialOffer): boolean {
-    const current = this.currentStep();
-    if (!current?.selectedOffers) return false;
-
-    return current.selectedOffers.some((o) => o.id === offer.id);
-  }
-
   getAvailableOffers(room: RoomType): void {
     const { checkIn, checkOut } = this.searchForm.value;
     if (!checkIn || !checkOut) {
@@ -1287,30 +1342,40 @@ export class ReservationComponent {
   }
 
   toggleOffer(offer: SpecialOffer, checked: boolean): void {
-    if (checked) {
-      const currentOffers = this.selectedOffers();
+    const currentOffers = [...this.selectedOffers()]; // Create a copy of the array
 
-      if (offer.type === "cumulative") {
-        // If selecting a cumulative offer, clear any combinable offers
-        this.selectedOffers.set([
-          ...currentOffers.filter((o) => o.type === "cumulative"),
-          offer,
-        ]);
-      } else if (offer.type === "combinable") {
-        // If selecting a combinable offer, clear any cumulative offers
-        this.selectedOffers.set([
-          ...currentOffers.filter((o) => o.type === "combinable"),
-          offer,
-        ]);
+    if (checked) {
+      // If adding a combinable offer
+      if (offer.type === "combinable") {
+        // Remove all cumulative offers
+        const nonCumulativeOffers = currentOffers.filter(
+          (o) => o.type === "combinable"
+        );
+        // Add the new offer if it's not already there
+        if (!nonCumulativeOffers.some((o) => o.id === offer.id)) {
+          nonCumulativeOffers.push(offer);
+        }
+        this.selectedOffers.set(nonCumulativeOffers);
+      }
+      // If adding a cumulative offer
+      else if (offer.type === "cumulative") {
+        // Remove all combinable offers
+        const nonCombinableOffers = currentOffers.filter(
+          (o) => o.type === "cumulative"
+        );
+        // Add the new offer if it's not already there
+        if (!nonCombinableOffers.some((o) => o.id === offer.id)) {
+          nonCombinableOffers.push(offer);
+        }
+        this.selectedOffers.set(nonCombinableOffers);
       }
     } else {
-      // If deselecting, simply remove the offer
-      const currentOffers = this.selectedOffers();
+      // Remove the offer
       this.selectedOffers.set(currentOffers.filter((o) => o.id !== offer.id));
     }
 
-    // Update the current step with the new selection
-    this.updateCurrentStepWithOffers();
+    // Update totals after changing offers
+    this.updateTotalWithOffers();
   }
 
   private updateCurrentStepWithOffers(): void {
@@ -1335,7 +1400,7 @@ export class ReservationComponent {
 
   private updateTotalWithOffers(): void {
     const current = this.currentStep();
-    if (!current || !current.baseRate) return;
+    if (!current || !current.baseRate || !current.room) return;
 
     // 1. Calculate base rate and supplements separately
     const baseRateBeforeOffers = current.baseRate;
@@ -1356,7 +1421,7 @@ export class ReservationComponent {
     const compulsorySupplementsTotal =
       christmasDinnerTotal + newYearsEveDinnerTotal;
 
-    // 3. Apply offers
+    // 3. Apply offers based on periods
     const selectedOffers = this.selectedOffers();
     let finalTotal: number;
 
@@ -1365,17 +1430,45 @@ export class ReservationComponent {
       finalTotal =
         baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal;
     } else {
-      if (current.applyOffersToMealPlans) {
-        // Apply discounts to the overall total
-        finalTotal = this.applyOffers(
-          baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal
+      // Split the stay into periods and apply offers accordingly
+      const periodBreakdown = this.calculatePeriodBreakdown(current.room);
+      let discountedTotal = 0;
+
+      periodBreakdown.forEach((period) => {
+        const periodTotal = period.rate * period.nights;
+        const applicableOffers = this.getApplicableOffersForPeriod(
+          selectedOffers,
+          period.startDate,
+          period.endDate
         );
-      } else {
-        // Apply discounts only to the base rate
-        const discountedBaseRate = this.applyOffers(baseRateBeforeOffers);
-        finalTotal =
-          discountedBaseRate + supplementsTotal + compulsorySupplementsTotal;
+
+        if (current.applyOffersToMealPlans) {
+          // Apply discounts to period total including supplements
+          const periodWithSupplements =
+            periodTotal +
+            supplementsTotal / periodBreakdown.length +
+            compulsorySupplementsTotal / periodBreakdown.length;
+
+          discountedTotal += this.applyOffersToAmount(
+            periodWithSupplements,
+            applicableOffers
+          );
+        } else {
+          // Apply discounts only to room rate
+          const discountedPeriod = this.applyOffersToAmount(
+            periodTotal,
+            applicableOffers
+          );
+          discountedTotal += discountedPeriod;
+        }
+      });
+
+      // If not applying offers to supplements, add them after discount calculation
+      if (!current.applyOffersToMealPlans) {
+        discountedTotal += supplementsTotal + compulsorySupplementsTotal;
       }
+
+      finalTotal = discountedTotal;
     }
 
     // 4. Update state with new totals
@@ -1386,6 +1479,31 @@ export class ReservationComponent {
         baseRateBeforeOffers + supplementsTotal + compulsorySupplementsTotal,
       selectedMealPlans: current.selectedMealPlans || [], // Keep current selection
     });
+  }
+
+  private applyOffersToAmount(amount: number, offers: SpecialOffer[]): number {
+    // Separate combinable and cumulative offers
+    const combinableOffers = offers.filter((o) => o.type === "combinable");
+    const cumulativeOffers = offers.filter((o) => o.type === "cumulative");
+
+    let finalAmount = amount;
+
+    // Apply combinable offers first (sum all discounts, then apply once)
+    if (combinableOffers.length > 0) {
+      const totalCombinableDiscount = combinableOffers.reduce((sum, offer) => {
+        const discount = this.getApplicableDiscount(offer);
+        return sum + discount;
+      }, 0);
+      finalAmount = finalAmount * (1 - totalCombinableDiscount / 100);
+    }
+
+    // Apply cumulative offers sequentially
+    cumulativeOffers.forEach((offer) => {
+      const discount = this.getApplicableDiscount(offer);
+      finalAmount = finalAmount * (1 - discount / 100);
+    });
+
+    return finalAmount;
   }
 
   private calculateSupplementsTotal(
@@ -1422,13 +1540,17 @@ export class ReservationComponent {
   private applyOffers(amount: number): number {
     const selectedOffers = this.selectedOffers();
     console.log("Selected offers:", selectedOffers);
-  
+
     // Separate combinable and cumulative offers
-    const combinableOffers = selectedOffers.filter(offer => offer.type === 'combinable');
-    const cumulativeOffers = selectedOffers.filter(offer => offer.type === 'cumulative');
-  
+    const combinableOffers = selectedOffers.filter(
+      (offer) => offer.type === "combinable"
+    );
+    const cumulativeOffers = selectedOffers.filter(
+      (offer) => offer.type === "cumulative"
+    );
+
     let finalAmount = amount;
-  
+
     // For combinable offers: sum all discounts first, then apply once
     if (combinableOffers.length > 0) {
       const totalCombinableDiscount = combinableOffers.reduce((sum, offer) => {
@@ -1439,7 +1561,7 @@ export class ReservationComponent {
       console.log("Total combinable discount:", totalCombinableDiscount);
       finalAmount = finalAmount * (1 - totalCombinableDiscount / 100);
     }
-  
+
     // For cumulative offers: apply each discount sequentially
     if (cumulativeOffers.length > 0) {
       finalAmount = cumulativeOffers.reduce((total, offer) => {
@@ -1448,7 +1570,7 @@ export class ReservationComponent {
         return total * (1 - discount / 100);
       }, finalAmount);
     }
-  
+
     console.log("Final amount:", finalAmount);
     return finalAmount;
   }
@@ -1504,29 +1626,16 @@ export class ReservationComponent {
     this.filteredRooms.set([]);
   }
 
-  updateSelectedOffers(offer: SpecialOffer, isSelected: boolean): void {
+  private updateSelectedOffers(offers: SpecialOffer[]): void {
     const current = this.currentStep();
     if (!current) return;
 
-    let updatedOffers = [...(current.selectedOffers || [])];
-
-    if (isSelected) {
-      // Si l'offre n'est pas déjà sélectionnée, l'ajouter
-      if (!updatedOffers.find((o) => o.id === offer.id)) {
-        updatedOffers.push(offer);
-      }
-    } else {
-      // Si l'offre est désélectionnée, la retirer
-      updatedOffers = updatedOffers.filter((o) => o.id !== offer.id);
-    }
-
-    // Mettre à jour l'état avec les nouvelles offres sélectionnées
     this.currentStep.set({
       ...current,
-      selectedOffers: updatedOffers,
+      selectedOffers: offers,
     });
 
-    // Recalculer le total avec les nouvelles offres
+    // Update totals after changing offers
     this.updateTotalWithOffers();
   }
 
@@ -1714,13 +1823,19 @@ export class ReservationComponent {
   totalRate = computed(() => {
     const current = this.currentStep();
     if (!current?.room) return 0;
-  
+
     const periodBreakdowns = this.calculatePeriodBreakdown(current.room);
     const baseTotal = periodBreakdowns.reduce((sum, breakdown) => {
       const details = this.calculatePeriodWithOffers(breakdown);
-      return sum + details.reduce((periodSum, detail) => periodSum + detail.discountedRate, 0);
+      return (
+        sum +
+        details.reduce(
+          (periodSum, detail) => periodSum + detail.discountedRate,
+          0
+        )
+      );
     }, 0);
-  
+
     return baseTotal;
   });
 
@@ -1756,14 +1871,110 @@ export class ReservationComponent {
     const checkIn = new Date(this.searchForm.get("checkIn")?.value);
     const checkOut = new Date(this.searchForm.get("checkOut")?.value);
 
-    return this.availableOffers()
-      .map((offer) => ({
-        ...offer,
-        applicableDateRange: this.getOfferDateRange(offer, checkIn, checkOut),
-        discount: this.getApplicableDiscount(offer),
-      }))
-      .filter((offer) => offer.discount > 0); // Only show offers with actual discounts
+    console.log("Checking offers availability for:", {
+      checkIn: checkIn.toISOString(),
+      checkOut: checkOut.toISOString(),
+    });
+
+    const offers = this.availableOffers().map((offer) => ({
+      ...offer,
+      validRanges: this.getValidDateRanges(offer, checkIn, checkOut),
+      discount: this.getApplicableDiscount(offer),
+      isPartiallyValid: this.hasValidDatesOutsideBlackout(
+        checkIn,
+        checkOut,
+        offer.blackoutDates
+      ),
+    }));
+
+    console.log("Processed offers:", offers);
+
+    return offers.filter((offer) => offer.isPartiallyValid);
   });
+
+  // Add this method to the ReservationComponent class
+  private hasValidDatesOutsideBlackout(
+    checkIn: Date,
+    checkOut: Date,
+    blackoutDates?: Array<{ start: string; end: string }>
+  ): boolean {
+    if (!blackoutDates || blackoutDates.length === 0) return true;
+
+    // Check if there's at least one day outside blackout periods
+    const currentDate = new Date(checkIn);
+    while (currentDate <= checkOut) {
+      let isBlackoutDay = false;
+
+      for (const blackout of blackoutDates) {
+        const blackoutStart = new Date(blackout.start);
+        const blackoutEnd = new Date(blackout.end);
+
+        if (currentDate >= blackoutStart && currentDate <= blackoutEnd) {
+          isBlackoutDay = true;
+          break;
+        }
+      }
+
+      if (!isBlackoutDay) {
+        // Found at least one valid date
+        console.log("Found valid date outside blackout:", currentDate);
+        return true;
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    console.log("No valid dates found outside blackout periods");
+    return false;
+  }
+
+  // Update the offersWithAvailability computed property
+
+  private getValidDateRanges(
+    offer: SpecialOffer,
+    checkIn: Date,
+    checkOut: Date
+  ): Array<{ start: Date; end: Date }> {
+    const ranges: Array<{ start: Date; end: Date }> = [];
+    let currentDate = new Date(checkIn);
+
+    while (currentDate < checkOut) {
+      // Skip if date is in blackout period
+      if (!this.isDateInBlackoutPeriod(currentDate, offer.blackoutDates)) {
+        const rangeStart = new Date(currentDate);
+
+        // Find end of valid period
+        while (
+          currentDate < checkOut &&
+          !this.isDateInBlackoutPeriod(currentDate, offer.blackoutDates)
+        ) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        ranges.push({
+          start: rangeStart,
+          end: new Date(currentDate),
+        });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    console.log("Valid date ranges for offer:", offer.name, ranges);
+    return ranges;
+  }
+
+  private isDateInBlackoutPeriod(
+    date: Date,
+    blackoutDates?: Array<{ start: string; end: string }>
+  ): boolean {
+    if (!blackoutDates) return false;
+
+    return blackoutDates.some((blackout) => {
+      const blackoutStart = new Date(blackout.start);
+      const blackoutEnd = new Date(blackout.end);
+      return date >= blackoutStart && date <= blackoutEnd;
+    });
+  }
 
   private getOfferDateRange(
     offer: SpecialOffer,
@@ -1802,107 +2013,266 @@ export class ReservationComponent {
     return date >= new Date(start) && date <= new Date(end);
   }
 
- 
-
-  calculatePeriodWithOffers(breakdown: PeriodBreakdown): PeriodCalculationDetail[] {
+  calculatePeriodWithOffers(
+    breakdown: PeriodBreakdown
+  ): PeriodCalculationDetail[] {
     const selectedOffers = this.selectedOffers();
-    
-    // Split offers by type
-    const combinableOffers = selectedOffers.filter(offer => offer.type === 'combinable');
-    const cumulativeOffers = selectedOffers.filter(offer => offer.type === 'cumulative');
-    
-    let finalRate = breakdown.subtotal;
-    
-    // For combinable offers: sum all discounts first, then apply once
-    if (combinableOffers.length > 0) {
-      const totalCombinableDiscount = combinableOffers.reduce((sum, offer) => 
-        sum + this.getApplicableDiscount(offer), 0);
-      finalRate = finalRate * (1 - totalCombinableDiscount / 100);
+    const details: PeriodCalculationDetail[] = [];
+
+    // If no offers selected, return single period with original rate
+    if (!selectedOffers.length) {
+      return [
+        {
+          startDate: breakdown.startDate,
+          endDate: breakdown.endDate,
+          nights: breakdown.nights,
+          baseRate: breakdown.rate,
+          appliedOffers: [],
+          subtotal: breakdown.subtotal,
+          discountedRate: breakdown.subtotal,
+        },
+      ];
     }
-    
-    // For cumulative offers: apply each discount sequentially
-    cumulativeOffers.forEach(offer => {
-      const discount = this.getApplicableDiscount(offer);
-      finalRate = finalRate * (1 - discount / 100);
+
+    // Get date ranges where different combinations of offers apply
+    const ranges = this.getDateRangesWithOffers(
+      breakdown.startDate,
+      breakdown.endDate,
+      selectedOffers
+    );
+
+    // Calculate details for each range
+    ranges.forEach((range) => {
+      const nights = range.nights;
+      const subtotal = breakdown.rate * nights;
+      let finalRate = subtotal;
+
+      // Split offers by type
+      const combinableOffers = range.offers.filter(
+        (o) => o.type === "combinable"
+      );
+      const cumulativeOffers = range.offers.filter(
+        (o) => o.type === "cumulative"
+      );
+
+      // Apply combinable offers first (sum all discounts, then apply once)
+      if (combinableOffers.length > 0) {
+        const totalCombinableDiscount = combinableOffers.reduce(
+          (sum, offer) => {
+            return sum + this.getApplicableDiscount(offer);
+          },
+          0
+        );
+        finalRate = finalRate * (1 - totalCombinableDiscount / 100);
+      }
+
+      // Then apply cumulative offers sequentially
+      cumulativeOffers.forEach((offer) => {
+        const discount = this.getApplicableDiscount(offer);
+        finalRate = finalRate * (1 - discount / 100);
+      });
+
+      details.push({
+        startDate: range.start,
+        endDate: range.end,
+        nights,
+        baseRate: breakdown.rate,
+        appliedOffers: [
+          ...combinableOffers.map((offer) => ({
+            name: offer.name,
+            type: "combinable",
+            discount: this.getApplicableDiscount(offer),
+            applicableDates: {
+              start: range.start,
+              end: range.end,
+            },
+          })),
+          ...cumulativeOffers.map((offer) => ({
+            name: offer.name,
+            type: "cumulative",
+            discount: this.getApplicableDiscount(offer),
+            applicableDates: {
+              start: range.start,
+              end: range.end,
+            },
+          })),
+        ],
+        subtotal,
+        discountedRate: finalRate,
+      });
     });
-  
-    return [{
-      startDate: breakdown.startDate,
-      endDate: breakdown.endDate,
-      nights: breakdown.nights,
-      baseRate: breakdown.rate,
-      appliedOffers: [...combinableOffers, ...cumulativeOffers].map(offer => ({
-        name: offer.name,
-        discount: this.getApplicableDiscount(offer),
-        applicableDates: {
-          start: breakdown.startDate,
-          end: breakdown.endDate
-        }
-      })),
-      subtotal: breakdown.subtotal,
-      discountedRate: finalRate
-    }];
+
+    return details;
   }
-  
-  
-  private getDateRangesWithOffers(start: Date, end: Date, offers: SpecialOffer[]): Array<{
-    start: Date;
-    end: Date;
-    nights: number;
-    offers: SpecialOffer[];
-  }> {
+
+  isOfferTypeDisabled(offer: SpecialOffer): boolean {
+    const selectedOffers = this.selectedOffers();
+    if (selectedOffers.length === 0) return false;
+
+    // If we have any combinable offers selected, disable cumulative offers
+    if (selectedOffers.some((o) => o.type === "combinable")) {
+      return offer.type === "cumulative";
+    }
+
+    // If we have any cumulative offers selected, disable combinable offers
+    if (selectedOffers.some((o) => o.type === "cumulative")) {
+      return offer.type === "combinable";
+    }
+
+    return false;
+  }
+
+  private splitPeriodByOfferRanges(
+    periodStart: Date,
+    periodEnd: Date,
+    offerRanges: Array<{
+      offer: SpecialOffer;
+      validRanges: Array<{ start: Date; end: Date }>;
+    }>
+  ): Array<{ start: Date; end: Date }> {
+    const dates = new Set<number>();
+    dates.add(periodStart.getTime());
+    dates.add(periodEnd.getTime());
+
+    // Add all offer range boundaries
+    offerRanges.forEach(({ validRanges }) => {
+      validRanges.forEach((range) => {
+        dates.add(range.start.getTime());
+        dates.add(range.end.getTime());
+      });
+    });
+
+    // Convert to array and sort
+    const sortedDates = Array.from(dates).sort((a, b) => a - b);
+
+    // Create sub-periods
+    const subPeriods: Array<{ start: Date; end: Date }> = [];
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const start = new Date(sortedDates[i]);
+      const end = new Date(sortedDates[i + 1]);
+
+      if (start >= periodStart && end <= periodEnd) {
+        subPeriods.push({ start, end });
+      }
+    }
+
+    return subPeriods;
+  }
+
+  private getApplicableOffersForPeriod(
+    offers: SpecialOffer[],
+    start: Date,
+    end: Date
+  ): SpecialOffer[] {
+    return offers.filter((offer) => {
+      // Check if the period is within offer validity
+      const isWithinValidity = this.checkOfferValidity(offer, start, end);
+      // Check if the period is not in blackout dates
+      const isNotBlackedOut =
+        !this.isDateInBlackoutPeriod(start, offer.blackoutDates) &&
+        !this.isDateInBlackoutPeriod(end, offer.blackoutDates);
+
+      return isWithinValidity && isNotBlackedOut;
+    });
+  }
+
+  getTotalDiscount(offers: SpecialOffer[]): number {
+    if (!offers || offers.length === 0) return 0;
+
+    // For combinable offers, sum up all discounts
+    return offers.reduce((total, offer) => {
+      const discount = this.getApplicableDiscount(offer);
+      return total + discount;
+    }, 0);
+  }
+
+  private getDateRangesWithOffers(
+    start: Date,
+    end: Date,
+    offers: SpecialOffer[]
+  ): Array<{ start: Date; end: Date; nights: number; offers: SpecialOffer[] }> {
     const ranges: Array<{
       start: Date;
       end: Date;
       nights: number;
       offers: SpecialOffer[];
     }> = [];
-  
-    // Create array of all significant dates (start, end, and offer boundaries)
+
+    // Create array of all significant dates
     const dates = new Set<number>();
     dates.add(start.getTime());
     dates.add(end.getTime());
-    
-    offers.forEach(offer => {
+
+    // Add offer boundary dates
+    offers.forEach((offer) => {
       dates.add(new Date(offer.startDate).getTime());
       dates.add(new Date(offer.endDate).getTime());
+
+      offer.blackoutDates?.forEach((blackout) => {
+        dates.add(new Date(blackout.start).getTime());
+        dates.add(new Date(blackout.end).getTime());
+      });
     });
-  
-    // Convert to array and sort
+
+    // Sort dates
     const sortedDates = Array.from(dates).sort((a, b) => a - b);
-  
+
     // Create ranges between consecutive dates
     for (let i = 0; i < sortedDates.length - 1; i++) {
       const rangeStart = new Date(sortedDates[i]);
       const rangeEnd = new Date(sortedDates[i + 1]);
-  
+
       // Skip if range is outside the period
       if (rangeEnd <= start || rangeStart >= end) continue;
-  
+
       // Find applicable offers for this range
-      const applicableOffers = offers.filter(offer => {
-        const offerStart = new Date(offer.startDate);
-        const offerEnd = new Date(offer.endDate);
-        return rangeStart >= offerStart && rangeEnd <= offerEnd;
-      });
-  
-      // Calculate nights in this range
-      const nights = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24));
-  
+      const applicableOffers = offers.filter((offer) =>
+        this.isOfferValidForPeriod(offer, rangeStart, rangeEnd)
+      );
+
+      const nights = Math.ceil(
+        (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
       if (nights > 0) {
         ranges.push({
           start: rangeStart,
           end: rangeEnd,
           nights,
-          offers: applicableOffers
+          offers: applicableOffers,
         });
       }
     }
-  
+
     return ranges;
   }
-  
-  
+
+  private isOfferValidForPeriod(
+    offer: SpecialOffer,
+    periodStart: Date,
+    periodEnd: Date
+  ): boolean {
+    // Check if period overlaps with offer validity period
+    const isInValidRange = this.datesOverlap(
+      periodStart,
+      periodEnd,
+      new Date(offer.startDate),
+      new Date(offer.endDate)
+    );
+
+    // Check if period overlaps with any blackout dates
+    const isInBlackoutPeriod =
+      offer.blackoutDates?.some((blackout) =>
+        this.datesOverlap(
+          periodStart,
+          periodEnd,
+          new Date(blackout.start),
+          new Date(blackout.end)
+        )
+      ) ?? false;
+
+    return isInValidRange && !isInBlackoutPeriod;
+  }
 
   private datesOverlap(
     start1: Date,
@@ -1947,5 +2317,400 @@ export class ReservationComponent {
       subtotal,
       discountedRate: subtotal - totalDiscount,
     };
+  }
+
+  private calculatePeriodDetails(breakdown: PeriodBreakdown): PeriodDetail[] {
+    const details: PeriodDetail[] = [];
+    const selectedOffers = this.selectedOffers();
+
+    // Create period detail from the breakdown
+    const periodDetail: PeriodDetail = {
+      periodName: breakdown.periodName,
+      dateRange: `${breakdown.startDate.toLocaleDateString()} - ${breakdown.endDate.toLocaleDateString()}`,
+      baseRate: breakdown.rate,
+      nights: breakdown.nights,
+      subtotal: breakdown.subtotal,
+      offerBreakdowns: [],
+      periodTotal: breakdown.subtotal,
+    };
+
+    if (selectedOffers.length > 0) {
+      // Split period into sub-periods based on offer validity
+      const subPeriods = this.splitPeriodByOfferValidity(
+        breakdown.startDate,
+        breakdown.endDate,
+        selectedOffers
+      );
+
+      subPeriods.forEach((subPeriod) => {
+        const applicableOffers = selectedOffers.filter((offer) =>
+          this.isDateRangeValidForOffer(offer, subPeriod.start, subPeriod.end)
+        );
+
+        const nights = this.calculateNights(subPeriod.start, subPeriod.end);
+        const baseAmount = breakdown.rate * nights;
+        let finalAmount = baseAmount;
+
+        // Calculate discounted amount
+        if (applicableOffers.length > 0) {
+          const combinableOffers = applicableOffers.filter(
+            (o) => o.type === "combinable"
+          );
+          const cumulativeOffers = applicableOffers.filter(
+            (o) => o.type === "cumulative"
+          );
+
+          if (combinableOffers.length > 0) {
+            const totalDiscount = combinableOffers.reduce(
+              (sum, offer) => sum + this.getApplicableDiscount(offer),
+              0
+            );
+            finalAmount *= 1 - totalDiscount / 100;
+          }
+
+          cumulativeOffers.forEach((offer) => {
+            const discount = this.getApplicableDiscount(offer);
+            finalAmount *= 1 - discount / 100;
+          });
+        }
+
+        periodDetail.offerBreakdowns.push({
+          dateRange: `${subPeriod.start.toLocaleDateString()} - ${subPeriod.end.toLocaleDateString()}`,
+          nights,
+          baseAmount,
+          appliedOffers: applicableOffers.map((offer) => ({
+            name: offer.name,
+            type: offer.type,
+            discount: this.getApplicableDiscount(offer),
+          })),
+          finalAmount,
+        });
+      });
+
+      // Update period total
+      periodDetail.periodTotal = periodDetail.offerBreakdowns.reduce(
+        (sum, breakdown) => sum + breakdown.finalAmount,
+        0
+      );
+    }
+
+    details.push(periodDetail);
+    return details;
+  }
+
+  periodDetails = computed(() => {
+    const current = this.currentStep();
+    if (!current?.baseRate || !current?.nights) return [];
+
+    const breakdown: PeriodBreakdown = {
+      periodName: current.periodName ?? "Stay Period",
+      rate: current.baseRate,
+      nights: current.nights,
+      subtotal: current.baseRate * current.nights,
+      startDate: current.startDate ?? new Date(),
+      endDate: current.endDate ?? new Date(),
+    };
+
+    return this.calculatePeriodDetails(breakdown);
+  });
+
+  totalBeforeDiscounts = computed(() => {
+    return this.calculateDetailedBreakdown().reduce(
+      (total, period) => total + period.baseSubtotal,
+      0
+    );
+  });
+
+  finalTotal = computed(() => {
+    return this.calculateDetailedBreakdown().reduce(
+      (total, period) => total + period.finalTotal,
+      0
+    );
+  });
+
+  private splitPeriodByOfferValidity(
+    startDate: Date,
+    endDate: Date,
+    offers: SpecialOffer[]
+  ): Array<{ start: Date; end: Date; isOfferValid: boolean }> {
+    const dates = new Set<number>();
+    dates.add(startDate.getTime());
+    dates.add(endDate.getTime());
+
+    // Add offer boundary dates
+    offers.forEach((offer) => {
+      // Add offer period boundaries
+      if (offer.startDate) {
+        dates.add(new Date(offer.startDate).getTime());
+      }
+      if (offer.endDate) {
+        dates.add(new Date(offer.endDate).getTime());
+      }
+
+      // Add blackout dates boundaries
+      offer.blackoutDates?.forEach((blackout) => {
+        dates.add(new Date(blackout.start).getTime());
+        dates.add(new Date(blackout.end).getTime());
+      });
+
+      // Add booking window boundaries if they exist
+      if (offer.bookingWindow) {
+        dates.add(new Date(offer.bookingWindow.start).getTime());
+        dates.add(new Date(offer.bookingWindow.end).getTime());
+      }
+    });
+
+    // Sort dates and create sub-periods
+    const sortedDates = Array.from(dates).sort((a, b) => a - b);
+    const subPeriods: Array<{ start: Date; end: Date; isOfferValid: boolean }> =
+      [];
+
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const periodStart = new Date(sortedDates[i]);
+      const periodEnd = new Date(sortedDates[i + 1]);
+
+      if (periodStart >= startDate && periodEnd <= endDate) {
+        // Check if this sub-period is valid for any offer
+        const isOfferValid = offers.some((offer) =>
+          this.isDateRangeValidForOffer(offer, periodStart, periodEnd)
+        );
+
+        subPeriods.push({
+          start: periodStart,
+          end: periodEnd,
+          isOfferValid,
+        });
+      }
+    }
+
+    return subPeriods;
+  }
+
+  private isDateRangeValidForOffer(
+    offer: SpecialOffer,
+    startDate: Date,
+    endDate: Date
+  ): boolean {
+    const offerStart = new Date(offer.startDate);
+    const offerEnd = new Date(offer.endDate);
+
+    // Check if within overall offer period
+    const isWithinOfferPeriod = startDate >= offerStart && endDate <= offerEnd;
+
+    // Check if the date range overlaps with any blackout period
+    const isInBlackoutPeriod =
+      offer.blackoutDates?.some((blackout) => {
+        const blackoutStart = new Date(blackout.start);
+        const blackoutEnd = new Date(blackout.end);
+
+        // Check if there's any overlap with blackout period
+        return !(endDate <= blackoutStart || startDate >= blackoutEnd);
+      }) ?? false;
+
+    // Check minimum nights if applicable
+    const meetsMinimumNights =
+      !offer.minimumNights ||
+      this.calculateNights(startDate, endDate) >= offer.minimumNights;
+
+    // The offer is valid if it's within the period, not in blackout dates, and meets minimum nights
+    return isWithinOfferPeriod && !isInBlackoutPeriod && meetsMinimumNights;
+  }
+
+  hasAnyDiscounts(): boolean {
+    const selectedOffers = this.selectedOffers();
+    return selectedOffers.length > 0;
+  }
+
+  calculateDetailedBreakdown(): DetailedPeriodBreakdown[] {
+    const baseBreakdowns = this.calculateBasePeriodBreakdowns();
+    const selectedOffers = this.selectedOffers();
+    
+    return baseBreakdowns.map(period => {
+      const offerBreakdowns: OfferApplicationBreakdown[] = [];
+      
+      if (selectedOffers.length > 0) {
+        const subPeriods = this.splitPeriodByOfferValidity(
+          period.startDate,
+          period.endDate,
+          selectedOffers
+        );
+        
+        subPeriods.forEach(subPeriod => {
+          const calculation = this.calculateSubPeriodAmount(
+            subPeriod.start,
+            subPeriod.end,
+            period.rate,
+            selectedOffers
+          );
+          
+          offerBreakdowns.push({
+            dateRange: `${subPeriod.start.toLocaleDateString()} - ${subPeriod.end.toLocaleDateString()}`,
+            startDate: subPeriod.start,
+            endDate: subPeriod.end,
+            baseRate: period.rate,
+            nights: this.calculateNights(subPeriod.start, subPeriod.end),
+            baseAmount: calculation.baseAmount,
+            appliedOffers: calculation.appliedOffers,
+            finalAmount: calculation.finalAmount
+          });
+        });
+      } else {
+        // If no offers, create a single breakdown for the whole period
+        offerBreakdowns.push({
+          dateRange: `${period.startDate.toLocaleDateString()} - ${period.endDate.toLocaleDateString()}`,
+          startDate: period.startDate,
+          endDate: period.endDate,
+          baseRate: period.rate,
+          nights: period.nights,
+          baseAmount: period.subtotal,
+          appliedOffers: [],
+          finalAmount: period.subtotal,
+        });
+      }
+
+      const periodTotal = offerBreakdowns.reduce((sum, breakdown) => sum + breakdown.finalAmount, 0);
+    
+    return {
+      periodName: period.periodName,
+      dateRange: `${period.startDate.toLocaleDateString()} - ${period.endDate.toLocaleDateString()}`,
+      baseRate: period.rate,
+      nights: period.nights,
+      baseSubtotal: period.subtotal,
+      offerBreakdowns,
+      finalTotal: periodTotal
+    };
+    });
+  }
+
+  private getApplicableOffersForDate(date: Date, offers: SpecialOffer[]): SpecialOffer[] {
+    return offers.filter(offer => {
+      const offerStart = new Date(offer.startDate);
+      const offerEnd = new Date(offer.endDate);
+      
+      // Check if date is within overall offer period
+      const isWithinPeriod = date >= offerStart && date <= offerEnd;
+      
+      // Check if date is not in blackout period
+      const isNotBlackedOut = !offer.blackoutDates?.some(blackout => {
+        const blackoutStart = new Date(blackout.start);
+        const blackoutEnd = new Date(blackout.end);
+        return date >= blackoutStart && date <= blackoutEnd;
+      });
+  
+      return isWithinPeriod && isNotBlackedOut;
+    });
+  }
+
+  private calculateSubPeriodAmount(
+    startDate: Date,
+    endDate: Date,
+    baseRate: number,
+    selectedOffers: SpecialOffer[]
+  ): { 
+    baseAmount: number;
+    finalAmount: number;
+    appliedOffers: Array<{ name: string; type: "combinable" | "cumulative"; discount: number; }>;
+  } {
+    const nights = this.calculateNights(startDate, endDate);
+    const baseAmount = baseRate * nights;
+    let finalAmount = baseAmount;
+    const appliedOffers: Array<{ name: string; type: "combinable" | "cumulative"; discount: number; }> = [];
+  
+    // Get all dates in this sub-period
+    const dates: Date[] = [];
+    let currentDate = new Date(startDate);
+    while (currentDate < endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  
+    // Calculate applicable offers for each night
+    const nightlyAmounts = dates.map(date => {
+      const applicableOffers = this.getApplicableOffersForDate(date, selectedOffers);
+      let nightAmount = baseRate;
+  
+      // Apply combinable offers first
+      const combinableOffers = applicableOffers.filter(o => o.type === 'combinable');
+      if (combinableOffers.length > 0) {
+        nightAmount = combinableOffers.reduce((amount, offer) => {
+          const discount = this.getApplicableDiscount(offer);
+          return amount * (1 - discount / 100);
+        }, nightAmount);
+  
+        // Add offers to applied offers list if not already present
+        combinableOffers.forEach(offer => {
+          if (!appliedOffers.some(ao => ao.name === offer.name)) {
+            appliedOffers.push({
+              name: offer.name,
+              type: "combinable",  // explicitly typed
+              discount: this.getApplicableDiscount(offer)
+            });
+          }
+        });
+      }
+  
+      // Then apply cumulative offers
+      const cumulativeOffers = applicableOffers.filter(o => o.type === 'cumulative');
+      cumulativeOffers.forEach(offer => {
+        const discount = this.getApplicableDiscount(offer);
+        nightAmount *= (1 - discount / 100);
+  
+        if (!appliedOffers.some(ao => ao.name === offer.name)) {
+          appliedOffers.push({
+            name: offer.name,
+            type: "cumulative",  // explicitly typed
+            discount: discount
+          });
+        }
+      });
+  
+      return nightAmount;
+    });
+  
+    // Sum up all nightly amounts
+    finalAmount = nightlyAmounts.reduce((sum, amount) => sum + amount, 0);
+  
+    return {
+      baseAmount,
+      finalAmount,
+      appliedOffers
+    };
+  }
+
+  private calculateNights(start: Date, end: Date): number {
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  hasOfferType(offers: Array<{ type: string }>, type: string): boolean {
+    return offers.some((offer) => offer.type === type);
+  }
+
+  getOffersByType(
+    offers: Array<{ type: string; name: string; discount: number }>,
+    type: string
+  ) {
+    return offers.filter((offer) => offer.type === type);
+  }
+
+  calculateBasePeriodBreakdowns() {
+    const current = this.currentStep();
+    if (!current?.room || !current.periodBreakdown) return [];
+
+    return current.periodBreakdown.map((period) => ({
+      periodName: period.periodName,
+      startDate: new Date(period.startDate),
+      endDate: new Date(period.endDate),
+      rate: period.rate,
+      nights: this.calculateNights(
+        new Date(period.startDate),
+        new Date(period.endDate)
+      ),
+      subtotal:
+        period.rate *
+        this.calculateNights(
+          new Date(period.startDate),
+          new Date(period.endDate)
+        ),
+    }));
   }
 }

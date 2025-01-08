@@ -658,7 +658,7 @@ export const contractRates: ContractPeriodRate[] = [
         },
         mealPlanRates: {
           HB: { adult: 0, child: 0, infant: 0 },
-          FB: { adult: 32, child: 16, infant: 0 }, // -10%
+          FB: { adult: 25, child: 12, infant: 0 }, // -10%
           AI: { adult: 59, child: 30, infant: 0 }, // -10%
           AI_PLUS: { adult: 77, child: 39, infant: 0 }, // -10%
         },
@@ -679,13 +679,13 @@ export const contractRates: ContractPeriodRate[] = [
           adult: {
             rates: {
               1: 200, // Single Occupancy
-              2: 150, // Double Occupancy (per person)
+              2: 250, // Double Occupancy (per person)
             },
           },
           child: {
             rates: {
-              1: 75, // First child
-              2: 60, // Second child
+              1: 0, // First child
+              2: 0, // Second child
             },
           },
           infant: {
@@ -696,7 +696,7 @@ export const contractRates: ContractPeriodRate[] = [
         },
         mealPlanRates: {
           HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
-          FB: { adult: 30, child: 15, infant: 0 },
+          FB: { adult: 25, child: 12, infant: 0 },
           AI: { adult: 55, child: 28, infant: 0 },
           AI_PLUS: { adult: 75, child: 38, infant: 0 },
         },
@@ -789,13 +789,13 @@ export const contractRates: ContractPeriodRate[] = [
           adult: {
             rates: {
               1: 250, // Single Occupancy (increased)
-              2: 188, // Double Occupancy (per person, increased)
+              2: 350, // Double Occupancy (per person, increased)
             },
           },
           child: {
             rates: {
-              1: 94, // First child (increased)
-              2: 75, // Second child (increased)
+              1: 75, // First child (increased)
+              2: 0, // Second child (increased)
             },
           },
           infant: {
@@ -806,7 +806,7 @@ export const contractRates: ContractPeriodRate[] = [
         },
         mealPlanRates: {
           HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
-          FB: { adult: 38, child: 19, infant: 0 }, // Increased
+          FB: { adult: 25, child: 12, infant: 0 }, // Increased
           AI: { adult: 69, child: 35, infant: 0 }, // Increased
           AI_PLUS: { adult: 94, child: 47, infant: 0 }, // Increased
         },
@@ -898,13 +898,13 @@ export const contractRates: ContractPeriodRate[] = [
           adult: {
             rates: {
               1: 250, // Single Occupancy
-              2: 190, // Double Occupancy (per person)
+              2: 300, // Double Occupancy (per person)
             },
           },
           child: {
             rates: {
-              1: 90, // First child
-              2: 75, // Second child
+              1: 0, // First child
+              2: 0, // Second child
             },
           },
           infant: {
@@ -915,7 +915,7 @@ export const contractRates: ContractPeriodRate[] = [
         },
         mealPlanRates: {
           HB: { adult: 0, child: 0, infant: 0 }, // Base meal plan
-          FB: { adult: 30, child: 15, infant: 0 },
+          FB: { adult: 25, child: 12, infant: 0 },
           AI: { adult: 55, child: 28, infant: 0 },
           AI_PLUS: { adult: 75, child: 38, infant: 0 },
         },

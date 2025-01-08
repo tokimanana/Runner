@@ -1414,20 +1414,33 @@ export class MockApiService {
     );
   }
 
-  static async createOffer(
-    offer: Omit<SpecialOffer, "id">
-  ): Promise<SpecialOffer> {
+  static async createOffer(offer: Omit<SpecialOffer, "id">): Promise<SpecialOffer> {
     this.initializeStorage();
+    
+    // Validate blackout dates format
+    if (offer.blackoutDates) {
+      offer.blackoutDates = offer.blackoutDates.map(date => {
+        if (typeof date === 'string') {
+          // Convert old format to new format
+          return {
+            start: date,
+            end: date
+          };
+        }
+        return date;
+      });
+    }
+  
     const offers = JSON.parse(
       localStorage.getItem(this.STORAGE_KEYS.OFFERS) || "[]"
     );
     const newId = Math.max(0, ...offers.map((o: SpecialOffer) => o.id)) + 1;
-
+  
     const newOffer = {
       ...offer,
       id: newId,
     };
-
+  
     offers.push(newOffer);
     localStorage.setItem(this.STORAGE_KEYS.OFFERS, JSON.stringify(offers));
     return Promise.resolve(newOffer);

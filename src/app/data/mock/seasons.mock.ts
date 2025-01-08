@@ -321,7 +321,7 @@ export const seasons: { [hotelId: number]: Season[] } = {
           seasonId: 9, // Matches the new season ID
           name: "Christmas Period",
           startDate: "2025-12-23",
-          endDate: "2026-01-05",
+          endDate: "2026-01-02",
           mlos: 5,
           description: "Christmas and New Year week",
         },
@@ -329,7 +329,7 @@ export const seasons: { [hotelId: number]: Season[] } = {
           id: 27, // Update with a new unique ID
           seasonId: 9, // Matches the new season ID
           name: "Post-New Year",
-          startDate: "2026-01-06",
+          startDate: "2026-01-03",
           endDate: "2026-01-31",
           mlos: 3,
           description: "Period after New Year",

@@ -398,13 +398,17 @@ export interface ReservationStep {
     savedAmount: number;
   }[];
   totalBeforeDiscounts?: number;
-  // Add this new property
   occupancy?: {
     adults: number;
     children: number;
     infants: number;
   };
   periodBreakdown?: PeriodBreakdown[];
+  // Add these new properties
+  periodName?: string;
+  nights?: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export interface PeriodBreakdown {
@@ -489,7 +493,10 @@ export interface SpecialOffer {
   endDate: string;
   conditions?: string[];
   minimumNights?: number;
-  blackoutDates?: string[];
+  blackoutDates?: Array<{
+    start: string;
+    end: string;
+  }>;
   bookingWindow?: {
     start: string; // When booking can start
     end: string; // When booking must be made by
