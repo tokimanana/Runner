@@ -19,6 +19,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { CurrencyComponent } from '../currency/currency.component';
 import { SpecialOffersComponent } from "../special-offers/special-offers.component";
 import { ReservationComponent } from "../reservation/reservation.component";
+import { BookingComponent } from 'src/app/booking/booking.component';
 
 @Component({
   selector: 'app-content-editor',
@@ -37,7 +38,8 @@ import { ReservationComponent } from "../reservation/reservation.component";
     CurrencyComponent,
     ContractListComponent,
     SpecialOffersComponent,
-    ReservationComponent
+    ReservationComponent,
+    BookingComponent
 ],
   standalone: true
 })

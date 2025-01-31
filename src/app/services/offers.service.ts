@@ -233,8 +233,8 @@ export class OffersService extends BaseDataService<SpecialOffer> {
       }
 
       const applicableDiscount = offer.discountValues.find((discount) => {
-        const discountStartDate = new Date(discount.startDate);
-        const discountEndDate = new Date(discount.endDate);
+        const discountStartDate = new Date(discount.bookingDateRange.start);
+        const discountEndDate = new Date(discount.bookingDateRange.end);
         return (
           currentNightDate >= discountStartDate &&
           currentNightDate <= discountEndDate
@@ -255,48 +255,60 @@ export class OffersService extends BaseDataService<SpecialOffer> {
     return totalDiscountedRate;
   }
 
-  getApplicableOffers(checkIn: Date, checkOut: Date, roomTypeId: number): SpecialOffer[] {
+  getApplicableOffers(
+    checkIn: Date,
+    checkOut: Date,
+    roomTypeId: number
+  ): SpecialOffer[] {
     const offers = this.offersSubject.value;
     const today = new Date();
     const stayDuration = Math.ceil(
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
     );
-  
-    console.log('Checking offers with parameters:', {
+
+    console.log("Checking offers with parameters:", {
       checkIn,
       checkOut,
       roomTypeId,
       stayDuration,
-      totalOffers: offers.length
+      totalOffers: offers.length,
     });
-  
+
     return offers.filter((offer) => {
-      const offerStartDate = new Date(offer.startDate);
-      const offerEndDate = new Date(offer.endDate);
-  
+      const offerStartDate = new Date(offer.travelDateRange.start);
+      const offerEndDate = new Date(offer.travelDateRange.end);
+
       // Check each condition and log the result
       const hasOverlap = checkIn <= offerEndDate && checkOut >= offerStartDate;
-      const isWithinBookingWindow = !offer.bookingWindow || 
-        (today >= new Date(offer.bookingWindow.start) && 
-         today <= new Date(offer.bookingWindow.end));
-      const meetsMinNights = !offer.minimumNights || stayDuration >= offer.minimumNights;
-      
+      const isWithinBookingWindow =
+        !offer.bookingWindow ||
+        (today >= new Date(offer.bookingWindow.start) &&
+          today <= new Date(offer.bookingWindow.end));
+      const meetsMinNights =
+        !offer.minimumNights || stayDuration >= offer.minimumNights;
+
       // Instead of completely excluding offers with blackout dates,
       // check if there are valid dates outside the blackout period
-      const hasValidDates = this.hasValidDatesOutsideBlackout(checkIn, checkOut, offer.blackoutDates);
-  
-      console.log('Offer evaluation:', {
+      const hasValidDates = this.hasValidDatesOutsideBlackout(
+        checkIn,
+        checkOut,
+        offer.blackoutDates
+      );
+
+      console.log("Offer evaluation:", {
         offerId: offer.id,
         offerName: offer.name,
         hasOverlap,
         isWithinBookingWindow,
         meetsMinNights,
         hasValidDates,
-        offerPeriod: `${offer.startDate} - ${offer.endDate}`,
-        blackoutDates: offer.blackoutDates
+        offerPeriod: `${offer.travelDateRange.start} - ${offer.travelDateRange.end}`,
+        blackoutDates: offer.blackoutDates,
       });
-  
-      return hasOverlap && isWithinBookingWindow && meetsMinNights && hasValidDates;
+
+      return (
+        hasOverlap && isWithinBookingWindow && meetsMinNights && hasValidDates
+      );
     });
   }
 
@@ -306,29 +318,29 @@ export class OffersService extends BaseDataService<SpecialOffer> {
     blackoutDates?: Array<{ start: string; end: string }>
   ): boolean {
     if (!blackoutDates || blackoutDates.length === 0) return true;
-  
+
     // Check if there's at least one day outside blackout periods
     const currentDate = new Date(checkIn);
     while (currentDate <= checkOut) {
       let isBlackoutDay = false;
-      
+
       for (const blackout of blackoutDates) {
         const blackoutStart = new Date(blackout.start);
         const blackoutEnd = new Date(blackout.end);
-        
+
         if (currentDate >= blackoutStart && currentDate <= blackoutEnd) {
           isBlackoutDay = true;
           break;
         }
       }
-      
+
       if (!isBlackoutDay) {
         return true; // Found at least one valid date
       }
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return false; // All dates are in blackout periods
   }
 }

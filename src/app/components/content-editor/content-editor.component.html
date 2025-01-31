@@ -57,14 +57,17 @@
         ></app-special-offers>
 
         <!-- Add new Reservation component -->
-        <app-reservation
-          *ngSwitchCase="'reservations'"
-        ></app-reservation>
+        <app-reservation *ngSwitchCase="'reservations'"></app-reservation>
 
         <!-- Default case -->
         <div *ngSwitchDefault class="no-content">
           <p>Select a menu item to view content</p>
         </div>
+
+        <app-booking
+          *ngSwitchCase="'booking'"
+        ></app-booking>
+
       </ng-container>
     </div>
   </div>

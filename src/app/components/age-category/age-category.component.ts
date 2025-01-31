@@ -84,11 +84,37 @@ export class AgeCategoryComponent implements OnInit {
     });
   }
 
+  private validateAgeCategories(newCategory: AgeCategory, existingCategories: AgeCategory[]): void {
+    // Skip validation against self when editing
+    const categoriesToCheck = existingCategories.filter(c => 
+      !this.editingCategory() || c.id !== this.editingCategory()?.id
+    );
+
+    // Check for overlapping ranges
+    const hasOverlap = categoriesToCheck.some(category => 
+      (newCategory.minAge >= category.minAge && newCategory.minAge <= category.maxAge) ||
+      (newCategory.maxAge >= category.minAge && newCategory.maxAge <= category.maxAge)
+    );
+
+    if (hasOverlap) {
+      throw new Error('Age ranges cannot overlap with existing categories');
+    }
+
+    // Validate age range
+    if (newCategory.minAge > newCategory.maxAge) {
+      throw new Error('Minimum age cannot be greater than maximum age');
+    }
+
+    if (newCategory.minAge < 0 || newCategory.maxAge > 100) {
+      throw new Error('Ages must be between 0 and 100');
+    }
+  }
+
   async saveCategory(): Promise<void> {
     if (this.categoryForm.valid && this.selectedHotel()) {
       const formValue = this.categoryForm.value;
       const category: AgeCategory = {
-        id: this.editingCategory()?.id || this.getNextCategoryId(),
+        id: this.editingCategory()?.id || 0, // ID will be assigned by the service
         name: formValue.name,
         type: formValue.type,
         label: this.generateAgeLabel(formValue),
@@ -100,24 +126,34 @@ export class AgeCategoryComponent implements OnInit {
       };
 
       try {
+        // Validate the new category against existing ones
+        this.validateAgeCategories(category, this.categories());
+
         const hotel = this.selectedHotel();
         if (!hotel) return;
 
-        const updatedCategories = this.editingCategory() 
-          ? this.categories().map(c => c.id === category.id ? category : c)
-          : [...this.categories(), category];
-
-        const updatedHotel = await this.hotelService.updateHotelAgeCategories(
-          hotel.id, 
-          updatedCategories
-        );
+        let updatedHotel: Hotel;
+        if (this.editingCategory()) {
+          const updatedCategories = this.categories().map(c => 
+            c.id === category.id ? category : c
+          );
+          updatedHotel = await this.hotelService.updateHotelAgeCategories(
+            hotel.id,
+            updatedCategories
+          );
+        } else {
+          updatedHotel = await this.hotelService.updateHotelAgeCategories(
+            hotel.id,
+            [...this.categories(), category]
+          );
+        }
 
         this.categories.set(updatedHotel.ageCategories || []);
         this.showCategoryForm.set(false);
         this.editingCategory.set(null);
         this.showSuccess('Age category saved successfully');
       } catch (error) {
-        this.showError('Failed to save age category');
+        this.showError(error instanceof Error ? error.message : 'Failed to save age category');
         console.error(error);
       }
     }

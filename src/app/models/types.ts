@@ -57,9 +57,9 @@ interface ImageAsset {
 }
 
 export enum PaymentMethod {
-  CREDIT_CARD = 'CREDIT_CARD',
-  DEBIT_CARD = 'DEBIT_CARD',
-  PAYPAL = 'PAYPAL'
+  CREDIT_CARD = "CREDIT_CARD",
+  DEBIT_CARD = "DEBIT_CARD",
+  PAYPAL = "PAYPAL",
 }
 
 export enum PolicyType {
@@ -352,7 +352,7 @@ export interface Season {
   endDate?: string; // Add optional endDate
 }
 
-export type ContractStatus = 'configured' | 'no_rate' | 'expired';
+export type ContractStatus = "configured" | "no_rate" | "expired";
 
 // Contract management
 export interface Contract {
@@ -361,7 +361,7 @@ export interface Contract {
   name: string;
   hotelId: number;
   description?: string;
-  status?: ContractStatus,
+  status?: ContractStatus;
   validityPeriod?: {
     startDate: string;
     endDate: string;
@@ -393,7 +393,7 @@ export interface ReservationStep {
   applyOffersToMealPlans?: boolean;
   appliedDiscounts?: {
     offerName: string;
-    discountType: 'percentage' | 'fixed';
+    discountType: "percentage" | "fixed";
     discountValue: number;
     savedAmount: number;
   }[];
@@ -419,8 +419,6 @@ export interface PeriodBreakdown {
   startDate: Date;
   endDate: Date;
 }
-
-
 
 export interface ContractPeriodRate {
   contractId: number;
@@ -488,19 +486,27 @@ export interface SpecialOffer {
   type: "combinable" | "cumulative";
   description: string;
   discountType: "percentage" | "fixed";
-  discountValues: DiscountValue[];
-  startDate: string;
-  endDate: string;
+  discountValues: {
+    bookingDateRange: {
+      start: string;
+      end: string;
+    };
+    value: number;
+  }[];
+  travelDateRange: {
+    start: string;
+    end: string;
+  };
   conditions?: string[];
   minimumNights?: number;
+  bookingWindow: {
+    start: string;
+    end: string;
+  };
   blackoutDates?: Array<{
     start: string;
     end: string;
   }>;
-  bookingWindow?: {
-    start: string; // When booking can start
-    end: string; // When booking must be made by
-  };
 }
 
 // Market management
@@ -661,6 +667,7 @@ export type MenuItemId =
   | "rateScenarios"
   | "allotments"
   | "reservations"
+  | "booking"
   | "availability";
 
 export interface MenuItem {
@@ -844,8 +851,13 @@ export interface PeriodCalculationDetail {
     applicableDates: {
       start: Date;
       end: Date;
-    }
+    };
   }[];
   subtotal: number;
   discountedRate: number;
+}
+
+export interface RoomWithPeriods {
+  room: RoomType;
+  periods: Period[];
 }

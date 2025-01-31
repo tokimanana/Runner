@@ -29,7 +29,7 @@ import { OfferListComponent } from "./offer-list/offer-list.component";
   ],
 })
 export class SpecialOffersComponent implements OnInit, OnDestroy {
-  @Input() hotel!: Hotel; // Add this line
+  @Input() hotel!: Hotel;
   private destroy$ = new Subject<void>();
   offers$ = this.offersService.offers$;
 
@@ -104,7 +104,7 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
     dialogConfig.disableClose = true;
     dialogConfig.data = {
       title: "Edit Special Offer",
-      offer: { ...offer }, // Clone the offer
+      offer: { ...offer }, 
     };
 
     const dialogRef = this.dialog.open(OfferFormComponent, dialogConfig);
@@ -160,11 +160,36 @@ export class SpecialOffersComponent implements OnInit, OnDestroy {
     }
   }
 
+  // onSaveOffer(offerData: Partial<SpecialOffer>) {
+  //   if (this.selectedOffer) {
+  //     this.offersService.updateOffer(this.selectedOffer.id, offerData);
+  //   } else {
+  //     this.offersService.createOffer(offerData as Omit<SpecialOffer, "id">);
+  //   }
+  //   this.showOfferForm = false;
+  //   this.selectedOffer = null;
+  // }
+
   onSaveOffer(offerData: Partial<SpecialOffer>) {
+    // Ensure all required properties are defined
+    const completeOfferData: Omit<SpecialOffer, "id"> = {
+      code: offerData.code ?? '',
+      name: offerData.name ?? '',
+      type: offerData.type ?? 'combinable',
+      description: offerData.description ?? '',
+      discountType: offerData.discountType ?? 'percentage',
+      discountValues: offerData.discountValues ?? [],
+      travelDateRange: offerData.travelDateRange ?? { start: '', end: '' },
+      conditions: offerData.conditions ?? [],
+      minimumNights: offerData.minimumNights ?? 0,
+      blackoutDates: offerData.blackoutDates ?? [],
+      bookingWindow: offerData.bookingWindow ?? { start: '', end: '' },
+    };
+  
     if (this.selectedOffer) {
-      this.offersService.updateOffer(this.selectedOffer.id, offerData);
+      this.offersService.updateOffer(this.selectedOffer.id, completeOfferData);
     } else {
-      this.offersService.createOffer(offerData as Omit<SpecialOffer, "id">);
+      this.offersService.createOffer(completeOfferData);
     }
     this.showOfferForm = false;
     this.selectedOffer = null;

@@ -1,7 +1,6 @@
 <form [formGroup]="offerForm" (ngSubmit)="onSubmit()" class="offer-form">
   <h2>{{ data.title }}</h2>
-
-  <mat-stepper linear #stepper (selectionChange)="onStepChange($event)">
+  <mat-stepper linear #stepper (selectionChange)="selectionChange($event)">
     <!-- Basic Information Step -->
     <mat-step [stepControl]="offerForm" label="Basic Information">
       <div class="step-content">
@@ -16,36 +15,33 @@
               placeholder="Enter a unique offer code (e.g., SUMMER24)"
             />
             <mat-icon matSuffix>code</mat-icon>
+            <mat-error *ngIf="offerForm.get('code')?.invalid">
+              {{ getFormErrorMessage(offerForm.get("code")) }}
+            </mat-error>
           </mat-form-field>
-
           <mat-form-field appearance="outline">
             <mat-label>Name</mat-label>
             <input
               matInput
               formControlName="name"
               required
-              placeholder="Enter a descriptive name for the offer"
+              placeholder="Enter a descriptive offer name"
             />
-            <mat-icon matSuffix>label</mat-icon>
+            <mat-error *ngIf="offerForm.get('name')?.invalid">
+              {{ getFormErrorMessage(offerForm.get("name")) }}
+            </mat-error>
           </mat-form-field>
         </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Type</mat-label>
-            <mat-select formControlName="type" required>
-              <mat-option value="combinable">
-                <mat-icon>merge_type</mat-icon>
-                Combinable (Can be combined with other offers)
-              </mat-option>
-              <mat-option value="cumulative">
-                <mat-icon>add_circle</mat-icon>
-                Cumulative (Increases with longer stays)
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Type</mat-label>
+          <mat-select formControlName="type" required>
+            <mat-option value="combinable">Combinable</mat-option>
+            <mat-option value="cumulative">Cumulative</mat-option>
+          </mat-select>
+          <mat-error *ngIf="offerForm.get('type')?.invalid">
+            {{ getFormErrorMessage(offerForm.get("type")) }}
+          </mat-error>
+        </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Description</mat-label>
           <textarea
@@ -55,91 +51,71 @@
             rows="3"
             placeholder="Describe the offer details and benefits"
           ></textarea>
+          <mat-error *ngIf="offerForm.get('description')?.invalid">
+            {{ getFormErrorMessage(offerForm.get("description")) }}
+          </mat-error>
         </mat-form-field>
-
-        <div class="step-actions">
-          <div class="right-actions">
-            <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-            <button
-              mat-button
-              (click)="onNextClick()"
-              color="primary"
-              type="button"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+      </div>
+      <div class="step-actions">
+        <button mat-button type="button" (click)="onCancel()">Cancel</button>
+        <button mat-button matStepperNext type="button" (click)="onNextClick()">
+          Next
+        </button>
       </div>
     </mat-step>
-
     <!-- Discount Configuration Step -->
-    <mat-step [stepControl]="offerForm" label="Discount Details">
+    <mat-step [stepControl]="offerForm" label="Discount Configuration">
       <div class="step-content">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Discount Type</mat-label>
           <mat-select formControlName="discountType" required>
-            <mat-option value="percentage">
-              <mat-icon>percent</mat-icon>
-              Percentage Discount
-            </mat-option>
-            <mat-option value="fixed">
-              <mat-icon>euro_symbol</mat-icon>
-              Fixed Amount
-            </mat-option>
+            <mat-option value="percentage">Percentage</mat-option>
+            <mat-option value="fixed">Fixed Amount</mat-option>
           </mat-select>
+          <mat-error *ngIf="offerForm.get('discountType')?.invalid">
+            {{ getFormErrorMessage(offerForm.get("discountType")) }}
+          </mat-error>
         </mat-form-field>
-
-        <div class="discount-values-section" formArrayName="discountValues">
-          <h3>
-            <mat-icon>list_alt</mat-icon>
-            Discount Values
-          </h3>
-
-          <div class="discount-values-container">
-            <div
-              *ngFor="let value of discountValues.controls; let i = index"
-              [formGroupName]="i"
-              class="discount-value-row mat-elevation-z1"
-            >
-              <!-- Start Date Input -->
-              <mat-form-field appearance="outline">
-                <mat-label>Valid From</mat-label>
-                <input
-                  matInput
-                  [matDatepicker]="startPicker"
-                  formControlName="startDate"
-                  required
-                />
-                <mat-datepicker-toggle
-                  matSuffix
-                  [for]="startPicker"
-                ></mat-datepicker-toggle>
-                <mat-datepicker #startPicker></mat-datepicker>
-                <mat-error *ngIf="value.get('startDate')?.hasError('required')">
-                  Start date is required
-                </mat-error>
-              </mat-form-field>
-
-              <!-- End Date Input -->
-              <mat-form-field appearance="outline">
-                <mat-label>Valid To</mat-label>
-                <input
-                  matInput
-                  [matDatepicker]="endPicker"
-                  formControlName="endDate"
-                  required
-                />
-                <mat-datepicker-toggle
-                  matSuffix
-                  [for]="endPicker"
-                ></mat-datepicker-toggle>
-                <mat-datepicker #endPicker></mat-datepicker>
-                <mat-error *ngIf="value.get('endDate')?.hasError('required')">
-                  End date is required
-                </mat-error>
-              </mat-form-field>
-
+        <h3><mat-icon>local_offer</mat-icon> Discount Values</h3>
+        <div formArrayName="discountValues">
+          <div
+            *ngFor="let value of discountValues.controls; let i = index"
+            [formGroupName]="i"
+            class="discount-value-item"
+          >
+            <h4>Discount Value {{ i + 1 }}</h4>
+            <div class="form-row">
+              <!-- Booking Date Range -->
+              <div formGroupName="bookingDateRange" class="date-range-section">
+                <mat-form-field appearance="outline">
+                  <mat-label>Booking Start Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="bookingStartPicker"
+                    formControlName="start"
+                    placeholder="dd/MM/yyyy"
+                  />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="bookingStartPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #bookingStartPicker></mat-datepicker>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Booking End Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="bookingEndPicker"
+                    formControlName="end"
+                    placeholder="dd/MM/yyyy"
+                  />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="bookingEndPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #bookingEndPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
               <!-- Value Input -->
               <mat-form-field appearance="outline">
                 <mat-label>Discount Value</mat-label>
@@ -179,167 +155,249 @@
                   Percentage cannot exceed 100
                 </mat-error>
               </mat-form-field>
-
               <!-- Remove Button -->
               <button
                 mat-icon-button
                 color="warn"
-                type="button"
                 (click)="removeDiscountValue(i)"
-                matTooltip="Remove discount value"
+                [disabled]="discountValues.length === 1"
                 class="remove-button"
+                matTooltip="Remove Discount Value"
               >
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
           </div>
-
-          <!-- Add Button -->
-          <div class="add-value-section">
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="addDiscountValue()"
-              class="add-value-button"
-              [disabled]="discountValues.length >= 10"
-            >
-              <mat-icon>add</mat-icon>
-              Add Discount Value
-            </button>
-          </div>
         </div>
-
-        <div class="step-actions">
-          <div class="left-actions">
-            <button mat-button type="button" (click)="onPreviousClick()">
-              Back
-            </button>
-          </div>
-          <div class="right-actions">
-            <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-            <button
-              mat-button
-              (click)="onNextClick()"
-              color="primary"
-              type="button"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <button mat-raised-button color="primary" (click)="addDiscountValue()">
+          Add Discount Value
+        </button>
+      </div>
+      <div class="step-actions">
+        <button mat-button type="button" (click)="onCancel()">Cancel</button>
+        <button
+          mat-button
+          matStepperPrevious
+          type="button"
+          (click)="onPreviousClick()"
+        >
+          Back
+        </button>
+        <button mat-button matStepperNext type="button" (click)="onNextClick()">
+          Next
+        </button>
       </div>
     </mat-step>
-
     <!-- Validity and Conditions Step -->
     <mat-step [stepControl]="offerForm" label="Validity & Conditions">
       <div class="step-content">
-        <div class="date-range-section">
+        <div class="minimum-nights">
+          <mat-form-field appearance="outline">
+            <mat-label>Minimum Nights</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="minimumNights"
+              min="1"
+            />
+            <mat-error *ngIf="offerForm.get('minimumNights')?.hasError('min')">
+              Minimum nights must be at least 1
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div formGroupName="bookingWindow" class="date-range-section">
+          <h3>
+            <mat-icon>book_online</mat-icon>
+            Booking Window
+          </h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Booking Start Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="bookingWindowStartPicker"
+              formControlName="start"
+              placeholder="dd/MM/yyyy"
+              required
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="bookingWindowStartPicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #bookingWindowStartPicker></mat-datepicker>
+            <mat-error
+              *ngIf="offerForm.get('bookingWindow.start')?.hasError('required')"
+            >
+              Booking start date is required
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Booking End Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="bookingWindowEndPicker"
+              formControlName="end"
+              placeholder="dd/MM/yyyy"
+              required
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="bookingWindowEndPicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #bookingWindowEndPicker></mat-datepicker>
+            <mat-error
+              *ngIf="offerForm.get('bookingWindow.end')?.hasError('required')"
+            >
+              Booking end date is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div formGroupName="travelDateRange" class="date-range-section">
           <h3>
             <mat-icon>date_range</mat-icon>
-            Validity Period
+            Staying Dates
           </h3>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Start Date</mat-label>
-              <input
-                matInput
-                [matDatepicker]="startPicker"
-                formControlName="startDate"
-                required
-              />
-              <mat-datepicker-toggle
-                matSuffix
-                [for]="startPicker"
-              ></mat-datepicker-toggle>
-              <mat-datepicker #startPicker></mat-datepicker>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>End Date</mat-label>
-              <input
-                matInput
-                [matDatepicker]="endPicker"
-                formControlName="endDate"
-                required
-              />
-              <mat-datepicker-toggle
-                matSuffix
-                [for]="endPicker"
-              ></mat-datepicker-toggle>
-              <mat-datepicker #endPicker></mat-datepicker>
-            </mat-form-field>
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Travel Start Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="travelStartPicker"
+              formControlName="start"
+              placeholder="dd/MM/yyyy"
+              required
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="travelStartPicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #travelStartPicker></mat-datepicker>
+            <mat-error
+              *ngIf="
+                offerForm.get('travelDateRange.start')?.hasError('required')
+              "
+            >
+              Travel start date is required
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Travel End Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="travelEndPicker"
+              formControlName="end"
+              placeholder="dd/MM/yyyy"
+              required
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="travelEndPicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #travelEndPicker></mat-datepicker>
+            <mat-error
+              *ngIf="offerForm.get('travelDateRange.end')?.hasError('required')"
+            >
+              Travel end date is required
+            </mat-error>
+          </mat-form-field>
         </div>
-
-        <div class="stay-limits-section">
+        <div class="blackout-dates">
           <h3>
-            <mat-icon>hotel</mat-icon>
-            Stay Limits
+            <mat-icon>block</mat-icon>
+            Blackout Dates
           </h3>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Minimum Nights</mat-label>
-              <input
-                matInput
-                type="number"
-                formControlName="minimumNights"
-                min="1"
-              />
-              <mat-icon matSuffix>nights_stay</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <div class="form-section">
-            <h3>Conditions</h3>
-            <div formArrayName="conditions">
-              <div
-                *ngFor="let condition of conditions.controls; let i = index"
-                class="condition-row"
-              >
-                <mat-form-field class="full-width">
+          <div formArrayName="blackoutDates">
+            <div
+              *ngFor="let date of blackoutDates.controls; let j = index"
+              [formGroupName]="j"
+              class="blackout-date-item"
+            >
+              <h4>Blackout Date {{ j + 1 }}</h4>
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Start Date</mat-label>
                   <input
                     matInput
-                    [formControlName]="i"
-                    placeholder="Enter condition"
+                    [matDatepicker]="blackoutStartPicker"
+                    formControlName="start"
+                    placeholder="dd/MM/yyyy"
                   />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="blackoutStartPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #blackoutStartPicker></mat-datepicker>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>End Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="blackoutEndPicker"
+                    formControlName="end"
+                    placeholder="dd/MM/yyyy"
+                  />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="blackoutEndPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #blackoutEndPicker></mat-datepicker>
                 </mat-form-field>
                 <button
-                  type="button"
                   mat-icon-button
                   color="warn"
-                  (click)="removeCondition(i)"
+                  (click)="removeBlackoutDate(j)"
+                  class="remove-button"
+                  matTooltip="Remove Blackout Date"
                 >
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </div>
-            <button
-              type="button"
-              mat-button
-              color="primary"
-              (click)="addCondition()"
-            >
-              <mat-icon>add</mat-icon> Add Condition
-            </button>
           </div>
-
-          <div class="step-actions">
-            <button mat-button type="button" (click)="onPreviousClick()">
-              Back
-            </button>
-            <button
-              mat-raised-button
-              color="primary"
-              type="submit"
-              [disabled]="!offerForm.valid || loading"
-              (click)="onSubmit()"
-            >
-              {{ loading ? "Saving..." : isEdit ? "Update" : "Create" }} Offer
-            </button>
-          </div>
+          <button mat-raised-button color="primary" (click)="addBlackoutDate()">
+            Add Blackout Date
+          </button>
         </div>
+        <div class="conditions">
+          <h3>
+            <mat-icon>rule</mat-icon>
+            Conditions
+          </h3>
+          <div
+            *ngFor="let condition of conditions.controls; let k = index"
+            class="condition-item"
+          >
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Condition {{ k + 1 }}</mat-label>
+              <input matInput [formControl]="getFormControl(condition)" />
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="removeCondition(k)"
+                matSuffix
+                class="remove-button"
+                matTooltip="Remove Condition"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" (click)="addCondition()">
+            Add Condition
+          </button>
+        </div>
+      </div>
+      <div class="step-actions">
+        <button mat-button type="button" (click)="onCancel()">Cancel</button>
+        <button
+          mat-button
+          matStepperPrevious
+          type="button"
+          (click)="onPreviousClick()"
+        >
+          Back
+        </button>
+        <button mat-button color="primary" type="submit">
+          {{ isEdit ? "Save Changes" : "Create Offer" }}
+        </button>
       </div>
     </mat-step>
   </mat-stepper>

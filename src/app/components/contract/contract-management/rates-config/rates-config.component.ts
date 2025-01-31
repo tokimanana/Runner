@@ -131,7 +131,7 @@ constructor(
   
         const formGroup = this.createPersonTypeRatesGroup(
           roomType,
-          existingRate?.personTypeRates,
+          existingRate,
           existingRate?.mealPlanRates
         );
   
@@ -146,29 +146,33 @@ constructor(
   
   private createPersonTypeRatesGroup(
     roomType: RoomType,
-    existing?: PersonTypeRates,
+    existing?: RoomTypeRate,
     existingMealPlanRates?: MealPlanRates
   ): FormGroup<RateFormGroup> {
     return this.fb.nonNullable.group<RateFormGroup>({
-      rateType: this.fb.nonNullable.control<"per_pax" | "per_villa">("per_pax"),
-      villaRate: this.fb.nonNullable.control(0),
+      rateType: this.fb.nonNullable.control<"per_pax" | "per_villa">(existing?.rateType || "per_pax"),
+      villaRate: this.fb.nonNullable.control(existing?.villaRate || 0),
       personTypeRates: this.fb.nonNullable.group({
         adult: this.createOccupancyRatesGroup(
           roomType.maxOccupancy.adults,
-          existing?.["adult"]?.["rates"]
+          existing?.personTypeRates?.['adult']?.rates
         ),
         child: this.createOccupancyRatesGroup(
           roomType.maxOccupancy.children || 1,
-          existing?.["child"]?.["rates"]
+          existing?.personTypeRates?.['child']?.rates
         ),
         infant: this.createOccupancyRatesGroup(
           roomType.maxOccupancy.infants || 1,
-          existing?.["infant"]?.["rates"]
+          existing?.personTypeRates?.['infant']?.rates
         ),
       }),
       mealPlanRates: this.createMealPlanRatesGroup(existingMealPlanRates),
     });
   }
+  
+  
+  
+  
   
   
 
@@ -179,13 +183,11 @@ constructor(
   ): RoomTypeRate | undefined {
     if (!rates) return undefined;
   
-    // Ensure rates is always treated as an array
     const ratesArray = Array.isArray(rates) ? rates : [rates];
     
     console.log('Finding rate for:', { roomTypeId, periodId });
     console.log('Available rates:', ratesArray);
   
-    // Find the period rate
     const periodRate = ratesArray.find(r => r.periodId === periodId);
     
     if (!periodRate) {
@@ -193,12 +195,12 @@ constructor(
       return undefined;
     }
   
-    // Find the room rate within the period
     const roomRate = periodRate.roomRates.find(rr => rr.roomTypeId === roomTypeId);
     console.log('Found room rate:', roomRate);
     
     return roomRate;
   }
+  
 
   private createOccupancyRatesGroup(
     maxOccupancy: number,

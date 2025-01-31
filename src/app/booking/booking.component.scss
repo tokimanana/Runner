@@ -1,0 +1,42 @@
+.reservation-layout {
+  padding: 20px;
+}
+
+.search-form-card {
+  margin-bottom: 20px;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.room-card {
+  .period-rate {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 0;
+  }
+
+  .rate-amount {
+    font-weight: bold;
+  }
+
+  .occupancy-info {
+    margin: 10px 0;
+  }
+}

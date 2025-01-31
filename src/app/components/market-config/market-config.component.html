@@ -98,11 +98,7 @@
     </mat-card>
   </div>
 
-  <!-- Market Group Modal -->
-  <app-modal *ngIf="showGroupModal()" 
-             [show]="showGroupModal()" 
-             [title]="modalTitle()" 
-             (close)="closeModals()">
+  <ng-template #marketGroupFormDialog>
     <div class="modal-content">
       <form [formGroup]="groupForm" class="group-form">
         <mat-form-field appearance="outline">
@@ -144,13 +140,10 @@
         Save
       </button>
     </div>
-  </app-modal>
+  </ng-template>
 
   <!-- Market Modal -->
-  <app-modal *ngIf="showMarketModal()" 
-             [show]="showMarketModal()" 
-             [title]="modalTitle()" 
-             (close)="closeModals()">
+  <ng-template #marketFormDialog>
     <div class="modal-content">
       <form [formGroup]="marketForm" class="market-form">
         <mat-form-field appearance="outline">
@@ -197,5 +190,5 @@
         Save
       </button>
     </div>
-  </app-modal>
+  </ng-template>
 </div>

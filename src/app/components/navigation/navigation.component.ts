@@ -35,7 +35,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     { id: "hotel", label: "Hotel Management", icon: "business" },
     { id: "setup", label: "Configuration", icon: "settings" },
     { id: "rates", label: "Rate Management", icon: "attach_money" },
-    { id: "inventory", label: "Inventory", icon: "inventory_2" },
+    // { id: "inventory", label: "Inventory", icon: "inventory_2" },
     { id: "bookings", label: "Bookings", icon: "book_online" },
   ];
 
@@ -43,7 +43,7 @@ export class NavigationComponent implements OnInit, OnDestroy {
     hotel: "description",
     setup: "currency",
     rates: "contract",
-    inventory: "roomInventory",
+    // inventory: "roomInventory",
     bookings: "reservations",
   };
 
@@ -59,16 +59,17 @@ export class NavigationComponent implements OnInit, OnDestroy {
       { id: "currency", icon: "currency_exchange", label: "Currency Settings" },
       { id: "markets", icon: "public", label: "Markets" },
       { id: "periodAndMlos", icon: "calendar_today", label: "Periods & MLOS" },
-      { id: "supplements", icon: "add_circle", label: "Supplements" },
+      // { id: "supplements", icon: "add_circle", label: "Supplements" },
     ],
     rates: [
       { id: "contract", icon: "description", label: "Contract Management" },
       { id: "specialOffers", icon: "local_offer", label: "Special Offers" },
-      { id: "rateOffers", icon: "price_change", label: "Rate Offers" },
+      // { id: "rateOffers", icon: "price_change", label: "Rate Offers" },
     ],
-    inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
+    // inventory: [{ id: "capacity", icon: "hotel", label: "Room Inventory" }],
     bookings: [
       { id: "reservations", icon: "event_available", label: "Reservations" },
+      { id: "booking", icon: "book_online", label: "Booking" },
     ],
   };
 

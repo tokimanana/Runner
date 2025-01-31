@@ -18,8 +18,8 @@ import {
   MatDialogConfig,
   MatDialogModule,
 } from "@angular/material/dialog";
-import { BehaviorSubject, firstValueFrom, from, Subject } from "rxjs";
-import { finalize, takeUntil } from "rxjs/operators";
+import { BehaviorSubject, EMPTY, firstValueFrom, from, Subject } from "rxjs";
+import { catchError, finalize, takeUntil } from "rxjs/operators";
 import {
   Contract,
   ContractPeriodRate,
@@ -296,34 +296,33 @@ export class ContractListComponent implements OnInit, OnDestroy {
   }
 
   private loadSeasons() {
-    try {
-      const hotelId = this.hotel.id;
-      console.log("Loading seasons for hotel:", hotelId);
-      this.loading.set(true);
-
-      // Convert Promise to Observable and add proper types
-      from(this.seasonService.getSeasonsByHotel(hotelId))
-        .pipe(finalize(() => this.loading.set(false)))
-        .subscribe({
-          next: (seasons: Season[]) => {
-            console.log("Loaded seasons:", seasons);
-            // Create new Map if not exists
-            const seasonsMap = new Map(this.seasons());
-            seasonsMap.set(hotelId, seasons);
-            this.seasons.set(seasonsMap);
-          },
-          error: (error: Error) => {
-            console.error("Error loading seasons:", error);
-            this.snackBar.open("Error loading seasons", "Close", {
-              duration: 3000,
-            });
-          },
-        });
-    } catch (error) {
-      console.error("Error in loadSeasons:", error);
-      this.loading.set(false);
+    // Early return if no hotel selected
+    if (!this.hotel?.id) {
+      console.log('No hotel selected');
+      return;
     }
+  
+    const hotelId = this.hotel.id;
+    console.log("Loading seasons for hotel:", hotelId);
+    this.loading.set(true);
+  
+    from(this.seasonService.getSeasonsByHotel(hotelId)).pipe(
+      finalize(() => this.loading.set(false)),
+      catchError((error) => {
+        console.error("Error loading seasons:", error);
+        this.snackBar.open("Error loading seasons", "Close", {
+          duration: 3000,
+        });
+        return EMPTY; // Return empty observable to prevent subscription error
+      })
+    ).subscribe((seasons: Season[]) => {
+      console.log("Loaded seasons:", seasons);
+      const seasonsMap = new Map(this.seasons());
+      seasonsMap.set(hotelId, seasons);
+      this.seasons.set(seasonsMap);
+    });
   }
+  
 
   onPageChange(event: { pageIndex: number; pageSize: number }) {
     this.currentPage.set(event.pageIndex);

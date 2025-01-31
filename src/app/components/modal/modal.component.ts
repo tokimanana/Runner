@@ -15,8 +15,17 @@ interface FormField {
   type: string;
   required?: boolean;
   options?: any[];
-  fields?: FormField[]; // For nested fields
-  rows?: number; // For textarea
+  fields?: FormField[];
+  rows?: number;
+  disabled?: boolean;
+  defaultValue?: any;
+  validations?: {
+    pattern?: string;
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+  };
 }
 
 @Component({
@@ -28,18 +37,19 @@ interface FormField {
 })
 export class ModalComponent {
   // Input signals
-  show = input.required<boolean>({ alias: "show" });
+  show = input<boolean>(false);
   title = input<string>("");
   initialValues = input<Record<string, any>>({});
   fields = input<FormField[]>([]);
 
   // Internal state signals
   formData = signal<Record<string, any>>({});
+  loading = signal<boolean>(false);
 
   // Computed signals
   isVisible = computed(() => this.show());
 
-  // Output signals - simplified
+  // Output signals
   close = output<void>();
   submit = output<Record<string, any>>();
 
@@ -52,7 +62,6 @@ export class ModalComponent {
   }
 
   onBackdropClick(event: MouseEvent) {
-    // Only close if clicking the backdrop
     const target = event.target as HTMLElement;
     if (target.classList.contains("modal-backdrop")) {
       this.close.emit();
@@ -61,7 +70,6 @@ export class ModalComponent {
 
   updateFormData(key: string, event: Event): void {
     const target = event.target;
-
     if (!(target instanceof HTMLElement)) {
       return;
     }
@@ -84,9 +92,10 @@ export class ModalComponent {
   }
 
   private validateForm(): boolean {
-    if (!this.fields()) return false;
+    const currentFields = this.fields();
+    if (!currentFields.length) return false;
 
-    return this.fields().every((field) => {
+    return currentFields.every((field) => {
       const value = this.formData()[field.name];
       if (field.required) {
         return value !== undefined && value !== "";
@@ -95,3 +104,4 @@ export class ModalComponent {
     });
   }
 }
+

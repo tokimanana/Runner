@@ -1,216 +1,92 @@
-:host {
-  .market-config-container {
-    max-width: 1200px;
-    margin: 24px auto;
-    padding: 0 24px;
+.market-config-container {
+  padding: 20px;
 
-    // Header Section
-    .market-groups-header {
+  .header-card {
+    margin-bottom: 20px;
+    
+    mat-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
-
-      h2 {
-        font-size: 24px;
-        color: #2c3e50;
+      padding: 16px;
+      
+      mat-card-title {
         margin: 0;
       }
+    }
+  }
 
-      .header-actions {
-        button {
-          mat-icon {
-            margin-right: 8px;
-          }
+  .market-groups {
+    display: grid;
+    gap: 20px;
+
+    .group-card {
+      mat-card-header {
+        padding: 16px;
+        border-radius: 4px 4px 0 0;
+
+        .group-actions {
+          margin-left: auto;
         }
       }
-    }
 
-    // Market Groups Section
-    .market-groups {
-      display: grid;
-      gap: 24px;
+      .markets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        padding: 16px;
 
-      mat-card {
-        background: white;
-        border-radius: 12px;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .group-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-
-          h3 {
-            font-size: 20px;
-            margin: 0;
-            color: #2c3e50;
+        .market-card {
+          &.has-rate {
+            border-left: 4px solid #4caf50;
           }
-        }
 
-        // Markets Grid
-        .markets-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 16px;
-          padding: 16px;
+          mat-card-header {
+            align-items: center;
 
-          .market-card {
-            background: #f8f9fa;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 8px;
-
-            &.has-rate {
-              border-left: 4px solid #4caf50;
-            }
-
-            .market-header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              padding: 16px;
-
-              .market-title {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-
-                .market-icon {
-                  color: #666;
-                }
-
-                .market-info {
-                  .market-name-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-
-                    .market-name {
-                      font-weight: 500;
-                      color: #2c3e50;
-                    }
-
-                    .rate-indicator {
-                      color: #4caf50;
-                      font-size: 16px;
-                    }
-                  }
-                }
-              }
-            }
-
-            .market-details {
-              padding: 0 16px 16px;
-
-              .market-currency {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 8px;
-
-                .label {
-                  color: #666;
-                  font-size: 14px;
-                }
-
-                mat-chip {
-                  font-size: 13px;
-                  height: 24px;
-                }
-              }
-
-              .market-description {
-                color: #666;
-                font-size: 14px;
-                margin: 8px 0 0;
-                line-height: 1.5;
-              }
+            mat-icon {
+              margin-right: 8px;
             }
           }
 
-          // Empty state styling
+          .market-details {
+            padding: 16px 0;
+
+            mat-chip-listbox {
+              margin-bottom: 12px;
+            }
+
+            .market-description {
+              color: rgba(0, 0, 0, 0.6);
+              margin: 8px 0 0;
+              font-size: 14px;
+            }
+          }
+        }
+
+        .empty-state-card {
           .empty-markets {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 16px;
             text-align: center;
-            padding: 32px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 2px dashed #ddd;
+            gap: 16px;
 
             mat-icon {
               font-size: 48px;
               width: 48px;
               height: 48px;
-              color: #999;
-              margin-bottom: 16px;
             }
 
             p {
-              color: #666;
-              margin-bottom: 16px;
+              color: rgba(0, 0, 0, 0.6);
+              margin: 0;
             }
-          }
-        }
-      }
-    }
-
-    // Modal Styles
-    ::ng-deep .modal-body {
-      .form-group {
-        margin-bottom: 20px;
-
-        label {
-          display: block;
-          margin-bottom: 8px;
-          color: #2c3e50;
-          font-weight: 500;
-        }
-
-        input, select, textarea {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          font-size: 14px;
-          transition: border-color 0.2s ease;
-
-          &:focus {
-            outline: none;
-            border-color: #1976d2;
-          }
-        }
-
-        textarea {
-          min-height: 100px;
-          resize: vertical;
-        }
-      }
-
-      .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid #eee;
-
-        button {
-          padding: 8px 24px;
-          border-radius: 4px;
-          font-weight: 500;
-
-          &:last-child {
-            background: #1976d2;
-            color: white;
           }
         }
       }
     }
   }
 }
+

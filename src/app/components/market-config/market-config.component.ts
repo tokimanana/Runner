@@ -7,6 +7,9 @@ import {
   signal,
   computed,
   input,
+  inject,
+  ViewChild,
+  TemplateRef,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
@@ -23,7 +26,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatChipListbox } from "@angular/material/chips";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatSelectModule } from "@angular/material/select";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { RouterModule } from "@angular/router";
@@ -37,7 +40,6 @@ import {
   CurrencySetting,
   Hotel,
 } from "../../models/types";
-import { ModalComponent } from "../modal/modal.component";
 import { CurrencyService } from "../../services/currency.service";
 
 @Component({
@@ -59,7 +61,6 @@ import { CurrencyService } from "../../services/currency.service";
     MatSelectModule,
     MatFormFieldModule,
     RouterModule,
-    ModalComponent,
   ],
 })
 export class MarketConfigComponent implements OnInit, OnDestroy {
@@ -92,6 +93,10 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   groupForm!: FormGroup;
 
   private destroy$ = new Subject<void>();
+
+  private dialog: MatDialog = inject(MatDialog);
+  @ViewChild("marketGroupFormDialog") marketGroupFormDialog!: TemplateRef<any>;
+  @ViewChild("marketFormDialog") marketFormDialog!: TemplateRef<any>;
 
   constructor(
     private fb: FormBuilder,
@@ -190,7 +195,10 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.showMarketModal.set(true);
+    // Open the dialog
+    this.dialog.open(this.marketFormDialog, {
+      data: { market, group },
+    });
   }
 
   openGroupModal(group?: MarketGroup) {
@@ -205,7 +213,10 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.showGroupModal.set(true);
+    // Open the dialog
+    this.dialog.open(this.marketGroupFormDialog, {
+      data: group,
+    });
   }
 
   closeModals() {
@@ -279,12 +290,19 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
 
   // Helper methods
   getMarketCurrency(marketId: number): string {
-    const market = this.marketService.getMarketById(marketId);
-    return market?.currency || "";
+    let currency = '';
+    this.marketService.getMarketCurrency(marketId).subscribe(currencyCode => {
+      currency = currencyCode;
+    });
+    return currency;
   }
 
   getMarketName(marketId: number): string {
-    return this.marketService.getMarketName(marketId);
+    let name = '';
+    this.marketService.getMarketName(marketId).subscribe(marketName => {
+      name = marketName;
+    });
+    return name;
   }
 
   hasRates = computed(() => {
@@ -310,7 +328,7 @@ export class MarketConfigComponent implements OnInit, OnDestroy {
   }
 
   getGroupColor(region: string): string {
-    // You can customize these colors based on your needs
+    // can customize these colors
     const colorMap: { [key: string]: string } = {
       Europe: "#e3f2fd",
       "North America": "#f3e5f5",

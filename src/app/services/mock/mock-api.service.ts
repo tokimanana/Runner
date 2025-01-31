@@ -737,30 +737,7 @@ export class MockApiService {
     return Promise.resolve(hotels[index]);
   }
 
-  // Add a single age category
-  static async addHotelAgeCategory(
-    hotelId: number,
-    category: Omit<AgeCategory, "id" | "label">
-  ): Promise<Hotel> {
-    const hotel = await this.getHotelById(hotelId);
-    if (!hotel) {
-      throw new Error("Hotel not found");
-    }
 
-    const currentCategories = hotel.ageCategories || [];
-    const newId = Math.max(0, ...currentCategories.map((c) => c.id)) + 1;
-
-    const newCategory: AgeCategory = {
-      ...category,
-      id: newId,
-      label: this.generateAgeLabel(category),
-    };
-
-    return this.updateHotelAgeCategories(hotelId, [
-      ...currentCategories,
-      newCategory,
-    ]);
-  }
 
   // Delete an age category
   static async deleteHotelAgeCategory(
@@ -777,6 +754,28 @@ export class MockApiService {
       (c) => c.id !== categoryId
     );
 
+    return this.updateHotelAgeCategories(hotelId, updatedCategories);
+  }
+
+  // Add a single age category
+  static async addHotelAgeCategory(
+    hotelId: number,
+    category: Omit<AgeCategory, "id">
+  ): Promise<Hotel> {
+    const hotel = await this.getHotelById(hotelId);
+    if (!hotel) {
+      throw new Error("Hotel not found");
+    }
+
+    const currentCategories = hotel.ageCategories || [];
+    const newId = Math.max(0, ...currentCategories.map(c => c.id)) + 1;
+
+    const newCategory: AgeCategory = {
+      ...category,
+      id: newId
+    };
+
+    const updatedCategories = [...currentCategories, newCategory];
     return this.updateHotelAgeCategories(hotelId, updatedCategories);
   }
 

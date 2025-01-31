@@ -13,33 +13,35 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-12-01",
+          end: "2025-03-31",
+        },
         value: 20,
-        startDate: "2025-01-01",
-        endDate: "2025-03-31",
       },
       {
+        bookingDateRange: {
+          start: "2025-04-01",
+          end: "2025-06-30",
+        },
         value: 15,
-        startDate: "2025-04-01",
-        endDate: "2025-06-30",
       },
       {
+        bookingDateRange: {
+          start: "2025-07-01",
+          end: "2025-11-30",
+        },
         value: 10,
-        startDate: "2025-07-01",
-        endDate: "2025-09-30",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    conditions: [
-      "20% off when booking 90+ days in advance",
-      "15% off when booking 60-89 days in advance",
-      "10% off when booking 30-59 days in advance",
-      "Full prepayment required at booking",
-      "Non-refundable",
-    ],
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-12-31",
+    },
+    conditions: ["Full prepayment required at booking", "Non-refundable"],
     minimumNights: 7,
     bookingWindow: {
-      start: "2024-12-01", // Starting from current month
+      start: "2024-12-01",
       end: "2025-11-30",
     },
     blackoutDates: [
@@ -59,37 +61,48 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-04-01",
+          end: "2024-05-31",
+        },
         value: 5,
-        startDate: "2024-04-01", // Booking 9+ months in advance
-        endDate: "2024-05-31",
       },
       {
+        bookingDateRange: {
+          start: "2024-06-01",
+          end: "2024-09-30",
+        },
         value: 10,
-        startDate: "2024-06-01", // Booking 6-9 months in advance
-        endDate: "2024-09-30",
       },
       {
+        bookingDateRange: {
+          start: "2024-10-01",
+          end: "2025-01-31",
+        },
         value: 15,
-        startDate: "2024-10-01", // Booking 3-6 months in advance
-        endDate: "2025-01-31",
       },
       {
+        bookingDateRange: {
+          start: "2025-02-01",
+          end: "2025-03-31",
+        },
         value: 20,
-        startDate: "2025-02-01", // Booking 0-3 months in advance
-        endDate: "2025-03-31",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-12-31",
+    },
     conditions: [
-      "5% off when booking 9+ months in advance", // Add condition for 5%
-      "10% off when booking 6-9 months in advance",
-      "15% off when booking 3-6 months in advance",
-      "20% off when booking 0-3 months in advance",
       "Valid for all room types",
       "Full prepayment required at booking",
     ],
     minimumNights: 2,
+    bookingWindow: {
+      // Added bookingWindow
+      start: "2024-04-01",
+      end: "2025-12-31",
+    },
     blackoutDates: [
       {
         start: "2025-12-20",
@@ -97,54 +110,58 @@ export const offersMock: SpecialOffer[] = [
       },
     ],
   },
-  // {
-  //   id: 3,
-  //   code: "HONEYMOON25",
-  //   name: "Honeymoon Package",
-  //   type: "combinable",
-  //   description:
-  //     "Special perks and savings for honeymooners - Book your romantic getaway",
-  //   discountType: "percentage",
-  //   discountValues: [
-  //     {
-  //       value: 30,
-  //       startDate: "2025-06-01",
-  //       endDate: "2025-08-31",
-  //     },
-  //     {
-  //       value: 25,
-  //       startDate: "2025-01-01",
-  //       endDate: "2025-05-31",
-  //     },
-  //     {
-  //       value: 25,
-  //       startDate: "2025-09-01",
-  //       endDate: "2025-12-31",
-  //     },
-  //   ],
-  //   startDate: "2025-01-01",
-  //   endDate: "2025-12-31",
-  //   conditions: [
-  //     "Valid marriage certificate required (within 6 months of wedding date)",
-  //     "Booking must be made within 3 months of wedding date",
-  //     "Complimentary room upgrade subject to availability at check-in",
-  //     "Minimum stay of 5 nights required",
-  //     "Not valid during festive season (24-31 December)",
-  //     "Names on marriage certificate must match travel documents",
-  //   ],
-  //   minimumNights: 5,
-  //   bookingWindow: {
-  //     start: "2024-12-01",
-  //     end: "2025-12-15",
-  //   },
-  //   blackoutDates: [
-  //     {
-  //       start: "2025-12-24",
-  //       end: "2025-12-31"
-  //     }
-  //   ],
-  // },
-
+  {
+    id: 3,
+    code: "HONEYMOON25",
+    name: "Honeymoon Package",
+    type: "combinable",
+    description:
+      "Special perks and savings for honeymooners - Book your romantic getaway",
+    discountType: "percentage",
+    discountValues: [
+      {
+        bookingDateRange: {
+          start: "2025-01-01",
+          end: "2025-05-31",
+        },
+        value: 25,
+      },
+      {
+        bookingDateRange: {
+          start: "2025-06-01",
+          end: "2025-08-31",
+        },
+        value: 30,
+      },
+      {
+        bookingDateRange: {
+          start: "2025-09-01",
+          end: "2025-12-31",
+        },
+        value: 25,
+      },
+    ],
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-12-31",
+    },
+    conditions: [
+      "Valid marriage certificate required (within 6 months of wedding date)",
+      "Booking must be made within 3 months of wedding date",
+      "Complimentary room upgrade subject to availability at check-in",
+    ],
+    minimumNights: 5,
+    bookingWindow: {
+      start: "2024-12-01",
+      end: "2025-12-15",
+    },
+    blackoutDates: [
+      {
+        start: "2025-12-24",
+        end: "2025-12-31",
+      },
+    ],
+  },
   {
     id: 4,
     code: "SUMMER25",
@@ -154,30 +171,35 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2025-06-01",
+          end: "2025-06-30",
+        },
         value: 20,
-        startDate: "2025-06-01",
-        endDate: "2025-06-30",
       },
       {
+        bookingDateRange: {
+          start: "2025-07-01",
+          end: "2025-07-31",
+        },
         value: 15,
-        startDate: "2025-07-01",
-        endDate: "2025-07-31",
       },
       {
+        bookingDateRange: {
+          start: "2025-08-01",
+          end: "2025-08-31",
+        },
         value: 10,
-        startDate: "2025-08-01",
-        endDate: "2025-08-31",
       },
     ],
-    startDate: "2025-06-01",
-    endDate: "2025-08-31",
+    travelDateRange: {
+      start: "2025-06-01",
+      end: "2025-08-31",
+    },
     conditions: [
-      "Book at least 30 days in advance",
       "Valid for all room types subject to availability",
       "Full prepayment required at booking",
       "Non-refundable",
-      "Not combinable with other offers",
-      "Blackout dates: July 15-17 and August 15",
     ],
     minimumNights: 7,
     blackoutDates: [
@@ -195,7 +217,6 @@ export const offersMock: SpecialOffer[] = [
       end: "2025-07-31",
     },
   },
-
   {
     id: 5,
     code: "WINTER25",
@@ -205,29 +226,32 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2025-11-01",
+          end: "2025-11-30",
+        },
         value: 30,
-        startDate: "2025-11-01",
-        endDate: "2025-11-30",
       },
       {
+        bookingDateRange: {
+          start: "2025-12-01",
+          end: "2025-12-20",
+        },
         value: 25,
-        startDate: "2025-12-01",
-        endDate: "2025-12-20",
       },
     ],
-    startDate: "2025-11-01",
-    endDate: "2025-12-20",
+    travelDateRange: {
+      start: "2025-11-01",
+      end: "2025-12-20",
+    },
     conditions: [
-      "30% off for November stays",
-      "25% off for December stays",
       "ApplicableFull prepayment required at booking",
       "Non-refundable",
-      "Not valid during festive period (Dec 21-31)",
     ],
     minimumNights: 7,
     bookingWindow: {
       start: "2025-08-01",
-      end: "2025-11-20",
+      end: "2025-12-20",
     },
     blackoutDates: [
       {
@@ -236,7 +260,6 @@ export const offersMock: SpecialOffer[] = [
       },
     ],
   },
-
   // ID 6: Flash Sale
   {
     id: 6,
@@ -247,16 +270,16 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2025-03-15",
+          end: "2025-03-18",
+        },
         value: 35,
-        startDate: "2025-06-01",
-        endDate: "2025-08-31",
       },
     ],
-    startDate: "2025-06-01", // Overall offer validity start
-    endDate: "2025-08-31", // Overall offer validity end
-    bookingWindow: {
-      start: "2025-03-15",
-      end: "2025-03-18", // 72-hour sale period
+    travelDateRange: {
+      start: "2025-03-19",
+      end: "2025-06-30",
     },
     conditions: [
       "35% off on all room types",
@@ -266,9 +289,12 @@ export const offersMock: SpecialOffer[] = [
       "Subject to availability",
     ],
     minimumNights: 5,
+    bookingWindow: {
+      start: "2025-03-15",
+      end: "2025-03-18",
+    },
     blackoutDates: [],
   },
-
   // ID 7: Advanced Purchase 25
   {
     id: 7,
@@ -280,24 +306,27 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-12-01",
+          end: "2025-11-15",
+        },
         value: 25,
-        startDate: "2025-01-01",
-        endDate: "2025-12-31",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    bookingWindow: {
-      start: "2024-12-01",
-      end: "2025-11-15", // Allows booking 45 days before end date
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-12-31",
     },
     conditions: [
       "25% off when booking at least 45 days in advance",
-      "Valid for all room types and stay dates in 2025",
       "Full prepayment required at time of booking",
       "Non-refundable and non-modifiable",
     ],
     minimumNights: 3,
+    bookingWindow: {
+      start: "2024-12-01",
+      end: "2025-11-15",
+    },
     blackoutDates: [
       {
         start: "2025-12-20",
@@ -306,7 +335,6 @@ export const offersMock: SpecialOffer[] = [
     ],
   },
 
-  // ID 8: Quick Start 2025
   {
     id: 8,
     code: "QSTART25",
@@ -317,25 +345,40 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-12-01",
+          end: "2025-01-15",
+        },
         value: 15,
-        startDate: "2025-01-01",
-        endDate: "2025-03-31",
+      },
+      {
+        bookingDateRange: {
+          start: "2025-01-16",
+          end: "2025-02-15",
+        },
+        value: 20,
+      },
+      {
+        bookingDateRange: {
+          start: "2025-02-16",
+          end: "2025-03-15",
+        },
+        value: 25,
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2025-03-31",
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-03-31",
+    },
+    conditions: [
+      "Valid for all room categories",
+      "Blackout dates apply during Easter holiday",
+    ],
+    minimumNights: 5, // Minimum nights for the entire offer
     bookingWindow: {
       start: "2024-12-01",
       end: "2025-03-15",
     },
-    conditions: [
-      "15% off for stays of 5-7 nights",
-      "20% off for stays of 8-14 nights",
-      "25% off for stays of 15 nights or more",
-      "Valid for all room categories",
-      "Blackout dates apply during Easter holiday",
-    ],
-    minimumNights: 5,
     blackoutDates: [
       {
         start: "2025-04-05",
@@ -355,25 +398,26 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-12-01",
+          end: "2025-05-15",
+        },
         value: 20,
-        startDate: "2025-03-01",
-        endDate: "2025-05-31",
       },
     ],
-    startDate: "2025-03-01",
-    endDate: "2025-05-31",
-    bookingWindow: {
-      start: "2024-12-01",
-      end: "2025-05-15",
+    travelDateRange: {
+      start: "2025-03-01",
+      end: "2025-05-31",
     },
     conditions: [
-      "20% off for stays of 7-13 nights",
-      "25% off for stays of 14-20 nights",
-      "30% off for stays of 21+ nights",
       "Valid for all room types",
       "Not valid during Easter holidays",
     ],
     minimumNights: 7,
+    bookingWindow: {
+      start: "2024-12-01",
+      end: "2025-05-15",
+    },
     blackoutDates: [
       {
         start: "2025-04-01",
@@ -381,6 +425,7 @@ export const offersMock: SpecialOffer[] = [
       },
     ],
   },
+
   // ID 10: New Year Extended Stay
   {
     id: 10,
@@ -392,30 +437,31 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2024-12-01",
+          end: "2025-01-15",
+        },
         value: 22,
-        startDate: "2025-01-01",
-        endDate: "2025-01-31",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2025-01-31",
-    bookingWindow: {
-      start: "2024-12-01",
-      end: "2025-01-15",
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2025-01-31",
     },
     conditions: [
-      "22% off for stays of 10-15 nights",
-      "25% off for stays of 16-21 nights",
-      "30% off for stays of 22+ nights",
       "Valid for all room categories",
       "Full prepayment required",
       "Non-refundable",
     ],
     minimumNights: 10,
+    bookingWindow: {
+      start: "2024-12-01",
+      end: "2025-01-15",
+    },
     blackoutDates: [],
   },
 
-  // Add these to the offersMock array
+  // ID 11: Winter Special 2025
   {
     id: 11,
     code: "WINTER2025",
@@ -425,19 +471,25 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          // Add bookingDateRange
+          start: "2025-01-01",
+          end: "2026-12-31",
+        },
         value: 20,
-        startDate: "2025-01-01",
-        endDate: "2026-12-31",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2026-12-31",
+    bookingWindow: {
+      start: "2024-12-01",
+      end: "2026-12-22",
+    },
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2026-12-31",
+    },
     conditions: [
-      "20% off for stays until December 22nd 2025",
-      "20% off for stays from January 3rd onwards 2026",
       "Not valid during festive period (December 23rd - January 2nd)",
       "Valid for all room types",
-      "Combinable with other offers",
     ],
     minimumNights: 2,
     blackoutDates: [
@@ -447,6 +499,8 @@ export const offersMock: SpecialOffer[] = [
       },
     ],
   },
+
+  // ID 12: Year Round Bonus
   {
     id: 12,
     code: "YEARROUND25",
@@ -456,18 +510,22 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2025-01-01",
+          end: "2026-12-31",
+        },
         value: 5,
-        startDate: "2025-01-01",
-        endDate: "2026-12-31",
       },
     ],
-    startDate: "2025-01-01",
-    endDate: "2026-12-31",
-    conditions: [
-      "5% off entire stay",
-      "Valid for all room types",
-      "Combinable with other offers",
-    ],
+    bookingWindow: {
+      start: "2025-01-01",
+      end: "2025-12-31",
+    },
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2026-12-31",
+    },
+    conditions: ["5% off entire stay", "Valid for all room types"],
     minimumNights: 1,
     blackoutDates: [
       {
@@ -476,6 +534,8 @@ export const offersMock: SpecialOffer[] = [
       },
     ],
   },
+
+  // ID 13: Early Bird Discount
   {
     id: 13,
     code: "EARLYBIRD",
@@ -485,18 +545,22 @@ export const offersMock: SpecialOffer[] = [
     discountType: "percentage",
     discountValues: [
       {
+        bookingDateRange: {
+          start: "2023-01-01",
+          end: "2027-12-31",
+        },
         value: 5,
-        startDate: "2023-01-01",
-        endDate: "2027-12-31",
       },
     ],
-    startDate: "2023-01-01",
-    endDate: "2027-12-31",
-    conditions: [
-      "5% off entire stay",
-      "Valid for all room types",
-      "Combinable with other offers",
-    ],
+    bookingWindow: {
+      start: "2025-01-01",
+      end: "2025-12-31",
+    },
+    travelDateRange: {
+      start: "2025-01-01",
+      end: "2026-12-31",
+    },
+    conditions: ["5% off entire stay", "Valid for all room types"],
     minimumNights: 1,
     blackoutDates: [],
   },

@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable } from "rxjs";
+import { BehaviorSubject, map, Observable, of } from "rxjs";
 import { Market, MarketGroup } from "../models/types";
 import { MockApiService } from "./mock/mock-api.service";
 import { BaseDataService } from "./base-data.service";
@@ -185,18 +185,18 @@ export class MarketService extends BaseDataService<Market> {
   }
 
   // Helper Methods
-  getMarketById(id: number): Market | undefined {
-    return this.dataSubject.value.find((m) => m.id === id);
+  getMarketById(id: number): Observable<Market | undefined> {
+    return of(this.dataSubject.value.find((m) => m.id === id));
   }
 
-  getMarketGroupById(id: number): MarketGroup | undefined {
-    return this.marketGroupsSubject.value.find((g) => g.id === id);
+  getMarketGroupById(id: number): Observable<MarketGroup | undefined> {
+    return of(this.marketGroupsSubject.value.find((g) => g.id === id));
   }
 
-  getMarketsByGroup(groupId: number): Market[] {
-    return this.dataSubject.value.filter(
+  getMarketsByGroup(groupId: number): Observable<Market[]> {
+    return of(this.dataSubject.value.filter(
       (market) => market.groupId === groupId
-    );
+    ));
   }
 
   // Status and Utility Methods
@@ -218,9 +218,10 @@ export class MarketService extends BaseDataService<Market> {
     }
   }
 
-  isMarketActive(id: number): boolean {
-    const market = this.getMarketById(id);
-    return market ? market.isActive : false;
+  isMarketActive(id: number): Observable<boolean> {
+    return this.getMarketById(id).pipe(
+      map(market => market ? market.isActive : false)
+    );
   }
 
   isMarketInUse(marketId: number): boolean {
@@ -228,9 +229,16 @@ export class MarketService extends BaseDataService<Market> {
     return groups.some((group) => group.markets.includes(marketId));
   }
 
-  getMarketName(marketId: number): string {
-    const market = this.getMarketById(marketId);
-    return market?.name || "";
+  getMarketName(marketId: number): Observable<string> {
+    return this.getMarketById(marketId).pipe(
+      map(market => market?.name || "")
+    );
+  }
+
+  getMarketCurrency(marketId: number): Observable<string> {
+    return this.getMarketById(marketId).pipe(
+      map(market => market?.currency || "")
+    );
   }
 
   // Error handling

@@ -1,11 +1,8 @@
-// src/app/components/special-offers/offer-form/offer-form.component.ts
-
 import {
   Component,
   EventEmitter,
   Inject,
   Input,
-  OnInit,
   Output,
   ViewChild,
 } from "@angular/core";
@@ -13,55 +10,73 @@ import { CommonModule } from "@angular/common";
 import {
   FormBuilder,
   FormGroup,
-  FormArray,
   Validators,
   ReactiveFormsModule,
+  FormArray,
   AbstractControl,
+  FormControl,
 } from "@angular/forms";
 import {
   MatDialogRef,
   MAT_DIALOG_DATA,
-  MatDialogConfig,
+  MatDialogModule,
 } from "@angular/material/dialog";
+import { MatStepper, MatStepperModule } from "@angular/material/stepper";
+import { StepperSelectionEvent } from "@angular/cdk/stepper";
+import { SpecialOffer } from "src/app/models/types";
+import { MatButtonModule } from "@angular/material/button";
+import { MAT_DATE_FORMATS, MatNativeDateModule } from "@angular/material/core";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatDatepickerModule } from "@angular/material/datepicker";
-import { SpecialOffer, DiscountValue } from "../../../models/types";
-import { MatStepper, MatStepperModule } from "@angular/material/stepper";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { StepperSelectionEvent } from "@angular/cdk/stepper";
 
 interface DialogData {
-  title: string;
   offer: SpecialOffer | null;
+  title: string;
 }
+
+const MY_DATE_FORMATS = {
+  parse: {
+    dateInput: 'dd/MM/yyyy',
+  },
+  display: {
+    dateInput: 'dd/MM/yyyy',
+    monthYearLabel: 'MMM yyyy',
+    dateA11yLabel: 'dd/MM/yyyy',
+    monthYearA11yLabel: 'MMMM yyyy',
+  },
+};
 
 @Component({
   selector: "app-offer-form",
+  standalone: true,
   templateUrl: "./offer-form.component.html",
   styleUrls: ["./offer-form.component.scss"],
-  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    MatStepperModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule,
     MatIconModule,
+    MatButtonModule,
     MatDatepickerModule,
-    MatStepperModule,
+    MatNativeDateModule,
+    MatDialogModule,
     MatTooltipModule,
   ],
+  providers: [
+    { provide: MAT_DATE_FORMATS, useValue: MY_DATE_FORMATS }
+  ]
 })
-export class OfferFormComponent implements OnInit {
-  @Input() offer: SpecialOffer | null = null;
+export class OfferFormComponent {
+  @Input() offer!: SpecialOffer;
   @Output() saveOffer = new EventEmitter<Partial<SpecialOffer>>();
   @ViewChild("stepper") stepper!: MatStepper;
-  // @Output() cancel = new EventEmitter<void>();
   offerForm!: FormGroup;
   isEdit: boolean = false;
   isFirstStep = true;
@@ -73,14 +88,19 @@ export class OfferFormComponent implements OnInit {
     private dialogRef: MatDialogRef<OfferFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {
+    // Initialize offerForm first
+    this.offerForm = this.fb.group({
+      // ... form group definition here
+    });
+
     this.initForm();
   }
 
   ngOnInit(): void {
-    const offerToEdit = this.data?.offer || this.offer;
-    if (this.data.offer) {
+    const offerToEdit = this.data?.offer;
+    if (offerToEdit) {
       this.isEdit = true;
-      this.populateForm(offerToEdit as SpecialOffer);
+      this.populateForm(offerToEdit);
     }
   }
 
@@ -91,15 +111,20 @@ export class OfferFormComponent implements OnInit {
       type: ["combinable", Validators.required],
       description: ["", [Validators.required, Validators.minLength(10)]],
       discountType: ["percentage", Validators.required],
-      discountValues: this.fb.array([], Validators.minLength(1)),
-      startDate: ["", Validators.required],
-      endDate: ["", Validators.required],
-      conditions: this.fb.array([]),
+      discountValues: this.fb.array(
+        [this.createDiscountValueFormGroup()],
+        Validators.minLength(1)
+      ),
+      travelDateRange: this.fb.group({
+        start: ["", Validators.required],
+        end: ["", Validators.required],
+      }),
+      conditions: this.fb.array([this.fb.control("")]),
       minimumNights: [null, [Validators.min(1)]],
       blackoutDates: this.fb.array([]),
       bookingWindow: this.fb.group({
-        start: [""],
-        end: [""],
+        start: ["", Validators.required],
+        end: ["", Validators.required],
       }),
     });
 
@@ -111,18 +136,6 @@ export class OfferFormComponent implements OnInit {
         console.log("Form errors:", this.getFormValidationErrors());
       }
     });
-  }
-
-  // Helper method to get form validation errors
-  private getFormValidationErrors(): any {
-    const errors: any = {};
-    Object.keys(this.offerForm.controls).forEach((key) => {
-      const control = this.offerForm.get(key);
-      if (control?.errors) {
-        errors[key] = control.errors;
-      }
-    });
-    return errors;
   }
 
   get discountValues(): FormArray {
@@ -137,26 +150,29 @@ export class OfferFormComponent implements OnInit {
     return this.offerForm.get("blackoutDates") as FormArray;
   }
 
-  addDiscountValue() {
-    if (this.discountValues.length < 10) {
-      const discountGroup = this.fb.group({
-        startDate: ["", Validators.required],
-        endDate: ["", Validators.required],
-        value: [
-          "",
-          [
-            Validators.required,
-            Validators.min(
-              this.offerForm.get("discountType")?.value === "percentage" ? 0 : 1
-            ),
-            ...(this.offerForm.get("discountType")?.value === "percentage"
-              ? [Validators.max(100)]
-              : []),
-          ],
+  createDiscountValueFormGroup(): FormGroup {
+    return this.fb.group({
+      bookingDateRange: this.fb.group({
+        start: ["", Validators.required],
+        end: ["", Validators.required],
+      }),
+      value: [
+        "",
+        [
+          Validators.required,
+          Validators.min(
+            this.offerForm.get("discountType")?.value === "percentage" ? 0 : 1
+          ),
+          ...(this.offerForm.get("discountType")?.value === "percentage"
+            ? [Validators.max(100)]
+            : []),
         ],
-      });
-      this.discountValues.push(discountGroup);
-    }
+      ],
+    });
+  }
+
+  addDiscountValue() {
+    this.discountValues.push(this.createDiscountValueFormGroup());
   }
 
   removeDiscountValue(index: number): void {
@@ -164,7 +180,7 @@ export class OfferFormComponent implements OnInit {
   }
 
   addCondition(): void {
-    this.conditions.push(this.fb.control(""));
+    this.conditions.push(this.fb.control("")); // Use fb.control to create a FormControl
   }
 
   removeCondition(index: number): void {
@@ -172,7 +188,12 @@ export class OfferFormComponent implements OnInit {
   }
 
   addBlackoutDate(): void {
-    this.blackoutDates.push(this.fb.control(""));
+    this.blackoutDates.push(
+      this.fb.group({
+        start: ["", Validators.required],
+        end: ["", Validators.required],
+      })
+    );
   }
 
   removeBlackoutDate(index: number): void {
@@ -186,39 +207,118 @@ export class OfferFormComponent implements OnInit {
       type: offer.type,
       description: offer.description,
       discountType: offer.discountType,
-      startDate: offer.startDate,
-      endDate: offer.endDate,
+      travelDateRange: offer.travelDateRange,
       minimumNights: offer.minimumNights,
-      bookingWindow: offer.bookingWindow || { start: "", end: "" },
+      bookingWindow: offer.bookingWindow,
     });
 
     // Populate discount values
+    this.discountValues.clear();
     offer.discountValues.forEach((value) => {
       this.discountValues.push(
         this.fb.group({
+          bookingDateRange: this.fb.group({
+            start: [
+              value.bookingDateRange.start
+                ? new Date(value.bookingDateRange.start)
+                : "",
+            ],
+            end: [
+              value.bookingDateRange.end
+                ? new Date(value.bookingDateRange.end)
+                : "",
+            ],
+          }),
           value: [value.value],
-          startDate: [value.startDate || ""],
-          endDate: [value.endDate || ""],
         })
       );
     });
 
     // Populate conditions
-    offer.conditions?.forEach((condition) => {
-      this.conditions.push(this.fb.control(condition));
+    this.conditions.clear();
+    offer.conditions?.forEach((condition, i) => {
+      this.conditions.setControl(i, this.fb.control(condition));
     });
 
     // Populate blackout dates
-    offer.blackoutDates?.forEach((date) => {
-      this.blackoutDates.push(this.fb.control(date));
+    this.blackoutDates.clear();
+    offer.blackoutDates?.forEach((date, i) => {
+      this.blackoutDates.setControl(
+        i,
+        this.fb.group({
+          start: [date.start ? new Date(date.start) : ""],
+          end: [date.end ? new Date(date.end) : ""],
+        })
+      );
     });
+  }
+
+  selectionChange(event: StepperSelectionEvent) {
+    this.isFirstStep = event.selectedIndex === 0;
+    this.isLastStep = event.selectedIndex === this.stepper.steps.length - 1;
+  }
+
+  onNextClick(): void {
+    const currentStepIndex = this.stepper.selectedIndex;
+    const controlsForCurrentStep = this.getControlsForStep(currentStepIndex);
+
+    if (controlsForCurrentStep.every((control) => control.valid)) {
+      this.stepper.next();
+    } else {
+      // Mark all fields as touched to trigger validation messages
+      controlsForCurrentStep.forEach((control) => control.markAsTouched());
+    }
+  }
+
+  onPreviousClick(): void {
+    const previousStepIndex = this.stepper.selectedIndex - 1;
+    const controlsForPreviousStep = this.getControlsForStep(previousStepIndex);
+
+    if (controlsForPreviousStep.every((control) => control.valid)) {
+      this.stepper.previous();
+    } else {
+      // Mark all fields as touched to trigger validation messages
+      controlsForPreviousStep.forEach((control) => control.markAsTouched());
+    }
+  }
+
+  private getControlsForStep(stepIndex: number): AbstractControl[] {
+    switch (stepIndex) {
+      case 0: // Basic Info
+        return [
+          this.offerForm.get("code")!,
+          this.offerForm.get("name")!,
+          this.offerForm.get("type")!,
+          this.offerForm.get("description")!,
+        ];
+      case 1: // Discount Configuration
+        return [
+          this.offerForm.get("discountType")!,
+          this.offerForm.get("discountValues")!,
+        ];
+      case 2: // Validity Period
+        return [
+          this.offerForm.get("travelDateRange")!.get("start")!,
+          this.offerForm.get("travelDateRange")!.get("end")!,
+          this.offerForm.get("minimumNights")!,
+        ];
+      case 3: // Booking Window and Blackout Dates
+        return [
+          this.offerForm.get("bookingWindow")!.get("start")!,
+          this.offerForm.get("bookingWindow")!.get("end")!,
+          this.offerForm.get("blackoutDates")!,
+        ];
+      case 4: // Conditions
+        return [this.offerForm.get("conditions")!];
+      default:
+        return [];
+    }
   }
 
   async onSubmit(): Promise<void> {
     if (!this.isLastStep) {
-      return; // Don't submit if not on last step
+      return;
     }
-
     if (this.offerForm.valid && this.isLastStep) {
       try {
         this.loading = true;
@@ -227,8 +327,11 @@ export class OfferFormComponent implements OnInit {
           id: this.data.offer?.id,
         };
 
-        // Close dialog with form data
-        this.dialogRef.close(formData);
+        // Emit the form data
+        this.saveOffer.emit(formData);
+
+        // Close dialog
+        this.dialogRef.close();
       } catch (error) {
         console.error("Error submitting form:", error);
       } finally {
@@ -252,71 +355,39 @@ export class OfferFormComponent implements OnInit {
     }
   }
 
-  onStepChange(event: StepperSelectionEvent): void {
-    // Update step tracking
-    this.isFirstStep = event.selectedIndex === 0;
-    this.isLastStep = event.selectedIndex === this.stepper.steps.length - 1;
-
-    // Validate current step before moving forward
-    if (event.previouslySelectedIndex < event.selectedIndex) {
-      const currentStepControls = this.getControlsForStep(
-        event.previouslySelectedIndex
-      );
-      if (currentStepControls.some((control) => control.invalid)) {
-        // Instead of preventDefault, we can move back to the previous step
-        this.stepper.selectedIndex = event.previouslySelectedIndex;
-        this.markStepControlsAsTouched(currentStepControls);
-        return;
-      }
+  getFormErrorMessage(control: AbstractControl | null): string {
+    if (!control) {
+      return "";
     }
+    if (control.hasError("required")) {
+      return "This field is required";
+    }
+    if (control.hasError("minlength")) {
+      return `Minimum length is ${control.errors?.["minlength"].requiredLength}`;
+    }
+    if (control.hasError("min")) {
+      return `Minimum value is ${control.errors?.["min"].min}`;
+    }
+    if (control.hasError("max")) {
+      return `Maximum value is ${control.errors?.["max"].max}`;
+    }
+    return "";
   }
 
-  private getControlsForStep(stepIndex: number): AbstractControl[] {
-    switch (stepIndex) {
-      case 0: // Basic Info
-        return [
-          this.offerForm.get("code")!,
-          this.offerForm.get("name")!,
-          this.offerForm.get("type")!,
-          this.offerForm.get("description")!,
-        ];
-      case 1: // Discount Configuration
-        return [
-          this.offerForm.get("discountType")!,
-          this.offerForm.get("discountValues")!,
-        ];
-      case 2: // Validity Period
-        return [
-          this.offerForm.get("startDate")!,
-          this.offerForm.get("endDate")!,
-        ];
-      default:
-        return [];
-    }
-  }
-
-  private markStepControlsAsTouched(controls: AbstractControl[]): void {
-    controls.forEach((control) => {
-      control.markAsTouched();
-      if (control instanceof FormGroup) {
-        Object.values(control.controls).forEach((c) => c.markAsTouched());
+  // Helper method to get form validation errors
+  private getFormValidationErrors(): any {
+    const errors: any = {};
+    Object.keys(this.offerForm.controls).forEach((key) => {
+      const control = this.offerForm.get(key);
+      if (control?.errors) {
+        errors[key] = control.errors;
       }
     });
+    return errors;
   }
 
-  onNextClick(): void {
-    if (this.offerForm.valid) {
-      this.stepper.next();
-    } else {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.offerForm.controls).forEach((key) => {
-        const control = this.offerForm.get(key);
-        control?.markAsTouched();
-      });
-    }
-  }
-
-  onPreviousClick(): void {
-    this.stepper.previous();
+  // Getter method to cast control to FormControl
+  getFormControl(control: AbstractControl): FormControl {
+    return control as FormControl;
   }
 }

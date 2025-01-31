@@ -157,28 +157,30 @@ export class HotelService extends BaseDataService<Hotel> {
 
   // Specific update methods
   // Method to update age categories with validation
-  async updateHotelAgeCategories(
-    hotelId: number,
-    categories: AgeCategory[]
-  ): Promise<Hotel> {
+  async updateHotelAgeCategories(hotelId: number, categories: AgeCategory[]): Promise<Hotel> {
     try {
       // Validate categories before updating
       this.validateAgeCategories(categories);
 
-      const updatedHotel = await MockApiService.updateHotelAgeCategories(
-        hotelId,
-        categories
-      );
-      this.updateHotelInStore(updatedHotel);
+      const updatedHotel = await MockApiService.updateHotelAgeCategories(hotelId, categories);
+      
+      // Update local state
+      const currentHotels = this.hotels$.value;
+      const index = currentHotels.findIndex(h => h.id === hotelId);
+      if (index !== -1) {
+        currentHotels[index] = updatedHotel;
+        this.hotels$.next([...currentHotels]);
+      }
+
+      // Update selected hotel if it's the current one
+      if (this.selectedHotelSubject.value?.id === hotelId) {
+        this.selectedHotelSubject.next(updatedHotel);
+      }
+
       return updatedHotel;
     } catch (error) {
-      // Convert error to string before passing to handleError
-      this.handleError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update age categories"
-      );
-      throw error;
+      console.error('Error updating age categories:', error);
+      throw error instanceof Error ? error : new Error('Failed to update age categories');
     }
   }
 
@@ -290,24 +292,38 @@ export class HotelService extends BaseDataService<Hotel> {
   }
 
   private validateAgeCategories(categories: AgeCategory[]): void {
-    // Ensure no overlapping age ranges
-    categories.forEach((category, index) => {
-      const nextCategory = categories[index + 1];
-      if (nextCategory && category.maxAge >= nextCategory.minAge) {
-        throw new Error("Age categories cannot have overlapping ranges");
-      }
-      // Ensure valid age ranges
-      if (category.minAge < 0 || category.maxAge < category.minAge) {
-        throw new Error("Invalid age range");
-      }
-    });
-
-    // Ensure continuous coverage
-    for (let i = 0; i < categories.length - 1; i++) {
-      if (categories[i].maxAge + 1 !== categories[i + 1].minAge) {
-        throw new Error("Age categories must be continuous");
-      }
+    if (!Array.isArray(categories)) {
+      throw new Error('Categories must be an array');
     }
+
+    // Check for duplicate IDs
+    const ids = categories.map(c => c.id);
+    if (new Set(ids).size !== ids.length) {
+      throw new Error('Duplicate category IDs found');
+    }
+
+    // Validate each category
+    categories.forEach((category, index) => {
+      if (!category.name || !category.type) {
+        throw new Error('Category name and type are required');
+      }
+
+      // Validate age ranges
+      if (category.minAge < 0 || category.maxAge > 100 || category.minAge > category.maxAge) {
+        throw new Error(`Invalid age range for category: ${category.name}`);
+      }
+
+      // Check for overlapping ranges with other categories
+      categories.forEach((otherCategory, otherIndex) => {
+        if (index !== otherIndex) {
+          const overlap = (category.minAge >= otherCategory.minAge && category.minAge <= otherCategory.maxAge) ||
+                         (category.maxAge >= otherCategory.minAge && category.maxAge <= otherCategory.maxAge);
+          if (overlap) {
+            throw new Error(`Age ranges overlap between ${category.name} and ${otherCategory.name}`);
+          }
+        }
+      });
+    });
   }
 
   // New method to get room types using RoomConfigurationService

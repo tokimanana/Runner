@@ -19,7 +19,7 @@
 
   <!-- Offer Form Dialog (will be opened via dialog service) -->
   <app-offer-form
-    *ngIf="showOfferForm"
+    *ngIf="showOfferForm && selectedOffer"
     [offer]="selectedOffer"
     (saveOffer)="onSaveOffer($event)"
     (cancel)="onCancelOffer()"

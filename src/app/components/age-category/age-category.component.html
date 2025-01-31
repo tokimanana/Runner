@@ -36,7 +36,7 @@
   </div>
 
   <!-- Age Category Form -->
-  <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" *ngIf="showCategoryForm" role="form">
+  <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" *ngIf="showCategoryForm()" role="form">
     <h3>{{ editingCategory() ? 'Edit' : 'Add' }} Age Category</h3>
     
     <div class="form-group">

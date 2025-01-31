@@ -1,0 +1,172 @@
+<div class="reservation-layout">
+  <div class="reservation-content">
+    <mat-stepper #stepper linear>
+      <!-- Search Step -->
+      <mat-step [stepControl]="searchForm" label="Search">
+        <mat-card class="search-form-card">
+          <mat-card-header>
+            <mat-card-title>Search Available Rooms</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form
+              [formGroup]="searchForm"
+              (ngSubmit)="searchRooms()"
+              class="search-form"
+            >
+              <!-- Your existing search form content -->
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Select Hotel</mat-label>
+                  <mat-select
+                    formControlName="hotelId"
+                    (selectionChange)="onHotelChange()"
+                  >
+                    <mat-option
+                      *ngFor="let hotel of hotels()"
+                      [value]="hotel.id"
+                    >
+                      {{ hotel.name }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Market</mat-label>
+                  <mat-select
+                    formControlName="marketId"
+                    (selectionChange)="onMarketChange()"
+                  >
+                    <mat-option
+                      *ngFor="let market of availableMarkets()"
+                      [value]="market.id"
+                    >
+                      {{ market.name }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row dates">
+                <mat-form-field appearance="outline">
+                  <mat-label>Check-in Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="checkInPicker"
+                    formControlName="checkIn"
+                    (dateChange)="onDateChange()"
+                  />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="checkInPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #checkInPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Check-out Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="checkOutPicker"
+                    formControlName="checkOut"
+                    (dateChange)="onDateChange()"
+                  />
+                  <mat-datepicker-toggle
+                    matSuffix
+                    [for]="checkOutPicker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #checkOutPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row occupancy">
+                <mat-form-field appearance="outline">
+                  <mat-label>Adults</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="adults"
+                    min="1"
+                  />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Children</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="children"
+                    min="0"
+                  />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Infants</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="infants"
+                    min="0"
+                  />
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="!searchForm.valid"
+                >
+                  Search Rooms
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="available-rooms-container" *ngIf="availableRoomsWithPeriods().length > 0">
+          <h2>Available Rooms</h2>
+          <div class="rooms-grid">
+            <mat-card *ngFor="let roomWithPeriods of availableRoomsWithPeriods()" class="room-card">
+              <mat-card-header>
+                <mat-card-title>{{ roomWithPeriods.room.name }}</mat-card-title>
+              </mat-card-header>
+        
+              <mat-card-content>
+                <div class="occupancy-info">
+                  <span>Maximum Occupancy:
+                    {{ roomWithPeriods.room.maxOccupancy.adults }} adults,
+                    {{ roomWithPeriods.room.maxOccupancy.children }} children,
+                    {{ roomWithPeriods.room.maxOccupancy.infants }} infants
+                  </span>
+                </div>
+        
+                <!-- Period Rate Breakdown -->
+                <h4>Rates by Period:</h4>
+                <mat-list>
+                  <mat-list-item *ngFor="let rate of getRoomRates(roomWithPeriods.room)">
+                    <div class="period-rate">
+                      <span class="period-dates">
+                        {{ rate.startDate | date:'dd/MM/yyyy' }} - {{ rate.endDate | date:'dd/MM/yyyy' }}
+                      </span>
+                      <span class="rate-amount">
+                        {{ currencySymbol }} {{ rate.rate }}
+                      </span>
+                    </div>
+                  </mat-list-item>
+                </mat-list>
+              </mat-card-content>
+        
+              <mat-card-actions>
+                <button mat-raised-button color="primary" (click)="selectRoom(roomWithPeriods.room)">
+                  Select Room
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+        
+      </mat-step>
+    </mat-stepper>
+  </div>
+</div>

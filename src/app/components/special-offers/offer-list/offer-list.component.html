@@ -1,4 +1,3 @@
-<!-- src/app/components/special-offers/offer-list/offer-list.component.html -->
 <div class="offer-list-container">
   <div class="offer-types-legend">
     <mat-card>
@@ -15,44 +14,53 @@
   </div>
 
   <div *ngIf="offers?.length; else noOffers" class="offers-grid">
-    <mat-card *ngFor="let offer of offers" class="offer-card" [ngClass]="offer.type">
+    <mat-card
+      *ngFor="let offer of offers"
+      class="offer-card"
+      [ngClass]="offer.type"
+    >
       <mat-card-header>
         <div class="offer-type-badge" [ngClass]="offer.type">
           {{ offer.type | titlecase }}
         </div>
-        <mat-card-title>{{offer.name}}</mat-card-title>
-        <mat-card-subtitle>Code: {{offer.code}}</mat-card-subtitle>
+        <mat-card-title>{{ offer.name }}</mat-card-title>
+        <mat-card-subtitle>Code: {{ offer.code }}</mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
-        <p class="description">{{offer.description}}</p>
-        
+        <p class="description">{{ offer.description }}</p>
+
         <div class="offer-details">
           <div class="discount-section">
             <h4>Savings:</h4>
             <ul>
               <li *ngFor="let discount of offer.discountValues">
-                <!-- <strong>{{ discount.nights }} nights:</strong>  -->
-                {{ discount.value }}{{ offer.discountType === 'percentage' ? '%' : ' €' }} off
-                <span *ngIf="discount.startDate" class="date-range">
-                  ({{ discount.startDate | date }} - {{ discount.endDate | date }})
+                {{ discount.value
+                }}{{ offer.discountType === "percentage" ? "%" : " €" }} off
+                <span *ngIf="discount.bookingDateRange" class="date-range">
+                  ({{ discount.bookingDateRange.start | date }} -
+                  {{ discount.bookingDateRange.end | date }})
                 </span>
               </li>
             </ul>
           </div>
-
           <div class="validity-section">
-            <p><mat-icon>date_range</mat-icon> Valid: {{ offer.startDate | date }} - {{ offer.endDate | date }}</p>
-            <p *ngIf="offer.minimumNights">
-              <mat-icon>nights_stay</mat-icon> Min stay: {{ offer.minimumNights }} nights
+            <p>
+              <mat-icon>date_range</mat-icon> Valid:
+              {{ offer.travelDateRange.start | date }} -
+              {{ offer.travelDateRange.end | date }}
             </p>
-
+            <p *ngIf="offer.minimumNights">
+              <mat-icon>nights_stay</mat-icon> Min stay:
+              {{ offer.minimumNights }} nights
+            </p>
           </div>
-
           <div class="conditions-section" *ngIf="offer.conditions?.length">
             <h4>Conditions:</h4>
             <ul>
-              <li *ngFor="let condition of offer.conditions">{{ condition }}</li>
+              <li *ngFor="let condition of offer.conditions">
+                {{ condition }}
+              </li>
             </ul>
           </div>
         </div>
