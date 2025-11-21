@@ -1,0 +1,525 @@
+// schema.prisma - Tour Operator System
+// Base de données : PostgreSQL
+// ORM : Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+enum PricingMode {
+  PER_PERSON
+  PER_ROOM
+}
+
+enum OfferType {
+  PERCENTAGE
+  FLAT_AMOUNT
+}
+
+enum DiscountMode {
+  CUMULATIVE
+  COMBINABLE
+}
+
+enum SupplementUnit {
+  PER_PERSON
+  PER_ROOM
+  PER_STAY
+}
+
+enum BookingStatus {
+  SIMULATION
+  CONFIRMED
+  CANCELLED
+}
+
+// =============================================================================
+// CORE ENTITIES
+// =============================================================================
+
+model TourOperator {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  hotels      Hotel[]
+  mealPlans   MealPlan[]
+  markets     Market[]
+  offers      Offer[]
+  supplements Supplement[]
+  seasons     Season[]
+  contracts   Contract[]
+
+  @@map("tour_operators")
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole     @default(AGENT)
+  tourOperatorId String
+  createdAt      DateTime     @default(now())
+  lastLogin      DateTime?
+
+  // Relations
+  tourOperator TourOperator @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
+
+  @@index([tourOperatorId])
+  @@index([tourOperatorId, role])
+  @@map("users")
+}
+
+// =============================================================================
+// HOTEL & RELATED
+// =============================================================================
+
+model Hotel {
+  id             String   @id @default(uuid())
+  code           String
+  name           String
+  city           String
+  country        String
+  region         String?
+  destination    String?  // Marketing name
+  address        String?  @db.Text
+  email          String?
+  phone          String?
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  tourOperator  TourOperator  @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  ageCategories AgeCategory[]
+  roomTypes     RoomType[]
+  contracts     Contract[]
+  bookings      Booking[]
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+  @@index([tourOperatorId, destination])
+  @@map("hotels")
+}
+
+model AgeCategory {
+  id      String @id @default(uuid())
+  name    String
+  minAge  Int
+  maxAge  Int
+  hotelId String
+
+  // Relations
+  hotel Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([hotelId])
+  @@map("age_categories")
+}
+
+model RoomType {
+  id          String @id @default(uuid())
+  code        String
+  name        String
+  maxAdults   Int
+  maxChildren Int
+  description String? @db.Text
+  hotelId     String
+
+  // Relations
+  hotel        Hotel         @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomPrices   RoomPrice[]
+  bookingRooms BookingRoom[] // ← AJOUTÉ : relation inverse
+
+  @@index([hotelId])
+  @@map("room_types")
+}
+
+// =============================================================================
+// REFERENCE DATA
+// =============================================================================
+
+model MealPlan {
+  id             String @id @default(uuid())
+  code           String
+  name           String
+  description    String? @db.Text
+  tourOperatorId String
+
+  // Relations
+  tourOperator         TourOperator          @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  mealPlanSupplements  MealPlanSupplement[]
+  contractPeriods      ContractPeriod[]
+  bookingRooms         BookingRoom[]
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+  @@map("meal_plans")
+}
+
+model Market {
+  id             String @id @default(uuid())
+  code           String
+  name           String
+  tourOperatorId String
+
+  // Relations
+  tourOperator TourOperator @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  contracts    Contract[]
+  bookings     Booking[]
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+  @@map("markets")
+}
+
+model Currency {
+  id     String @id @default(uuid())
+  code   String @unique
+  symbol String
+  name   String
+
+  // Relations
+  contracts Contract[]
+  bookings  Booking[]
+
+  @@map("currencies")
+}
+
+model Season {
+  id             String   @id @default(uuid())
+  name           String
+  startDate      DateTime @db.Date
+  endDate        DateTime @db.Date
+  tourOperatorId String
+
+  // Relations
+  tourOperator TourOperator @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+
+  @@index([tourOperatorId])
+  @@map("seasons")
+}
+
+// =============================================================================
+// CONTRACTS
+// =============================================================================
+
+model Contract {
+  id             String   @id @default(uuid())
+  name           String
+  validFrom      DateTime @db.Date
+  validTo        DateTime @db.Date
+  hotelId        String
+  marketId       String
+  currencyId     String
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  tourOperator TourOperator     @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  hotel        Hotel            @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  market       Market           @relation(fields: [marketId], references: [id])
+  currency     Currency         @relation(fields: [currencyId], references: [id])
+  periods      ContractPeriod[]
+  specialRules SpecialRule[]
+
+  @@index([tourOperatorId, hotelId])
+  @@index([hotelId, validFrom])
+  @@index([marketId, validFrom])
+  @@map("contracts")
+}
+
+model ContractPeriod {
+  id              String   @id @default(uuid())
+  name            String
+  startDate       DateTime @db.Date
+  endDate         DateTime @db.Date
+  baseMealPlanId  String
+  minStay         Int      @default(1)
+  contractId      String
+
+  // Relations
+  contract            Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  baseMealPlan        MealPlan              @relation(fields: [baseMealPlanId], references: [id])
+  roomPrices          RoomPrice[]
+  mealPlanSupplements MealPlanSupplement[]
+  stopSalesDates      StopSalesDate[]
+
+  @@index([contractId])
+  @@index([startDate, endDate])
+  @@map("contract_periods")
+}
+
+model RoomPrice {
+  id                String      @id @default(uuid())
+  pricingMode       PricingMode
+  pricePerNight     Decimal?    @db.Decimal(10, 2) // Si PER_ROOM
+  pricesPerAge      Json?       // Si PER_PERSON : { "ageCategoryId": price }
+  roomTypeId        String
+  contractPeriodId  String
+
+  // Relations
+  roomType       RoomType       @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  contractPeriod ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+
+  @@index([contractPeriodId])
+  @@index([roomTypeId])
+  @@map("room_prices")
+}
+
+model MealPlanSupplement {
+  id               String      @id @default(uuid())
+  pricingMode      PricingMode
+  pricePerPerson   Decimal?    @db.Decimal(10, 2)
+  pricePerRoom     Decimal?    @db.Decimal(10, 2)
+  mealPlanId       String
+  contractPeriodId String
+
+  // Relations
+  mealPlan       MealPlan       @relation(fields: [mealPlanId], references: [id])
+  contractPeriod ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+
+  @@index([contractPeriodId])
+  @@map("meal_plan_supplements")
+}
+
+model StopSalesDate {
+  id               String   @id @default(uuid())
+  date             DateTime @db.Date
+  reason           String?
+  contractPeriodId String
+
+  // Relations
+  contractPeriod ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+
+  @@index([contractPeriodId, date])
+  @@map("stop_sales_dates")
+}
+
+model SpecialRule {
+  id          String @id @default(uuid())
+  name        String
+  description String @db.Text
+  ruleType    String
+  conditions  Json   // Flexible JSON pour différentes règles
+  contractId  String
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("special_rules")
+}
+
+// =============================================================================
+// OFFERS
+// =============================================================================
+
+model Offer {
+  id                     String       @id @default(uuid())
+  name                   String
+  description            String?      @db.Text
+  type                   OfferType
+  value                  Decimal      @db.Decimal(10, 2)
+  discountMode           DiscountMode
+  applyToRoomOnly        Boolean      @default(false)
+  applyToMealSupplements Boolean      @default(true)
+  minStay                Int          @default(1)
+  tourOperatorId         String
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Relations
+  tourOperator          TourOperator           @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  offerPeriods          OfferPeriod[]
+  applicableSupplements OfferSupplement[]
+  bookingOffers         BookingAppliedOffer[]
+
+  @@index([tourOperatorId])
+  @@map("offers")
+}
+
+model OfferPeriod {
+  id        String   @id @default(uuid())
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  offerId   String
+
+  // Relations
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId, startDate, endDate])
+  @@map("offer_periods")
+}
+
+model OfferSupplement {
+  id             String  @id @default(uuid())
+  applyDiscount  Boolean @default(true)
+  offerId        String
+  supplementId   String
+
+  // Relations
+  offer      Offer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  supplement Supplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, supplementId])
+  @@map("offer_supplements")
+}
+
+// =============================================================================
+// SUPPLEMENTS
+// =============================================================================
+
+model Supplement {
+  id                 String         @id @default(uuid())
+  name               String
+  description        String?        @db.Text
+  price              Decimal        @db.Decimal(10, 2)
+  unit               SupplementUnit
+  canReceiveDiscount Boolean        @default(false)
+  tourOperatorId     String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  // Relations
+  tourOperator        TourOperator         @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
+  offerSupplements    OfferSupplement[]
+  bookingSupplements  BookingSupplement[]
+
+  @@index([tourOperatorId])
+  @@map("supplements")
+}
+
+// =============================================================================
+// BOOKINGS
+// =============================================================================
+
+model Booking {
+  id                    String        @id @default(uuid())
+  checkIn               DateTime      @db.Date
+  checkOut              DateTime      @db.Date
+  totalNights           Int
+  roomsSubtotal         Decimal       @db.Decimal(10, 2)
+  mealSupplementsTotal  Decimal       @db.Decimal(10, 2)
+  discountAmount        Decimal       @db.Decimal(10, 2)
+  supplementsTotal      Decimal       @db.Decimal(10, 2)
+  totalAmount           Decimal       @db.Decimal(10, 2)
+  status                BookingStatus @default(SIMULATION)
+  userId                String
+  hotelId               String
+  marketId              String
+  currencyId            String
+  tourOperatorId        String
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  // Relations
+  user               User                  @relation(fields: [userId], references: [id])
+  hotel              Hotel                 @relation(fields: [hotelId], references: [id])
+  market             Market                @relation(fields: [marketId], references: [id])
+  currency           Currency              @relation(fields: [currencyId], references: [id])
+  rooms              BookingRoom[]
+  appliedOffers      BookingAppliedOffer[]
+  supplements        BookingSupplement[]
+
+  @@index([tourOperatorId, createdAt])
+  @@index([userId, createdAt])
+  @@index([hotelId, checkIn])
+  @@map("bookings")
+}
+
+model BookingRoom {
+  id                       String   @id @default(uuid())
+  numAdults                Int
+  numChildren              Int
+  childrenAges             Json     // Array of ages
+  roomSubtotal             Decimal  @db.Decimal(10, 2)
+  mealSupplementsSubtotal  Decimal  @db.Decimal(10, 2)
+  roomDiscountAmount       Decimal  @db.Decimal(10, 2)
+  roomTotal                Decimal  @db.Decimal(10, 2)
+  bookingId                String
+  roomTypeId               String
+  mealPlanId               String
+
+  // Relations
+  booking          Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  roomType         RoomType           @relation(fields: [roomTypeId], references: [id])
+  mealPlan         MealPlan           @relation(fields: [mealPlanId], references: [id])
+  nightlyBreakdown NightlyBreakdown[]
+
+  @@index([bookingId])
+  @@map("booking_rooms")
+}
+
+model NightlyBreakdown {
+  id                   String  @id @default(uuid())
+  night                DateTime @db.Date
+  baseRoomPrice        Decimal @db.Decimal(10, 2)
+  baseMealPlanIncluded String
+  mealSupplementPrice  Decimal @db.Decimal(10, 2)
+  appliedOffers        Json    // Array of { offerId, offerName, discountAmount }
+  totalDiscountAmount  Decimal @db.Decimal(10, 2)
+  finalPriceThisNight  Decimal @db.Decimal(10, 2)
+  bookingRoomId        String
+
+  // Relations
+  bookingRoom BookingRoom @relation(fields: [bookingRoomId], references: [id], onDelete: Cascade)
+
+  @@index([bookingRoomId])
+  @@map("nightly_breakdown")
+}
+
+model BookingAppliedOffer {
+  id                  String  @id @default(uuid())
+  totalDiscountAmount Decimal @db.Decimal(10, 2)
+  nightsApplied       Int
+  bookingId           String
+  offerId             String
+
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  offer   Offer   @relation(fields: [offerId], references: [id])
+
+  @@unique([bookingId, offerId])
+  @@map("booking_applied_offers")
+}
+
+model BookingSupplement {
+  id             String  @id @default(uuid())
+  quantity       Int
+  unitPrice      Decimal @db.Decimal(10, 2)
+  discountAmount Decimal @db.Decimal(10, 2)
+  total          Decimal @db.Decimal(10, 2)
+  bookingId      String
+  supplementId   String
+
+  // Relations
+  booking    Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  supplement Supplement @relation(fields: [supplementId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_supplements")
+}
