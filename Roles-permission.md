@@ -241,30 +241,6 @@ export class HotelsListComponent {
 </button>
 ```
 
-### Firestore Rules
-
-```javascript
-// Exemple : Bookings
-match /bookings/{bookingId} {
-  allow read: if request.auth != null && (
-    // Agent : voir uniquement les siennes
-    resource.data.userId == request.auth.uid ||
-    // Manager/Admin : voir toutes
-    getUserRole() in ['ADMIN', 'MANAGER']
-  );
-  
-  allow create: if request.auth != null;
-  
-  allow update, delete: if request.auth != null && (
-    // Agent : modifier uniquement les siennes
-    resource.data.userId == request.auth.uid ||
-    // Manager/Admin : modifier toutes
-    getUserRole() in ['ADMIN', 'MANAGER']
-  );
-}
-```
-
----
 
 ## Cas d'usage réels
 

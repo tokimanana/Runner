@@ -1,157 +1,134 @@
-# Architecture Angular Standalone + NgRx - Clean & Simple
+# Architecture Angular + NestJS + PostgreSQL - Version Finale
 
-## Structure des dossiers (Standalone)
+## Stack Technique Cohérente
+
+### Frontend
+- **Angular 16+** (Standalone components)
+- **NgRx** (État global complexe)
+- **Angular Material** (UI components)
+- **RxJS** (Reactivité)
+
+### Backend
+- **NestJS** (API REST)
+- **Prisma** (ORM PostgreSQL)
+- **PostgreSQL** (Base de données)
+- **JWT** (Authentification)
+
+### Infrastructure
+- **Docker** (PostgreSQL + pgAdmin)
+- **Git** (Versioning)
+
+## Structure des dossiers
 
 ```
 src/
 ├── app/
-│   ├── core/                           # Services singleton, guards, interceptors
-│   │   ├── auth/
-│   │   │   ├── auth.service.ts
-│   │   │   ├── auth.guard.ts
-│   │   │   └── role.guard.ts
-│   │   ├── services/
-│   │   │   ├── firestore.service.ts
-│   │   │   ├── notification.service.ts
-│   │   │   ├── meal-plans.service.ts     # Service simple (sans store)
-│   │   │   ├── markets.service.ts        # Service simple
-│   │   │   ├── currencies.service.ts     # Service simple
-│   │   │   ├── supplements.service.ts    # Service simple
-│   │   │   └── seasons.service.ts        # Service simple
-│   │   └── interceptors/
-│   │       └── error.interceptor.ts
-│   │
-│   ├── shared/                         # Composants, pipes, directives réutilisables
-│   │   ├── components/
-│   │   │   ├── confirmation-dialog/
-│   │   │   │   └── confirmation-dialog.component.ts
-│   │   │   ├── date-range-picker/
-│   │   │   │   └── date-range-picker.component.ts
-│   │   │   └── loading-spinner/
-│   │   │       └── loading-spinner.component.ts
-│   │   ├── pipes/
-│   │   │   └── currency-format.pipe.ts
-│   │   └── models/
-│   │       ├── hotel.model.ts
-│   │       ├── contract.model.ts
-│   │       ├── offer.model.ts
-│   │       └── booking.model.ts
-│   │
-│   ├── features/                       # Features en standalone
-│   │   │
-│   │   ├── hotels/
-│   │   │   ├── hotels.routes.ts        # Routing standalone
-│   │   │   ├── store/                  # ✅ AVEC STORE
-│   │   │   │   ├── hotels.state.ts
-│   │   │   │   ├── hotels.actions.ts
-│   │   │   │   ├── hotels.reducer.ts
-│   │   │   │   ├── hotels.effects.ts
-│   │   │   │   └── hotels.selectors.ts
-│   │   │   ├── services/
-│   │   │   │   └── hotels.service.ts
-│   │   │   └── components/
-│   │   │       ├── hotels-list/
-│   │   │       │   └── hotels-list.component.ts
-│   │   │       ├── hotel-form/
-│   │   │       │   └── hotel-form.component.ts
-│   │   │       ├── age-categories-manager/
-│   │   │       │   └── age-categories-manager.component.ts
-│   │   │       └── room-types-manager/
-│   │   │           └── room-types-manager.component.ts
-│   │   │
-│   │   ├── contracts/
-│   │   │   ├── contracts.routes.ts
-│   │   │   ├── store/                  # ✅ AVEC STORE
-│   │   │   │   ├── contracts.state.ts
-│   │   │   │   ├── contracts.actions.ts
-│   │   │   │   ├── contracts.reducer.ts
-│   │   │   │   ├── contracts.effects.ts
-│   │   │   │   └── contracts.selectors.ts
-│   │   │   ├── services/
-│   │   │   │   └── contracts.service.ts
-│   │   │   └── components/
-│   │   │       ├── contracts-list/
-│   │   │       ├── contract-form/
-│   │   │       ├── period-form/
-│   │   │       ├── room-prices-manager/
-│   │   │       ├── meal-supplements-manager/
-│   │   │       └── stop-sales-manager/
-│   │   │
-│   │   ├── offers/
-│   │   │   ├── offers.routes.ts
-│   │   │   ├── store/                  # ✅ AVEC STORE
-│   │   │   ├── services/
-│   │   │   └── components/
-│   │   │       ├── offers-list/
-│   │   │       ├── offer-form/
-│   │   │       ├── offer-periods-manager/
-│   │   │       └── applicable-supplements-manager/
-│   │   │
-│   │   ├── booking/
-│   │   │   ├── booking.routes.ts
-│   │   │   ├── store/                  # ✅ AVEC STORE (wizard state)
-│   │   │   │   ├── booking.state.ts
-│   │   │   │   ├── booking.actions.ts
-│   │   │   │   ├── booking.reducer.ts
-│   │   │   │   ├── booking.effects.ts
-│   │   │   │   └── booking.selectors.ts
-│   │   │   ├── services/
-│   │   │   │   ├── booking.service.ts
-│   │   │   │   └── pricing-engine.service.ts
-│   │   │   └── components/
-│   │   │       ├── booking-wizard/
-│   │   │       │   └── booking-wizard.component.ts  # Container orchestrateur
-│   │   │       ├── hotel-date-selection/           # ✅ Nommage professionnel
-│   │   │       │   └── hotel-date-selection.component.ts
-│   │   │       ├── room-configuration/
-│   │   │       │   └── room-configuration.component.ts
-│   │   │       ├── offers-selection/
-│   │   │       │   └── offers-selection.component.ts
-│   │   │       ├── supplements-selection/
-│   │   │       │   └── supplements-selection.component.ts
-│   │   │       ├── booking-summary/
-│   │   │       │   └── booking-summary.component.ts
-│   │   │       └── nightly-breakdown/
-│   │   │           └── nightly-breakdown.component.ts
-│   │   │
-│   │   └── admin/
-│   │       ├── admin.routes.ts
-│   │       └── components/
-│   │           ├── users-management/
-│   │           └── booking-history/
-│   │
-│   ├── store/                          # Store global
-│   │   ├── app.state.ts
-│   │   └── index.ts
-│   │
-│   ├── app.component.ts                # Standalone root
-│   ├── app.config.ts                   # Configuration standalone
-│   └── app.routes.ts                   # Routing global
+│ ├── core/ # Services singleton, guards
+│ │ ├── auth/
+│ │ │ ├── auth.service.ts
+│ │ │ ├── auth.guard.ts
+│ │ │ └── role.guard.ts
+│ │ ├── notification/
+│ │ │ ├── notification.service.ts
+│ │ │ └── store/
+│ │ │     ├── notification.actions.ts
+│ │ │     ├── notification.reducer.ts
+│ │ │     └── notification.effects.ts
+│ │ └── interceptors/
+│ │ ├── auth.interceptor.ts
+│ │ └── error.interceptor.ts
+│ │
+│ ├── shared/ # Composants réutilisables
+│ │ ├── components/
+│ │ │ ├── loading-spinner/
+│ │ │ ├── confirmation-dialog/
+│ │ │ └── page-header/
+│ │ ├── pipes/
+│ │ │ └── currency-format.pipe.ts
+│ │ └── models/
+│ │ ├── hotel.model.ts
+│ │ ├── contract.model.ts
+│ │ ├── offer.model.ts
+│ │ └── booking.model.ts
+│ │
+│ ├── features/
+│ │ ├── hotels/
+│ │ │ ├── hotels.routes.ts
+│ │ │ ├── store/
+│ │ │ │ ├── hotels.actions.ts
+│ │ │ │ ├── hotels.reducer.ts
+│ │ │ │ ├── hotels.effects.ts
+│ │ │ │ └── hotels.selectors.ts
+│ │ │ ├── services/
+│ │ │ │ └── hotels.service.ts
+│ │ │ └── components/
+│ │ │ ├── hotels-list/
+│ │ │ ├── hotel-form/
+│ │ │ └── age-categories-manager/
+│ │ │
+│ │ ├── contracts/
+│ │ │ ├── contracts.routes.ts
+│ │ │ ├── store/
+│ │ │ │ ├── contracts.actions.ts
+│ │ │ │ ├── contracts.reducer.ts
+│ │ │ │ ├── contracts.effects.ts
+│ │ │ │ └── contracts.selectors.ts
+│ │ │ ├── services/
+│ │ │ │ └── contracts.service.ts
+│ │ │ └── components/
+│ │ │ ├── contracts-list/
+│ │ │ └── contract-form/
+│ │ │
+│ │ ├── offers/
+│ │ │ ├── offers.routes.ts
+│ │ │ ├── store/
+│ │ │ │ ├── offers.actions.ts
+│ │ │ │ ├── offers.reducer.ts
+│ │ │ │ ├── offers.effects.ts
+│ │ │ │ └── offers.selectors.ts
+│ │ │ ├── services/
+│ │ │ │ └── offers.service.ts
+│ │ │ └── components/
+│ │ │ ├── offers-list/
+│ │ │ └── offer-form/
+│ │ │
+│ │ ├── booking/
+│ │ │ ├── booking.routes.ts
+│ │ │ ├── store/
+│ │ │ │ ├── booking.actions.ts
+│ │ │ │ ├── booking.reducer.ts
+│ │ │ │ ├── booking.effects.ts
+│ │ │ │ └── booking.selectors.ts
+│ │ │ ├── services/
+│ │ │ │ └── booking.service.ts
+│ │ │ └── components/
+│ │ │ ├── booking-wizard/
+│ │ │ ├── hotel-selection/
+│ │ │ ├── room-selection/
+│ │ │ └── booking-summary/
+│ │ │
+│ │ └── admin/
+│ │ ├── admin.routes.ts
+│ │ ├── store/
+│ │ │ ├── admin.actions.ts
+│ │ │ ├── admin.reducer.ts
+│ │ │ └── admin.selectors.ts
+│ │ └── components/
+│ │ ├── users-management/
+│ │ └── booking-history/
+│ │
+│ ├── app.component.ts
+│ ├── app.config.ts
+│ └── app.routes.ts
 │
-├── main.ts                             # Bootstrap standalone
-├── environments/
-│   ├── environment.ts
-│   └── environment.prod.ts
-└── assets/
+└── environments/
+├── environment.ts
+└── environment.prod.ts
 ```
 
----
-
-## Configuration Standalone
-
-### `main.ts` (Bootstrap)
+### `app.config.ts`
 ```typescript
-import { bootstrapApplication } from '@angular/platform-browser';
-import { AppComponent } from './app/app.component';
-import { appConfig } from './app/app.config';
-
-bootstrapApplication(AppComponent, appConfig)
-  .catch(err => console.error(err));
-```
-
-### `app.config.ts` (Providers globaux)
-```typescript
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -159,30 +136,54 @@ import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 
+import { environment } from './environments/environment';
 import { routes } from './app.routes';
-import { appReducers } from './store';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
+
+// Store imports
+import { authReducer } from './core/auth/store/auth.reducer';
+import { notificationReducer } from './core/notification/store/notification.reducer';
+import { hotelsReducer } from './features/hotels/store/hotels.reducer';
+import { contractsReducer } from './features/contracts/store/contracts.reducer';
+import { offersReducer } from './features/offers/store/offers.reducer';
+import { bookingReducer } from './features/booking/store/booking.reducer';
+import { adminReducer } from './features/admin/store/admin.reducer';
+
+// Effects imports
+import { AuthEffects } from './core/auth/store/auth.effects';
+import { NotificationEffects } from './core/notification/store/notification.effects';
 import { HotelsEffects } from './features/hotels/store/hotels.effects';
 import { ContractsEffects } from './features/contracts/store/contracts.effects';
 import { OffersEffects } from './features/offers/store/offers.effects';
 import { BookingEffects } from './features/booking/store/booking.effects';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
-import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideAnimations(),
-    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor])),
     
-    // NgRx
-    provideStore(appReducers),
+    // ✅ NgRx Store global
+    provideStore({
+      auth: authReducer,
+      notification: notificationReducer,
+      hotels: hotelsReducer,
+      contracts: contractsReducer,
+      offers: offersReducer,
+      booking: bookingReducer,
+      admin: adminReducer
+    }),
+    
+    // ✅ NgRx Effects
     provideEffects([
+      AuthEffects,
+      NotificationEffects,
       HotelsEffects,
       ContractsEffects,
       OffersEffects,
       BookingEffects
     ]),
+    
     provideStoreDevtools({ maxAge: 25, logOnly: environment.production })
   ]
 };

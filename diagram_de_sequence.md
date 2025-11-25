@@ -3,21 +3,21 @@ sequenceDiagram
     actor Agent as Agent TO
     participant UI as Interface Angular
     participant API as Backend API
-    participant DB as Firestore
+    participant DB as PostgreSQL
     participant Calc as Moteur de calcul
 
     Agent->>UI: Accède à la simulation
     UI->>API: GET /hotels
-    API->>DB: Récupère liste hôtels
+    API->>DB: Récupère liste hôtels (via Prisma)
     DB-->>API: Hotels[]
     API-->>UI: Hotels[]
     UI-->>Agent: Affiche liste hôtels
 
     Agent->>UI: Sélectionne hôtel + dates
     UI->>API: GET /contracts?hotelId&dates
-    API->>DB: Récupère contrats valides
+    API->>DB: Récupère contrats valides (via Prisma)
     DB-->>API: Contracts[]
-    API->>DB: Récupère room types
+    API->>DB: Récupère room types (via Prisma)
     DB-->>API: RoomTypes[]
     API-->>UI: Configuration disponible
     UI-->>Agent: Affiche rooms & meal plans
@@ -27,7 +27,7 @@ sequenceDiagram
     
     Agent->>UI: Clique "Voir offres"
     UI->>API: GET /offers?hotelId&dates
-    API->>DB: Récupère offres valides
+    API->>DB: Récupère offres valides (via Prisma)
     DB-->>API: Offers[]
     API-->>UI: Offers[]
     UI-->>Agent: Affiche offres applicables
@@ -63,7 +63,7 @@ sequenceDiagram
     Calc->>Calc: Calcule total final
     Calc-->>API: BookingCalculation
     
-    API->>DB: Sauvegarde simulation (optionnel)
+    API->>DB: Sauvegarde simulation (optionnel, via Prisma)
     DB-->>API: bookingId
     
     API-->>UI: Résultat détaillé + breakdown
