@@ -1,664 +1,529 @@
-# Architecture Angular + NestJS + PostgreSQL - Version Finale
+# Architecture Finale - Tour Operator System
 
-## Stack Technique Cohérente
+## 🎯 Stack Technique Validée
 
 ### Frontend
-- **Angular 16+** (Standalone components)
-- **NgRx** (État global complexe)
+- **Angular 18+** (Standalone components)
+- **NgRx** (État global pour Hotels, Contracts, Offers, Booking)
 - **Angular Material** (UI components)
-- **RxJS** (Reactivité)
+- **RxJS** (Réactivité)
 
 ### Backend
 - **NestJS** (API REST)
-- **Prisma** (ORM PostgreSQL)
-- **PostgreSQL** (Base de données)
-- **JWT** (Authentification)
+- **Prisma** (ORM PostgreSQL avec types générés)
+- **PostgreSQL 15** (Base de données relationnelle)
+- **JWT + Passport** (Authentification)
+- **Bcrypt** (Hash passwords)
 
 ### Infrastructure
 - **Docker** (PostgreSQL + pgAdmin)
 - **Git** (Versioning)
+- **Jest** (Tests unitaires backend)
+- **Jasmine/Karma** (Tests unitaires frontend)
 
-## Structure des dossiers
+---
+
+## 📁 Structure Backend (NestJS + Prisma)
 
 ```
-src/
-├── app/
-│ ├── core/ # Services singleton, guards
-│ │ ├── auth/
-│ │ │ ├── auth.service.ts
-│ │ │ ├── auth.guard.ts
-│ │ │ └── role.guard.ts
-│ │ ├── notification/
-│ │ │ ├── notification.service.ts
-│ │ │ └── store/
-│ │ │     ├── notification.actions.ts
-│ │ │     ├── notification.reducer.ts
-│ │ │     └── notification.effects.ts
-│ │ └── interceptors/
-│ │ ├── auth.interceptor.ts
-│ │ └── error.interceptor.ts
-│ │
-│ ├── shared/ # Composants réutilisables
-│ │ ├── components/
-│ │ │ ├── loading-spinner/
-│ │ │ ├── confirmation-dialog/
-│ │ │ └── page-header/
-│ │ ├── pipes/
-│ │ │ └── currency-format.pipe.ts
-│ │ └── models/
-│ │ ├── hotel.model.ts
-│ │ ├── contract.model.ts
-│ │ ├── offer.model.ts
-│ │ └── booking.model.ts
-│ │
-│ ├── features/
-│ │ ├── hotels/
-│ │ │ ├── hotels.routes.ts
-│ │ │ ├── store/
-│ │ │ │ ├── hotels.actions.ts
-│ │ │ │ ├── hotels.reducer.ts
-│ │ │ │ ├── hotels.effects.ts
-│ │ │ │ └── hotels.selectors.ts
-│ │ │ ├── services/
-│ │ │ │ └── hotels.service.ts
-│ │ │ └── components/
-│ │ │ ├── hotels-list/
-│ │ │ ├── hotel-form/
-│ │ │ └── age-categories-manager/
-│ │ │
-│ │ ├── contracts/
-│ │ │ ├── contracts.routes.ts
-│ │ │ ├── store/
-│ │ │ │ ├── contracts.actions.ts
-│ │ │ │ ├── contracts.reducer.ts
-│ │ │ │ ├── contracts.effects.ts
-│ │ │ │ └── contracts.selectors.ts
-│ │ │ ├── services/
-│ │ │ │ └── contracts.service.ts
-│ │ │ └── components/
-│ │ │ ├── contracts-list/
-│ │ │ └── contract-form/
-│ │ │
-│ │ ├── offers/
-│ │ │ ├── offers.routes.ts
-│ │ │ ├── store/
-│ │ │ │ ├── offers.actions.ts
-│ │ │ │ ├── offers.reducer.ts
-│ │ │ │ ├── offers.effects.ts
-│ │ │ │ └── offers.selectors.ts
-│ │ │ ├── services/
-│ │ │ │ └── offers.service.ts
-│ │ │ └── components/
-│ │ │ ├── offers-list/
-│ │ │ └── offer-form/
-│ │ │
-│ │ ├── booking/
-│ │ │ ├── booking.routes.ts
-│ │ │ ├── store/
-│ │ │ │ ├── booking.actions.ts
-│ │ │ │ ├── booking.reducer.ts
-│ │ │ │ ├── booking.effects.ts
-│ │ │ │ └── booking.selectors.ts
-│ │ │ ├── services/
-│ │ │ │ └── booking.service.ts
-│ │ │ └── components/
-│ │ │ ├── booking-wizard/
-│ │ │ ├── hotel-selection/
-│ │ │ ├── room-selection/
-│ │ │ └── booking-summary/
-│ │ │
-│ │ └── admin/
-│ │ ├── admin.routes.ts
-│ │ ├── store/
-│ │ │ ├── admin.actions.ts
-│ │ │ ├── admin.reducer.ts
-│ │ │ └── admin.selectors.ts
-│ │ └── components/
-│ │ ├── users-management/
-│ │ └── booking-history/
-│ │
-│ ├── app.component.ts
-│ ├── app.config.ts
-│ └── app.routes.ts
+backend/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│   │
+│   ├── prisma/                      # Module Prisma global
+│   │   ├── prisma.module.ts
+│   │   └── prisma.service.ts
+│   │
+│   ├── auth/                        # Authentification JWT
+│   │   ├── auth.module.ts
+│   │   ├── auth.controller.ts
+│   │   ├── auth.service.ts
+│   │   ├── strategies/
+│   │   │   └── jwt.strategy.ts
+│   │   ├── guards/
+│   │   │   ├── jwt-auth.guard.ts
+│   │   │   └── roles.guard.ts
+│   │   └── decorators/
+│   │       ├── current-user.decorator.ts
+│   │       └── roles.decorator.ts
+│   │
+│   ├── hotels/                      # Module Hotels
+│   │   ├── hotels.module.ts
+│   │   ├── hotels.controller.ts
+│   │   ├── hotels.service.ts
+│   │   └── dto/
+│   │       ├── create-hotel.dto.ts
+│   │       └── update-hotel.dto.ts
+│   │
+│   ├── seasons/                     # Module Seasons (NOUVEAU)
+│   │   ├── seasons.module.ts
+│   │   ├── seasons.controller.ts
+│   │   ├── seasons.service.ts
+│   │   └── dto/
+│   │
+│   ├── contracts/                   # Module Contracts
+│   │   ├── contracts.module.ts
+│   │   ├── contracts.controller.ts
+│   │   ├── contracts.service.ts
+│   │   └── dto/
+│   │       ├── create-contract.dto.ts
+│   │       └── create-contract-period.dto.ts
+│   │
+│   ├── offers/                      # Module Offers
+│   │   ├── offers.module.ts
+│   │   ├── offers.controller.ts
+│   │   ├── offers.service.ts
+│   │   └── dto/
+│   │
+│   ├── supplements/                 # Module Supplements
+│   │   ├── supplements.module.ts
+│   │   ├── supplements.controller.ts
+│   │   └── supplements.service.ts
+│   │
+│   ├── booking/                     # Module Booking
+│   │   ├── booking.module.ts
+│   │   ├── booking.controller.ts
+│   │   ├── booking.service.ts
+│   │   └── dto/
+│   │       └── booking-calculate.dto.ts
+│   │
+│   └── pricing/                     # Pricing Engine (Service pur)
+│       ├── pricing.module.ts
+│       ├── pricing.service.ts
+│       └── pricing.service.spec.ts  # Tests unitaires
 │
-└── environments/
-├── environment.ts
-└── environment.prod.ts
-```
-
-### `app.config.ts`
-```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideStore } from '@ngrx/store';
-import { provideEffects } from '@ngrx/effects';
-import { provideStoreDevtools } from '@ngrx/store-devtools';
-
-import { environment } from './environments/environment';
-import { routes } from './app.routes';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
-
-// Store imports
-import { authReducer } from './core/auth/store/auth.reducer';
-import { notificationReducer } from './core/notification/store/notification.reducer';
-import { hotelsReducer } from './features/hotels/store/hotels.reducer';
-import { contractsReducer } from './features/contracts/store/contracts.reducer';
-import { offersReducer } from './features/offers/store/offers.reducer';
-import { bookingReducer } from './features/booking/store/booking.reducer';
-import { adminReducer } from './features/admin/store/admin.reducer';
-
-// Effects imports
-import { AuthEffects } from './core/auth/store/auth.effects';
-import { NotificationEffects } from './core/notification/store/notification.effects';
-import { HotelsEffects } from './features/hotels/store/hotels.effects';
-import { ContractsEffects } from './features/contracts/store/contracts.effects';
-import { OffersEffects } from './features/offers/store/offers.effects';
-import { BookingEffects } from './features/booking/store/booking.effects';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideAnimations(),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    
-    // ✅ NgRx Store global
-    provideStore({
-      auth: authReducer,
-      notification: notificationReducer,
-      hotels: hotelsReducer,
-      contracts: contractsReducer,
-      offers: offersReducer,
-      booking: bookingReducer,
-      admin: adminReducer
-    }),
-    
-    // ✅ NgRx Effects
-    provideEffects([
-      AuthEffects,
-      NotificationEffects,
-      HotelsEffects,
-      ContractsEffects,
-      OffersEffects,
-      BookingEffects
-    ]),
-    
-    provideStoreDevtools({ maxAge: 25, logOnly: environment.production })
-  ]
-};
-```
-
-### `environment.ts`
-```typescript
-export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:3000' // NestJS backend
-};
-```
-
-### `app.routes.ts` (Routes globales)
-```typescript
-import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
-import { roleGuard } from './core/auth/role.guard';
-
-export const routes: Routes = [
-  {
-    path: '',
-    redirectTo: 'dashboard',
-    pathMatch: 'full'
-  },
-  {
-    path: 'login',
-    loadComponent: () => import('./core/auth/login/login.component').then(m => m.LoginComponent)
-  },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'hotels',
-    loadChildren: () => import('./features/hotels/hotels.routes').then(m => m.HOTELS_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] }
-  },
-  {
-    path: 'contracts',
-    loadChildren: () => import('./features/contracts/contracts.routes').then(m => m.CONTRACTS_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] }
-  },
-  {
-    path: 'offers',
-    loadChildren: () => import('./features/offers/offers.routes').then(m => m.OFFERS_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] }
-  },
-  {
-    path: 'booking',
-    loadChildren: () => import('./features/booking/booking.routes').then(m => m.BOOKING_ROUTES),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'admin',
-    loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] }
-  },
-  {
-    path: '**',
-    redirectTo: 'dashboard'
-  }
-];
+├── prisma/
+│   ├── schema.prisma                # Schéma final avec Season
+│   ├── seed.ts                      # Données de test
+│   └── migrations/
+│
+├── test/
+│   └── app.e2e-spec.ts
+│
+├── .env
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## Exemple : Feature Hotels (Standalone)
+## 📁 Structure Frontend (Angular Standalone)
 
-### `hotels.routes.ts`
-```typescript
-import { Routes } from '@angular/router';
-
-export const HOTELS_ROUTES: Routes = [
-  {
-    path: '',
-    loadComponent: () => import('./components/hotels-list/hotels-list.component')
-      .then(m => m.HotelsListComponent)
-  },
-  {
-    path: 'new',
-    loadComponent: () => import('./components/hotel-form/hotel-form.component')
-      .then(m => m.HotelFormComponent)
-  },
-  {
-    path: ':id/edit',
-    loadComponent: () => import('./components/hotel-form/hotel-form.component')
-      .then(m => m.HotelFormComponent)
-  },
-  {
-    path: ':id/age-categories',
-    loadComponent: () => import('./components/age-categories-manager/age-categories-manager.component')
-      .then(m => m.AgeCategoriesManagerComponent)
-  },
-  {
-    path: ':id/room-types',
-    loadComponent: () => import('./components/room-types-manager/room-types-manager.component')
-      .then(m => m.RoomTypesManagerComponent)
-  }
-];
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── core/                    # Services singleton, guards
+│   │   │   ├── auth/
+│   │   │   │   ├── auth.service.ts
+│   │   │   │   ├── auth.guard.ts
+│   │   │   │   ├── role.guard.ts
+│   │   │   │   └── store/
+│   │   │   │       ├── auth.actions.ts
+│   │   │   │       ├── auth.reducer.ts
+│   │   │   │       ├── auth.effects.ts
+│   │   │   │       └── auth.selectors.ts
+│   │   │   └── interceptors/
+│   │   │       └── auth.interceptor.ts
+│   │   │
+│   │   ├── shared/                  # Composants réutilisables
+│   │   │   ├── components/
+│   │   │   │   ├── loading-spinner/
+│   │   │   │   └── page-header/
+│   │   │   ├── layout/
+│   │   │   │   └── layout.component.ts
+│   │   │   ├── pipes/
+│   │   │   │   └── currency-format.pipe.ts
+│   │   │   └── models/
+│   │   │       ├── hotel.model.ts
+│   │   │       ├── season.model.ts  # NOUVEAU
+│   │   │       ├── contract.model.ts
+│   │   │       ├── offer.model.ts
+│   │   │       └── booking.model.ts
+│   │   │
+│   │   ├── features/
+│   │   │   ├── dashboard/
+│   │   │   │   └── dashboard.component.ts
+│   │   │   │
+│   │   │   ├── hotels/              # Feature Hotels
+│   │   │   │   ├── hotels.routes.ts
+│   │   │   │   ├── store/
+│   │   │   │   │   ├── hotels.actions.ts
+│   │   │   │   │   ├── hotels.reducer.ts
+│   │   │   │   │   ├── hotels.effects.ts
+│   │   │   │   │   └── hotels.selectors.ts
+│   │   │   │   ├── services/
+│   │   │   │   │   └── hotels.service.ts
+│   │   │   │   └── components/
+│   │   │   │       ├── hotels-list/
+│   │   │   │       ├── hotel-form/
+│   │   │   │       ├── age-categories-manager/
+│   │   │   │       └── room-types-manager/
+│   │   │   │
+│   │   │   ├── seasons/             # Feature Seasons (NOUVEAU)
+│   │   │   │   ├── seasons.routes.ts
+│   │   │   │   ├── services/
+│   │   │   │   │   └── seasons.service.ts  # Simple BehaviorSubject
+│   │   │   │   └── components/
+│   │   │   │       ├── seasons-list/
+│   │   │   │       └── season-form/
+│   │   │   │
+│   │   │   ├── contracts/           # Feature Contracts
+│   │   │   │   ├── contracts.routes.ts
+│   │   │   │   ├── store/
+│   │   │   │   │   ├── contracts.actions.ts
+│   │   │   │   │   ├── contracts.reducer.ts
+│   │   │   │   │   ├── contracts.effects.ts
+│   │   │   │   │   └── contracts.selectors.ts
+│   │   │   │   ├── services/
+│   │   │   │   │   └── contracts.service.ts
+│   │   │   │   └── components/
+│   │   │   │       ├── contracts-list/
+│   │   │   │       ├── contract-form/
+│   │   │   │       └── contract-period-form/
+│   │   │   │
+│   │   │   ├── offers/              # Feature Offers
+│   │   │   │   ├── offers.routes.ts
+│   │   │   │   ├── store/
+│   │   │   │   │   ├── offers.actions.ts
+│   │   │   │   │   ├── offers.reducer.ts
+│   │   │   │   │   ├── offers.effects.ts
+│   │   │   │   │   └── offers.selectors.ts
+│   │   │   │   ├── services/
+│   │   │   │   │   └── offers.service.ts
+│   │   │   │   └── components/
+│   │   │   │       ├── offers-list/
+│   │   │   │       └── offer-form/
+│   │   │   │
+│   │   │   ├── booking/             # Feature Booking
+│   │   │   │   ├── booking.routes.ts
+│   │   │   │   ├── store/
+│   │   │   │   │   ├── booking.actions.ts
+│   │   │   │   │   ├── booking.reducer.ts
+│   │   │   │   │   ├── booking.effects.ts
+│   │   │   │   │   └── booking.selectors.ts
+│   │   │   │   ├── services/
+│   │   │   │   │   └── booking.service.ts
+│   │   │   │   └── components/
+│   │   │   │       ├── booking-wizard/
+│   │   │   │       ├── hotel-date-selection/
+│   │   │   │       ├── room-configuration/
+│   │   │   │       ├── offers-selection/
+│   │   │   │       ├── supplements-selection/
+│   │   │   │       └── booking-summary/
+│   │   │   │
+│   │   │   └── admin/               # Feature Admin
+│   │   │       ├── admin.routes.ts
+│   │   │       ├── store/
+│   │   │       │   ├── admin.actions.ts
+│   │   │       │   ├── admin.reducer.ts
+│   │   │       │   └── admin.selectors.ts
+│   │   │       └── components/
+│   │   │           ├── users-management/
+│   │   │           └── booking-history/
+│   │   │
+│   │   ├── app.component.ts
+│   │   ├── app.config.ts
+│   │   └── app.routes.ts
+│   │
+│   └── environments/
+│       ├── environment.ts
+│       └── environment.prod.ts
+│
+├── angular.json
+├── package.json
+└── tsconfig.json
 ```
 
-### `hotels-list.component.ts` (Standalone)
+---
+
+## 🗄️ Modèle de Données Validé
+
+### Changements Majeurs vs Version Initiale
+
+1. **✅ Ajout de l'entité `Season`**
+   - Réutilisable entre contrats
+   - Flag `isHighSeason` pour analytics
+   - Lié à `ContractPeriod` via `seasonId` (optionnel)
+
+2. **✅ Modification `PricingMode`**
+   - ❌ Suppression de `HYBRID`
+   - ✅ Ajout de `PER_OCCUPANCY`
+   - ✅ Conservation de `PER_ROOM` et `FLAT_RATE`
+
+3. **✅ Ajout table `OccupancyRate`**
+   - Tarifs par configuration (Single, Double, Triple, etc.)
+   - Stockage JSON des tarifs par âge
+   - `totalRate` dénormalisé pour perfs
+
+4. **✅ Renommage `DiscountMode`**
+   - ❌ `CUMULATIVE` → ✅ `SEQUENTIAL`
+   - ❌ `COMBINABLE` → ✅ `ADDITIVE`
+
+5. **✅ Extension `SupplementUnit`**
+   - Ajout de `PER_PERSON_PER_NIGHT`
+   - Ajout de `PER_PERSON_PER_STAY`
+   - Ajout de `PER_ROOM_PER_NIGHT`
+   - Ajout de `PER_ROOM_PER_STAY`
+
+---
+
+## 🔄 Flux de Données (Backend)
+
+### Exemple : Calcul d'une Réservation
+
 ```typescript
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+// booking.controller.ts
+@Post('calculate')
+async calculatePrice(@Body() criteria: BookingCalculateCriteria) {
+  return this.pricingService.calculatePrice(criteria);
+}
 
-// Material imports
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-
-// App imports
-import { AppState } from '@store/app.state';
-import { Hotel } from '@shared/models';
-import * as HotelsActions from '../../store/hotels.actions';
-import { selectAllHotels, selectHotelsLoading } from '../../store/hotels.selectors';
-import { LoadingSpinnerComponent } from '@shared/components/loading-spinner/loading-spinner.component';
-
-@Component({
-  selector: 'app-hotels-list',
-  standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    LoadingSpinnerComponent
-  ],
-  templateUrl: './hotels-list.component.html',
-  styleUrls: ['./hotels-list.component.scss']
-})
-export class HotelsListComponent implements OnInit {
-  hotels$: Observable<Hotel[]>;
-  loading$: Observable<boolean>;
+// pricing.service.ts
+async calculatePrice(criteria: BookingCalculateCriteria) {
+  // 1. Charger TOUT en 1 requête (avec includes)
+  const contract = await this.prisma.contract.findFirst({
+    where: { hotelId, marketId, validFrom, validTo },
+    include: {
+      hotel: { include: { ageCategories: true } },
+      periods: {
+        include: {
+          roomPrices: { include: { occupancyRates: true } },
+          mealPlanSupplements: true,
+          stopSalesDates: true
+        }
+      }
+    }
+  });
   
-  constructor(private store: Store<AppState>) {
-    this.hotels$ = this.store.select(selectAllHotels);
-    this.loading$ = this.store.select(selectHotelsLoading);
+  const offers = await this.prisma.offer.findMany({
+    where: { id: { in: criteria.offerIds } },
+    include: { offerPeriods: true }
+  });
+  
+  // 2. Boucle EN MÉMOIRE (0 requête DB)
+  const breakdown = [];
+  for (let night of nights) {
+    const period = this.findPeriodInMemory(night, contract.periods);
+    const roomPrice = this.calculateRoomPrice(period, criteria);
+    const discount = this.applyOffers(roomPrice, offers, night);
+    
+    breakdown.push({
+      night,
+      baseRoomPrice: roomPrice,
+      discountAmount: discount,
+      finalPrice: roomPrice - discount
+    });
   }
   
-  ngOnInit(): void {
-    this.store.dispatch(HotelsActions.loadHotels());
-  }
-  
-  onSelectHotel(hotelId: string): void {
-    this.store.dispatch(HotelsActions.selectHotel({ hotelId }));
-  }
-  
-  onDeleteHotel(hotelId: string): void {
-    this.store.dispatch(HotelsActions.deleteHotel({ hotelId }));
-  }
+  return { breakdown, totalAmount, ... };
 }
 ```
 
+**Résultat** : 2 requêtes DB max, calcul en < 200ms.
+
 ---
 
-## Exemple : Booking Wizard (Standalone avec nommage professionnel)
+## 🔄 Flux de Données (Frontend)
 
-### `booking.routes.ts`
+### Exemple : Wizard de Réservation
+
 ```typescript
-import { Routes } from '@angular/router';
-
-export const BOOKING_ROUTES: Routes = [
-  {
-    path: '',
-    loadComponent: () => import('./components/booking-wizard/booking-wizard.component')
-      .then(m => m.BookingWizardComponent)
-  },
-  {
-    path: 'history',
-    loadComponent: () => import('./components/booking-history/booking-history.component')
-      .then(m => m.BookingHistoryComponent)
-  }
-];
-```
-
-### `booking-wizard.component.ts` (Orchestrateur)
-```typescript
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
-
-// Material
-import { MatStepperModule } from '@angular/material/stepper';
-import { MatButtonModule } from '@angular/material/button';
-
-// App imports
-import { AppState } from '@store/app.state';
-import { BookingState } from '../../store/booking.state';
-import { selectBookingState, selectCurrentStep } from '../../store/booking.selectors';
-import * as BookingActions from '../../store/booking.actions';
-
-// Sub-components (standalone)
-import { HotelDateSelectionComponent } from '../hotel-date-selection/hotel-date-selection.component';
-import { RoomConfigurationComponent } from '../room-configuration/room-configuration.component';
-import { OffersSelectionComponent } from '../offers-selection/offers-selection.component';
-import { SupplementsSelectionComponent } from '../supplements-selection/supplements-selection.component';
-import { BookingSummaryComponent } from '../booking-summary/booking-summary.component';
-
-@Component({
-  selector: 'app-booking-wizard',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatStepperModule,
-    MatButtonModule,
-    HotelDateSelectionComponent,
-    RoomConfigurationComponent,
-    OffersSelectionComponent,
-    SupplementsSelectionComponent,
-    BookingSummaryComponent
-  ],
-  template: `
-    <div class="booking-wizard">
-      <h1>Nouvelle simulation de réservation</h1>
-      
-      <mat-stepper [linear]="true" #stepper>
-        
-        <!-- Étape 1 : Hôtel et dates -->
-        <mat-step [completed]="(bookingState$ | async)?.hotelSelected">
-          <ng-template matStepLabel>Hôtel et dates</ng-template>
-          <app-hotel-date-selection
-            [bookingState]="bookingState$ | async"
-            (hotelSelected)="onHotelSelected($event)"
-            (datesSelected)="onDatesSelected($event)">
-          </app-hotel-date-selection>
-          <div class="step-actions">
-            <button mat-raised-button color="primary" matStepperNext>
-              Suivant
-            </button>
-          </div>
-        </mat-step>
-        
-        <!-- Étape 2 : Configuration des chambres -->
-        <mat-step [completed]="(bookingState$ | async)?.roomsConfigured">
-          <ng-template matStepLabel>Chambres et occupants</ng-template>
-          <app-room-configuration
-            [bookingState]="bookingState$ | async"
-            (roomsConfigured)="onRoomsConfigured($event)">
-          </app-room-configuration>
-          <div class="step-actions">
-            <button mat-button matStepperPrevious>Précédent</button>
-            <button mat-raised-button color="primary" matStepperNext>
-              Suivant
-            </button>
-          </div>
-        </mat-step>
-        
-        <!-- Étape 3 : Sélection des offres -->
-        <mat-step [completed]="(bookingState$ | async)?.offersSelected">
-          <ng-template matStepLabel>Offres promotionnelles</ng-template>
-          <app-offers-selection
-            [bookingState]="bookingState$ | async"
-            (offersSelected)="onOffersSelected($event)">
-          </app-offers-selection>
-          <div class="step-actions">
-            <button mat-button matStepperPrevious>Précédent</button>
-            <button mat-raised-button color="primary" matStepperNext>
-              Suivant
-            </button>
-          </div>
-        </mat-step>
-        
-        <!-- Étape 4 : Suppléments -->
-        <mat-step [completed]="(bookingState$ | async)?.supplementsSelected">
-          <ng-template matStepLabel>Suppléments</ng-template>
-          <app-supplements-selection
-            [bookingState]="bookingState$ | async"
-            (supplementsSelected)="onSupplementsSelected($event)">
-          </app-supplements-selection>
-          <div class="step-actions">
-            <button mat-button matStepperPrevious>Précédent</button>
-            <button mat-raised-button color="primary" matStepperNext
-              (click)="onCalculate()">
-              Calculer le prix
-            </button>
-          </div>
-        </mat-step>
-        
-        <!-- Étape 5 : Récapitulatif -->
-        <mat-step>
-          <ng-template matStepLabel>Récapitulatif</ng-template>
-          <app-booking-summary
-            [bookingState]="bookingState$ | async"
-            (save)="onSave()"
-            (export)="onExport()">
-          </app-booking-summary>
-          <div class="step-actions">
-            <button mat-button matStepperPrevious>Modifier</button>
-            <button mat-raised-button color="primary" (click)="onSave()">
-              Sauvegarder
-            </button>
-          </div>
-        </mat-step>
-        
-      </mat-stepper>
-    </div>
-  `,
-  styleUrls: ['./booking-wizard.component.scss']
-})
-export class BookingWizardComponent implements OnInit {
-  bookingState$: Observable<BookingState>;
+// booking-wizard.component.ts
+export class BookingWizardComponent {
+  bookingState$ = this.store.select(selectBookingState);
   
-  constructor(private store: Store<AppState>) {
-    this.bookingState$ = this.store.select(selectBookingState);
-  }
-  
-  ngOnInit(): void {
-    this.store.dispatch(BookingActions.initializeBooking());
-  }
-  
-  onHotelSelected(data: any): void {
-    this.store.dispatch(BookingActions.setHotel(data));
-  }
-  
-  onDatesSelected(data: any): void {
-    this.store.dispatch(BookingActions.setDates(data));
-  }
-  
-  onRoomsConfigured(data: any): void {
-    this.store.dispatch(BookingActions.setRooms(data));
-  }
-  
-  onOffersSelected(data: any): void {
-    this.store.dispatch(BookingActions.setOffers(data));
-  }
-  
-  onSupplementsSelected(data: any): void {
-    this.store.dispatch(BookingActions.setSupplements(data));
+  onHotelSelected(hotelId: string): void {
+    // Dispatch action → Effect → API call → Store update
+    this.store.dispatch(BookingActions.setHotel({ hotelId }));
   }
   
   onCalculate(): void {
+    // Dispatch action → Effect → PricingService → Store
     this.store.dispatch(BookingActions.calculatePrice());
   }
-  
-  onSave(): void {
-    this.store.dispatch(BookingActions.saveBooking());
-  }
-  
-  onExport(): void {
-    this.store.dispatch(BookingActions.exportBooking());
-  }
 }
+
+// booking.effects.ts
+calculatePrice$ = createEffect(() =>
+  this.actions$.pipe(
+    ofType(BookingActions.calculatePrice),
+    withLatestFrom(this.store.select(selectBookingState)),
+    switchMap(([_, bookingState]) => {
+      // Appel API Backend
+      return this.bookingService.calculatePrice(bookingState).pipe(
+        map(result => BookingActions.calculatePriceSuccess({ result })),
+        catchError(error => of(BookingActions.calculatePriceFailure({ error })))
+      );
+    })
+  )
+);
 ```
 
 ---
 
-## Services simples (SANS store)
+## 🎯 Services avec/sans NgRx
 
-### `meal-plans.service.ts`
+### ✅ Avec NgRx Store (État Complexe)
+
+| Feature | Raison |
+|---------|--------|
+| **Hotels** | Partagé partout, CRUD complexe |
+| **Contracts** | Très complexe (periods, prices, rules) |
+| **Offers** | Utilisé dans booking, logique complexe |
+| **Booking** | État multi-étapes à persister |
+| **Admin** | Historique, filtres, pagination |
+
+---
+
+### ✅ Avec Services Simples (BehaviorSubject)
+
+| Feature | Raison |
+|---------|--------|
+| **Seasons** | CRUD simple, rarement modifié |
+| **MealPlans** | Référentiel stable |
+| **Markets** | Référentiel stable |
+| **Currencies** | Référentiel global |
+| **Supplements** | CRUD simple |
+
+**Exemple Service Simple** :
 ```typescript
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { MealPlan } from '@shared/models';
-import { environment } from '@environments/environment';
-
 @Injectable({ providedIn: 'root' })
-export class MealPlansService {
-  private mealPlans$ = new BehaviorSubject<MealPlan[]>([]);
-  private apiUrl = `${environment.apiUrl}/meal-plans`;
+export class SeasonsService {
+  private seasons$ = new BehaviorSubject<Season[]>([]);
   private loaded = false;
   
-  constructor(private http: HttpClient) {}
-  
-  getMealPlans(): Observable<MealPlan[]> {
+  getSeasons(): Observable<Season[]> {
     if (!this.loaded) {
-      this.loadMealPlans();
+      this.http.get<Season[]>(`${apiUrl}/seasons`)
+        .pipe(tap(data => {
+          this.seasons$.next(data);
+          this.loaded = true;
+        }))
+        .subscribe();
     }
-    return this.mealPlans$.asObservable();
-  }
-  
-  private loadMealPlans(): void {
-    this.http.get<MealPlan[]>(this.apiUrl)
-      .pipe(tap(data => {
-        this.mealPlans$.next(data);
-        this.loaded = true;
-      }))
-      .subscribe();
-  }
-  
-  create(mealPlan: Partial<MealPlan>): Observable<MealPlan> {
-    return this.http.post<MealPlan>(this.apiUrl, mealPlan)
-      .pipe(tap(() => this.loadMealPlans())); // Refresh
-  }
-  
-  update(id: string, mealPlan: Partial<MealPlan>): Observable<MealPlan> {
-    return this.http.put<MealPlan>(`${this.apiUrl}/${id}`, mealPlan)
-      .pipe(tap(() => this.loadMealPlans()));
-  }
-  
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.loadMealPlans()));
+    return this.seasons$.asObservable();
   }
 }
 ```
 
 ---
 
-## Guards (Functional guards - moderne)
+## 🔐 Sécurité & Authentification
 
-### `auth.guard.ts`
+### Backend Guards
+
 ```typescript
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from './auth.service';
-
-export const authGuard = () => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
+// Exemple : Hotels Controller
+@Controller('hotels')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+export class HotelsController {
   
-  if (authService.isAuthenticated()) {
-    return true;
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.AGENT)
+  findAll(@CurrentUser() user: any) {
+    return this.hotelsService.findAll(user.tourOperatorId);
   }
   
-  router.navigate(['/login']);
-  return false;
-};
+  @Post()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  create(@Body() dto: CreateHotelDto, @CurrentUser() user: any) {
+    return this.hotelsService.create(user.tourOperatorId, dto);
+  }
+}
 ```
 
-### `role.guard.ts`
-```typescript
-import { inject } from '@angular/core';
-import { Router, ActivatedRouteSnapshot } from '@angular/router';
-import { AuthService } from './auth.service';
+### Frontend Guards
 
-export const roleGuard = (route: ActivatedRouteSnapshot) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-  
-  const allowedRoles = route.data['roles'] as string[];
-  const userRole = authService.getCurrentUserRole();
-  
-  if (allowedRoles.includes(userRole)) {
-    return true;
-  }
-  
-  router.navigate(['/dashboard']);
-  return false;
-};
+```typescript
+// app.routes.ts
+{
+  path: 'hotels',
+  loadChildren: () => import('./features/hotels/hotels.routes'),
+  canActivate: [authGuard, roleGuard],
+  data: { roles: ['ADMIN', 'MANAGER'] }
+}
 ```
 
 ---
 
-## Résumé des bonnes pratiques
+## 📊 Performance & Optimisation
 
-### ✅ Utiliser NgRx Store UNIQUEMENT pour :
-1. **Hotels** - Entité complexe, partagée partout
-2. **Contracts** - Très complexe (periods, prices, rules)
-3. **Offers** - Utilisé dans bookings, logique complexe
-4. **Booking (wizard state)** - État multi-étapes à persister
+### Backend
 
-### ✅ Services simples (BehaviorSubject) pour :
-- MealPlans, Markets, Currencies, Supplements, Seasons
-- Chargés une fois, rarement modifiés
-- Pas de logique complexe
+1. **Requêtes DB** : 1-2 max par calcul booking
+2. **Indexes Prisma** : Sur tous les champs filtres fréquents
+3. **JSON fields** : Pour flexibilité (ratesPerAge, occupancyRates)
+4. **Pagination** : Limit 50 par défaut sur listes
 
-### ✅ Standalone benefits :
-- Lazy loading natif
-- Moins de boilerplate
-- Tree-shaking optimal
-- Plus moderne (Angular 14+)
+### Frontend
+
+1. **Cache NgRx** : 5 min pour contrats/offres
+2. **Lazy Loading** : Routes chargées à la demande
+3. **OnPush Strategy** : Composants optimisés
+4. **Virtual Scrolling** : Listes longues (Mat-Virtual-Scroll)
 
 ---
 
-**Architecture standalone complète et professionnelle ! ✅**
+## ✅ Décisions Techniques Finales
+
+| Aspect | Décision | Implémenté Dans |
+|--------|----------|-----------------|
+| **Season réutilisable** | ✅ Oui | `schema.prisma` |
+| **PER_OCCUPANCY mode** | ✅ Oui | `RoomPrice` + `OccupancyRate` |
+| **Offres SEQUENTIAL** | ✅ Oui | `DiscountMode` enum |
+| **Offres ADDITIVE** | ✅ Oui | `DiscountMode` enum |
+| **Non-mixabilité** | ✅ UI bloque | `offers-selection.component.ts` |
+| **4 unités suppléments** | ✅ Oui | `SupplementUnit` enum |
+| **Meal sup = prix total** | ✅ Oui | `MealPlanSupplement` |
+| **1 requête DB** | ✅ Oui | `pricing.service.ts` |
+| **Cache 5 min** | ✅ Oui | `booking.effects.ts` |
+| **Refetch age cat** | ✅ Oui | `room-configuration.component.ts` |
+
+---
+
+## 🚀 Commandes de Démarrage
+
+### Backend
+
+```bash
+cd backend
+
+# Installer dépendances
+npm install
+
+# Lancer PostgreSQL
+docker-compose up -d
+
+# Créer les tables
+npx prisma migrate dev --name init
+
+# Seed data
+npx prisma db seed
+
+# Lancer le serveur
+npm run start:dev
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+# Installer dépendances
+npm install
+
+# Lancer le dev server
+ng serve
+```
+
+**URLs** :
+- Frontend : http://localhost:4200
+- Backend : http://localhost:3000
+- pgAdmin : http://localhost:5050
+- Prisma Studio : http://localhost:5555 (`npx prisma studio`)
+
+---
+
+**Architecture validée et prête pour le développement** ✅
