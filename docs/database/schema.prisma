@@ -1,4 +1,4 @@
-// schema.prisma - Tour Operator System (VERSION FINALE)
+// schema.prisma - Tour Operator System
 // Base de données : PostgreSQL
 // ORM : Prisma
 
@@ -71,6 +71,7 @@ model TourOperator {
   supplements Supplement[]
   seasons     Season[]
   contracts   Contract[]
+  bookings    Booking[]
 
   @@map("tour_operators")
 }
@@ -215,7 +216,6 @@ model Season {
   name           String
   startDate      DateTime @db.Date
   endDate        DateTime @db.Date
-  isHighSeason   Boolean  @default(false)
   tourOperatorId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -236,8 +236,6 @@ model Season {
 model Contract {
   id             String   @id @default(uuid())
   name           String
-  validFrom      DateTime @db.Date
-  validTo        DateTime @db.Date
   hotelId        String
   marketId       String
   currencyId     String
@@ -251,11 +249,10 @@ model Contract {
   market       Market           @relation(fields: [marketId], references: [id])
   currency     Currency         @relation(fields: [currencyId], references: [id])
   periods      ContractPeriod[]
-  specialRules SpecialRule[]
 
   @@index([tourOperatorId, hotelId])
-  @@index([hotelId, validFrom])
-  @@index([marketId, validFrom])
+  @@index([hotelId])
+  @@index([marketId])
   @@map("contracts")
 }
 
@@ -266,12 +263,12 @@ model ContractPeriod {
   endDate         DateTime @db.Date
   baseMealPlanId  String   // BB inclus dans les tarifs
   minStay         Int      @default(1)
-  seasonId        String?  // Lié à une season (optionnel)
+  seasonId        String   // Lié à une season (obligatoire)
   contractId      String
 
   // Relations
   contract            Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  season              Season?               @relation(fields: [seasonId], references: [id])
+  season              Season                @relation(fields: [seasonId], references: [id])
   baseMealPlan        MealPlan              @relation(fields: [baseMealPlanId], references: [id])
   roomPrices          RoomPrice[]
   mealPlanSupplements MealPlanSupplement[]
@@ -357,21 +354,6 @@ model StopSalesDate {
 
   @@index([contractPeriodId, date])
   @@map("stop_sales_dates")
-}
-
-model SpecialRule {
-  id          String @id @default(uuid())
-  name        String
-  description String @db.Text
-  ruleType    String
-  conditions  Json
-  contractId  String
-
-  // Relations
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@index([contractId])
-  @@map("special_rules")
 }
 
 // =============================================================================
@@ -477,6 +459,7 @@ model Booking {
   updatedAt             DateTime      @updatedAt
 
   // Relations
+  tourOperator       TourOperator          @relation(fields: [tourOperatorId], references: [id], onDelete: Cascade)
   user               User                  @relation(fields: [userId], references: [id])
   hotel              Hotel                 @relation(fields: [hotelId], references: [id])
   market             Market                @relation(fields: [marketId], references: [id])

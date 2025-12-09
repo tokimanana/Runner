@@ -1,7 +1,5 @@
 # Règles Métier - Tour Operator System
 
-**Version finale validée avec ancienne version de Runner**
-
 ## 🎯 1. Modes de Tarification
 
 ### PER_ROOM (Par Chambre)
@@ -20,7 +18,7 @@ Room Standard = 100€/nuit
 RoomPrice {
   pricingMode: "PER_ROOM",
   pricePerNight: 100.00,
-  occupancyRates: null
+  occupancyRates: []
 }
 ```
 
@@ -150,7 +148,56 @@ MealPlanSupplement {
 
 ---
 
-## 🎯 3. Offres - Modes de Calcul
+## 🎯 3. Seasons - Réutilisabilité
+
+### Concept
+**Une Season est créée une fois et réutilisée dans plusieurs ContractPeriod.**
+
+**Exemple** :
+```typescript
+// 1. Admin crée UNE season
+Season "Winter High" {
+  id: "season-winter-high"
+  name: "Winter High Season"
+  startDate: 2024-12-20
+  endDate: 2025-01-05
+  tourOperatorId: "to-horizon"
+}
+
+// 2. Admin crée des contrats qui référencent cette season
+Contract Paris {
+  periods: [
+    ContractPeriod {
+      seasonId: "season-winter-high"
+      startDate: 2024-12-20  // Copié depuis Season
+      endDate: 2025-01-05
+      baseMealPlanId: "meal-bb"
+      roomPrices: [...]
+    }
+  ]
+}
+
+Contract Nice {
+  periods: [
+    ContractPeriod {
+      seasonId: "season-winter-high"  // Même season
+      startDate: 2024-12-20
+      endDate: 2025-01-05
+      baseMealPlanId: "meal-bb"
+      roomPrices: [...]
+    }
+  ]
+}
+```
+
+**Avantage** : Si tu veux retrouver tous les contrats utilisant "Winter High", tu fais :
+```sql
+SELECT * FROM contract_periods WHERE seasonId = 'season-winter-high'
+```
+
+---
+
+## 🎯 4. Offres - Modes de Calcul
 
 ### SEQUENTIAL (Composition)
 Les réductions s'appliquent **successivement** (l'une après l'autre).
@@ -250,7 +297,7 @@ L'offre s'applique sur 2 nuits sur 5.
 
 ---
 
-## 🎯 4. Suppléments - Unités de Calcul
+## 🎯 5. Suppléments - Unités de Calcul
 
 ### Nouvelle Nomenclature
 
@@ -356,7 +403,7 @@ onSupplementSelected(supplement: Supplement): void {
 
 ---
 
-## 🎯 5. Performance - Stratégie de Chargement
+## 🎯 6. Performance - Stratégie de Chargement
 
 ### Backend : Tout Charger d'un Coup ✅
 
@@ -370,9 +417,7 @@ async calculatePrice(criteria: BookingCriteria): Promise<BookingCalculation> {
   const contract = await this.prisma.contract.findFirst({
     where: {
       hotelId: criteria.hotelId,
-      marketId: criteria.marketId,
-      validFrom: { lte: criteria.checkIn },
-      validTo: { gte: criteria.checkOut }
+      marketId: criteria.marketId
     },
     include: {
       hotel: {
@@ -384,6 +429,7 @@ async calculatePrice(criteria: BookingCriteria): Promise<BookingCalculation> {
           endDate: { gte: criteria.checkIn }
         },
         include: {
+          season: true,  // Inclure la season
           roomPrices: {
             include: {
               roomType: true,
@@ -479,7 +525,7 @@ calculatePrice$ = createEffect(() =>
 
 ---
 
-## 🎯 6. Age Categories - Gestion Dynamique
+## 🎯 7. Age Categories - Gestion Dynamique
 
 ### Règle : Refetch Systématique ✅
 
@@ -554,6 +600,8 @@ async calculatePrice(@Body() criteria: BookingCriteria) {
 | **Suppléments** | 4 unités (+ PER_NIGHT) | Clarté totale sur multiplicateurs |
 | **Meal plan base** | Inclus dans tarif | Standard industrie |
 | **Meal plan sup.** | Prix total (pas delta) | Simplifie config |
+| **Seasons** | Réutilisables | Évite duplication dates |
+| **seasonId obligatoire** | Oui | Toutes périodes référencent une season |
 | **Requêtes DB** | 1-2 max, puis mémoire | Performance optimale |
 | **Cache frontend** | 5 min, NgRx store | Balance fraîcheur/perfs |
 | **Age categories** | Refetch + rejet backend | Cohérence garantie |

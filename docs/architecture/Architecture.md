@@ -56,7 +56,7 @@ backend/
 │   │       ├── create-hotel.dto.ts
 │   │       └── update-hotel.dto.ts
 │   │
-│   ├── seasons/                     # Module Seasons (NOUVEAU)
+│   ├── seasons/                     # Module Seasons
 │   │   ├── seasons.module.ts
 │   │   ├── seasons.controller.ts
 │   │   ├── seasons.service.ts
@@ -94,7 +94,7 @@ backend/
 │       └── pricing.service.spec.ts  # Tests unitaires
 │
 ├── prisma/
-│   ├── schema.prisma                # Schéma final avec Season
+│   ├── schema.prisma                # Schéma final simplifié
 │   ├── seed.ts                      # Données de test
 │   └── migrations/
 │
@@ -137,7 +137,7 @@ frontend/
 │   │   │   │   └── currency-format.pipe.ts
 │   │   │   └── models/
 │   │   │       ├── hotel.model.ts
-│   │   │       ├── season.model.ts  # NOUVEAU
+│   │   │       ├── season.model.ts 
 │   │   │       ├── contract.model.ts
 │   │   │       ├── offer.model.ts
 │   │   │       └── booking.model.ts
@@ -161,7 +161,7 @@ frontend/
 │   │   │   │       ├── age-categories-manager/
 │   │   │   │       └── room-types-manager/
 │   │   │   │
-│   │   │   ├── seasons/             # Feature Seasons (NOUVEAU)
+│   │   │   ├── seasons/             # Feature Seasons
 │   │   │   │   ├── seasons.routes.ts
 │   │   │   │   ├── services/
 │   │   │   │   │   └── seasons.service.ts  # Simple BehaviorSubject
@@ -238,37 +238,6 @@ frontend/
 
 ---
 
-## 🗄️ Modèle de Données Validé
-
-### Changements Majeurs vs Version Initiale
-
-1. **✅ Ajout de l'entité `Season`**
-   - Réutilisable entre contrats
-   - Flag `isHighSeason` pour analytics
-   - Lié à `ContractPeriod` via `seasonId` (optionnel)
-
-2. **✅ Modification `PricingMode`**
-   - ❌ Suppression de `HYBRID`
-   - ✅ Ajout de `PER_OCCUPANCY`
-   - ✅ Conservation de `PER_ROOM` et `FLAT_RATE`
-
-3. **✅ Ajout table `OccupancyRate`**
-   - Tarifs par configuration (Single, Double, Triple, etc.)
-   - Stockage JSON des tarifs par âge
-   - `totalRate` dénormalisé pour perfs
-
-4. **✅ Renommage `DiscountMode`**
-   - ❌ `CUMULATIVE` → ✅ `SEQUENTIAL`
-   - ❌ `COMBINABLE` → ✅ `ADDITIVE`
-
-5. **✅ Extension `SupplementUnit`**
-   - Ajout de `PER_PERSON_PER_NIGHT`
-   - Ajout de `PER_PERSON_PER_STAY`
-   - Ajout de `PER_ROOM_PER_NIGHT`
-   - Ajout de `PER_ROOM_PER_STAY`
-
----
-
 ## 🔄 Flux de Données (Backend)
 
 ### Exemple : Calcul d'une Réservation
@@ -284,11 +253,16 @@ async calculatePrice(@Body() criteria: BookingCalculateCriteria) {
 async calculatePrice(criteria: BookingCalculateCriteria) {
   // 1. Charger TOUT en 1 requête (avec includes)
   const contract = await this.prisma.contract.findFirst({
-    where: { hotelId, marketId, validFrom, validTo },
+    where: { hotelId, marketId },
     include: {
       hotel: { include: { ageCategories: true } },
       periods: {
+        where: {
+          startDate: { lte: criteria.checkOut },
+          endDate: { gte: criteria.checkIn }
+        },
         include: {
+          season: true,
           roomPrices: { include: { occupancyRates: true } },
           mealPlanSupplements: true,
           stopSalesDates: true
@@ -410,7 +384,7 @@ export class SeasonsService {
 
 ---
 
-## 🔐 Sécurité & Authentification
+## 🔒 Sécurité & Authentification
 
 ### Backend Guards
 
@@ -471,6 +445,8 @@ export class HotelsController {
 | Aspect | Décision | Implémenté Dans |
 |--------|----------|-----------------|
 | **Season réutilisable** | ✅ Oui | `schema.prisma` |
+| **Pas de validFrom/To dans Contract** | ✅ Oui | `Contract` model |
+| **seasonId obligatoire** | ✅ Oui | `ContractPeriod` |
 | **PER_OCCUPANCY mode** | ✅ Oui | `RoomPrice` + `OccupancyRate` |
 | **Offres SEQUENTIAL** | ✅ Oui | `DiscountMode` enum |
 | **Offres ADDITIVE** | ✅ Oui | `DiscountMode` enum |
@@ -480,6 +456,7 @@ export class HotelsController {
 | **1 requête DB** | ✅ Oui | `pricing.service.ts` |
 | **Cache 5 min** | ✅ Oui | `booking.effects.ts` |
 | **Refetch age cat** | ✅ Oui | `room-configuration.component.ts` |
+| **Multi-tenancy** | ✅ Oui | `tourOperatorId` partout |
 
 ---
 
@@ -526,4 +503,4 @@ ng serve
 
 ---
 
-**Architecture validée et prête pour le développement** ✅
+**Architecture validée et simplifiée** ✅
