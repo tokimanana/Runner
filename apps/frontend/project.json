@@ -12,7 +12,7 @@
         "main": "apps/frontend/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/frontend/tsconfig.app.json",
-        "assets": ["apps/frontend/public/favicon.ico", "apps/frontend/public"],
+        "assets": ["apps/frontend/src/assets"],
         "styles": ["apps/frontend/src/styles.scss"],
         "scripts": []
       }
@@ -34,7 +34,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "frontend/jest.config.ts",
+        "jestConfig": "apps/frontend/jest.config.ts",
         "passWithNoTests": true
       }
     }

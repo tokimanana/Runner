@@ -4,18 +4,19 @@
   "prefix": "api",
   "targets": {
     "build": {
-      "executor": "@nx/nest:build",
-      "outputs": ["{options.outputPath}"],
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
       "options": {
-        "outputPath": "dist/apps/backend",
-        "main": "apps/backend/src/main.ts",
-        "tsConfig": "apps/backend/tsconfig.json"
+        "commands": [
+          "tsc --project apps/backend/tsconfig.build.json --outDir apps/backend/dist"
+        ],
+        "parallel": false
       }
     },
     "serve": {
-      "executor": "@nx/nest:serve",
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "backend:build"
+        "command": "node apps/backend/dist/main.js"
       }
     },
     "lint": {
@@ -29,7 +30,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "backend/jest.config.ts",
+        "jestConfig": "apps/backend/jest.config.ts",
         "passWithNoTests": true
       }
     }
