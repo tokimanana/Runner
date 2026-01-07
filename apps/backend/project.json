@@ -5,18 +5,15 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": ["{workspaceRoot}/dist/apps/backend"],
       "options": {
-        "commands": [
-          "tsc --project apps/backend/tsconfig.build.json --outDir apps/backend/dist"
-        ],
-        "parallel": false
+        "command": "cd apps/backend && nest build"
       }
     },
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node apps/backend/dist/main.js"
+        "command": "nest start apps/backend --watch"
       }
     },
     "lint": {

@@ -38,3 +38,9 @@ yarn-error.log*
 # NX
 .nx/cache
 .nx/workspace-data
+# Angular
+.angular/cache
+.angular/
+
+# Build outputs
+.qodo/
