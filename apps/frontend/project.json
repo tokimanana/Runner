@@ -1,19 +1,19 @@
 {
   "projectType": "application",
-  "sourceRoot": "frontend/src",
+  "sourceRoot": "apps/frontend/src",
   "prefix": "app",
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:browser",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/frontend",
-        "index": "frontend/src/index.html",
-        "main": "frontend/src/main.ts",
+        "outputPath": "dist/apps/frontend",
+        "index": "apps/frontend/src/index.html",
+        "main": "apps/frontend/src/main.ts",
         "polyfills": ["zone.js"],
-        "tsConfig": "frontend/tsconfig.app.json",
-        "assets": ["frontend/public/favicon.ico", "frontend/public"],
-        "styles": ["frontend/src/styles.scss"],
+        "tsConfig": "apps/frontend/tsconfig.app.json",
+        "assets": ["apps/frontend/public/favicon.ico", "apps/frontend/public"],
+        "styles": ["apps/frontend/src/styles.scss"],
         "scripts": []
       }
     },
@@ -27,7 +27,7 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["frontend/**/*.ts"]
+        "lintFilePatterns": ["apps/frontend/**/*.ts"]
       }
     },
     "test": {

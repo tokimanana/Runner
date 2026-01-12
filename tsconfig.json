@@ -15,8 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@backend/*": ["backend/src/*"],
-      "@frontend/*": ["frontend/src/*"]
+      "@backend/*": ["apps/backend/src/*"],
+      "@frontend/*": ["apps/frontend/src/*"]
     }
   },
   "angularCompilerOptions": {

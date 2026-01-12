@@ -1,15 +1,15 @@
 {
   "projectType": "application",
-  "sourceRoot": "backend/src",
+  "sourceRoot": "apps/backend/src",
   "prefix": "api",
   "targets": {
     "build": {
       "executor": "@nx/nest:build",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/backend",
-        "main": "backend/src/main.ts",
-        "tsConfig": "backend/tsconfig.json"
+        "outputPath": "dist/apps/backend",
+        "main": "apps/backend/src/main.ts",
+        "tsConfig": "apps/backend/tsconfig.json"
       }
     },
     "serve": {
@@ -22,7 +22,7 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["backend/**/*.ts"]
+        "lintFilePatterns": ["apps/backend/**/*.ts"]
       }
     },
     "test": {
