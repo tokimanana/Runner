@@ -1,6 +1,9 @@
 {
   "name": "runner",
   "version": "0.0.0",
+  "overrides": {
+    "chokidar": "^3.6.0"
+  },
   "license": "UNLICENSED",
   "scripts": {
     "nx": "nx",
@@ -45,10 +48,13 @@
     "@nx/jest": "^22.3.3",
     "@nx/nest": "^22.3.3",
     "@nx/node": "^22.3.3",
+    "@swc/cli": "^0.7.10",
+    "@swc/core": "^1.15.13",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
+    "chokidar": "^3.6.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
