@@ -3,9 +3,12 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
+    "builder": "swc",
     "deleteOutDir": true,
     "outDir": "../../dist/apps/backend",
-    "exclude": ["**/*.spec.ts", "**/*.test.ts", "test"],
     "tsConfigPath": "tsconfig.build.json"
+  },
+  "watchOptions": {
+    "ignored": ["node_modules", "dist", ".nx", "**/*.spec.ts"]
   }
 }
