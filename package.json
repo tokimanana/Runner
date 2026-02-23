@@ -4,10 +4,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "nx": "nx",
-    "start": "nx serve",
-    "build": "nx build",
-    "test": "nx test",
-    "lint": "nx lint",
+    "start": "nx run-many --projects=frontend,backend --target=serve",
+    "start:frontend": "nx serve frontend",
+    "start:backend": "nx serve backend",
+    "build": "nx run-many --projects=frontend,backend --target=build",
+    "test": "nx run-many --projects=frontend,backend --target=test",
+    "lint": "nx run-many --projects=frontend,backend --target=lint",
     "format": "nx format:write",
     "format:check": "nx format:check"
   },
