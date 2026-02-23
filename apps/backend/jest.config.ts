@@ -5,9 +5,13 @@ const config: Config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js', 'json'],
+  rootDir: '.',
   roots: ['<rootDir>/src', '<rootDir>/test'],
   testMatch: ['**/?(*.)+(spec|test).ts'],
-  coverageDirectory: '<rootDir>/../../coverage/apps/backend',
+  coverageDirectory: '../../coverage/apps/backend',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',

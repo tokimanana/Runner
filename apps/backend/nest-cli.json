@@ -1,11 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/backend/src",
+  "sourceRoot": "src",
   "compilerOptions": {
+    "builder": "swc",
     "deleteOutDir": true,
-    "outDir": "apps/backend/dist",
-    "exclude": ["**/*.spec.ts", "**/*.test.ts", "test"],
-    "tsConfigPath": "apps/backend/tsconfig.build.json"
+    "outDir": "../../dist/apps/backend",
+    "tsConfigPath": "tsconfig.build.json"
+  },
+  "watchOptions": {
+    "ignored": ["node_modules", "dist", ".nx", "**/*.spec.ts"]
   }
 }

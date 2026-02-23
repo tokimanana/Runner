@@ -2,9 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": ["node"],
-    "typeRoots": ["../../node_modules/@types"],
-    "outDir": "dist"
+    "typeRoots": ["../../node_modules/@types"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "test", "../frontend", "../../docs"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "test"]
 }
