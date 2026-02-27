@@ -14,7 +14,8 @@
     "test": "nx run-many --projects=frontend,backend --target=test",
     "lint": "nx run-many --projects=frontend,backend --target=lint",
     "format": "nx format:write",
-    "format:check": "nx format:check"
+    "format:check": "nx format:check",
+    "g": "node scripts/generate.mjs"
   },
   "private": true,
   "dependencies": {
