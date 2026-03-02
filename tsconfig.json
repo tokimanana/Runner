@@ -14,7 +14,7 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "types": ["node"],
+    "types": ["jest", "node"],
     "paths": {
       "@backend/*": ["apps/backend/src/*"],
       "@frontend/*": ["apps/frontend/src/*"]
@@ -25,5 +25,9 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "references": [
+  { "path": "./apps/frontend/tsconfig.spec.json" },
+  { "path": "./apps/frontend/tsconfig.app.json" }
+]
 }
