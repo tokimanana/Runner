@@ -58,6 +58,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browser": "apps/frontend/src/main.ts"
+          },
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"
