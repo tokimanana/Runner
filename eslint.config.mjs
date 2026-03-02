@@ -3,6 +3,10 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
@@ -16,6 +20,9 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+      },
+      parserOptions: {
+        tsconfigRootDir: __dirname,
       },
     },
     plugins: {
