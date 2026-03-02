@@ -48,3 +48,7 @@ yarn-error.log*
 
 # Build outputs
 .qodo/
+
+# Environments
+apps/frontend/src/environments/environment.dev.ts
+apps/frontend/src/environments/environment.prod.ts

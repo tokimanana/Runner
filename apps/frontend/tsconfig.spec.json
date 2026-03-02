@@ -4,7 +4,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/frontend",
-    "types": ["jest"]
+    "composite": true,
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+  "include": ["jest.config.ts", "setup-jest.ts", "src/**/*.ts", "src/**/*.d.ts"]
 }
