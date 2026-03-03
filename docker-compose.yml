@@ -34,8 +34,8 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
+      target: dev
     container_name: runner-backend
-    restart: always
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/runner?schema=public
       JWT_SECRET: dev-secret-key
@@ -54,8 +54,8 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
+      target: dev
     container_name: runner-frontend
-    restart: always
     ports:
       - "4200:4200"
     volumes:
