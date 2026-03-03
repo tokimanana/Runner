@@ -17,4 +17,4 @@ COPY apps/backend ./apps/backend
 EXPOSE 3000
 
 # Démarrer en mode watch
-CMD ["npx", "nx", "serve", "backend", "--host", "0.0.0.0"]
+# CMD ["npx", "nx", "serve", "backend", "--host", "0.0.0.0"]

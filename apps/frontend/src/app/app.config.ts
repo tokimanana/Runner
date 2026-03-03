@@ -13,6 +13,8 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
 
 import { routes } from './app.routes';
+import { AuthEffects } from './core/auth/store/auth.effects';
+import { authReducer } from './core/auth/store/auth.reducer';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,8 +22,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([])),
     provideAnimationsAsync(),
-    provideStore({}),
-    provideEffects([]),
+    provideStore({ auth: authReducer }),
+    provideEffects([AuthEffects]),
     provideStoreDevtools({
       maxAge: 25,
       logOnly: !isDevMode(),

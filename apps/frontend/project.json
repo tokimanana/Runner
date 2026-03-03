@@ -9,7 +9,7 @@
       "options": {
         "outputPath": "dist/apps/frontend",
         "index": "apps/frontend/src/index.html",
-        "main": "apps/frontend/src/main.ts",
+        "browser": "apps/frontend/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/frontend/tsconfig.app.json",
         "assets": ["apps/frontend/src/assets"],
@@ -39,7 +39,7 @@
           "fileReplacements": [
             {
               "replace": "apps/frontend/src/environments/environment.ts",
-              "with": "apps/frontend/src/environments/environment.development.ts"
+              "with": "apps/frontend/src/environments/environment.dev.ts"
             }
           ]
         }
@@ -48,6 +48,9 @@
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "buildTarget": "frontend:build:development"
+      },
       "configurations": {
         "production": { "buildTarget": "frontend:build:production" },
         "development": { "buildTarget": "frontend:build:development" }

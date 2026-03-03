@@ -19,4 +19,4 @@ COPY apps/frontend ./apps/frontend
 EXPOSE 4200
 
 # Démarrer en mode développement avec hot-reload
-CMD ["npx", "nx", "serve", "frontend", "--host", "0.0.0.0", "--poll", "2000"]
+# CMD ["npx", "nx", "serve", "frontend", "--host", "0.0.0.0", "--poll", "2000"]

@@ -4,7 +4,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/frontend",
-    "composite": true,
     "types": []
   },
   "files": ["src/main.ts"],
