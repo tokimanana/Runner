@@ -50,5 +50,5 @@ yarn-error.log*
 .qodo/
 
 # Environments
+apps/frontend/src/environments/environment.ts
 apps/frontend/src/environments/environment.dev.ts
-apps/frontend/src/environments/environment.prod.ts
