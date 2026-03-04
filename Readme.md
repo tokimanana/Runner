@@ -123,12 +123,27 @@ main          ← stable, merge en fin de sprint uniquement
 
 ## Documentation
 
-| Fichier                          | Contenu                    |
-| -------------------------------- | -------------------------- |
-| `docs/Architecture.md`           | Architecture globale       |
-| `docs/regles_metier.md`          | Logique de calcul des prix |
-| `docs/exemples_concrets.md`      | Cas de tarification réels  |
-| `docs/diagramme_de_classe.md`    | Modèle de données          |
-| `docs/diagram_de_sequence.md`    | Flux applicatifs           |
-| `docs/SPRINT_0_SETUP.md`         | Guide setup Sprint 0       |
-| `docs/SPRINTS_1_TO_8_ROADMAP.md` | Roadmap complète           |
+La documentation complète est disponible dans `/docs` :
+
+- `Architecture.md` — décisions d'architecture
+- `regles_metier.md` — règles de calcul des prix
+- `exemples_concrets.md` — cas de tarification réels
+- `SPRINT_0_DETAILED.md` — détail des tickets Sprint 0
+- `diagramme_de_classe.md` — modèle de données
+- `diagram_de_sequence.md` — flux de réservation
+
+## Docker
+Pour lancer le projet en local avec Docker, utilisez les commandes suivantes :
+
+```bash
+# Build and run the project for the first time
+docker-compose up
+
+# Stop the project
+docker-compose down
+
+# Rebuild the project after making changes or add new packages
+docker-compose up --build
+```
+
+
