@@ -15,12 +15,13 @@ import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { AuthEffects } from './core/auth/store/auth.effects';
 import { authReducer } from './core/auth/store/auth.reducer';
+import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([])),
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     provideStore({ auth: authReducer }),
     provideEffects([AuthEffects]),

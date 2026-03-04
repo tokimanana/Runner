@@ -1,33 +1,43 @@
-# Sprint 0 – Setup Infrastructure & Foundation (1-2 jours)
+# Sprint 0 – Setup Infrastructure & Foundation
 
-## Objectif
-Mettre en place l'infrastructure backend (NestJS + Prisma + PostgreSQL) et frontend (Angular standalone) avec les bases de l'authentification et du routing.
+> ⚠️ Ce document reflète les décisions techniques **réellement prises** sur le projet Runner.
+> Il remplace la version initiale qui utilisait Angular Material, NgModule et constructor injection.
+
+---
+
+## Stack technique retenue
+
+| Couche          | Technologie                    | Pourquoi                                            |
+| --------------- | ------------------------------ | --------------------------------------------------- |
+| Frontend        | Angular 19 standalone          | Pas de NgModule, plus léger, moderne                |
+| UI              | PrimeNG 19                     | Tables complexes, wizards, formulaires imbriqués    |
+| State Auth      | NgRx 19                        | Partagé partout, traçabilité, time-travel debugging |
+| State CRUD      | BehaviorSubject / Signal Store | Données simples par feature, pas besoin de NgRx     |
+| Styles          | Tailwind CSS v4 + PrimeNG Aura | Utility-first, cohérent avec PrimeNG                |
+| Monorepo        | NX 22                          | Workspace apps/ + libs/ (Sprint 1+)                 |
+| Backend         | NestJS 11 + Prisma ORM         | Voir Phase 1                                        |
+| Base de données | PostgreSQL 15 (Docker)         | Voir Phase 1                                        |
 
 ---
 
 ## Phase 1 : Backend Setup (NestJS + Prisma + PostgreSQL)
 
-### 1.1 Créer le projet NestJS
+### 1.1 Initialiser NestJS dans le monorepo NX
 
 ```bash
-# À la racine du projet (ou dans un dossier backend/)
-npx @nestjs/cli new backend
-cd backend
-
-# Choisir npm comme package manager
+# Depuis la racine du monorepo
+nx generate @nx/nest:application backend
 ```
 
-### 1.2 Installer les dépendances essentielles
+### 1.2 Installer les dépendances backend
 
 ```bash
-npm install @prisma/client
-npm install -D prisma
-npm install @nestjs/config
-npm install @nestjs/passport passport passport-jwt
-npm install @nestjs/jwt
+cd apps/backend
+
+npm install @prisma/client @nestjs/config
+npm install @nestjs/passport passport passport-jwt @nestjs/jwt
 npm install bcrypt class-validator class-transformer
-npm install -D @types/passport-jwt @types/bcrypt
-npm install @nestjs/swagger swagger-ui-express
+npm install -D prisma @types/passport-jwt @types/bcrypt
 ```
 
 ### 1.3 Initialiser Prisma
@@ -36,48 +46,49 @@ npm install @nestjs/swagger swagger-ui-express
 npx prisma init
 ```
 
-Cela crée:
+Crée :
+
 - `prisma/schema.prisma`
 - `.env`
 
 ### 1.4 Configurer `.env` (backend)
 
 ```env
-# backend/.env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tour_operator?schema=public"
 JWT_SECRET="your-super-secret-jwt-key-change-in-production"
 NODE_ENV="development"
 ```
 
-### 1.5 Créer `docker-compose.yml` (à la racine du projet)
+> ⚠️ Ne jamais commiter `.env`. Commiter `.env.example` avec des valeurs fictives.
+
+### 1.5 Créer `docker-compose.yml` à la racine du monorepo
 
 ```yaml
-# docker-compose.yml
 version: '3.8'
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: tour-operator-db
+    container_name: runner-db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: tour_operator
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: tour-operator-pgadmin
+    container_name: runner-pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
+      - '5050:80'
     depends_on:
       - postgres
 
@@ -85,49 +96,33 @@ volumes:
   postgres-data:
 ```
 
-### 1.6 Démarrer PostgreSQL
-
 ```bash
-# À la racine du projet
 docker-compose up -d
-
-# Vérifier que les conteneurs tournent
 docker ps
-
-# Accès pgAdmin: http://localhost:5050
-# Email: admin@admin.com
-# Password: admin
+# pgAdmin : http://localhost:5050
 ```
 
-### 1.7 Copier le schema Prisma
-
-Copie le contenu de `schema.prisma.txt` dans `backend/prisma/schema.prisma`.
-
-### 1.8 Générer le client Prisma et créer les tables
+### 1.6 Copier le schema Prisma et générer le client
 
 ```bash
-cd backend
-
-# Générer le client TypeScript
+# Copier schema.prisma depuis /docs/schema.prisma.txt
 npx prisma generate
-
-# Créer la migration initiale
 npx prisma migrate dev --name init
-
-# Vérifier le schéma (interface web)
-npx prisma studio
-# Accès: http://localhost:5555
 ```
 
-### 1.9 Créer le PrismaModule global
+### 1.7 PrismaModule global
 
-**`backend/src/prisma/prisma.service.ts`**
+**`apps/backend/src/prisma/prisma.service.ts`**
+
 ```typescript
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   async onModuleInit() {
     await this.$connect();
   }
@@ -138,7 +133,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 }
 ```
 
-**`backend/src/prisma/prisma.module.ts`**
+**`apps/backend/src/prisma/prisma.module.ts`**
+
 ```typescript
 import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
@@ -151,45 +147,41 @@ import { PrismaService } from './prisma.service';
 export class PrismaModule {}
 ```
 
-### 1.10 Créer le module Auth (structure minimale)
+### 1.8 Auth Module
 
 ```bash
-cd backend
 nest g module auth
 nest g controller auth
 nest g service auth
 ```
 
-**`backend/src/auth/auth.module.ts`**
-```typescript
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+**`apps/backend/src/auth/auth.controller.ts`**
 
-@Module({
-  imports: [
-    PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: '24h' },
-      }),
-    }),
-  ],
-  providers: [AuthService, JwtStrategy],
-  controllers: [AuthController],
-  exports: [AuthService],
-})
-export class AuthModule {}
+```typescript
+import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { AuthService } from './auth.service';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private authService: AuthService) {}
+
+  @Post('login')
+  async login(@Body() body: { email: string; password: string }) {
+    const user = await this.authService.validateUser(body.email, body.password);
+    if (!user) {
+      // ✅ Retourner HTTP 401, pas { error: '...' } avec HTTP 200
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return this.authService.login(user);
+  }
+}
 ```
 
-**`backend/src/auth/auth.service.ts`**
+> ⚠️ **Bonne pratique** : toujours utiliser `throw new UnauthorizedException()` de NestJS.
+> Ne jamais retourner `{ error: '...' }` avec un HTTP 200 — le frontend ne pourra pas catcher l'erreur correctement.
+
+**`apps/backend/src/auth/auth.service.ts`**
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -200,7 +192,7 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -226,28 +218,15 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        tourOperatorId: user.tourOperatorId,
       },
     };
-  }
-
-  async register(email: string, password: string, firstName: string, lastName: string, tourOperatorId: string) {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        passwordHash: hashedPassword,
-        firstName,
-        lastName,
-        role: 'AGENT',
-        tourOperatorId,
-      },
-    });
-    return this.login(user);
   }
 }
 ```
 
-**`backend/src/auth/strategies/jwt.strategy.ts`**
+**`apps/backend/src/auth/strategies/jwt.strategy.ts`**
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
@@ -275,466 +254,303 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-**`backend/src/auth/auth.controller.ts`**
-```typescript
-import { Controller, Post, Body } from '@nestjs/common';
-import { AuthService } from './auth.service';
-
-@Controller('auth')
-export class AuthController {
-  constructor(private authService: AuthService) {}
-
-  @Post('login')
-  async login(@Body() body: { email: string; password: string }) {
-    const user = await this.authService.validateUser(body.email, body.password);
-    if (!user) {
-      return { error: 'Invalid credentials' };
-    }
-    return this.authService.login(user);
-  }
-
-  @Post('register')
-  async register(
-    @Body() body: { email: string; password: string; firstName: string; lastName: string; tourOperatorId: string },
-  ) {
-    return this.authService.register(body.email, body.password, body.firstName, body.lastName, body.tourOperatorId);
-  }
-}
-```
-
-### 1.11 Créer le module Hotels (CRUD minimal)
+### 1.9 Hotels Module minimal
 
 ```bash
-cd backend
 nest g module hotels
 nest g controller hotels
 nest g service hotels
 ```
 
-**`backend/src/hotels/hotels.service.ts`**
-```typescript
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+Endpoints minimaux pour Sprint 0 :
 
-@Injectable()
-export class HotelsService {
-  constructor(private prisma: PrismaService) {}
-
-  async findAll(tourOperatorId: string) {
-    return this.prisma.hotel.findMany({
-      where: { tourOperatorId },
-      include: { ageCategories: true, roomTypes: true },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findOne(id: string) {
-    const hotel = await this.prisma.hotel.findUnique({
-      where: { id },
-      include: { ageCategories: true, roomTypes: true },
-    });
-    if (!hotel) throw new NotFoundException(`Hotel ${id} not found`);
-    return hotel;
-  }
-
-  async create(tourOperatorId: string, data: any) {
-    return this.prisma.hotel.create({
-      data: { ...data, tourOperatorId },
-      include: { ageCategories: true, roomTypes: true },
-    });
-  }
-
-  async update(id: string, data: any) {
-    return this.prisma.hotel.update({
-      where: { id },
-      data,
-      include: { ageCategories: true, roomTypes: true },
-    });
-  }
-
-  async remove(id: string) {
-    return this.prisma.hotel.delete({ where: { id } });
-  }
-}
-```
-
-**`backend/src/hotels/hotels.controller.ts`**
-```typescript
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { HotelsService } from './hotels.service';
-
-@Controller('hotels')
-@UseGuards(AuthGuard('jwt'))
-export class HotelsController {
-  constructor(private hotelsService: HotelsService) {}
-
-  @Get()
-  findAll(@Req() req: any) {
-    return this.hotelsService.findAll(req.user.tourOperatorId);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.hotelsService.findOne(id);
-  }
-
-  @Post()
-  create(@Body() body: any, @Req() req: any) {
-    return this.hotelsService.create(req.user.tourOperatorId, body);
-  }
-
-  @Put(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.hotelsService.update(id, body);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.hotelsService.remove(id);
-  }
-}
-```
-
-**`backend/src/hotels/hotels.module.ts`**
-```typescript
-import { Module } from '@nestjs/common';
-import { HotelsService } from './hotels.service';
-import { HotelsController } from './hotels.controller';
-
-@Module({
-  providers: [HotelsService],
-  controllers: [HotelsController],
-})
-export class HotelsModule {}
-```
-
-### 1.12 Mettre à jour `app.module.ts`
-
-**`backend/src/app.module.ts`**
-```typescript
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module';
-import { HotelsModule } from './hotels/hotels.module';
-
-@Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,
-    AuthModule,
-    HotelsModule,
-  ],
-})
-export class AppModule {}
-```
-
-### 1.13 Démarrer le backend
-
-```bash
-cd backend
-npm run start:dev
-```
-
-Le backend tourne sur **http://localhost:3000**.
-
-Teste avec curl ou Postman:
-```bash
-# Login (crée d'abord un user en DB ou via register)
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# GET hotels (avec JWT)
-curl http://localhost:3000/hotels \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
+- `GET /hotels` — liste (protégé JWT)
+- `POST /hotels` — création (protégé JWT)
 
 ---
 
-## Phase 2 : Frontend Setup (Angular Standalone)
+## Phase 2 : Frontend Setup (Angular 19 + NX)
 
-### 2.1 Créer le projet Angular
+### 2.1 Structure des fichiers
 
-```bash
-# À la racine du projet (ou dans un dossier frontend/)
-ng new frontend --routing --style=scss --standalone
-
-cd frontend
+```
+apps/frontend/src/app/
+├── core/
+│   ├── auth/
+│   │   ├── models/
+│   │   │   └── auth.model.ts
+│   │   ├── store/
+│   │   │   ├── auth.state.ts
+│   │   │   ├── auth.actions.ts
+│   │   │   ├── auth.reducer.ts
+│   │   │   ├── auth.selectors.ts
+│   │   │   └── auth.effects.ts
+│   │   └── auth.service.ts
+│   ├── guards/
+│   │   └── auth.guard.ts
+│   └── interceptors/
+│       └── auth.interceptor.ts
+├── features/
+│   ├── auth/login/
+│   │   ├── login.component.ts
+│   │   └── login.component.html
+│   └── dashboard/
+│       └── dashboard.component.ts
+├── app.config.ts
+├── app.routes.ts
+└── app.component.ts
 ```
 
-### 2.2 Installer les dépendances
+### 2.2 Environments
+
+```
+apps/frontend/src/environments/
+├── environment.ts        ← copié depuis environment.prod.ts (ignoré Git)
+├── environment.dev.ts    ← valeurs locales (ignoré Git)
+├── environment.prod.ts   ← valeurs production (commité tant que fictif)
+└── environment.example.ts ← template commité
+```
+
+**`environment.example.ts`**
+
+```typescript
+export const environment = {
+  production: false, // true en production
+  apiUrl: 'http://localhost:3000', // https://api.monapp.com en production
+};
+```
+
+> Le `fileReplacements` dans `project.json` remplace `environment.ts` par `environment.dev.ts` en développement.
+> Ne jamais importer `environment.dev.ts` ou `environment.prod.ts` directement — toujours importer `environment.ts`.
+
+### 2.3 Installer les dépendances frontend
 
 ```bash
-npm install @angular/material @angular/cdk
+# UI
+npm install primeng @primeng/themes primeicons
+
+# NgRx
 npm install @ngrx/store @ngrx/effects @ngrx/store-devtools
-npm install @ngrx/entity
+
+# Tailwind CSS v4
+npm install tailwindcss @tailwindcss/postcss postcss
 ```
 
-### 2.3 Configurer les environments
+### 2.4 Configurer Tailwind CSS v4
 
-**`frontend/src/environments/environment.ts`**
-```typescript
-export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:3000',
-};
-```
+Créer `apps/frontend/.postcssrc.json` :
 
-**`frontend/src/environments/environment.prod.ts`**
-```typescript
-export const environment = {
-  production: true,
-  apiUrl: 'https://api.example.com',
-};
-```
-
-### 2.4 Configurer `app.config.ts`
-
-**`frontend/src/app/app.config.ts`**
-```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideStore } from '@ngrx/store';
-import { provideEffects } from '@ngrx/effects';
-import { provideStoreDevtools } from '@ngrx/store-devtools';
-
-import { environment } from './environments/environment';
-import { routes } from './app.routes';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
-import { authReducer } from './core/auth/store/auth.reducer';
-import { AuthEffects } from './core/auth/store/auth.effects';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideAnimations(),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    
-    // NgRx Store
-    provideStore({
-      auth: authReducer,
-    }),
-    
-    // NgRx Effects
-    provideEffects([AuthEffects]),
-    
-    // NgRx DevTools
-    provideStoreDevtools({ maxAge: 25, logOnly: environment.production }),
-  ],
-};
-```
-
-### 2.5 Créer le service Auth
-
-**`frontend/src/app/core/auth/auth.service.ts`**
-```typescript
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
-
-@Injectable({ providedIn: 'root' })
-export class AuthService {
-  private apiUrl = `${environment.apiUrl}/auth`;
-  private tokenSubject = new BehaviorSubject<string | null>(this.getToken());
-  public token$ = this.tokenSubject.asObservable();
-
-  constructor(private http: HttpClient) {}
-
-  login(email: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, { email, password }).pipe(
-      tap((response: any) => {
-        localStorage.setItem('token', response.access_token);
-        this.tokenSubject.next(response.access_token);
-      }),
-    );
-  }
-
-  register(email: string, password: string, firstName: string, lastName: string, tourOperatorId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register`, {
-      email,
-      password,
-      firstName,
-      lastName,
-      tourOperatorId,
-    }).pipe(
-      tap((response: any) => {
-        localStorage.setItem('token', response.access_token);
-        this.tokenSubject.next(response.access_token);
-      }),
-    );
-  }
-
-  logout(): void {
-    localStorage.removeItem('token');
-    this.tokenSubject.next(null);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+```json
+{
+  "plugins": {
+    "@tailwindcss/postcss": {}
   }
 }
 ```
 
-### 2.6 Créer l'interceptor Auth
+Ajouter dans `apps/frontend/src/styles.scss` :
 
-**`frontend/src/app/core/interceptors/auth.interceptor.ts`**
+```scss
+@import 'tailwindcss';
+@import 'primeicons/primeicons.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+```
+
+### 2.5 `app.config.ts`
+
 ```typescript
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../auth/auth.service';
+import {
+  ApplicationConfig,
+  provideZoneChangeDetection,
+  isDevMode,
+} from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideStore } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects';
+import { provideStoreDevtools } from '@ngrx/store-devtools';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeng/themes/aura';
+import { routes } from './app.routes';
+import { authReducer } from './core/auth/store/auth.reducer';
+import { AuthEffects } from './core/auth/store/auth.effects';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getToken();
-
-  if (token) {
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  return next(req);
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes, withComponentInputBinding()),
+    provideHttpClient(withInterceptors([authInterceptor])),
+    provideAnimationsAsync(),
+    provideStore({ auth: authReducer }),
+    provideEffects([AuthEffects]),
+    provideStoreDevtools({
+      maxAge: 25,
+      logOnly: !isDevMode(),
+      autoPause: true,
+    }),
+    providePrimeNG({
+      theme: { preset: Aura, options: { darkModeSelector: '.dark-mode' } },
+    }),
+  ],
 };
 ```
 
-### 2.7 Créer les Guards
+### 2.6 Auth Model
 
-**`frontend/src/app/core/auth/auth.guard.ts`**
 ```typescript
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from './auth.service';
+// auth.model.ts
+export type UserRole = 'ADMIN' | 'MANAGER' | 'AGENT';
 
-export const authGuard = () => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  tourOperatorId: string;
+}
 
-  if (authService.isAuthenticated()) {
-    return true;
-  }
-
-  router.navigate(['/login']);
-  return false;
-};
+export interface LoginResponse {
+  access_token: string;
+  user: User;
+}
 ```
 
-### 2.8 Créer le Store Auth (NgRx)
+### 2.7 NgRx Auth Store
 
-**`frontend/src/app/core/auth/store/auth.state.ts`**
+**Décision** : NgRx pour l'auth car le token et l'user sont partagés partout dans l'app.
+Pour les features CRUD (Hotels, Contracts...), utiliser BehaviorSubject — plus simple, pas besoin de traçabilité globale.
+
+**`auth.state.ts`**
+
 ```typescript
+import { User } from '../models/auth.model';
+
 export interface AuthState {
-  user: any | null;
-  token: string | null;
-  loading: boolean;
+  user: User | null;
+  accessToken: string | null;
+  isLoading: boolean;
   error: string | null;
 }
 
 export const initialAuthState: AuthState = {
   user: null,
-  token: null,
-  loading: false,
+  accessToken: null,
+  isLoading: false,
   error: null,
 };
 ```
 
-**`frontend/src/app/core/auth/store/auth.actions.ts`**
+**`auth.actions.ts`**
+
 ```typescript
-import { createAction, props } from '@ngrx/store';
+import { createActionGroup, emptyProps, props } from '@ngrx/store';
+import { User } from '../models/auth.model';
 
-export const login = createAction(
-  '[Auth] Login',
-  props<{ email: string; password: string }>(),
-);
-
-export const loginSuccess = createAction(
-  '[Auth] Login Success',
-  props<{ user: any; token: string }>(),
-);
-
-export const loginFailure = createAction(
-  '[Auth] Login Failure',
-  props<{ error: string }>(),
-);
-
-export const logout = createAction('[Auth] Logout');
-
-export const register = createAction(
-  '[Auth] Register',
-  props<{ email: string; password: string; firstName: string; lastName: string; tourOperatorId: string }>(),
-);
-
-export const registerSuccess = createAction(
-  '[Auth] Register Success',
-  props<{ user: any; token: string }>(),
-);
-
-export const registerFailure = createAction(
-  '[Auth] Register Failure',
-  props<{ error: string }>(),
-);
+export const AuthActions = createActionGroup({
+  source: 'Auth',
+  events: {
+    Login: props<{ email: string; password: string }>(),
+    'Login Success': props<{ user: User; accessToken: string }>(),
+    'Login Failure': props<{ error: string }>(),
+    Logout: emptyProps(),
+    'Logout Success': emptyProps(),
+  },
+});
 ```
 
-**`frontend/src/app/core/auth/store/auth.reducer.ts`**
+**`auth.reducer.ts`**
+
 ```typescript
 import { createReducer, on } from '@ngrx/store';
-import { AuthState, initialAuthState } from './auth.state';
-import * as AuthActions from './auth.actions';
+import { initialAuthState } from './auth.state';
+import { AuthActions } from './auth.actions';
 
 export const authReducer = createReducer(
   initialAuthState,
-  on(AuthActions.login, (state) => ({ ...state, loading: true, error: null })),
-  on(AuthActions.loginSuccess, (state, { user, token }) => ({
+  on(AuthActions.login, (state) => ({
     ...state,
+    isLoading: true,
+    error: null,
+  })),
+  on(AuthActions.loginSuccess, (state, { user, accessToken }) => ({
+    ...state,
+    isLoading: false,
     user,
-    token,
-    loading: false,
+    accessToken,
     error: null,
   })),
   on(AuthActions.loginFailure, (state, { error }) => ({
     ...state,
-    loading: false,
+    isLoading: false,
     error,
   })),
-  on(AuthActions.logout, () => initialAuthState),
-  on(AuthActions.register, (state) => ({ ...state, loading: true, error: null })),
-  on(AuthActions.registerSuccess, (state, { user, token }) => ({
-    ...state,
-    user,
-    token,
-    loading: false,
-    error: null,
-  })),
-  on(AuthActions.registerFailure, (state, { error }) => ({
-    ...state,
-    loading: false,
-    error,
-  })),
+  on(AuthActions.logout, () => initialAuthState)
 );
 ```
 
-**`frontend/src/app/core/auth/store/auth.effects.ts`**
+**`auth.selectors.ts`**
+
 ```typescript
-import { Injectable } from '@angular/core';
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { AuthState } from './auth.state';
+
+export const selectAuthState = createFeatureSelector<AuthState>('auth');
+
+export const selectCurrentUser = createSelector(
+  selectAuthState,
+  (state) => state.user
+);
+export const selectAccessToken = createSelector(
+  selectAuthState,
+  (state) => state.accessToken
+);
+export const selectIsAuthenticated = createSelector(
+  selectAuthState,
+  (state) => !!state.user
+);
+export const selectUserRole = createSelector(
+  selectCurrentUser,
+  (user) => user?.role ?? null
+);
+export const selectIsLoading = createSelector(
+  selectAuthState,
+  (state) => state.isLoading
+);
+export const selectAuthError = createSelector(
+  selectAuthState,
+  (state) => state.error
+);
+```
+
+**`auth.effects.ts`**
+
+```typescript
+import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from '../auth.service';
-import * as AuthActions from './auth.actions';
+import { AuthActions } from './auth.actions';
+import { Router } from '@angular/router';
+import { catchError, map, of, switchMap, tap } from 'rxjs';
 
 @Injectable()
 export class AuthEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.login),
@@ -743,297 +559,386 @@ export class AuthEffects {
           map((response) =>
             AuthActions.loginSuccess({
               user: response.user,
-              token: response.access_token,
-            }),
+              accessToken: response.access_token,
+            })
           ),
           catchError((error) =>
-            of(AuthActions.loginFailure({ error: error.error.message || 'Login failed' })),
-          ),
-        ),
-      ),
-    ),
+            of(AuthActions.loginFailure({ error: error.message }))
+          )
+        )
+      )
+    )
   );
 
-  register$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(AuthActions.register),
-      switchMap(({ email, password, firstName, lastName, tourOperatorId }) =>
-        this.authService.register(email, password, firstName, lastName, tourOperatorId).pipe(
-          map((response) =>
-            AuthActions.registerSuccess({
-              user: response.user,
-              token: response.access_token,
-            }),
-          ),
-          catchError((error) =>
-            of(AuthActions.registerFailure({ error: error.error.message || 'Register failed' })),
-          ),
-        ),
+  // ✅ Le token est stocké dans le reducer (store), pas dans AuthService
+  // L'effect ne fait que naviguer
+  loginSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.loginSuccess),
+        tap(() => void this.router.navigate(['/dashboard']))
       ),
-    ),
+    { dispatch: false }
   );
 
-  constructor(private actions$: Actions, private authService: AuthService) {}
+  logout$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.logout),
+        tap(() => void this.router.navigate(['/login']))
+      ),
+    { dispatch: false }
+  );
 }
 ```
 
-**`frontend/src/app/core/auth/store/auth.selectors.ts`**
+### 2.8 AuthService
+
 ```typescript
-import { createFeatureSelector, createSelector } from '@ngrx/store';
-import { AuthState } from './auth.state';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '@/environments/environment';
+import { LoginResponse } from './models/auth.model';
 
-export const selectAuthState = createFeatureSelector<AuthState>('auth');
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly apiUrl = environment.apiUrl;
+  private readonly http = inject(HttpClient);
 
-export const selectUser = createSelector(selectAuthState, (state) => state.user);
-export const selectToken = createSelector(selectAuthState, (state) => state.token);
-export const selectAuthLoading = createSelector(selectAuthState, (state) => state.loading);
-export const selectAuthError = createSelector(selectAuthState, (state) => state.error);
-export const selectIsAuthenticated = createSelector(selectToken, (token) => !!token);
+  login(email: string, password: string) {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, {
+      email,
+      password,
+    });
+  }
+}
 ```
 
-### 2.9 Créer les routes
+> **Pourquoi pas de `setAccessToken()` / `getAccessToken()` ?**
+> Le token est la responsabilité du store NgRx. `AuthService` ne stocke rien — il fait uniquement les appels HTTP.
+> L'interceptor lit le token directement depuis le store via `selectAccessToken`.
 
-**`frontend/src/app/app.routes.ts`**
+### 2.9 Auth Interceptor
+
+```typescript
+import { HttpEvent, HttpHandlerFn, HttpRequest } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Observable, switchMap, take } from 'rxjs';
+import { selectAccessToken } from '../auth/store/auth.selectors';
+
+export function authInterceptor(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn
+): Observable<HttpEvent<unknown>> {
+  const store = inject(Store);
+
+  return store.select(selectAccessToken).pipe(
+    take(1),
+    switchMap((token) => {
+      if (!token) return next(req);
+      const newReq = req.clone({
+        headers: req.headers.set('Authorization', `Bearer ${token}`),
+      });
+      return next(newReq);
+    })
+  );
+}
+```
+
+> **Pourquoi `set` et pas `append` ?**
+> `set` remplace le header s'il existe déjà. `append` en ajoute un second.
+> Pour Authorization, on veut toujours une seule valeur.
+
+> **Pourquoi lire depuis le store et pas AuthService ?**
+> Le store est la source de vérité unique. Si on stockait aussi dans AuthService,
+> les deux pourraient diverger — bug difficile à tracer.
+
+### 2.10 Auth Guard
+
+```typescript
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { map, take } from 'rxjs';
+import { selectIsAuthenticated } from '../auth/store/auth.selectors';
+
+export const AuthGuard = () => {
+  const store = inject(Store);
+  const router = inject(Router);
+
+  return store.select(selectIsAuthenticated).pipe(
+    take(1),
+    map((isAuthenticated) => {
+      if (isAuthenticated) return true;
+      return router.createUrlTree(['/login']);
+    })
+  );
+};
+```
+
+> **Pourquoi `UrlTree` et pas `false` + `router.navigate()` ?**
+> `UrlTree` délègue la navigation à Angular qui peut prioriser entre plusieurs guards.
+> C'est la bonne pratique Angular 15+.
+
+> **Pourquoi `take(1)` ?**
+> `store.select()` retourne une Observable infinie. `take(1)` se désabonne
+> après la première valeur — évite les fuites mémoire.
+
+### 2.11 Routes
+
 ```typescript
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
+import { AuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
-    path: '',
-    redirectTo: 'dashboard',
-    pathMatch: 'full',
-  },
-  {
     path: 'login',
-    loadComponent: () => import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then(
+        (m) => m.LoginComponent
+      ),
   },
   {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-    canActivate: [authGuard],
+    path: '',
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent
+          ),
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    ],
   },
-  {
-    path: '**',
-    redirectTo: 'dashboard',
-  },
+  { path: '**', redirectTo: 'login' },
 ];
 ```
 
-### 2.10 Créer le composant Login
+> **Pourquoi le Guard sur la route parente et pas sur chaque route enfant ?**
+> DRY — en Sprint 2+ il y aura 10+ routes protégées. Le guard sur le parent
+> protège automatiquement tous les enfants sans répétition.
 
-**`frontend/src/app/features/auth/login/login.component.ts`**
+> **Pourquoi `loadComponent` (lazy loading) ?**
+> Angular ne charge le composant que quand la route est visitée.
+> Sur un projet avec 20+ features, ça réduit significativement le bundle initial.
+
+### 2.12 Login Component
+
+**`login.component.ts`**
+
 ```typescript
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import * as AuthActions from '../../../core/auth/store/auth.actions';
-import { selectAuthError, selectAuthLoading } from '../../../core/auth/store/auth.selectors';
+import { Observable } from 'rxjs';
+import { AuthActions } from '../../core/auth/store/auth.actions';
+import {
+  selectIsLoading,
+  selectAuthError,
+} from '../../core/auth/store/auth.selectors';
+import { Message } from 'primeng/message';
+import { Password } from 'primeng/password';
+import { Button } from 'primeng/button';
+import { InputText } from 'primeng/inputtext';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatCardModule,
+    ReactiveFormsModule,
+    AsyncPipe,
+    Message,
+    Password,
+    Button,
+    InputText,
   ],
-  template: `
-    <div class="login-container">
-      <mat-card>
-        <mat-card-title>Login</mat-card-title>
-        <mat-card-content>
-          <form (ngSubmit)="onLogin()">
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Email</mat-label>
-              <input matInput [(ngModel)]="email" name="email" type="email" required />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Password</mat-label>
-              <input matInput [(ngModel)]="password" name="password" type="password" required />
-            </mat-form-field>
-
-            <div *ngIf="error$ | async as error" class="error-message">
-              {{ error }}
-            </div>
-
-            <button
-              mat-raised-button
-              color="primary"
-              type="submit"
-              [disabled]="loading$ | async"
-              class="full-width"
-            >
-              {{ (loading$ | async) ? 'Logging in...' : 'Login' }}
-            </button>
-          </form>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .login-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    mat-card {
-      width: 100%;
-      max-width: 400px;
-    }
-    .full-width {
-      width: 100%;
-      margin-bottom: 16px;
-    }
-    .error-message {
-      color: red;
-      margin-bottom: 16px;
-    }
-  `],
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {
-  email = '';
-  password = '';
-  loading$ = this.store.select(selectAuthLoading);
-  error$ = this.store.select(selectAuthError);
+  private readonly fb = inject(FormBuilder);
+  private readonly store = inject(Store);
 
-  constructor(private store: Store, private router: Router) {}
+  loginForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+  });
+
+  get email() {
+    return this.loginForm.get('email');
+  }
+  get password() {
+    return this.loginForm.get('password');
+  }
+
+  isLoading$: Observable<boolean> = this.store.select(selectIsLoading);
+  error$: Observable<string | null> = this.store.select(selectAuthError);
 
   onLogin(): void {
-    if (this.email && this.password) {
-      this.store.dispatch(AuthActions.login({ email: this.email, password: this.password }));
-      // Redirection gérée par effect ou guard
-      setTimeout(() => this.router.navigate(['/dashboard']), 500);
+    this.loginForm.markAllAsTouched();
+    if (this.loginForm.valid) {
+      this.store.dispatch(
+        AuthActions.login({
+          email: this.email?.value,
+          password: this.password?.value,
+        })
+      );
     }
   }
 }
 ```
 
-### 2.11 Créer le composant Dashboard (vide pour Sprint 0)
+> **Pourquoi Reactive Forms et pas Template-driven ?**
+> Meilleur contrôle depuis le TS, cohérent avec NgRx.
+> Template-driven met trop de logique dans le HTML.
 
-**`frontend/src/app/features/dashboard/dashboard.component.ts`**
+> **Pourquoi pas de `reset()` après dispatch ?**
+> On ne sait pas encore si le login va réussir. Si échec, l'utilisateur
+> doit pouvoir corriger ses credentials sans tout ressaisir.
+
+> **Pourquoi `markAllAsTouched()` avant le `if` ?**
+> Pour afficher les erreurs de validation même si l'utilisateur n'a
+> pas touché les champs — utile quand il clique Submit directement.
+
+**`login.component.html`**
+
+```html
+<div class="card flex justify-center">
+  <form
+    [formGroup]="loginForm"
+    (ngSubmit)="onLogin()"
+    class="flex flex-col gap-4 sm:w-56"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="email">Email</label>
+      <input pInputText id="email" formControlName="email" type="email" />
+      @if (email?.touched && email?.invalid) {
+      <p-message severity="error" size="small" variant="simple"
+        >Email invalide.</p-message
+      >
+      }
+
+      <label for="password">Mot de passe</label>
+      <p-password
+        inputId="password"
+        formControlName="password"
+        [feedback]="false"
+        toggleMask
+        fluid
+      />
+      @if (password?.touched && password?.invalid) {
+      <p-message severity="error" size="small" variant="simple"
+        >Mot de passe requis.</p-message
+      >
+      } @if (error$ | async; as error) {
+      <p-message severity="error">{{ error }}</p-message>
+      }
+    </div>
+
+    <p-button
+      type="submit"
+      label="Se connecter"
+      [loading]="isLoading$ | async"
+      [disabled]="isLoading$ | async"
+    />
+  </form>
+</div>
+```
+
+### 2.13 Dashboard Component (Sprint 0 — vide)
+
 ```typescript
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
+import { Component, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Store } from '@ngrx/store';
+import { selectCurrentUser } from '../../core/auth/store/auth.selectors';
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
-  imports: [CommonModule, MatCardModule],
+  imports: [AsyncPipe],
   template: `
-    <div class="dashboard-container">
-      <mat-card>
-        <mat-card-title>Dashboard</mat-card-title>
-        <mat-card-content>
-          <p>Welcome to the Tour Operator System!</p>
-          <p>More features coming soon...</p>
-        </mat-card-content>
-      </mat-card>
+    <div>
+      <h1>Dashboard</h1>
+      <p>Bienvenue, {{ (currentUser$ | async)?.firstName }}</p>
     </div>
   `,
-  styles: [`
-    .dashboard-container {
-      padding: 20px;
-    }
-  `],
 })
-export class DashboardComponent {}
+export class DashboardComponent {
+  private readonly store = inject(Store);
+  readonly currentUser$ = this.store.select(selectCurrentUser);
+}
 ```
-
-### 2.12 Démarrer le frontend
-
-```bash
-cd frontend
-ng serve
-```
-
-Le frontend tourne sur **http://localhost:4200**.
 
 ---
 
-## Definition of Done (Sprint 0)
+## Definition of Done Sprint 0
 
 ### Backend
-- ✅ Docker PostgreSQL + pgAdmin démarrés et accessibles.
-- ✅ Prisma schema appliqué, tables créées.
-- ✅ NestJS démarre sur http://localhost:3000.
-- ✅ Auth module: login/register fonctionnels (testés avec curl/Postman).
-- ✅ Hotels CRUD accessible avec JWT.
-- ✅ Swagger optionnel sur /api.
+
+- ✅ Docker PostgreSQL + pgAdmin démarrés
+- ✅ Prisma schema appliqué, tables créées
+- ✅ NestJS démarre sur http://localhost:3000
+- ✅ `POST /auth/login` retourne `{ access_token, user }` ou HTTP 401
+- ✅ `GET /hotels` accessible avec JWT valide
 
 ### Frontend
-- ✅ Angular standalone app démarre sur http://localhost:4200.
-- ✅ Login page fonctionnelle (formulaire + appel API).
-- ✅ Dashboard page vide mais accessible après login.
-- ✅ Auth guard protège les routes.
-- ✅ NgRx store auth configuré (login/logout actions).
-- ✅ HttpClient + interceptor JWT en place.
+
+- ✅ `nx serve frontend` démarre sur http://localhost:4200
+- ✅ `/login` affiche le formulaire
+- ✅ `/dashboard` accessible après login, protégé par AuthGuard
+- ✅ NgRx store auth configuré et fonctionnel
+- ✅ Interceptor ajoute le Bearer token depuis le store
+- ✅ Tailwind CSS opérationnel
 
 ### Intégration
-- ✅ Login frontend → backend auth → JWT token stocké.
-- ✅ GET /hotels avec JWT fonctionne.
-- ✅ Logout efface le token et redirige vers login.
 
----
-
-## Checklist de validation
-
-- [ ] `docker ps` montre postgres et pgadmin.
-- [ ] `http://localhost:5050` (pgAdmin) accessible.
-- [ ] `http://localhost:5555` (Prisma Studio) montre les tables.
-- [ ] `npm run start:dev` (backend) démarre sans erreur.
-- [ ] `ng serve` (frontend) démarre sans erreur.
-- [ ] Login avec credentials valides fonctionne.
-- [ ] Dashboard accessible après login.
-- [ ] Logout redirige vers login.
-- [ ] GET /hotels retourne une liste (vide ou avec données seed).
-
----
-
-## Prochaines étapes (Sprint 1)
-
-- Améliorer Auth: roles guard, refresh token.
-- Créer un layout (header + sidebar).
-- Ajouter des données seed pour tester.
-- Commencer le module Hotels (liste + formulaire).
+- ✅ Login frontend → backend → JWT stocké dans le store NgRx
+- ✅ Logout réinitialise le store et redirige vers `/login`
 
 ---
 
 ## Commandes utiles
 
 ```bash
-# Backend
-cd backend
-npm run start:dev          # Démarrer en dev
-npx prisma studio         # Ouvrir Prisma Studio
-npx prisma migrate dev     # Créer une migration
-npx prisma db seed        # Lancer le seed
+# Monorepo
+nx serve frontend          # Démarrer le frontend
+nx serve backend           # Démarrer le backend
+nx build frontend          # Build production frontend
 
-# Frontend
-cd frontend
-ng serve                   # Démarrer en dev
-ng generate component ...  # Générer un composant
-ng build                   # Build production
+# Prisma
+npx prisma generate        # Générer le client TypeScript
+npx prisma migrate dev     # Créer une migration
+npx prisma db seed         # Lancer le seed
+npx prisma studio          # Interface web — http://localhost:5555
 
 # Docker
-docker-compose up -d       # Démarrer les services
+docker-compose up -d       # Démarrer PostgreSQL + pgAdmin
 docker-compose down        # Arrêter les services
-docker ps                  # Lister les conteneurs
+docker ps                  # Lister les conteneurs actifs
+
+# Git workflow
+git checkout -b feature/S0-FE-XXX-titre   # Nouvelle branche feature
+git commit -m "feat(scope): description"   # Convention de commit
+# PRs vers dev — jamais vers main directement
 ```
 
 ---
 
-**Sprint 0 prêt à être exécuté ! 🚀**
+## Conventions de commit
+
+```
+feat(auth): implement NgRx auth store
+fix(interceptor): handle null token correctly
+chore(styles): install Tailwind CSS v4
+refactor(auth): read token from store instead of AuthService
+docs(readme): add project setup guide
+```
