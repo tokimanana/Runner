@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "installation": { "version": "22.3.3" },
+  "installation": {
+    "version": "22.3.3"
+  },
   "nxCloudId": "69a1bfaadc1ae06c2368a034",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
@@ -19,11 +21,15 @@
   "plugins": [
     {
       "plugin": "@nx/eslint/plugin",
-      "options": { "targetName": "lint" }
+      "options": {
+        "targetName": "lint"
+      }
     },
     {
       "plugin": "@nx/jest/plugin",
-      "options": { "targetName": "test" }
+      "options": {
+        "targetName": "test"
+      }
     }
   ],
   "targetDefaults": {
