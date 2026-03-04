@@ -74,8 +74,8 @@ services:
 
 volumes:
   postgres-data:
-  backend_node_modules:
-  frontend_node_modules:
+#  backend_node_modules:
+#  frontend_node_modules:
 
 networks:
   dev-network:
