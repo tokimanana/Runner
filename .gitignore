@@ -54,3 +54,4 @@ apps/frontend/src/environments/environment.ts
 apps/frontend/src/environments/environment.ts
 apps/frontend/src/environments/environment.dev.ts
 apps/backend/generated/
+apps/frontend/src/environments/environment.dev.ts
