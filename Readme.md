@@ -1,186 +1,134 @@
 # Runner — Tour Operator System
 
-Plateforme de gestion et simulation de réservations pour Tour-Opérateurs (TO).
-Permet aux agents commerciaux de simuler des séjours hôteliers avec calcul de prix en temps réel, gestion des offres promotionnelles et breakdown détaillé nuit par nuit.
+Système de gestion pour tour-opérateurs : hôtels, contrats, tarification et réservations.
 
 ---
 
 ## Stack technique
 
-| Couche | Technologie |
-|--------|-------------|
-| Frontend | Angular 19 + PrimeNG + NgRx |
-| Backend | NestJS 11 + Prisma ORM |
-| Base de données | PostgreSQL 15 |
-| Monorepo | NX 22 |
-| Tests | Jest + Playwright |
+| Couche          | Technologie                       |
+| --------------- | --------------------------------- |
+| Frontend        | Angular 19 + PrimeNG 19 + NgRx 19 |
+| Backend         | NestJS 11 + Prisma ORM            |
+| Base de données | PostgreSQL 15 (Docker)            |
+| Styles          | Tailwind CSS v4                   |
+| Monorepo        | NX 22                             |
+| Tests           | Jest + Playwright                 |
 
 ---
 
-## Architecture NX
+## Prérequis
 
-Ce projet utilise **NX** comme outil de gestion de monorepo. NX permet de gérer frontend et backend dans un seul repository tout en gardant une séparation claire des responsabilités.
-
-```
-Runner/
-├── apps/
-│   ├── frontend/          ← Application Angular 19
-│   └── backend/           ← API NestJS 11
-├── docs/                  ← Documentation projet
-├── nx.json                ← Configuration NX
-└── package.json           ← Dépendances partagées
-```
-
-### Commandes NX
-
-```bash
-# Lancer les deux apps simultanément
-npm start
-
-# Lancer séparément
-npm run start:frontend     # http://localhost:4200
-npm run start:backend      # http://localhost:3000
-
-# Build
-npm run build
-
-# Tests
-npm run test
-
-# Lint
-npm run lint
-```
-
----
-
-## Overview du projet
-
-### Rôles utilisateurs
-
-| Rôle | Accès |
-|------|-------|
-| **ADMIN** | Configuration complète + gestion utilisateurs |
-| **MANAGER** | Gestion hôtels, contrats, offres |
-| **AGENT** | Simulation de réservations uniquement |
-
-### Modules principaux
-
-**Configuration** (ADMIN + MANAGER)
-- Hôtels — types de chambres, catégories d'âge
-- Contrats tarifaires — périodes, prix PER_ROOM / PER_OCCUPANCY
-- Offres promotionnelles — modes SEQUENTIAL et ADDITIVE
-- Données de référence — saisons, marchés, devises, suppléments
-
-**Simulation** (tous les rôles)
-- Wizard 5 étapes : hôtel → chambres → offres → suppléments → récapitulatif
-- Calcul prix en temps réel avec breakdown nuit par nuit
-- Export PDF
-
-### Logique métier clé
-
-Le moteur de calcul applique les offres **nuit par nuit** selon leur période de validité :
-
-```
-Prix final = Prix base
-  × (1 - offre1) × (1 - offre2)   ← mode SEQUENTIAL
-  × (1 - (offre1 + offre2))        ← mode ADDITIVE
-  + suppléments
-```
-
-Les offres SEQUENTIAL et ADDITIVE **ne peuvent pas être mixées** sur une même réservation.
+- Node.js 20+
+- Docker + Docker Compose
+- NX CLI : `npm install -g nx`
 
 ---
 
 ## Installation
 
-### Prérequis
-
-- Node.js 22+
-- Docker + Docker Compose
-- NX CLI : `npm install -g nx`
-
-### Setup
+### 1. Cloner le repo
 
 ```bash
-# 1. Cloner le projet
-git clone https://github.com/ton-repo/runner.git
-cd runner
-
-# 2. Installer les dépendances
+git clone <repo-url>
+cd Runner
 npm install
+```
 
-# 3. Configurer les environnements
+### 2. Configurer les environments
+
+```bash
+# Frontend
 cp apps/frontend/src/environments/environment.example.ts apps/frontend/src/environments/environment.ts
-cp apps/frontend/src/environments/environment.prod.example.ts apps/frontend/src/environments/environment.prod.ts
+cp apps/frontend/src/environments/environment.example.ts apps/frontend/src/environments/environment.dev.ts
+# Adapter les valeurs dans environment.dev.ts
+```
 
-# 4. Lancer PostgreSQL
+### 3. Démarrer PostgreSQL
+
+```bash
 docker-compose up -d
+```
 
-# 5. Initialiser la base de données
+### 4. Initialiser la base de données
+
+```bash
 cd apps/backend
 npx prisma migrate dev
 npx prisma db seed
-
-# 6. Lancer le projet
-cd ../..
-npm start
 ```
 
-### Credentials de test
+### 5. Démarrer les applications
 
-| Rôle | Email | Password |
-|------|-------|----------|
-| Admin | admin@horizon.com | password123 |
-| Manager | manager@horizon.com | password123 |
-| Agent | agent@horizon.com | password123 |
+```bash
+# Terminal 1 — Frontend
+nx serve frontend
+
+# Terminal 2 — Backend
+nx serve backend
+```
+
+- Frontend : http://localhost:4200
+- Backend : http://localhost:3000
+- pgAdmin : http://localhost:5050
+- Prisma Studio : `npx prisma studio` → http://localhost:5555
 
 ---
 
-## Structure des sprints
+## Credentials de test (après seed)
 
-| Sprint | Objectif | SP |
-|--------|----------|----|
-| Sprint 0 | Setup infrastructure | 13 |
-| Sprint 1 | Auth + Layout + Users | 26 |
-| Sprint 2 | Hôtels + Saisons | 34 |
-| Sprint 3 | Données de référence | 21 |
-| Sprint 4 | Contrats tarifaires | 55 |
-| Sprint 5 | Offres promotionnelles | 29 |
-| Sprint 6 | Booking Wizard UI | 34 |
-| Sprint 7 | Moteur de calcul | 47 |
-| Sprint 8 | Finalisation + Tests | 26 |
-| **Total** | | **280 SP** |
+| Email              | Mot de passe | Rôle    |
+| ------------------ | ------------ | ------- |
+| admin@runner.com   | Admin1234!   | ADMIN   |
+| manager@runner.com | Manager1234! | MANAGER |
+| agent@runner.com   | Agent1234!   | AGENT   |
 
 ---
 
-## Workflow Git
+## Structure du monorepo
 
 ```
-main          ← production, protégée
-  ↑
-dev           ← intégration, protégée
-  ↑
-feature/S1-FE-001-...   ← branches de travail
+Runner/
+├── apps/
+│   ├── frontend/          ← Angular 19
+│   └── backend/           ← NestJS 11
+├── libs/                  ← Libs partagées (Sprint 1+)
+├── docs/                  ← Documentation technique
+├── docker-compose.yml
+└── package.json
 ```
 
-Toute contribution passe par une **Pull Request** vers `dev`.
-Les merges vers `main` se font uniquement en fin de sprint.
+---
 
-Convention de nommage des branches :
-- `feature/` — nouvelle fonctionnalité
-- `chore/` — configuration, setup
-- `fix/` — correction de bug
-- `hotfix/` — correction urgente en production
+## Git workflow
+
+```
+main          ← stable, merge en fin de sprint uniquement
+  └── dev     ← branche d'intégration
+        └── feature/S0-FE-006-auth-interceptor  ← branches de tickets
+```
+
+**Conventions de commit** : `type(scope): description`
+
+| Type       | Usage                                       |
+| ---------- | ------------------------------------------- |
+| `feat`     | Nouvelle fonctionnalité                     |
+| `fix`      | Correction de bug                           |
+| `chore`    | Configuration, dépendances                  |
+| `refactor` | Refactoring sans changement de comportement |
+| `docs`     | Documentation                               |
+| `test`     | Tests                                       |
 
 ---
 
 ## Documentation
 
-La documentation complète est disponible dans `/docs` :
-
-- `Architecture.md` — décisions d'architecture
-- `regles_metier.md` — règles de calcul des prix
-- `exemples_concrets.md` — cas de tarification réels
-- `SPRINT_0_DETAILED.md` — détail des tickets Sprint 0
-- `diagramme_de_classe.md` — modèle de données
-- `diagram_de_sequence.md` — flux de réservation
+| Fichier                          | Contenu                    |
+| -------------------------------- | -------------------------- |
+| `docs/Architecture.md`           | Architecture globale       |
+| `docs/regles_metier.md`          | Logique de calcul des prix |
+| `docs/exemples_concrets.md`      | Cas de tarification réels  |
+| `docs/diagramme_de_classe.md`    | Modèle de données          |
+| `docs/diagram_de_sequence.md`    | Flux applicatifs           |
+| `docs/SPRINT_0_SETUP.md`         | Guide setup Sprint 0       |
+| `docs/SPRINTS_1_TO_8_ROADMAP.md` | Roadmap complète           |
