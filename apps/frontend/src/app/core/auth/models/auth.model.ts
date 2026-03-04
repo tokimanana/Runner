@@ -9,7 +9,7 @@ export interface User {
   tourOperatorId: string;
 }
 
-export interface LoginRsponse {
+export interface LoginResponse {
   access_token: string;
   user: User;
 }
