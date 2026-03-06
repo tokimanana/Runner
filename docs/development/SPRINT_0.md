@@ -4,9 +4,7 @@
 Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, frontend Angular 19, base de données PostgreSQL, authentification JWT basique.
 
 **Durée estimée :** 1-2 jours
-**Statut :** ✅ Terminé
-
-> **Documentation détaillée :** voir `SPRINT_0_SETUP.md`
+**Statut :** 🔄 En cours
 
 ---
 
@@ -20,7 +18,7 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
 | State Management | NgRx 19 (auth uniquement) | Single source of truth pour les tokens |
 | State features CRUD | BehaviorSubject | Moins de complexité, suffisant |
 | Monorepo | NX 22 | Gestion apps/libs partagées |
-| ORM | Prisma | Type-safe, migrations |
+| ORM | Prisma 7 | Type-safe, migrations versionnées |
 | Auth | JWT (access + refresh) | Stateless, scalable |
 | Token access | Mémoire (NgRx store) | Sécurisé contre XSS |
 | Token refresh | Cookie httpOnly | Auto-envoyé, survit au reload |
@@ -36,6 +34,7 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
 ### S0-BE-001 : Initialiser NestJS dans NX
 - **Branch :** `feature/S0-BE-001-nestjs-init`
 - **Commit :** `feat(backend): initialize NestJS app in NX monorepo`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Files :**
   - `apps/backend/src/main.ts`
@@ -43,25 +42,147 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
 
 ---
 
-### S0-BE-002 : Configurer Prisma + PostgreSQL
-- **Branch :** `feature/S0-BE-002-prisma-setup`
-- **Commit :** `feat(backend): configure Prisma with PostgreSQL`
+### S0-BE-002 : Setup Docker PostgreSQL
+- **Branch :** `feature/S0-BE-002-docker-postgres`
+- **Commit :** `feat(infra): setup Docker PostgreSQL and pgAdmin`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
+- **Description :**
+  - PostgreSQL 15 + pgAdmin via Docker Compose
+  - Réseau isolé `dev-network`
+  - Backend et frontend lancés en local (`nx serve`) — Docker uniquement pour la DB en dev
 - **Files :**
-  - `apps/backend/prisma/schema.prisma`
   - `docker-compose.yml`
-  - `apps/backend/.env`
+  - `apps/backend/Dockerfile`
+  - `apps/frontend/Dockerfile`
+  - `.dockerignore`
+
+**URLs :**
+| Service | URL |
+|---------|-----|
+| pgAdmin | http://localhost:5050 |
+| PostgreSQL | localhost:5432 |
+
+```bash
+# Démarrer uniquement la DB en dev
+docker compose up -d postgres pgadmin
+```
 
 ---
 
-### S0-BE-003 : Créer AuthModule (JWT basique)
-- **Branch :** `feature/S0-BE-003-auth-module`
-- **Commit :** `feat(auth): create auth module with JWT strategy`
+### S0-BE-003 : Configurer Prisma
+- **Branch :** `feature/S0-BE-003-prisma-init`
+- **Commit :** `feat(prisma): configure Prisma 7 with PostgreSQL and User schema`
+- **Priority :** P0 | **SP :** 2
 - **Status :** ✅ Done
+- **Description :**
+  Initialiser Prisma 7 dans le monorepo NX et configurer la connexion PostgreSQL.
+
+  **Architecture Prisma 7 :**
+  - `schema.prisma` → structure uniquement (modèles, enums)
+  - `prisma.config.ts` → configuration runtime (url de connexion, chemins)
+  - ⚠️ `url` n'est plus dans `schema.prisma` — breaking change Prisma 7
+
+- **Files :**
+  - `apps/backend/prisma/schema.prisma`
+  - `apps/backend/prisma.config.ts`
+  - `apps/backend/.env`
+
+```prisma
+enum UserRole {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole @default(AGENT)
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+```
+
+**.env :**
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/runner"
+JWT_SECRET="dev-secret-key"
+```
+
+**Commands — toujours depuis `apps/backend/` :**
+```bash
+cd apps/backend
+npx prisma migrate dev --name init --config prisma.config.ts
+npx prisma generate --config prisma.config.ts
+npx prisma studio --config prisma.config.ts
+```
+
+> **Règle :** après chaque modification du schema → `migrate dev` puis `generate`. `generated/` est gitignored.
+
+**Acceptance Criteria :**
+- ✅ Migration `init` appliquée sans erreur
+- ✅ Table `User` + enum `UserRole` créés dans PostgreSQL
+- ✅ Client TypeScript généré dans `generated/prisma`
+- ✅ Prisma Studio accessible
+
+---
+
+### S0-BE-004 : Créer PrismaModule
+- **Branch :** `feature/S0-BE-004-prisma-module`
+- **Commit :** `feat(prisma): create PrismaService and PrismaModule`
+- **Priority :** P0 | **SP :** 1
+- **Status :** ⏳ À faire
+- **Description :**
+  Créer la couche d'accès à la base de données dans NestJS.
+
+- **Files :**
+  - `apps/backend/src/prisma/prisma.service.ts`
+  - `apps/backend/src/prisma/prisma.module.ts`
+
+```typescript
+// prisma.service.ts
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  async onModuleInit() {
+    await this.$connect();
+  }
+}
+```
+
+```typescript
+// prisma.module.ts
+@Global()
+@Module({
+  providers: [PrismaService],
+  exports: [PrismaService],
+})
+export class PrismaModule {}
+```
+
+> **Pourquoi `@Global()` ?** Évite d'importer `PrismaModule` dans chaque module — une seule fois dans `AppModule` suffit.
+
+**Acceptance Criteria :**
+- ✅ `PrismaService` injectable dans tous les modules
+- ✅ Connexion DB établie au démarrage de NestJS
+
+---
+
+### S0-BE-005 : Créer AuthModule (JWT basique)
+- **Branch :** `feature/S0-BE-005-auth-module`
+- **Commit :** `feat(auth): create auth module with JWT strategy`
+- **Priority :** P0 | **SP :** 3
+- **Status :** ⏳ À faire
 - **Description :**
   - `POST /auth/login` → retourne `{ access_token, user }` ou HTTP 401
   - JWT Strategy avec Passport
-  - Validation : `throw new UnauthorizedException()` (jamais `return { error }`)
+  - Validation : `throw new UnauthorizedException()` — jamais `return { error }`
+  - `select` Prisma pour ne jamais exposer `passwordHash`
+
 - **Files :**
   - `apps/backend/src/auth/auth.module.ts`
   - `apps/backend/src/auth/auth.service.ts`
@@ -69,29 +190,25 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
   - `apps/backend/src/auth/strategies/jwt.strategy.ts`
   - `apps/backend/src/auth/guards/jwt-auth.guard.ts`
 
+**Acceptance Criteria :**
+- ✅ `POST /auth/login` retourne `{ access_token, user }` avec credentials valides
+- ✅ `POST /auth/login` retourne HTTP 401 avec credentials invalides
+- ✅ `passwordHash` jamais exposé dans la réponse
+- ✅ Testé avec les 3 credentials seed
+
 ---
 
-### S0-BE-004 : Créer HotelsModule (stub)
-- **Branch :** `feature/S0-BE-004-hotels-stub`
-- **Commit :** `feat(hotels): create hotels module stub`
-- **Status :** ✅ Done
-- **Description :**
-  - Module créé avec structure de base
-  - CRUD complet implémenté en Sprint 2
+### S0-BE-006 : Créer RolesGuard
+- **Branch :** `feature/S0-BE-006-roles-guard`
+- **Commit :** `feat(auth): create RolesGuard and @Roles decorator`
+- **Priority :** P0 | **SP :** 1
+- **Status :** ⏳ À faire
 - **Files :**
-  - `apps/backend/src/hotels/hotels.module.ts`
-  - `apps/backend/src/hotels/hotels.controller.ts`
-  - `apps/backend/src/hotels/hotels.service.ts`
-
----
-
-### S0-BE-005 : Créer RolesGuard
-- **Branch :** `feature/S0-BE-005-roles-guard`
-- **Commit :** `feat(auth): create roles guard with Reflector`
-- **Status :** ✅ Done
+  - `apps/backend/src/auth/guards/roles.guard.ts`
+  - `apps/backend/src/auth/decorators/roles.decorator.ts`
 
 ```typescript
-// apps/backend/src/auth/guards/roles.guard.ts
+// roles.guard.ts
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
@@ -109,19 +226,25 @@ export class RolesGuard implements CanActivate {
 ```
 
 ```typescript
-// apps/backend/src/auth/decorators/roles.decorator.ts
+// roles.decorator.ts
 export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ```
 
+**Acceptance Criteria :**
+- ✅ Route sans `@Roles` → accessible par tous les users authentifiés
+- ✅ Route avec `@Roles(UserRole.ADMIN)` → HTTP 403 si rôle insuffisant
+
 ---
 
-### S0-BE-006 : Seed data utilisateurs
-- **Branch :** `feature/S0-BE-006-seed`
+### S0-BE-007 : Seed data utilisateurs
+- **Branch :** `feature/S0-BE-007-seed`
 - **Commit :** `feat(seed): add users seed with bcrypt`
-- **Status :** ✅ Done
+- **Priority :** P0 | **SP :** 1
+- **Status :** ⏳ À faire
+- **Files :**
+  - `apps/backend/prisma/seed.ts`
 
 ```typescript
-// apps/backend/prisma/seed.ts
 const hashedPassword = await bcrypt.hash('Password1234!', 10);
 
 for (const u of [
@@ -147,6 +270,16 @@ for (const u of [
 | manager@runner.com | Password1234! | MANAGER |
 | agent@runner.com | Password1234! | AGENT |
 
+```bash
+cd apps/backend
+npx prisma db seed --config prisma.config.ts
+```
+
+**Acceptance Criteria :**
+- ✅ 3 utilisateurs créés en DB
+- ✅ Seed idempotent — peut être relancé sans erreur
+- ✅ `POST /auth/login` fonctionne avec les 3 credentials
+
 ---
 
 ## Frontend Tasks
@@ -154,6 +287,7 @@ for (const u of [
 ### S0-FE-001 : Initialiser Angular 19 dans NX
 - **Branch :** `feature/S0-FE-001-angular-init`
 - **Commit :** `feat(frontend): initialize Angular 19 standalone app`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Files :**
   - `apps/frontend/src/main.ts`
@@ -165,6 +299,7 @@ for (const u of [
 ### S0-FE-002 : Installer PrimeNG 19 + Tailwind CSS v4
 - **Branch :** `feature/S0-FE-002-primeng-tailwind`
 - **Commit :** `feat(frontend): install PrimeNG 19 and Tailwind CSS v4`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Files :**
   - `apps/frontend/src/styles.css`
@@ -175,6 +310,7 @@ for (const u of [
 ### S0-FE-003 : Configurer NgRx Store (auth)
 - **Branch :** `feature/S0-FE-003-ngrx-auth`
 - **Commit :** `feat(auth): configure NgRx store for auth`
+- **Priority :** P0 | **SP :** 2
 - **Status :** ✅ Done
 - **Description :**
   - Actions : `loginSuccess`, `loginFailure`, `logout`
@@ -192,10 +328,11 @@ for (const u of [
 ### S0-FE-004 : Créer AuthService
 - **Branch :** `feature/S0-FE-004-auth-service`
 - **Commit :** `feat(auth): create auth service`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Description :**
   - Méthodes : `login()`, `logout()`, `refresh()`
-  - Pas de stockage de token (NgRx store = single source of truth)
+  - Pas de stockage de token — NgRx store = single source of truth
 - **Files :**
   - `apps/frontend/src/app/core/auth/auth.service.ts`
 
@@ -204,6 +341,7 @@ for (const u of [
 ### S0-FE-005 : Créer AuthInterceptor
 - **Branch :** `feature/S0-FE-005-auth-interceptor`
 - **Commit :** `feat(auth): create auth interceptor reading from NgRx store`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Description :**
   - Interceptor fonctionnel (pas de classe)
@@ -211,7 +349,6 @@ for (const u of [
   - Ajoute header `Authorization: Bearer <token>`
 
 ```typescript
-// apps/frontend/src/app/core/interceptors/auth.interceptor.ts
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const store = inject(Store);
 
@@ -230,23 +367,20 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 };
 ```
 
-> **Pourquoi `take(1)` ?**
-> `store.select()` retourne un Observable infini. `take(1)` se désabonne
-> automatiquement après la première valeur — pas de fuite mémoire.
+> **Pourquoi `take(1)` ?** `store.select()` retourne un Observable infini. `take(1)` se désabonne automatiquement après la première valeur — pas de fuite mémoire.
 
-> **Pourquoi lire depuis le store et pas AuthService ?**
-> Le store est la single source of truth. Lire depuis AuthService
-> crée un risque de divergence entre le store et le service.
+- **Files :**
+  - `apps/frontend/src/app/core/interceptors/auth.interceptor.ts`
 
 ---
 
 ### S0-FE-006 : Créer AuthGuard
 - **Branch :** `feature/S0-FE-006-auth-guard`
 - **Commit :** `feat(auth): create auth guard with UrlTree`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 
 ```typescript
-// apps/frontend/src/app/core/guards/auth.guard.ts
 export const AuthGuard = () => {
   const store = inject(Store);
   const router = inject(Router);
@@ -260,19 +394,21 @@ export const AuthGuard = () => {
 };
 ```
 
-> **Pourquoi `UrlTree` et pas `router.navigate() + return false` ?**
-> Angular gère la priorité entre plusieurs guards avec UrlTree.
-> `false` + `navigate()` peut créer des conflits si plusieurs guards s'exécutent.
+> **Pourquoi `UrlTree` ?** Angular gère la priorité entre plusieurs guards avec UrlTree. `false` + `navigate()` peut créer des conflits si plusieurs guards s'exécutent.
+
+- **Files :**
+  - `apps/frontend/src/app/core/guards/auth.guard.ts`
 
 ---
 
 ### S0-FE-007 : Créer LoginComponent
 - **Branch :** `feature/S0-FE-007-login`
 - **Commit :** `feat(auth): create login component with PrimeNG`
+- **Priority :** P0 | **SP :** 2
 - **Status :** ✅ Done
 - **Description :**
   - Standalone component
-  - **Reactive Form** : email, password
+  - Reactive Form : email, password
   - PrimeNG : `p-inputtext`, `p-password`, `p-button`
   - `inject()` — pas de constructor injection
   - Dispatch `AuthActions.login` au submit
@@ -284,10 +420,10 @@ export const AuthGuard = () => {
 ### S0-FE-008 : Configurer les routes
 - **Branch :** `feature/S0-FE-008-routes`
 - **Commit :** `chore(routing): configure app routes with lazy loading`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 
 ```typescript
-// app.routes.ts
 export const routes: Routes = [
   {
     path: 'login',
@@ -312,15 +448,17 @@ export const routes: Routes = [
 ];
 ```
 
+- **Files :**
+  - `apps/frontend/src/app/app.routes.ts`
+
 ---
 
 ### S0-FE-009 : Créer DashboardComponent (placeholder)
 - **Branch :** `feature/S0-FE-009-dashboard`
 - **Commit :** `feat(dashboard): create dashboard placeholder component`
+- **Priority :** P2 | **SP :** 1
 - **Status :** ✅ Done
-- **Description :**
-  - Standalone component
-  - Contenu placeholder — stats réelles en Sprint 8
+- **Description :** Standalone component placeholder — stats réelles en Sprint 8
 - **Files :**
   - `apps/frontend/src/app/features/dashboard/dashboard.component.ts`
 
@@ -329,6 +467,7 @@ export const routes: Routes = [
 ### S0-FE-010 : Configurer environments
 - **Branch :** `feature/S0-FE-010-environments`
 - **Commit :** `chore(config): configure environment files`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Description :**
   - `environment.ts` — base (gitignored)
@@ -338,8 +477,8 @@ export const routes: Routes = [
   - `fileReplacements` dans `project.json`
   - Toujours importer `environment.ts` uniquement
 - **Files :**
-  - `apps/frontend/src/environments/environment.ts` (gitignored)
-  - `apps/frontend/src/environments/environment.dev.ts` (gitignored)
+  - `apps/frontend/src/environments/environment.ts`
+  - `apps/frontend/src/environments/environment.dev.ts`
   - `apps/frontend/src/environments/environment.prod.ts`
   - `apps/frontend/src/environments/environment.example.ts`
 
@@ -348,6 +487,7 @@ export const routes: Routes = [
 ### S0-FE-011 : Refactor — Token dans NgRx store
 - **Branch :** `feature/S0-FE-011-token-ngrx-store`
 - **Commit :** `refactor(auth): read token from NgRx store instead of AuthService`
+- **Priority :** P0 | **SP :** 1
 - **Status :** ✅ Done
 - **Description :**
   - Interceptor lit `selectAccessToken` depuis le store
@@ -359,15 +499,42 @@ export const routes: Routes = [
 
 ## Definition of Done - Sprint 0
 
+**Infrastructure :**
 - ✅ Docker PostgreSQL + pgAdmin démarrés
 - ✅ Prisma schema appliqué, tables créées
 - ✅ NestJS démarre sur http://localhost:3000
+
+**Auth :**
 - ✅ `POST /auth/login` retourne `{ access_token, user }` ou HTTP 401
+- ✅ Seed : 3 utilisateurs créés avec `upsert`
+- ✅ RolesGuard opérationnel
+
+**Frontend :**
 - ✅ `nx serve frontend` démarre sur http://localhost:4200
 - ✅ Login → Dashboard fonctionnel
 - ✅ NgRx store auth configuré
-- ✅ Interceptor lit le token depuis le store (`selectAccessToken`)
+- ✅ Interceptor lit le token depuis le store
 - ✅ AuthGuard avec UrlTree
 - ✅ PrimeNG 19 + Tailwind CSS v4 opérationnels
-- ✅ Environment files configurés (fileReplacements)
-- ✅ Seed : 3 utilisateurs créés avec `upsert`
+
+---
+
+## 🚀 Commandes Rapides
+
+```bash
+# DB
+docker compose up -d postgres pgadmin
+
+# Backend
+cd apps/backend
+nx serve backend
+
+# Prisma (depuis apps/backend/)
+npx prisma migrate dev --config prisma.config.ts
+npx prisma generate --config prisma.config.ts
+npx prisma db seed --config prisma.config.ts
+npx prisma studio --config prisma.config.ts
+
+# Frontend
+nx serve frontend
+```
