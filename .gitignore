@@ -52,4 +52,4 @@ yarn-error.log*
 # Environments
 apps/frontend/src/environments/environment.dev.ts
 apps/frontend/src/environments/environment.prod.ts
-/generated/prisma
+apps/backend/generated/
