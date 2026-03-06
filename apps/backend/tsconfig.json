@@ -10,6 +10,6 @@
     "target": "ES2021",
     "sourceMap": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "prisma.config.ts"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "test"]
 }

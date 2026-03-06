@@ -184,3 +184,19 @@ La documentation complète est disponible dans `/docs` :
 - `SPRINT_0_DETAILED.md` — détail des tickets Sprint 0
 - `diagramme_de_classe.md` — modèle de données
 - `diagram_de_sequence.md` — flux de réservation
+
+## Docker
+Pour lancer le projet en local avec Docker, utilisez les commandes suivantes :
+
+```bash
+# Build and run the project for the first time
+docker-compose up
+
+# Stop the project
+docker-compose down
+
+# Rebuild the project after making changes or add new packages
+docker-compose up --build
+```
+
+
