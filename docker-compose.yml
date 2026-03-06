@@ -30,46 +30,46 @@ services:
     networks:
       - dev-network
 
-  backend:
-    build:
-      context: .
-      dockerfile: apps/backend/Dockerfile
-      target: dev
-    container_name: runner-backend
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/runner?schema=public
-      JWT_SECRET: dev-secret-key
-      NODE_ENV: development
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./apps/backend:/app/apps/backend
-      - backend_node_modules:/app/node_modules
-    depends_on:
-      - postgres
-    networks:
-      - dev-network
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/backend/Dockerfile
+  #     target: dev
+  #   container_name: runner-backend
+  #   environment:
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/runner?schema=public
+  #     JWT_SECRET: dev-secret-key
+  #     NODE_ENV: development
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./apps/backend:/app/apps/backend
+  #     - backend_node_modules:/app/node_modules
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - dev-network
 
-  frontend:
-    build:
-      context: .
-      dockerfile: apps/frontend/Dockerfile
-      target: dev
-    container_name: runner-frontend
-    ports:
-      - "4200:4200"
-    volumes:
-      - ./apps/frontend:/app/apps/frontend
-      - frontend_node_modules:/app/node_modules
-    depends_on:
-      - backend
-    networks:
-      - dev-network
+  # frontend:
+    # build:
+    #   context: .
+    #   dockerfile: apps/frontend/Dockerfile
+    #   target: dev
+    # container_name: runner-frontend
+    # ports:
+    #   - "4200:4200"
+    # volumes:
+    #   - ./apps/frontend:/app/apps/frontend
+    #   - frontend_node_modules:/app/node_modules
+    # depends_on:
+    #   - backend
+    # networks:
+    #   - dev-network
 
 volumes:
   postgres-data:
-  backend_node_modules:
-  frontend_node_modules:
+  # backend_node_modules:
+  # frontend_node_modules:
 
 networks:
   dev-network:
