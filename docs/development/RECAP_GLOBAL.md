@@ -11,18 +11,18 @@
 
 ## 📅 Planning Sprint par Sprint
 
-| Sprint | Titre | Durée | SP | Statut |
-|--------|-------|-------|----|--------|
-| **Sprint 0** | Setup Infrastructure | 1-2j | 13 | ✅ Terminé |
-| **Sprint 1** | Auth & Layout | 2-3j | 21 | 🔄 En cours |
-| **Sprint 2** | Hotels + Seasons | 4-5j | 34 | ⏳ À faire |
-| **Sprint 3** | Référentiels | 3j | 21 | ⏳ À faire |
-| **Sprint 4** | Contracts | 6-7j | 55 | ⏳ À faire |
-| **Sprint 5** | Offers | 3-4j | 29 | ⏳ À faire |
-| **Sprint 6** | Booking UI | 4-5j | 34 | ⏳ À faire |
-| **Sprint 7** | Pricing Engine | 5-7j | 47 | ⏳ À faire |
-| **Sprint 8** | Finitions & Tests | 3-4j | 26 | ⏳ À faire |
-| **TOTAL** | | **31-40 jours** | **275** | |
+| Sprint       | Titre                | Durée           | SP      | Statut      |
+| ------------ | -------------------- | --------------- | ------- | ----------- |
+| **Sprint 0** | Setup Infrastructure | 1-2j            | 13      | ✅ Terminé  |
+| **Sprint 1** | Auth & Layout        | 2-3j            | 21      | 🔄 En cours |
+| **Sprint 2** | Hotels + Seasons     | 4-5j            | 34      | ⏳ À faire  |
+| **Sprint 3** | Référentiels         | 3j              | 21      | ⏳ À faire  |
+| **Sprint 4** | Contracts            | 6-7j            | 55      | ⏳ À faire  |
+| **Sprint 5** | Offers               | 3-4j            | 29      | ⏳ À faire  |
+| **Sprint 6** | Booking UI           | 4-5j            | 34      | ⏳ À faire  |
+| **Sprint 7** | Pricing Engine       | 5-7j            | 47      | ⏳ À faire  |
+| **Sprint 8** | Finitions & Tests    | 3-4j            | 26      | ⏳ À faire  |
+| **TOTAL**    |                      | **31-40 jours** | **275** |             |
 
 ---
 
@@ -30,27 +30,29 @@
 
 ### Stack
 
-| Couche | Technologie | Version |
-|--------|-------------|---------|
-| Monorepo | NX | 22 |
-| Backend | NestJS | 11 |
-| ORM | Prisma | latest |
-| Database | PostgreSQL | 15 |
-| Auth | JWT + Passport | - |
-| API Docs | Swagger | - |
-| Frontend | Angular | 19 |
-| State Management | NgRx (auth + booking) / BehaviorSubject (features CRUD) | 19 |
-| UI Library | PrimeNG | 19 |
-| CSS | Tailwind CSS | v4 |
-| Containerisation | Docker | - |
+| Couche           | Technologie                                             | Version |
+| ---------------- | ------------------------------------------------------- | ------- |
+| Monorepo         | NX                                                      | 22      |
+| Backend          | NestJS                                                  | 11      |
+| ORM              | Prisma                                                  | latest  |
+| Database         | PostgreSQL                                              | 15      |
+| Auth             | JWT + Passport                                          | -       |
+| API Docs         | Swagger                                                 | -       |
+| Frontend         | Angular                                                 | 19      |
+| State Management | NgRx (auth + booking) / BehaviorSubject (features CRUD) | 19      |
+| UI Library       | PrimeNG                                                 | 19      |
+| CSS              | Tailwind CSS                                            | v4      |
+| Containerisation | Docker                                                  | -       |
 
 ### Règles d'architecture clés
 
 **NgRx uniquement pour :**
+
 - Auth (partagée partout, tokens, rôles)
 - Booking Wizard (état complexe multi-étapes + effects calculatePrice)
 
 **BehaviorSubject pour tous les autres services :**
+
 - Hotels, Seasons, MealPlans, Markets, Currencies, Supplements, Contracts, Offers
 
 **Pourquoi cette distinction ?**
@@ -68,12 +70,14 @@ Pas de `constructor injection`. Angular 19 utilise `inject()`.
 Pas de NgModule. Angular 19 full standalone.
 
 **Guards avec UrlTree :**
+
 ```typescript
 return router.createUrlTree(['/dashboard']); // ✅
 // pas : router.navigate(['/dashboard']); return false; // ❌
 ```
 
 **Erreurs backend :**
+
 ```typescript
 throw new UnauthorizedException(); // ✅
 // pas : return { error: 'Unauthorized' }; // ❌
@@ -83,20 +87,20 @@ throw new UnauthorizedException(); // ✅
 
 ## 📦 Modules Backend (NestJS)
 
-| Module | Endpoint | Multi-tenant |
-|--------|----------|--------------|
-| PrismaModule (global) | - | - |
-| AuthModule | /auth | ✅ |
-| HotelsModule | /hotels | ✅ |
-| SeasonsModule | /seasons | ✅ |
-| MealPlansModule | /meal-plans | ✅ |
-| MarketsModule | /markets | ✅ |
-| CurrenciesModule | /currencies | ❌ (global) |
-| SupplementsModule | /supplements | ✅ |
-| ContractsModule | /contracts | ✅ |
-| OffersModule | /offers | ✅ |
-| BookingModule | /booking, /bookings | ✅ |
-| PricingModule | (service pur, pas de controller) | - |
+| Module                | Endpoint                         | Multi-tenant |
+| --------------------- | -------------------------------- | ------------ |
+| PrismaModule (global) | -                                | -            |
+| AuthModule            | /auth                            | ✅           |
+| HotelsModule          | /hotels                          | ✅           |
+| SeasonsModule         | /seasons                         | ✅           |
+| MealPlansModule       | /meal-plans                      | ✅           |
+| MarketsModule         | /markets                         | ✅           |
+| CurrenciesModule      | /currencies                      | ❌ (global)  |
+| SupplementsModule     | /supplements                     | ✅           |
+| ContractsModule       | /contracts                       | ✅           |
+| OffersModule          | /offers                          | ✅           |
+| BookingModule         | /booking, /bookings              | ✅           |
+| PricingModule         | (service pur, pas de controller) | -            |
 
 > **Currencies est global** : accessible par tous les tour operators, pas de filtrage tourOperatorId.
 
@@ -104,43 +108,45 @@ throw new UnauthorizedException(); // ✅
 
 ## 🎭 Rôles & Accès
 
-| Feature | ADMIN | MANAGER | AGENT |
-|---------|-------|---------|-------|
-| Hotels | ✅ | ✅ | ❌ |
-| Seasons | ✅ | ✅ | ❌ |
-| Référentiels (MealPlans, Markets, etc.) | ✅ | ✅ | ❌ |
-| Contracts | ✅ | ✅ | ❌ |
-| Offers | ✅ | ✅ | ❌ |
-| Booking / Simulation | ✅ | ✅ | ✅ |
-| Historique (toutes) | ✅ | ✅ | ❌ |
-| Historique (les siennes) | ✅ | ✅ | ✅ |
+| Feature                                 | ADMIN | MANAGER | AGENT |
+| --------------------------------------- | ----- | ------- | ----- |
+| Hotels                                  | ✅    | ✅      | ❌    |
+| Seasons                                 | ✅    | ✅      | ❌    |
+| Référentiels (MealPlans, Markets, etc.) | ✅    | ✅      | ❌    |
+| Contracts                               | ✅    | ✅      | ❌    |
+| Offers                                  | ✅    | ✅      | ❌    |
+| Booking / Simulation                    | ✅    | ✅      | ✅    |
+| Historique (toutes)                     | ✅    | ✅      | ❌    |
+| Historique (les siennes)                | ✅    | ✅      | ✅    |
 
 ---
 
 ## 🔑 Credentials Test (Seed Data)
 
-| Email | Password | Rôle |
-|-------|----------|------|
-| admin@runner.com | Password1234! | ADMIN |
+| Email              | Password      | Rôle    |
+| ------------------ | ------------- | ------- |
+| admin@runner.com   | Password1234! | ADMIN   |
 | manager@runner.com | Password1234! | MANAGER |
-| agent@runner.com | Password1234! | AGENT |
+| agent@runner.com   | Password1234! | AGENT   |
 
 ---
 
 ## 🔐 Stratégie Auth
 
-| Token | Stockage | Durée | Usage |
-|-------|----------|-------|-------|
-| access_token | Mémoire (NgRx store) | 15 min | Envoyé dans Authorization header |
-| refresh_token | Cookie httpOnly | 7 jours | Envoyé automatiquement par le navigateur |
+| Token         | Stockage             | Durée   | Usage                                    |
+| ------------- | -------------------- | ------- | ---------------------------------------- |
+| access_token  | Mémoire (NgRx store) | 15 min  | Envoyé dans Authorization header         |
+| refresh_token | Cookie httpOnly      | 7 jours | Envoyé automatiquement par le navigateur |
 
 **Flux au reload :**
+
 1. App démarre → `APP_INITIALIZER` appelle `POST /auth/refresh`
 2. Cookie httpOnly envoyé automatiquement par le navigateur
 3. Succès → store rehydraté avec `access_token` + `user`
 4. Échec → `AuthGuard` redirige vers `/login`
 
 **Flux sur 401 (interceptor) :**
+
 1. Requête → 401 reçu
 2. Interceptor appelle `POST /auth/refresh`
 3. Succès → nouveau `access_token` → retry requête originale
@@ -151,23 +157,27 @@ throw new UnauthorizedException(); // ✅
 ## 💰 Pricing Engine — Concepts Clés
 
 ### Modes de tarification chambre
+
 - **PER_ROOM** : prix fixe par nuit indépendamment de l'occupation
 - **PER_OCCUPANCY** : prix selon la configuration exacte (nb adultes + nb enfants + âges)
 
 ### Modes de réduction offres
+
 - **SEQUENTIAL** : `Prix × (1-A) × (1-B)` — les réductions se multiplient
 - **ADDITIVE** : `Prix × (1-(A+B))` — les réductions s'additionnent
 - ⚠️ Non-mixables : on ne peut pas combiner SEQUENTIAL et ADDITIVE
 
 ### Types de suppléments
-| Type | Calcul |
-|------|--------|
+
+| Type                 | Calcul                   |
+| -------------------- | ------------------------ |
 | PER_PERSON_PER_NIGHT | prix × personnes × nuits |
-| PER_PERSON_PER_STAY | prix × personnes |
-| PER_ROOM_PER_NIGHT | prix × chambres × nuits |
-| PER_ROOM_PER_STAY | prix × chambres |
+| PER_PERSON_PER_STAY  | prix × personnes         |
+| PER_ROOM_PER_NIGHT   | prix × chambres × nuits  |
+| PER_ROOM_PER_STAY    | prix × chambres          |
 
 ### Performance Pricing Engine
+
 - **Max 2 requêtes DB** par calcul (contract + offers)
 - Toutes les opérations EN MÉMOIRE dans la boucle nuit par nuit
 - Cible : < 2s pour 30 nuits, < 5s pour 150 nuits
@@ -244,6 +254,7 @@ nx build frontend --configuration=production
 ```
 
 ### URLs
+
 - **Frontend :** http://localhost:4200
 - **Backend API :** http://localhost:3000
 - **Swagger :** http://localhost:3000/api
@@ -255,6 +266,7 @@ nx build frontend --configuration=production
 ## 📝 Convention Git
 
 ### Branches
+
 ```
 main                                    # Production (protégée)
 dev                                     # Développement (protégée)
@@ -267,6 +279,7 @@ docs/S{sprint}-DOC-{n}-{desc}          # Documentation
 ```
 
 ### Commits
+
 ```
 feat(scope): description      # Nouvelle fonctionnalité
 fix(scope): description       # Correction bug
@@ -281,13 +294,14 @@ refactor(scope): description  # Refactoring
 
 ## 🧪 Tests & Qualité Cibles
 
-| Scope | Coverage | Tests E2E |
-|-------|----------|-----------|
-| Backend | > 80% | Endpoints critiques |
-| PricingService | > 90% | 10+ tests obligatoires |
-| Frontend | > 70% | Flow booking complet |
+| Scope          | Coverage | Tests E2E              |
+| -------------- | -------- | ---------------------- |
+| Backend        | > 80%    | Endpoints critiques    |
+| PricingService | > 90%    | 10+ tests obligatoires |
+| Frontend       | > 70%    | Flow booking complet   |
 
 ### Lighthouse Targets
+
 - Performance : > 85
 - Accessibility : > 90
 - Best Practices : > 90
@@ -297,6 +311,7 @@ refactor(scope): description  # Refactoring
 ## 📊 Métriques de Succès MVP
 
 ### Fonctionnel
+
 - ✅ Login / Logout avec refresh token httpOnly
 - ✅ Layout shell avec sidebar dynamique selon rôle
 - ✅ CRUD Hotels avec Age Categories et Room Types
@@ -310,6 +325,7 @@ refactor(scope): description  # Refactoring
 - ✅ Historique simulations
 
 ### Technique
+
 - ✅ Max 2 requêtes DB par calcul de prix
 - ✅ NgRx pour auth et booking uniquement
 - ✅ BehaviorSubject + take(1) pour tous les autres services
