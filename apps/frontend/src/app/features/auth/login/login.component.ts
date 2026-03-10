@@ -17,6 +17,25 @@ import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
 import { Password } from 'primeng/password';
 import { Button } from 'primeng/button';
+import { Component, inject } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import { AsyncPipe, CommonModule } from '@angular/common';
+import { Store } from '@ngrx/store';
+import { AuthActions } from '@/app/core/auth/store/auth.actions';
+import { Observable } from 'rxjs';
+import {
+  selectAuthError,
+  selectIsLoading,
+} from '@/app/core/auth/store/auth.selectors';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
+import { Password } from 'primeng/password';
+import { Button } from 'primeng/button';
 
 @Component({
   selector: 'app-login',
@@ -29,7 +48,17 @@ import { Button } from 'primeng/button';
     ReactiveFormsModule,
     AsyncPipe,
   ],
+  imports: [
+    CommonModule,
+    InputText,
+    Message,
+    Password,
+    Button,
+    ReactiveFormsModule,
+    AsyncPipe,
+  ],
   templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {
@@ -38,7 +67,7 @@ export class LoginComponent {
 
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required]],
   });
 
   get email() {
