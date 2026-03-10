@@ -1,69 +1,19 @@
-# ─── Node ───────────────────────────────
-node_modules
-**/node_modules
-.pnp
-.pnp.js
-.npm
-*.tgz
-npm-debug.log
-yarn-error.log
-
-# ─── Build outputs ──────────────────────
+# Compiled output
 dist
-**/dist
 tmp
 out-tsc
 bazel-out
-build
-out
 
-# ─── NX ─────────────────────────────────
-.nx/cache
-.nx/workspace-data
-
-# ─── Angular ────────────────────────────
-.angular
-**/.angular
-.sass-cache
-
-# ─── Git ────────────────────────────────
-.git
-.gitignore
-.gitattributes
-
-# ─── Logs ───────────────────────────────
-*.log
-logs
+# Miscellaneous
+.sass-cache/
+connect.lock
 libpeerconnection.log
-
-# ─── Docker ─────────────────────────────
-**/Dockerfile*
-docker-compose*.yml
-.dockerignore
-
-# ─── IDE ────────────────────────────────
-.idea
-.project
-.classpath
-.c9
-*.launch
-.settings
-*.sublime-workspace
-.vscode
-.history
-
-# ─── Tests ──────────────────────────────
-coverage
-**/*.spec.ts
-**/*.test.ts
-e2e
 testem.log
+typings
 
-# ─── OS ─────────────────────────────────
-.DS_Store
+# System files
 Thumbs.db
 
-# ─── Env ────────────────────────────────
-.env
-.env.*
-!.env.example
+# Environments (gitignored — contiennent des valeurs locales)
+src/environments/environment.ts
+src/environments/environment.dev.ts
