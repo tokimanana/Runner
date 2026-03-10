@@ -37,8 +37,7 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.loginSuccess),
-        tap(({ accessToken }) => {
-          this.authService.setAccessToken(accessToken);
+        tap(() => {
           this.router.navigate(['/dashboard']);
         })
       ),
@@ -62,7 +61,6 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.logout),
         tap(() => {
-          this.authService.logout();
           void this.router.navigate(['/login']);
         })
       ),
