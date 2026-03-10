@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
 
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
 # ─────────────────────────────────────────
 # Stage 2 – dev : hot-reload development
