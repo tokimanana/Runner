@@ -34,7 +34,7 @@
 | ---------------- | ------------------------------------------------------- | ------- |
 | Monorepo         | NX                                                      | 22      |
 | Backend          | NestJS                                                  | 11      |
-| ORM              | Prisma                                                  | latest  |
+| ORM              | Prisma                                                  | 7       |
 | Database         | PostgreSQL                                              | 15      |
 | Auth             | JWT + Passport                                          | -       |
 | API Docs         | Swagger                                                 | -       |
@@ -82,6 +82,25 @@ return router.createUrlTree(['/dashboard']); // ✅
 throw new UnauthorizedException(); // ✅
 // pas : return { error: 'Unauthorized' }; // ❌
 ```
+
+**Interceptors — forme fonctionnelle uniquement :**
+
+```typescript
+export function authInterceptor(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn
+): Observable<HttpEvent<unknown>> {}
+```
+
+**Validation formulaires — règles backend uniquement :**
+
+- Ne jamais ajouter des contraintes non confirmées par le backend
+- `Validators.required` + `Validators.email` sont acceptables (contraintes universelles)
+
+**Wildcard route (`**`) :\*\*
+
+- Redirige vers `''` (→ dashboard via AuthGuard)
+- Sprint 1 : ajouter `redirectIfAuthenticatedGuard` sur `/login` (sous-tâche S1-FE-002)
 
 ---
 
@@ -152,6 +171,13 @@ throw new UnauthorizedException(); // ✅
 3. Succès → nouveau `access_token` → retry requête originale
 4. Échec → dispatch `logout` → redirect `/login`
 
+**Sprint 0 — version simplifiée (pas de refresh token encore) :**
+
+- `access_token` stocké en mémoire dans `AuthService`
+- Interceptor lit `authService.getAccessToken()` directement
+- Pas d'appel HTTP au logout (backend pas encore prêt)
+- `logoutSuccess` action réservée Sprint 1
+
 ---
 
 ## 💰 Pricing Engine — Concepts Clés
@@ -192,37 +218,60 @@ runner/
 │   ├── frontend/          # Angular 19
 │   │   └── src/app/
 │   │       ├── core/
-│   │       │   ├── auth/store/     # NgRx auth
-│   │       │   ├── guards/         # AuthGuard, RoleGuard
-│   │       │   ├── interceptors/   # AuthInterceptor, RefreshInterceptor
-│   │       │   └── shell/          # ShellComponent, SidebarComponent, HeaderComponent
+│   │       │   ├── auth/
+│   │       │   │   ├── models/
+│   │       │   │   │   └── auth.model.ts           ✅ Sprint 0
+│   │       │   │   ├── store/
+│   │       │   │   │   ├── auth.actions.ts         ✅ Sprint 0
+│   │       │   │   │   ├── auth.reducer.ts         ✅ Sprint 0
+│   │       │   │   │   ├── auth.effects.ts         ✅ Sprint 0
+│   │       │   │   │   ├── auth.selectors.ts       ✅ Sprint 0
+│   │       │   │   │   └── auth.state.ts           ✅ Sprint 0
+│   │       │   │   └── auth.service.ts             ✅ Sprint 0
+│   │       │   ├── guards/
+│   │       │   │   ├── auth.guard.ts               ✅ Sprint 0
+│   │       │   │   └── role.guard.ts               ⏳ Sprint 1
+│   │       │   ├── interceptors/
+│   │       │   │   ├── auth.interceptor.ts         ✅ Sprint 0
+│   │       │   │   └── refresh.interceptor.ts      ⏳ Sprint 1
+│   │       │   └── shell/                          ⏳ Sprint 1
+│   │       │       ├── shell.component.ts
+│   │       │       ├── sidebar/
+│   │       │       └── header/
 │   │       ├── features/
-│   │       │   ├── hotels/
-│   │       │   ├── seasons/
-│   │       │   ├── meal-plans/
-│   │       │   ├── markets/
-│   │       │   ├── currencies/
-│   │       │   ├── supplements/
-│   │       │   ├── contracts/
-│   │       │   ├── offers/
-│   │       │   ├── booking/        # NgRx booking store
-│   │       │   └── dashboard/
-│   │       └── shared/
-│   │           ├── services/       # ExportService, etc.
-│   │           └── models/         # Interfaces TypeScript partagées
+│   │       │   ├── auth/
+│   │       │   │   └── login/
+│   │       │   │       └── login.component.ts      ✅ Sprint 0
+│   │       │   ├── dashboard/
+│   │       │   │   └── dashboard.component.ts      ✅ Sprint 0 (placeholder)
+│   │       │   ├── hotels/                         ⏳ Sprint 2
+│   │       │   ├── seasons/                        ⏳ Sprint 2
+│   │       │   ├── meal-plans/                     ⏳ Sprint 3
+│   │       │   ├── markets/                        ⏳ Sprint 3
+│   │       │   ├── currencies/                     ⏳ Sprint 3
+│   │       │   ├── supplements/                    ⏳ Sprint 3
+│   │       │   ├── contracts/                      ⏳ Sprint 4
+│   │       │   ├── offers/                         ⏳ Sprint 5
+│   │       │   └── booking/                        ⏳ Sprint 6
+│   │       ├── shared/
+│   │       │   ├── services/
+│   │       │   └── models/
+│   │       ├── app.config.ts                       ✅ Sprint 0
+│   │       ├── app.routes.ts                       ✅ Sprint 0
+│   │       └── app.component.ts                    ✅ Sprint 0
 │   └── backend/           # NestJS 11
 │       └── src/
-│           ├── auth/
-│           ├── hotels/
-│           ├── seasons/
-│           ├── meal-plans/
-│           ├── markets/
-│           ├── currencies/
-│           ├── supplements/
-│           ├── contracts/
-│           ├── offers/
-│           ├── booking/
-│           └── pricing/   # Service pur, pas de controller
+│           ├── auth/                               ⏳ Sprint 0 BE
+│           ├── hotels/                             ⏳ Sprint 2
+│           ├── seasons/                            ⏳ Sprint 2
+│           ├── meal-plans/                         ⏳ Sprint 3
+│           ├── markets/                            ⏳ Sprint 3
+│           ├── currencies/                         ⏳ Sprint 3
+│           ├── supplements/                        ⏳ Sprint 3
+│           ├── contracts/                          ⏳ Sprint 4
+│           ├── offers/                             ⏳ Sprint 5
+│           ├── booking/                            ⏳ Sprint 6
+│           └── pricing/                            ⏳ Sprint 7
 ├── libs/                  # Librairies partagées NX (à créer Sprint 2+)
 ├── docker-compose.yml
 └── README.md
@@ -238,15 +287,18 @@ docker-compose up -d                    # PostgreSQL + pgAdmin
 nx serve backend                        # NestJS sur :3000
 nx serve frontend                       # Angular sur :4200
 
-# Base de données
-npx prisma migrate dev                  # Appliquer migrations
-npx prisma db seed                      # Seed données test
-npx prisma studio                       # Interface graphique :5555
+# Base de données (depuis apps/backend/)
+npx prisma migrate dev --config prisma.config.ts
+npx prisma db seed --config prisma.config.ts
+npx prisma studio --config prisma.config.ts
+
+# Générer un component NX
+nx g @nx/angular:component apps/frontend/src/app/<path>/<name> --dry-run
 
 # Tests
-nx test backend                         # Tests unitaires backend
-nx test frontend                        # Tests unitaires frontend
-nx e2e frontend                         # Tests E2E
+nx test backend
+nx test frontend
+nx e2e frontend
 
 # Build
 nx build backend --configuration=production
@@ -290,6 +342,15 @@ docs(scope): description      # Documentation
 refactor(scope): description  # Refactoring
 ```
 
+### Stratégie de merge PRs
+
+| Type de branche | Stratégie de merge |
+| --------------- | ------------------ |
+| `docs/`         | Rebase and merge   |
+| `feature/`      | Squash and merge   |
+| `fix/`          | Squash and merge   |
+| `chore/`        | Squash and merge   |
+
 ---
 
 ## 🧪 Tests & Qualité Cibles
@@ -331,8 +392,10 @@ refactor(scope): description  # Refactoring
 - ✅ BehaviorSubject + take(1) pour tous les autres services
 - ✅ Standalone components Angular 19
 - ✅ Guards avec UrlTree
+- ✅ Interceptors fonctionnels (pas de classe)
 - ✅ Exceptions NestJS (jamais return { error })
 - ✅ Cookie httpOnly pour refresh token
+- ✅ Validation formulaires = règles backend uniquement
 
 ---
 
