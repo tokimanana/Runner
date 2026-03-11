@@ -7,13 +7,9 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet],
   template: `
     <div class="flex h-screen">
-      <app-sidebar />
-      <div class="flex flex-col flex-1 overflow-hidden">
-        <app-header />
-        <main class="flex-1 overflow-auto p-6">
-          <router-outlet />
-        </main>
-      </div>
+      <main class="flex-1 overflow-auto p-6">
+        <router-outlet />
+      </main>
     </div>
   `,
 })

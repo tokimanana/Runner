@@ -1,4 +1,3 @@
-// apps/frontend/src/app/core/guards/role.guard.ts
 import { inject } from '@angular/core';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
