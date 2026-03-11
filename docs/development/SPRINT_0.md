@@ -1,6 +1,7 @@
 # Sprint 0 - Setup Infrastructure
 
 ## 🎯 Objectif Sprint
+
 Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, frontend Angular 19, base de données PostgreSQL, authentification JWT basique.
 
 **Durée estimée :** 1-2 jours
@@ -10,28 +11,29 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
 
 ## Décisions d'architecture prises en Sprint 0
 
-| Décision | Choix | Raison |
-|----------|-------|--------|
-| Framework frontend | Angular 19 standalone | Pas de NgModule, `inject()` |
-| UI Library | PrimeNG 19 | Pas Angular Material |
-| CSS | Tailwind CSS v4 | Utility-first, compatible PrimeNG |
-| State Management | NgRx 19 (auth uniquement) | Single source of truth pour les tokens |
-| State features CRUD | BehaviorSubject | Moins de complexité, suffisant |
-| Monorepo | NX 22 | Gestion apps/libs partagées |
-| ORM | Prisma 7 | Type-safe, migrations versionnées |
-| Auth | JWT (access + refresh) | Stateless, scalable |
-| Token access | Mémoire (NgRx store) | Sécurisé contre XSS |
-| Token refresh | Cookie httpOnly | Auto-envoyé, survit au reload |
-| Erreurs backend | `throw new UnauthorizedException()` | HTTP status corrects pour catchError |
-| Guards | UrlTree | Délègue navigation à Angular |
-| Injection | `inject()` | Pattern Angular 19 |
-| Components | Standalone uniquement | Pas de NgModule |
+| Décision            | Choix                               | Raison                                 |
+| ------------------- | ----------------------------------- | -------------------------------------- |
+| Framework frontend  | Angular 19 standalone               | Pas de NgModule, `inject()`            |
+| UI Library          | PrimeNG 19                          | Pas Angular Material                   |
+| CSS                 | Tailwind CSS v4                     | Utility-first, compatible PrimeNG      |
+| State Management    | NgRx 19 (auth uniquement)           | Single source of truth pour les tokens |
+| State features CRUD | BehaviorSubject                     | Moins de complexité, suffisant         |
+| Monorepo            | NX 22                               | Gestion apps/libs partagées            |
+| ORM                 | Prisma 7                            | Type-safe, migrations versionnées      |
+| Auth                | JWT (access + refresh)              | Stateless, scalable                    |
+| Token access        | Mémoire (NgRx store)                | Sécurisé contre XSS                    |
+| Token refresh       | Cookie httpOnly                     | Auto-envoyé, survit au reload          |
+| Erreurs backend     | `throw new UnauthorizedException()` | HTTP status corrects pour catchError   |
+| Guards              | UrlTree                             | Délègue navigation à Angular           |
+| Injection           | `inject()`                          | Pattern Angular 19                     |
+| Components          | Standalone uniquement               | Pas de NgModule                        |
 
 ---
 
 ## Backend Tasks
 
 ### S0-BE-001 : Initialiser NestJS dans NX
+
 - **Branch :** `feature/S0-BE-001-nestjs-init`
 - **Commit :** `feat(backend): initialize NestJS app in NX monorepo`
 - **Priority :** P0 | **SP :** 1
@@ -43,6 +45,7 @@ Mettre en place toute l'infrastructure du projet : monorepo NX, backend NestJS, 
 ---
 
 ### S0-BE-002 : Setup Docker PostgreSQL
+
 - **Branch :** `feature/S0-BE-002-docker-postgres`
 - **Commit :** `feat(infra): setup Docker PostgreSQL and pgAdmin`
 - **Priority :** P0 | **SP :** 1
@@ -71,6 +74,7 @@ docker compose up -d postgres pgadmin
 ---
 
 ### S0-BE-003 : Configurer Prisma
+
 - **Branch :** `feature/S0-BE-003-prisma-init`
 - **Commit :** `feat(prisma): configure Prisma 7 with PostgreSQL and User schema`
 - **Priority :** P0 | **SP :** 2
@@ -109,12 +113,14 @@ model User {
 ```
 
 **.env :**
+
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/runner"
 JWT_SECRET="dev-secret-key"
 ```
 
 **Commands — toujours depuis `apps/backend/` :**
+
 ```bash
 cd apps/backend
 npx prisma migrate dev --name init --config prisma.config.ts
@@ -125,6 +131,7 @@ npx prisma studio --config prisma.config.ts
 > **Règle :** après chaque modification du schema → `migrate dev` puis `generate`. `generated/` est gitignored.
 
 **Acceptance Criteria :**
+
 - ✅ Migration `init` appliquée sans erreur
 - ✅ Table `User` + enum `UserRole` créés dans PostgreSQL
 - ✅ Client TypeScript généré dans `generated/prisma`
@@ -133,6 +140,7 @@ npx prisma studio --config prisma.config.ts
 ---
 
 ### S0-BE-004 : Créer PrismaModule
+
 - **Branch :** `feature/S0-BE-004-prisma-module`
 - **Commit :** `feat(prisma): create PrismaService and PrismaModule`
 - **Priority :** P0 | **SP :** 1
@@ -167,12 +175,14 @@ export class PrismaModule {}
 > **Pourquoi `@Global()` ?** Évite d'importer `PrismaModule` dans chaque module — une seule fois dans `AppModule` suffit.
 
 **Acceptance Criteria :**
+
 - ✅ `PrismaService` injectable dans tous les modules
 - ✅ Connexion DB établie au démarrage de NestJS
 
 ---
 
 ### S0-BE-005 : Créer AuthModule (JWT basique)
+
 - **Branch :** `feature/S0-BE-005-auth-module`
 - **Commit :** `feat(auth): create auth module with JWT strategy`
 - **Priority :** P0 | **SP :** 3
@@ -191,6 +201,7 @@ export class PrismaModule {}
   - `apps/backend/src/auth/guards/jwt-auth.guard.ts`
 
 **Acceptance Criteria :**
+
 - ✅ `POST /auth/login` retourne `{ access_token, user }` avec credentials valides
 - ✅ `POST /auth/login` retourne HTTP 401 avec credentials invalides
 - ✅ `passwordHash` jamais exposé dans la réponse
@@ -199,6 +210,7 @@ export class PrismaModule {}
 ---
 
 ### S0-BE-006 : Créer RolesGuard
+
 - **Branch :** `feature/S0-BE-006-roles-guard`
 - **Commit :** `feat(auth): create RolesGuard and @Roles decorator`
 - **Priority :** P0 | **SP :** 1
@@ -214,10 +226,10 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>('roles', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+      'roles',
+      [context.getHandler(), context.getClass()]
+    );
     if (!requiredRoles) return true;
     const { user } = context.switchToHttp().getRequest();
     return requiredRoles.includes(user.role);
@@ -231,12 +243,14 @@ export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ```
 
 **Acceptance Criteria :**
+
 - ✅ Route sans `@Roles` → accessible par tous les users authentifiés
 - ✅ Route avec `@Roles(UserRole.ADMIN)` → HTTP 403 si rôle insuffisant
 
 ---
 
 ### S0-BE-007 : Seed data utilisateurs
+
 - **Branch :** `feature/S0-BE-007-seed`
 - **Commit :** `feat(seed): add users seed with bcrypt`
 - **Priority :** P0 | **SP :** 1
@@ -248,14 +262,33 @@ export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 const hashedPassword = await bcrypt.hash('Password1234!', 10);
 
 for (const u of [
-  { email: 'admin@runner.com', firstName: 'Admin', lastName: 'Runner', role: 'ADMIN' },
-  { email: 'manager@runner.com', firstName: 'Marie', lastName: 'Manager', role: 'MANAGER' },
-  { email: 'agent@runner.com', firstName: 'Jean', lastName: 'Agent', role: 'AGENT' },
+  {
+    email: 'admin@runner.com',
+    firstName: 'Admin',
+    lastName: 'Runner',
+    role: 'ADMIN',
+  },
+  {
+    email: 'manager@runner.com',
+    firstName: 'Marie',
+    lastName: 'Manager',
+    role: 'MANAGER',
+  },
+  {
+    email: 'agent@runner.com',
+    firstName: 'Jean',
+    lastName: 'Agent',
+    role: 'AGENT',
+  },
 ]) {
   await prisma.user.upsert({
     where: { email: u.email },
     update: {},
-    create: { ...u, passwordHash: hashedPassword, tourOperatorId: tourOperator.id },
+    create: {
+      ...u,
+      passwordHash: hashedPassword,
+      tourOperatorId: tourOperator.id,
+    },
   });
 }
 ```
@@ -264,11 +297,11 @@ for (const u of [
 
 **Credentials de test :**
 
-| Email | Password | Rôle |
-|-------|----------|------|
-| admin@runner.com | Password1234! | ADMIN |
+| Email              | Password      | Rôle    |
+| ------------------ | ------------- | ------- |
+| admin@runner.com   | Password1234! | ADMIN   |
 | manager@runner.com | Password1234! | MANAGER |
-| agent@runner.com | Password1234! | AGENT |
+| agent@runner.com   | Password1234! | AGENT   |
 
 ```bash
 cd apps/backend
@@ -276,6 +309,7 @@ npx prisma db seed --config prisma.config.ts
 ```
 
 **Acceptance Criteria :**
+
 - ✅ 3 utilisateurs créés en DB
 - ✅ Seed idempotent — peut être relancé sans erreur
 - ✅ `POST /auth/login` fonctionne avec les 3 credentials
@@ -285,6 +319,7 @@ npx prisma db seed --config prisma.config.ts
 ## Frontend Tasks
 
 ### S0-FE-001 : Initialiser Angular 19 dans NX
+
 - **Branch :** `feature/S0-FE-001-angular-init`
 - **Commit :** `feat(frontend): initialize Angular 19 standalone app`
 - **Priority :** P0 | **SP :** 1
@@ -297,6 +332,7 @@ npx prisma db seed --config prisma.config.ts
 ---
 
 ### S0-FE-002 : Installer PrimeNG 19 + Tailwind CSS v4
+
 - **Branch :** `feature/S0-FE-002-primeng-tailwind`
 - **Commit :** `feat(frontend): install PrimeNG 19 and Tailwind CSS v4`
 - **Priority :** P0 | **SP :** 1
@@ -308,6 +344,7 @@ npx prisma db seed --config prisma.config.ts
 ---
 
 ### S0-FE-003 : Configurer NgRx Store (auth)
+
 - **Branch :** `feature/S0-FE-003-ngrx-auth`
 - **Commit :** `feat(auth): configure NgRx store for auth`
 - **Priority :** P0 | **SP :** 2
@@ -326,6 +363,7 @@ npx prisma db seed --config prisma.config.ts
 ---
 
 ### S0-FE-004 : Créer AuthService
+
 - **Branch :** `feature/S0-FE-004-auth-service`
 - **Commit :** `feat(auth): create auth service`
 - **Priority :** P0 | **SP :** 1
@@ -339,6 +377,7 @@ npx prisma db seed --config prisma.config.ts
 ---
 
 ### S0-FE-005 : Créer AuthInterceptor
+
 - **Branch :** `feature/S0-FE-005-auth-interceptor`
 - **Commit :** `feat(auth): create auth interceptor reading from NgRx store`
 - **Priority :** P0 | **SP :** 1
@@ -375,6 +414,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 ---
 
 ### S0-FE-006 : Créer AuthGuard
+
 - **Branch :** `feature/S0-FE-006-auth-guard`
 - **Commit :** `feat(auth): create auth guard with UrlTree`
 - **Priority :** P0 | **SP :** 1
@@ -402,6 +442,7 @@ export const AuthGuard = () => {
 ---
 
 ### S0-FE-007 : Créer LoginComponent
+
 - **Branch :** `feature/S0-FE-007-login`
 - **Commit :** `feat(auth): create login component with PrimeNG`
 - **Priority :** P0 | **SP :** 2
@@ -418,6 +459,7 @@ export const AuthGuard = () => {
 ---
 
 ### S0-FE-008 : Configurer les routes
+
 - **Branch :** `feature/S0-FE-008-routes`
 - **Commit :** `chore(routing): configure app routes with lazy loading`
 - **Priority :** P0 | **SP :** 1
@@ -428,7 +470,9 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () =>
-      import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+      import('./features/auth/login/login.component').then(
+        (m) => m.LoginComponent
+      ),
   },
   {
     path: '',
@@ -439,7 +483,9 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          import('./features/dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent
+          ),
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
@@ -454,6 +500,7 @@ export const routes: Routes = [
 ---
 
 ### S0-FE-009 : Créer DashboardComponent (placeholder)
+
 - **Branch :** `feature/S0-FE-009-dashboard`
 - **Commit :** `feat(dashboard): create dashboard placeholder component`
 - **Priority :** P2 | **SP :** 1
@@ -465,6 +512,7 @@ export const routes: Routes = [
 ---
 
 ### S0-FE-010 : Configurer environments
+
 - **Branch :** `feature/S0-FE-010-environments`
 - **Commit :** `chore(config): configure environment files`
 - **Priority :** P0 | **SP :** 1
@@ -485,6 +533,7 @@ export const routes: Routes = [
 ---
 
 ### S0-FE-011 : Refactor — Token dans NgRx store
+
 - **Branch :** `feature/S0-FE-011-token-ngrx-store`
 - **Commit :** `refactor(auth): read token from NgRx store instead of AuthService`
 - **Priority :** P0 | **SP :** 1
@@ -500,16 +549,19 @@ export const routes: Routes = [
 ## Definition of Done - Sprint 0
 
 **Infrastructure :**
+
 - ✅ Docker PostgreSQL + pgAdmin démarrés
 - ✅ Prisma schema appliqué, tables créées
 - ✅ NestJS démarre sur http://localhost:3000
 
 **Auth :**
+
 - ✅ `POST /auth/login` retourne `{ access_token, user }` ou HTTP 401
 - ✅ Seed : 3 utilisateurs créés avec `upsert`
 - ✅ RolesGuard opérationnel
 
 **Frontend :**
+
 - ✅ `nx serve frontend` démarre sur http://localhost:4200
 - ✅ Login → Dashboard fonctionnel
 - ✅ NgRx store auth configuré

@@ -1,6 +1,7 @@
 # Sprint 1 - Auth & Layout
 
 ## 🎯 Objectif Sprint
+
 Auth complète avec refresh token cookie httpOnly + layout de l'application (Shell, Sidebar, Header).
 
 **Durée estimée :** 2-3 jours
@@ -12,6 +13,7 @@ Auth complète avec refresh token cookie httpOnly + layout de l'application (She
 ## Backend Tasks
 
 ### S1-BE-001 : RolesGuard + décorateurs
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 1
@@ -30,10 +32,10 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>('roles', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+      'roles',
+      [context.getHandler(), context.getClass()]
+    );
     if (!requiredRoles) return true;
     const { user } = context.switchToHttp().getRequest();
     return requiredRoles.includes(user.role);
@@ -53,7 +55,8 @@ export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 
 ---
 
-### S1-BE-002 : Endpoint GET /auth/me *(P2 — optionnel)*
+### S1-BE-002 : Endpoint GET /auth/me _(P2 — optionnel)_
+
 - **Type :** Feature
 - **Priority :** P2
 - **Story Points :** 1
@@ -92,7 +95,8 @@ async findMe(userId: string) {
 
 ---
 
-### S1-BE-003 : Refresh token (cookie httpOnly) *(P0)*
+### S1-BE-003 : Refresh token (cookie httpOnly) _(P0)_
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
@@ -104,11 +108,13 @@ async findMe(userId: string) {
   - Envoyer via cookie httpOnly
 
 **Pourquoi cookie httpOnly ?**
+
 - `access_token` en mémoire (NgRx store) — sécurisé contre XSS, perdu au reload
 - `refresh_token` en cookie httpOnly — jamais accessible en JavaScript,
   envoyé automatiquement par le navigateur, survit au reload de page
 
 **Schema Prisma à ajouter :**
+
 ```prisma
 model RefreshToken {
   id        String   @id @default(uuid())
@@ -171,7 +177,8 @@ async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 
 ---
 
-### S1-BE-004 : Seed data utilisateurs *(déjà fait en S0-BE-006)*
+### S1-BE-004 : Seed data utilisateurs _(déjà fait en S0-BE-006)_
+
 - **Status :** ✅ Done (Sprint 0)
 - **Note :** Seed créé en S0-BE-006 avec `upsert`. Rien à faire.
 
@@ -180,6 +187,7 @@ async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 ## Frontend Tasks
 
 ### S1-FE-001 : RoleGuard
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 1
@@ -230,6 +238,7 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 ---
 
 ### S1-FE-002 : Shell component
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 2
@@ -239,6 +248,8 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
   - Layout : Sidebar + Header + `<router-outlet>`
   - Lazy-loadé via `loadComponent`
   - Route parente pour toutes les pages protégées
+  - Ajouter `redirectIfAuthenticatedGuard` sur la route `/login`
+    Si connecté → redirige vers `/dashboard`
 
 ```typescript
 // app.routes.ts
@@ -275,6 +286,7 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 ---
 
 ### S1-FE-003 : Sidebar component
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 2
@@ -288,16 +300,16 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 
 **Items sidebar par rôle :**
 
-| Item | ADMIN | MANAGER | AGENT |
-|------|-------|---------|-------|
-| Dashboard | ✅ | ✅ | ✅ |
-| Hotels *(Sprint 2)* | ✅ | ✅ | ❌ |
-| Saisons *(Sprint 2)* | ✅ | ✅ | ❌ |
-| Référentiels *(Sprint 3)* | ✅ | ✅ | ❌ |
-| Contrats *(Sprint 4)* | ✅ | ✅ | ❌ |
-| Offres *(Sprint 5)* | ✅ | ✅ | ❌ |
-| Booking *(Sprint 6)* | ✅ | ✅ | ✅ |
-| Historique *(Sprint 8)* | ✅ | ✅ | ✅ |
+| Item                      | ADMIN | MANAGER | AGENT |
+| ------------------------- | ----- | ------- | ----- |
+| Dashboard                 | ✅    | ✅      | ✅    |
+| Hotels _(Sprint 2)_       | ✅    | ✅      | ❌    |
+| Saisons _(Sprint 2)_      | ✅    | ✅      | ❌    |
+| Référentiels _(Sprint 3)_ | ✅    | ✅      | ❌    |
+| Contrats _(Sprint 4)_     | ✅    | ✅      | ❌    |
+| Offres _(Sprint 5)_       | ✅    | ✅      | ❌    |
+| Booking _(Sprint 6)_      | ✅    | ✅      | ✅    |
+| Historique _(Sprint 8)_   | ✅    | ✅      | ✅    |
 
 - **Acceptance Criteria :**
   - ✅ Items filtrés selon le rôle
@@ -309,6 +321,7 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 ---
 
 ### S1-FE-004 : Header component
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 1
@@ -329,6 +342,7 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 ---
 
 ### S1-FE-005 : Logout fonctionnel
+
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 1
@@ -341,18 +355,19 @@ export const RoleGuard = (route: ActivatedRouteSnapshot) => {
 
 ```typescript
 logout$ = createEffect(
-  () => this.actions$.pipe(
-    ofType(AuthActions.logout),
-    switchMap(() =>
-      this.authService.logout().pipe(
-        tap(() => void this.router.navigate(['/login'])),
-        catchError(() => {
-          void this.router.navigate(['/login']);
-          return EMPTY;
-        })
+  () =>
+    this.actions$.pipe(
+      ofType(AuthActions.logout),
+      switchMap(() =>
+        this.authService.logout().pipe(
+          tap(() => void this.router.navigate(['/login'])),
+          catchError(() => {
+            void this.router.navigate(['/login']);
+            return EMPTY;
+          })
+        )
       )
-    )
-  ),
+    ),
   { dispatch: false }
 );
 ```
@@ -367,7 +382,8 @@ logout$ = createEffect(
 
 ---
 
-### S1-FE-006 : Rehydratation au reload *(dépend de S1-BE-003)*
+### S1-FE-006 : Rehydratation au reload _(dépend de S1-BE-003)_
+
 - **Type :** Feature
 - **Priority :** P1
 - **Story Points :** 2
@@ -410,7 +426,8 @@ logout$ = createEffect(
 
 ---
 
-### S1-FE-007 : Refresh token interceptor *(dépend de S1-BE-003)*
+### S1-FE-007 : Refresh token interceptor _(dépend de S1-BE-003)_
+
 - **Type :** Feature
 - **Priority :** P1
 - **Story Points :** 3
@@ -431,7 +448,9 @@ return next(authReq).pipe(
     if (error.status === 401 && !req.url.includes('/auth/')) {
       return authService.refresh().pipe(
         switchMap(({ access_token, user }) => {
-          store.dispatch(AuthActions.loginSuccess({ user, accessToken: access_token }));
+          store.dispatch(
+            AuthActions.loginSuccess({ user, accessToken: access_token })
+          );
           const retryReq = req.clone({
             headers: req.headers.set('Authorization', `Bearer ${access_token}`),
           });
@@ -511,13 +530,15 @@ feat(auth): add refresh token interceptor for 401 handling
 ---
 
 ## Dépendances
+
 - Sprint 0 ✅ doit être terminé
 
 ---
 
 ## Risques
-| Risque | Mitigation |
-|--------|------------|
-| Cookie httpOnly bloqué CORS | Configurer `credentials: 'include'` + CORS backend |
-| Refresh loop infini | Exclure `/auth/refresh` du retry dans l'interceptor |
+
+| Risque                      | Mitigation                                          |
+| --------------------------- | --------------------------------------------------- |
+| Cookie httpOnly bloqué CORS | Configurer `credentials: 'include'` + CORS backend  |
+| Refresh loop infini         | Exclure `/auth/refresh` du retry dans l'interceptor |
 | Requêtes parallèles sur 401 | Un seul refresh à la fois (flag ou BehaviorSubject) |
