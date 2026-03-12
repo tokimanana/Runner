@@ -73,6 +73,7 @@ Créer l'interface de simulation de réservation avec wizard 5 étapes : Hôtel/
 - **Description :**
   - Endpoint POST /booking/calculate
   - Retourne structure vide pour tester l'UI :
+
   ```typescript
   {
     roomsSubtotal: 0,
@@ -85,6 +86,7 @@ Créer l'interface de simulation de réservation avec wizard 5 étapes : Hôtel/
   ```
 
   - Implémentation réelle dans Sprint 7 (Pricing Engine)
+
 - **Acceptance Criteria :**
   - ✅ Endpoint accessible
   - ✅ Validation DTO fonctionne
@@ -127,6 +129,7 @@ Créer l'interface de simulation de réservation avec wizard 5 étapes : Hôtel/
   - Pourquoi ? L'état du wizard est complexe, partagé entre 5 étapes, et nécessite
     des effects pour l'appel calculatePrice. C'est un cas légitime pour NgRx.
   - State :
+
   ```typescript
   {
     hotelId: string | null;
@@ -146,6 +149,7 @@ Créer l'interface de simulation de réservation avec wizard 5 étapes : Hôtel/
   - Actions : setHotel, setDates, addRoom, removeRoom, addOffer, removeOffer, calculatePrice
   - Effects : appel calculatePrice → BookingService
   - Selectors : selectBookingState, selectRooms, selectTotalPax
+
 - **Acceptance Criteria :**
   - ✅ Store complet avec toutes les actions
   - ✅ Effects gèrent calculatePrice
