@@ -1,13 +1,19 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
+    canMatch: [redirectIfAuthenticatedGuard],
     loadComponent: () =>
       import('./features/auth/login/login.component').then(
         (m) => m.LoginComponent
       ),
+  },
+  {
+    path: 'login',
+    redirectTo: '/dashboard',
   },
   {
     path: '',
@@ -31,6 +37,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: '',
   },
 ];
