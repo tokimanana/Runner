@@ -1,0 +1,21 @@
+<aside style="width: 250px; height: 100vh; background: #1e1e2e;">
+    <div style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white;">
+      Runner
+    </div>
+    <nav>
+      @for (item of navItems; track item.route) {
+        @if ((userRole$ | async); as role) {
+          @if (item.roles.includes(role)) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="active-link"
+              style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: white; text-decoration: none; cursor: pointer;"
+            >
+              <i [class]="item.icon"></i>
+              {{ item.label }}
+            </a>
+          }
+        }
+      }
+    </nav>
+  </aside>
