@@ -23,28 +23,9 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
-    provideStore(
-      {
-        auth: authReducer,
-      },
-      {
-        initialState: {
-          auth: {
-            user: {
-              id: '1',
-              email: 'admin@runner.com',
-              firstName: 'Admin',
-              lastName: 'Runner',
-              role: 'ADMIN',
-              tourOperatorId: '1',
-            },
-            accessToken: 'fake-token',
-            isLoading: false,
-            error: null,
-          },
-        },
-      }
-    ),
+    provideStore({
+      auth: authReducer,
+    }),
     provideEffects([AuthEffects]),
     provideStoreDevtools({
       maxAge: 25,
@@ -63,18 +44,19 @@ export const appConfig: ApplicationConfig = {
 };
 
 // {
-// initialState: {
-//     auth: {
-//       user: {
-//         id: '1',
-//         email: 'admin@runner.com',
-//         firstName: 'Admin',
-//         lastName: 'Runner',
-//         role: 'ADMIN',
-//         tourOperatorId: '1',
-//       },
-//       accessToken: 'fake-token',
-//       isLoading: false,
-//     },
-//   },
-// }
+//         initialState: {
+//           auth: {
+//             user: {
+//               id: '1',
+//               email: 'admin@runner.com',
+//               firstName: 'Admin',
+//               lastName: 'Runner',
+//               role: 'ADMIN',
+//               tourOperatorId: '1',
+//             },
+//             accessToken: 'fake-token',
+//             isLoading: false,
+//             error: null,
+//           },
+//         },
+//       }
