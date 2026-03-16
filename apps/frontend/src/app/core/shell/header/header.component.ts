@@ -30,7 +30,7 @@ export class HeaderComponent {
           { label: user.role, icon: 'pi pi-id-card', disabled: true },
           { separator: true },
           {
-            label: 'Déconnexion',
+            label: 'Logout',
             icon: 'pi pi-sign-out',
             command: () => this.store.dispatch(AuthActions.logout()),
           },
