@@ -1,0 +1,11 @@
+<header class="header">
+  @if (currentUser$ | async; as user) {
+    <p-avatar
+      [label]="getInitials(user.firstName, user.lastName)"
+      shape="circle"
+      (click)="menu.toggle($event)"
+      [style]="{ cursor: 'pointer' }"
+    />
+    <p-menu #menu [model]="getMenuItems(user)" [popup]="true" />
+  }
+</header>
