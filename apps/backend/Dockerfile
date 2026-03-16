@@ -8,7 +8,8 @@ COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
 
-RUN npm ci && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci && npm cache clean --force
 
 # ─────────────────────────────────────────
 # Stage 2 – dev : hot-reload development
@@ -16,8 +17,9 @@ RUN npm ci && npm cache clean --force
 FROM deps AS dev
 WORKDIR /app
 
-COPY . .
+COPY apps/backend ./apps/backend
 
+COPY apps/backend/prisma ./apps/backend/prisma
 # Generate Prisma client
 RUN npx prisma generate --schema=apps/backend/prisma/schema.prisma
 
