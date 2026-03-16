@@ -477,6 +477,30 @@ return next(authReq).pipe(
 
 ---
 
+### S1-FE-008 : Sidebar theming
+
+- **Type :** Feature
+- **Priority :** P2
+- **Story Points :** 2
+- **Branch :** `feature/S1-FE-008-sidebar-theming`
+- **Commit :** `feat(shell): apply Runner theme to sidebar with dark/light mode support`
+- **Description :**
+  - Remplacer les couleurs hardcodées du SCSS par les design tokens PrimeNG
+  - Palette marron/beige Runner (inspirée Claude AI)
+  - Toggle dark/light mode via ajout/suppression classe `.dark-mode` sur `<body>`
+  - Cohérent avec `darkModeSelector: '.dark-mode'` déjà configuré dans `app.config.ts`
+  - Nettoyage SCSS général
+- **Acceptance Criteria :**
+  - ✅ Sidebar utilise les variables PrimeNG (pas de couleurs hardcodées)
+  - ✅ Toggle dark/light fonctionnel
+  - ✅ Palette Runner appliquée
+- **Files :**
+  - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.scss`
+  - `apps/frontend/src/styles.css` (variables globales Runner)
+- **Status :** ⏳ À faire
+
+---
+
 ## Ordre d'exécution Sprint 1
 
 ```
