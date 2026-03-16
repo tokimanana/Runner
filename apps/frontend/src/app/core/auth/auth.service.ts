@@ -27,4 +27,14 @@ export class AuthService {
       }
     );
   }
+
+  refresh(): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(
+      `${this.apiUrl}/auth/refresh`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  }
 }
