@@ -1,21 +1,69 @@
-<aside style="width: 250px; height: 100vh; background: #1e1e2e;">
-    <div style="padding: 1rem; font-size: 1.2rem; font-weight: bold; color: white;">
-      Runner
+<div
+  class="sidebar-wrapper"
+  [class.pinned]="isPinned()"
+  [class.expanded]="isExpanded()"
+>
+  @if (isExpanded() && !isPinned()) {
+    <div class="sidebar-backdrop" (click)="collapse()"></div>
+  }
+
+  <aside
+    class="sidebar"
+    (mouseenter)="onMouseEnter()"
+    (mouseleave)="onMouseLeave()"
+  >
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="pi pi-send logo-icon"></i>
+        <span class="sidebar-logo-text">Runner</span>
+      </div>
+      <button
+        class="pin-btn"
+        [class.active]="isPinned()"
+        (click)="togglePin()"
+        [pTooltip]="isPinned() ? 'Désépingler' : 'Épingler'"
+        tooltipPosition="right"
+      >
+        <i
+          class="pi"
+          [class.pi-thumbtack]="!isPinned()"
+          [class.pi-times]="isPinned()"
+        ></i>
+      </button>
     </div>
-    <nav>
+
+    <nav class="sidebar-nav">
       @for (item of navItems; track item.route) {
-        @if ((userRole$ | async); as role) {
+        @if (userRole$ | async; as role) {
           @if (item.roles.includes(role)) {
             <a
               [routerLink]="item.route"
               routerLinkActive="active-link"
-              style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: white; text-decoration: none; cursor: pointer;"
+              class="nav-item"
+              [pTooltip]="!isExpanded() && !isPinned() ? item.label : ''"
+              tooltipPosition="right"
             >
-              <i [class]="item.icon"></i>
-              {{ item.label }}
+              <span class="nav-icon"><i [class]="item.icon"></i></span>
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="active-indicator"></span>
             </a>
           }
         }
       }
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-divider"></div>
+      <button class="nav-item toggle-btn" (click)="togglePin()">
+        <span class="nav-icon">
+          <i
+            class="pi"
+            [class.pi-lock-open]="!isPinned()"
+            [class.pi-lock]="isPinned()"
+          ></i>
+        </span>
+        <span class="nav-label">{{ isPinned() ? 'Épinglé' : 'Auto-masqué' }}</span>
+      </button>
+    </div>
   </aside>
+</div>

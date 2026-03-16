@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AsyncPipe } from '@angular/common';
+import { TooltipModule } from 'primeng/tooltip';
 import { selectUserRole } from '../../auth/store/auth.selectors';
 
 interface NavItem {
@@ -14,12 +15,16 @@ interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, AsyncPipe],
+  imports: [RouterLink, RouterLinkActive, AsyncPipe, TooltipModule],
   templateUrl: './sidebar.component.html',
+  styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
   private readonly store = inject(Store);
   readonly userRole$ = this.store.select(selectUserRole);
+
+  readonly isPinned = signal(false);
+  readonly isExpanded = signal(false);
 
   readonly navItems: NavItem[] = [
     {
@@ -28,35 +33,22 @@ export class SidebarComponent {
       route: '/dashboard',
       roles: ['ADMIN', 'MANAGER', 'AGENT'],
     },
-    {
-      label: 'Hôtels',
-      icon: 'pi pi-building',
-      route: '/hotels',
-      roles: ['ADMIN', 'MANAGER'],
-    },
-    {
-      label: 'Saisons',
-      icon: 'pi pi-calendar',
-      route: '/saisons',
-      roles: ['ADMIN', 'MANAGER'],
-    },
-    {
-      label: 'Contrats',
-      icon: 'pi pi-file',
-      route: '/contrats',
-      roles: ['ADMIN', 'MANAGER'],
-    },
-    {
-      label: 'Offres',
-      icon: 'pi pi-tag',
-      route: '/offres',
-      roles: ['ADMIN', 'MANAGER'],
-    },
-    {
-      label: 'Booking',
-      icon: 'pi pi-ticket',
-      route: '/booking',
-      roles: ['ADMIN', 'MANAGER', 'AGENT'],
-    },
   ];
+
+  onMouseEnter(): void {
+    if (!this.isPinned()) this.isExpanded.set(true);
+  }
+
+  onMouseLeave(): void {
+    if (!this.isPinned()) this.isExpanded.set(false);
+  }
+
+  togglePin(): void {
+    this.isPinned.update((v) => !v);
+    this.isExpanded.set(this.isPinned());
+  }
+
+  collapse(): void {
+    if (!this.isPinned()) this.isExpanded.set(false);
+  }
 }
