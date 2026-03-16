@@ -3,7 +3,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { AuthService } from '../auth.service';
 import { AuthActions } from './auth.actions';
 import { Router } from '@angular/router';
-import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, map, of, switchMap, tap } from 'rxjs';
 
 @Injectable()
 export class AuthEffects {
@@ -60,9 +60,15 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.logout),
-        tap(() => {
-          void this.router.navigate(['/login']);
-        })
+        switchMap(() =>
+          this.authService.logout().pipe(
+            tap(() => void this.router.navigate(['/login'])),
+            catchError(() => {
+              void this.router.navigate(['/login']);
+              return EMPTY;
+            })
+          )
+        )
       ),
     { dispatch: false }
   );
