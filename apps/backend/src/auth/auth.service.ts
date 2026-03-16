@@ -39,13 +39,13 @@ export class AuthService {
         // Trying to find the user
         const user = await this.usersService.findByEmail(dto.email) as User | null;
         if (!user) {
-            throw new UnauthorizedException('we don'/'t find an account with this email');
+            throw new UnauthorizedException("We don't find an account with this email");
         }
 
         // Check the password
         const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
         if (!isPasswordValid) {
-            throw new UnauthorizedException('check yours password, credentials error');
+            throw new UnauthorizedException('Invalid credential');
         }
 
         return this.generateToken(user);
