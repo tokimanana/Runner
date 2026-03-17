@@ -1,27 +1,23 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   ApplicationConfig,
-  provideZoneChangeDetection,
   isDevMode,
   provideAppInitializer,
-  inject,
+  provideZoneChangeDetection,
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideStore } from '@ngrx/store';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
+import { provideStore } from '@ngrx/store';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
-import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
-import { Store } from '@ngrx/store';
-import { catchError, EMPTY, tap } from 'rxjs';
+import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
+import { authInitializer } from './core/auth/auth.initializer';
+import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 import { AuthEffects } from './core/auth/store/auth.effects';
 import { authReducer } from './core/auth/store/auth.reducer';
-import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
-import { AuthService } from './core/auth/auth.service';
-import { AuthActions } from './core/auth/store/auth.actions';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -44,22 +40,7 @@ export const appConfig: ApplicationConfig = {
         },
       },
     }),
-    provideAppInitializer(() => {
-      const store = inject(Store);
-      const authService = inject(AuthService);
-
-      return authService.refresh().pipe(
-        tap((response) =>
-          store.dispatch(
-            AuthActions.loginSuccess({
-              user: response.user,
-              accessToken: response.access_token,
-            })
-          )
-        ),
-        catchError(() => EMPTY)
-      );
-    }),
+    provideAppInitializer(authInitializer),
   ],
 };
 
