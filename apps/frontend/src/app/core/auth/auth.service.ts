@@ -28,6 +28,16 @@ export class AuthService {
       );
   }
 
+  logout(): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/auth/logout`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+  }
+
   refresh(): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(
       `${this.apiUrl}/auth/refresh`,
