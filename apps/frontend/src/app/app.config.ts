@@ -1,21 +1,23 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   ApplicationConfig,
-  provideZoneChangeDetection,
   isDevMode,
+  provideAppInitializer,
+  provideZoneChangeDetection,
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideStore } from '@ngrx/store';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
+import { provideStore } from '@ngrx/store';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
-import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeng/themes/aura';
+import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
+import { authInitializer } from './core/auth/auth.initializer';
+import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 import { AuthEffects } from './core/auth/store/auth.effects';
 import { authReducer } from './core/auth/store/auth.reducer';
-import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,9 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
-    provideStore({
-      auth: authReducer,
-    }),
+    provideStore({ auth: authReducer }),
     provideEffects([AuthEffects]),
     provideStoreDevtools({
       maxAge: 25,
@@ -40,23 +40,25 @@ export const appConfig: ApplicationConfig = {
         },
       },
     }),
+    provideAppInitializer(authInitializer),
   ],
 };
 
+// Simulation state — retirer avant merge
 // {
-//         initialState: {
-//           auth: {
-//             user: {
-//               id: '1',
-//               email: 'admin@runner.com',
-//               firstName: 'Admin',
-//               lastName: 'Runner',
-//               role: 'ADMIN',
-//               tourOperatorId: '1',
-//             },
-//             accessToken: 'fake-token',
-//             isLoading: false,
-//             error: null,
-//           },
-//         },
-//       }
+//   initialState: {
+//     auth: {
+//       user: {
+//         id: '1',
+//         email: 'admin@runner.com',
+//         firstName: 'Admin',
+//         lastName: 'Runner',
+//         role: 'ADMIN',
+//         tourOperatorId: '1',
+//       },
+//       accessToken: 'fake-token',
+//       isLoading: false,
+//       error: null,
+//     },
+//   },
+// }
