@@ -16,6 +16,7 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import { authInitializer } from './core/auth/auth.initializer';
 import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
+import { refreshInterceptor } from './core/auth/interceptors/refresh.interceptor';
 import { AuthEffects } from './core/auth/store/auth.effects';
 import { authReducer } from './core/auth/store/auth.reducer';
 
@@ -23,7 +24,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, refreshInterceptor])),
     provideAnimationsAsync(),
     provideStore({ auth: authReducer }),
     provideEffects([AuthEffects]),
