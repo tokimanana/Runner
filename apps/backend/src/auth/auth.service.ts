@@ -11,9 +11,9 @@ export type UserTokenData = {
     id: string;
     email: string;
     role: UserRole;
-    firstname: string;
-    lastname: string;
-    tourOperateur: string;
+    firstName: string;
+    lastName: string;
+    tourOperatorId: string;
 }
 @Injectable()
 export class AuthService {
@@ -73,9 +73,9 @@ export class AuthService {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                firstName: user.firstname,
-                lastName: user.lastname,
-                tourOperatorId: user.tourOperateur
+                firstName: user.firstName,
+                lastName: user.lastName,
+                tourOperatorId: user.tourOperatorId
             },
         };
     }
