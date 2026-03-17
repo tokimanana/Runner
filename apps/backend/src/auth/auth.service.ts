@@ -5,7 +5,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { User } from "@backend/generated/prisma/client";
+import { UserRole } from "../../generated/prisma/enums";
 
+export type UserTokenData = {
+    id: string;
+    email: string;
+    role: UserRole;
+    firstname: string;
+    lastname: string;
+    tourOperateur: string;
+}
 @Injectable()
 export class AuthService {
     constructor(
@@ -51,7 +60,7 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    private generateToken(user: Pick<User, 'id' | 'email' | 'role'>) {
+    private generateToken(user: UserTokenData) {
         const payload = {
             sub: user.id,
             email: user.email,
@@ -64,6 +73,9 @@ export class AuthService {
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                firstName: user.firstname,
+                lastName: user.lastname,
+                tourOperatorId: user.tourOperateur
             },
         };
     }
