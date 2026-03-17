@@ -21,7 +21,7 @@
         class="pin-btn"
         [class.active]="isPinned()"
         (click)="togglePin()"
-        [pTooltip]="isPinned() ? 'Désépingler' : 'Épingler'"
+        [pTooltip]="isPinned() ? 'Unpin' : 'Pin'"
         tooltipPosition="right"
       >
         <i
@@ -62,7 +62,7 @@
             [class.pi-lock]="isPinned()"
           ></i>
         </span>
-        <span class="nav-label">{{ isPinned() ? 'Épinglé' : 'Auto-masqué' }}</span>
+        <span class="nav-label">{{ isPinned() ? 'Pinned' : 'Auto-hide' }}</span>
       </button>
     </div>
   </aside>

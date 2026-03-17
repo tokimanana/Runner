@@ -44,18 +44,19 @@ export const appConfig: ApplicationConfig = {
 };
 
 // {
-// initialState: {
-//     auth: {
-//       user: {
-//         id: '1',
-//         email: 'admin@runner.com',
-//         firstName: 'Admin',
-//         lastName: 'Runner',
-//         role: 'ADMIN',
-//         tourOperatorId: '1',
-//       },
-//       accessToken: 'fake-token',
-//       isLoading: false,
-//     },
-//   },
-// }
+//         initialState: {
+//           auth: {
+//             user: {
+//               id: '1',
+//               email: 'admin@runner.com',
+//               firstName: 'Admin',
+//               lastName: 'Runner',
+//               role: 'ADMIN',
+//               tourOperatorId: '1',
+//             },
+//             accessToken: 'fake-token',
+//             isLoading: false,
+//             error: null,
+//           },
+//         },
+//       }
