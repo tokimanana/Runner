@@ -52,9 +52,7 @@ export class AuthService {
     // Trying to find the user
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException(
-        "We don't find an account with this email",
-      );
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Check the password
