@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt-custom') {
       secretOrKey: process.env.JWT_SECRET,
     } satisfies StrategyOptionsWithoutRequest);
   }
-  async validate(payload: JwtPayload) {
+  validate(payload: JwtPayload) {
     return {
       id: payload.sub,
       email: payload.email,
