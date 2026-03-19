@@ -1,8 +1,9 @@
-import { inject, Injectable } from '@angular/core';
 import { environment } from '@/environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { isLoginResponse, LoginResponse } from './models/auth.model';
+import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { isLoginResponse, LoginResponse } from './models/auth.model';
+
 
 @Injectable({
   providedIn: 'root',
