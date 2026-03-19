@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { User, Prisma } from '@backend/generated/prisma/client';
 
-export type UserResponseType = Omit<User, 'passwordHash'>;
+export type UserResponseType = Omit<
+  User,
+  'passwordHash' | 'createdAt' | 'updatedAt'
+>;
 export type UserCreateDataType = Prisma.UserCreateInput;
 export type UserUpdateDataType = Prisma.UserUpdateInput;
 @Injectable()
