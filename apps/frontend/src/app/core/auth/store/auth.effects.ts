@@ -14,7 +14,6 @@ export class AuthEffects {
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.login),
-      tap(() => console.log('Effect: Login démarré')),
       switchMap(({ email, password }) =>
         this.authService.login(email, password).pipe(
           map((userCredential) => {
@@ -25,7 +24,6 @@ export class AuthEffects {
             });
           }),
           catchError((error) => {
-            console.log('Effect: login failed');
             return of(AuthActions.loginFailure({ error: error.message }));
           })
         )
@@ -43,18 +41,6 @@ export class AuthEffects {
       ),
     { dispatch: false }
   );
-
-  // logout$ = createEffect(() =>
-  //   this.actions$.pipe(
-  //     ofType(AuthActions.logout),
-  //     switchMap(() =>
-  //       this.authService.logout().pipe(
-  //         map(() => AuthActions.logoutSuccess()),
-  //         tap(() => this.router.navigate(['/login']))
-  //       )
-  //     )
-  //   )
-  // );
 
   logout$ = createEffect(
     () =>
