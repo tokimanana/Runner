@@ -42,7 +42,6 @@ export class AuthService {
       firstName: dto.firstName,
       lastName: dto.lastName,
       tourOperatorId: dto.tourOperatorId,
-      role: dto.role,
     });
 
     return this.generateToken(user);
