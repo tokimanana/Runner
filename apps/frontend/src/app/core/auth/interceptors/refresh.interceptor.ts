@@ -17,7 +17,7 @@ import { AuthService } from '../auth.service';
 import { AuthActions } from '../store/auth.actions';
 
 let isRefreshing = false;
-const refreshToken$ = new BehaviorSubject<string | null>(null);
+let accessToken$ = new BehaviorSubject<string | null>(null);
 
 export const refreshInterceptor = (
   req: HttpRequest<unknown>,
@@ -29,55 +29,56 @@ export const refreshInterceptor = (
   return next(req).pipe(
     catchError((error) => {
       if (
-        error instanceof HttpErrorResponse &&
-        error.status === 401 &&
-        !req.url.includes('/auth/')
-      ) {
-        if (!isRefreshing) {
-          isRefreshing = true;
-          refreshToken$.next(null);
+        !(error instanceof HttpErrorResponse) ||
+        error.status !== 401 ||
+        req.url.includes('/auth/')
+      )
+        return throwError(() => error);
 
-          return authService.refresh().pipe(
-            switchMap((response) => {
-              isRefreshing = false;
-              refreshToken$.next(response.access_token);
-              store.dispatch(
-                AuthActions.loginSuccess({
-                  user: response.user,
-                  accessToken: response.access_token,
-                })
-              );
-              return next(
-                req.clone({
-                  headers: req.headers.set(
-                    'Authorization',
-                    `Bearer ${response.access_token}`
-                  ),
-                })
-              );
-            }),
-            catchError((refreshError) => {
-              isRefreshing = false;
-              store.dispatch(AuthActions.logout());
-              return throwError(() => refreshError);
-            })
-          );
-        }
+      if (!isRefreshing) {
+        isRefreshing = true;
+        accessToken$.next(null);
 
-        return refreshToken$.pipe(
-          filter((token) => token !== null),
-          take(1),
-          switchMap((token) =>
-            next(
-              req.clone({
-                headers: req.headers.set('Authorization', `Bearer ${token}`),
+        return authService.refresh().pipe(
+          switchMap((response) => {
+            isRefreshing = false;
+            accessToken$.next(response.access_token);
+            store.dispatch(
+              AuthActions.loginSuccess({
+                user: response.user,
+                accessToken: response.access_token,
               })
-            )
-          )
+            );
+            return next(
+              req.clone({
+                headers: req.headers.set(
+                  'Authorization',
+                  `Bearer ${response.access_token}`
+                ),
+              })
+            );
+          }),
+          catchError((refreshError) => {
+            isRefreshing = false;
+            accessToken$.error(refreshError); // unblock waiting requests with error
+            accessToken$ = new BehaviorSubject<string | null>(null); // reset for next cycle
+            store.dispatch(AuthActions.logout());
+            return throwError(() => refreshError);
+          })
         );
       }
 
-      return throwError(() => error);
+      return accessToken$.pipe(
+        filter((token) => token !== null),
+        take(1),
+        switchMap((token) =>
+          next(
+            req.clone({
+              headers: req.headers.set('Authorization', `Bearer ${token}`),
+            })
+          )
+        )
+      );
     })
   );
 };
