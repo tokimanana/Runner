@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '@backend/auth/guards/jwt-auth.guard';
 import { RequestWithUser } from '@backend/auth/types/jwt-user.type';
 import { RolesGuard } from '@backend/auth/guards/roles.guard';
 import { Roles } from '@backend/auth/decorators/roles.decorator';
-import { UserRole } from '@backend/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {

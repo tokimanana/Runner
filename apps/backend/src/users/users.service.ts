@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@backend/prisma/prisma.service';
-import { User, Prisma } from '@backend/generated/prisma/client';
+import { User, Prisma } from '@prisma/client';
 
 export type UserResponseType = Omit<
   User,
