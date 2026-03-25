@@ -19,6 +19,9 @@
     "g": "node scripts/generate.mjs"
   },
   "private": true,
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@angular/animations": "^19.2.0",
     "@angular/common": "^19.2.0",
@@ -95,6 +98,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "5.8.3",
     "typescript-eslint": "^8.20.0"
   }

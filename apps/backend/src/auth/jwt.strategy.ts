@@ -5,7 +5,7 @@ import {
   Strategy,
   StrategyOptionsWithoutRequest,
 } from 'passport-jwt';
-import { UserRole } from '@backend/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 
 export interface JwtPayload {
   sub: string;
