@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@backend/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 
 export type UserTokenData = {
   id: string;

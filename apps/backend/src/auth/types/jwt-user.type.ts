@@ -1,4 +1,4 @@
-import { UserRole } from '@backend/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 import { Request } from 'express';
 
 export interface JwtUser {

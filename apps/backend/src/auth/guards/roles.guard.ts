@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from '@backend/auth/decorators/roles.decorator';
-import { UserRole } from '@backend/generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 import { RequestWithUser } from '@backend/auth/types/jwt-user.type';
 
 @Injectable()
