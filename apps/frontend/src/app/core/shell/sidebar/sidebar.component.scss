@@ -1,16 +1,27 @@
 :host {
   --sidebar-collapsed: 4.5rem;
   --sidebar-expanded: 15rem;
-  --sidebar-bg: #1e1e2e;
+
+  // — fond et bordures
+  --sidebar-bg: #1c1410;
   --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-text: #ced4da;
-  --sidebar-text-muted: #6c757d;
-  --sidebar-active-bg: rgba(99, 102, 241, 0.15);
-  --sidebar-active-text: #a5b4fc;
-  --sidebar-active-border: #6366f1;
+
+  // — texte
+  --sidebar-text: #d6cdc4;
+  --sidebar-text-muted: #8c7b6e;
+
+  // — état actif
+  --sidebar-active-bg: rgba(180, 120, 60, 0.15);
+  --sidebar-active-text: #d4a574;
+  --sidebar-active-border: #a0714a;
+
+  // — hover
   --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
-  --sidebar-pin-color: #6366f1;
-  --sidebar-logo-color: #818cf8;
+
+  // — accents
+  --sidebar-pin-color: #a0714a;
+  --sidebar-logo-color: #c49a6c;
+
   --t: 280ms cubic-bezier(0.4, 0, 0.2, 1);
   --z: 999;
 }
