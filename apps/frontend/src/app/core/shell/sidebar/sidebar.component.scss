@@ -125,13 +125,11 @@
   height: 1.75rem;
   border: none;
   background: transparent;
-  color: var(--sidebar-text-muted);
-  border-radius: 6px;
+  border-radius: 50%;
   cursor: pointer;
   opacity: 0;
   transition:
     opacity var(--t),
-    color 150ms,
     background 150ms;
   flex-shrink: 0;
 
@@ -142,11 +140,26 @@
 
   &:hover {
     background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
+  }
+}
+
+.pin-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--sidebar-text-muted);
+  background: transparent;
+  transition:
+    background 200ms,
+    border-color 200ms;
+
+  .pin-btn.active & {
+    background: var(--sidebar-pin-color);
+    border-color: var(--sidebar-pin-color);
   }
 
-  &.active {
-    color: var(--sidebar-pin-color);
+  .pin-btn:hover & {
+    border-color: var(--sidebar-text);
   }
 }
 
@@ -231,32 +244,4 @@
   transition:
     opacity 150ms,
     transform 150ms;
-}
-
-.sidebar-footer {
-  overflow: hidden;
-  padding-bottom: 0.5rem;
-}
-
-.sidebar-divider {
-  height: 1px;
-  background: var(--sidebar-border);
-  margin: 0.25rem 0 0.5rem;
-}
-
-.toggle-btn {
-  color: var(--sidebar-text-muted);
-
-  .nav-icon {
-    font-size: 0.85rem;
-  }
-
-  .nav-label {
-    font-size: 0.78rem;
-    font-weight: 400;
-  }
-
-  &:hover {
-    color: var(--sidebar-text);
-  }
 }
