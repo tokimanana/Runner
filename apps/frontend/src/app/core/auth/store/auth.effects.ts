@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { catchError, EMPTY, map, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '../auth.service';
 import { AuthActions } from './auth.actions';
-import { Router } from '@angular/router';
-import { catchError, EMPTY, map, of, switchMap, tap } from 'rxjs';
 
 @Injectable()
 export class AuthEffects {
@@ -20,7 +20,6 @@ export class AuthEffects {
             console.log('Effect: login success');
             return AuthActions.loginSuccess({
               user: userCredential.user,
-              accessToken: userCredential.access_token,
             });
           }),
           catchError((error) => {

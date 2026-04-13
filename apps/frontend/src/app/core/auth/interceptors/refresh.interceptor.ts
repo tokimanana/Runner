@@ -17,7 +17,7 @@ import { AuthService } from '../auth.service';
 import { AuthActions } from '../store/auth.actions';
 
 let isRefreshing = false;
-let accessToken$ = new BehaviorSubject<string | null>(null);
+let refresh$ = new BehaviorSubject<boolean | null>(null);
 
 export const refreshInterceptor = (
   req: HttpRequest<unknown>,
@@ -37,47 +37,29 @@ export const refreshInterceptor = (
 
       if (!isRefreshing) {
         isRefreshing = true;
-        accessToken$.next(null);
+        refresh$.next(null);
 
         return authService.refresh().pipe(
           switchMap((response) => {
             isRefreshing = false;
-            accessToken$.next(response.access_token);
-            store.dispatch(
-              AuthActions.loginSuccess({
-                user: response.user,
-                accessToken: response.access_token,
-              })
-            );
-            return next(
-              req.clone({
-                headers: req.headers.set(
-                  'Authorization',
-                  `Bearer ${response.access_token}`
-                ),
-              })
-            );
+            refresh$.next(true);
+            store.dispatch(AuthActions.loginSuccess({ user: response.user }));
+            return next(req);
           }),
           catchError((refreshError) => {
             isRefreshing = false;
-            accessToken$.error(refreshError); // unblock waiting requests with error
-            accessToken$ = new BehaviorSubject<string | null>(null); // reset for next cycle
+            refresh$.error(refreshError);
+            refresh$ = new BehaviorSubject<boolean | null>(null);
             store.dispatch(AuthActions.logout());
             return throwError(() => refreshError);
           })
         );
       }
 
-      return accessToken$.pipe(
-        filter((token) => token !== null),
+      return refresh$.pipe(
+        filter((value) => value !== null),
         take(1),
-        switchMap((token) =>
-          next(
-            req.clone({
-              headers: req.headers.set('Authorization', `Bearer ${token}`),
-            })
-          )
-        )
+        switchMap(() => next(req))
       );
     })
   );
