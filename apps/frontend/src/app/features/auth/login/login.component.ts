@@ -1,22 +1,22 @@
-import { Component, inject } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  Validators,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { AsyncPipe, CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
 import { AuthActions } from '@/app/core/auth/store/auth.actions';
-import { Observable } from 'rxjs';
 import {
   selectAuthError,
   selectIsLoading,
 } from '@/app/core/auth/store/auth.selectors';
+import { AsyncPipe, CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { Store } from '@ngrx/store';
+import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
 import { Password } from 'primeng/password';
-import { Button } from 'primeng/button';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -30,7 +30,7 @@ import { Button } from 'primeng/button';
     AsyncPipe,
   ],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
