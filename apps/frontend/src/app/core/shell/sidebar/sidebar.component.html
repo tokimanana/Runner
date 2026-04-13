@@ -21,14 +21,10 @@
         class="pin-btn"
         [class.active]="isPinned()"
         (click)="togglePin()"
-        [pTooltip]="isPinned() ? 'Unpin' : 'Pin'"
+        [pTooltip]="isPinned() ? 'Unpin sidebar' : 'Pin sidebar'"
         tooltipPosition="right"
       >
-        <i
-          class="pi"
-          [class.pi-thumbtack]="!isPinned()"
-          [class.pi-times]="isPinned()"
-        ></i>
+        <span class="pin-dot"></span>
       </button>
     </div>
 
@@ -51,19 +47,5 @@
         }
       }
     </nav>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-divider"></div>
-      <button class="nav-item toggle-btn" (click)="togglePin()">
-        <span class="nav-icon">
-          <i
-            class="pi"
-            [class.pi-lock-open]="!isPinned()"
-            [class.pi-lock]="isPinned()"
-          ></i>
-        </span>
-        <span class="nav-label">{{ isPinned() ? 'Pinned' : 'Auto-hide' }}</span>
-      </button>
-    </div>
   </aside>
 </div>
