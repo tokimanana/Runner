@@ -483,20 +483,113 @@ return next(authReq).pipe(
 - **Priority :** P2
 - **Story Points :** 2
 - **Branch :** `feature/S1-FE-008-sidebar-theming`
-- **Commit :** `feat(shell): apply Runner theme to sidebar with dark/light mode support`
+- **Commit :** `feat(shell): apply Runner theme to sidebar`
 - **Description :**
   - Remplacer les couleurs hardcodées du SCSS par les design tokens PrimeNG
   - Palette marron/beige Runner (inspirée Claude AI)
-  - Toggle dark/light mode via ajout/suppression classe `.dark-mode` sur `<body>`
-  - Cohérent avec `darkModeSelector: '.dark-mode'` déjà configuré dans `app.config.ts`
   - Nettoyage SCSS général
 - **Acceptance Criteria :**
   - ✅ Sidebar utilise les variables PrimeNG (pas de couleurs hardcodées)
-  - ✅ Toggle dark/light fonctionnel
   - ✅ Palette Runner appliquée
 - **Files :**
   - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.scss`
   - `apps/frontend/src/styles.css` (variables globales Runner)
+- **Status :** ✅ Done
+
+---
+
+### S1-FE-009 : Cleanup Sprint 1 — debug logs and dead code
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 0
+- **Branch :** `refactor/S1-FE-009-cleanup`
+- **Commit :** `refactor(auth): remove debug logs and dead code`
+- **Description :**
+  - Retirer console.log de login$ effect
+  - Supprimer logout$ commenté dans auth.effects.ts
+  - Retirer commentaire simulation state dans app.config.ts
+- **Acceptance Criteria :**
+  - ✅ Aucun console.log en production
+  - ✅ Aucun code commenté
+- **Files :**
+  - `apps/frontend/src/app/core/auth/store/auth.effects.ts`
+  - `apps/frontend/src/app/app.config.ts`
+- **Status :** ✅ Done
+
+---
+
+### S1-FE-009 : Cleanup Sprint 1 — debug logs and dead code
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 0
+- **Branch :** `refactor/S1-FE-009-cleanup`
+- **Commit :** `refactor(auth): remove debug logs and dead code`
+- **Description :**
+  - Retirer console.log de login$ effect
+  - Supprimer logout$ commenté dans auth.effects.ts
+  - Retirer commentaire simulation state dans app.config.ts
+- **Acceptance Criteria :**
+  - ✅ Aucun console.log en production
+  - ✅ Aucun code commenté
+- **Files :**
+  - `apps/frontend/src/app/core/auth/store/auth.effects.ts`
+  - `apps/frontend/src/app/app.config.ts`
+- **Status :** ✅ Done
+
+---
+
+### S1-FE-011 : Login page UX/UI improvement
+
+- **Type :** Feature
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `feature/S1-FE-011-login-ui`
+- **Commit :** `feat(auth): improve login page UX/UI`
+- **Description :**
+  - Centrer la page avec card
+  - Header avec icône Runner et tagline
+  - Structure HTML corrigée — champs email et password dans leurs propres divs
+  - Variables PrimeNG Aura pour le theming (--p-surface-*, --p-primary-color)
+  - Placeholder email
+  - Label "Sign in" au lieu de "Login"
+  - `fluid` sur tous les inputs
+  - `!!` cast sur `isLoading$` pour éviter null avec `[disabled]` et `[loading]`
+  - Retrait `CommonModule` inutile
+  - `styleUrl` singulier — Angular 19
+- **Acceptance Criteria :**
+  - ✅ Page centrée avec card
+  - ✅ Validation des champs fonctionnelle
+  - ✅ Loading state sur le bouton
+  - ✅ Erreur store affichée
+- **Files :**
+  - `apps/frontend/src/app/features/auth/login/login.component.ts`
+  - `apps/frontend/src/app/features/auth/login/login.component.html`
+  - `apps/frontend/src/app/features/auth/login/login.component.scss`
+- **Status :** ✅ Done
+
+---
+
+### S1-FE-012 : Dark/Light mode toggle
+
+- **Type :** Feature
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `feature/S1-FE-012-dark-light-toggle`
+- **Commit :** `feat(shell): add dark/light mode toggle`
+- **Description :**
+  - Bouton toggle dans le Header
+  - Ajouter/retirer classe `.dark-mode` sur `<body>`
+  - Cohérent avec `darkModeSelector: '.dark-mode'` configuré dans `app.config.ts`
+  - Persister le choix dans localStorage
+- **Acceptance Criteria :**
+  - ✅ Toggle visible dans le Header
+  - ✅ Dark/light mode fonctionne sur tous les composants PrimeNG
+  - ✅ Choix persisté au reload
+- **Files :**
+  - `apps/frontend/src/app/core/shell/header/header.component.ts`
+  - `apps/frontend/src/app/core/shell/header/header.component.html`
 - **Status :** ⏳ À faire
 
 ---
