@@ -1,1 +1,10 @@
+<button
+  class="theme-toggle"
+  (click)="toggleTheme()"
+  [pTooltip]="isDark() ? 'Light mode' : 'Dark mode'"
+  tooltipPosition="bottom"
+>
+  <i class="pi" [class.pi-sun]="isDark()" [class.pi-moon]="!isDark()"></i>
+</button>
+
 <router-outlet />
