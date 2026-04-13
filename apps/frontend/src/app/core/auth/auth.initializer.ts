@@ -13,7 +13,6 @@ export const authInitializer = () => {
       store.dispatch(
         AuthActions.loginSuccess({
           user: response.user,
-          accessToken: response.access_token,
         })
       )
     ),
