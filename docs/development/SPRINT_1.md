@@ -551,7 +551,7 @@ return next(authReq).pipe(
   - Centrer la page avec card
   - Header avec icône Runner et tagline
   - Structure HTML corrigée — champs email et password dans leurs propres divs
-  - Variables PrimeNG Aura pour le theming (--p-surface-*, --p-primary-color)
+  - Variables PrimeNG Aura pour le theming (--p-surface-\*, --p-primary-color)
   - Placeholder email
   - Label "Sign in" au lieu de "Login"
   - `fluid` sur tous les inputs
@@ -580,8 +580,8 @@ return next(authReq).pipe(
 - **Commit :** `feat(shell): add dark/light mode toggle`
 - **Description :**
   - Bouton toggle dans le Header
-  - Ajouter/retirer classe `.dark-mode` sur `<body>`
-  - Cohérent avec `darkModeSelector: '.dark-mode'` configuré dans `app.config.ts`
+  - Ajouter/retirer classe `.app-dark` sur `<body>`
+  - Cohérent avec `darkModeSelector: '.app-dark'` configuré dans `app.config.ts`
   - Persister le choix dans localStorage
 - **Acceptance Criteria :**
   - ✅ Toggle visible dans le Header
