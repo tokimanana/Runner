@@ -1,6 +1,5 @@
 :host {
-  --sidebar-collapsed: 4.5rem;
-  --sidebar-expanded: 15rem;
+  // dark mode par défaut (sidebar toujours sombre)
   --sidebar-bg: #1c1410;
   --sidebar-border: rgba(255, 255, 255, 0.06);
   --sidebar-text: #d6cdc4;
@@ -11,8 +10,6 @@
   --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
   --sidebar-pin-color: #a0714a;
   --sidebar-logo-color: #c49a6c;
-  --t: 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  --z: 999;
 }
 
 .sidebar-wrapper {

@@ -36,40 +36,6 @@ const RunnerPreset = definePreset(Aura, {
       900: '{stone.900}',
       950: '{stone.950}',
     },
-    colorScheme: {
-      dark: {
-        surface: {
-          0: '#ffffff',
-          50: '{stone.50}',
-          100: '{stone.100}',
-          200: '{stone.200}',
-          300: '{stone.300}',
-          400: '{stone.400}',
-          500: '{stone.500}',
-          600: '{stone.600}',
-          700: '{stone.700}',
-          800: '{stone.800}',
-          900: '{stone.900}',
-          950: '{stone.950}',
-        },
-      },
-      light: {
-        surface: {
-          0: '#ffffff',
-          50: '{stone.50}',
-          100: '{stone.100}',
-          200: '{stone.200}',
-          300: '{stone.300}',
-          400: '{stone.400}',
-          500: '{stone.500}',
-          600: '{stone.600}',
-          700: '{stone.700}',
-          800: '{stone.800}',
-          900: '{stone.900}',
-          950: '{stone.950}',
-        },
-      },
-    },
   },
 });
 
@@ -90,7 +56,7 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: RunnerPreset,
         options: {
-          darkModeSelector: '.dark-mode',
+          darkModeSelector: '.app-dark',
         },
       },
     }),
