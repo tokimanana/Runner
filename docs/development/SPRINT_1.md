@@ -93,6 +93,7 @@ async findMe(userId: string) {
   - ✅ GET /auth/me retourne user sans passwordHash
   - ✅ HTTP 401 si JWT invalide
 
+- **Status :** ❌ Cancelled — obsolète depuis S1-BE-005. `/auth/refresh` retourne déjà `{ user }` via full httpOnly cookie.
 ---
 
 ### S1-BE-003 : Refresh token (cookie httpOnly) _(P0)_
