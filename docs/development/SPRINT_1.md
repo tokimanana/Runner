@@ -15,6 +15,7 @@ Auth complète avec refresh token cookie httpOnly + layout de l'application (She
 ### S1-BE-001 : RolesGuard + décorateurs
 
 - **Type :** Feature
+- **Status :** ✅ Done
 - **Priority :** P0
 - **Story Points :** 1
 - **Branch :** `feature/S1-BE-001-roles-guard`
@@ -58,6 +59,7 @@ export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ### S1-BE-002 : Endpoint GET /auth/me _(P2 — optionnel)_
 
 - **Type :** Feature
+- **Status :** Skipped
 - **Priority :** P2
 - **Story Points :** 1
 - **Branch :** `feature/S1-BE-002-auth-me`
@@ -98,90 +100,67 @@ async findMe(userId: string) {
 
 ### S1-BE-003 : Refresh token (cookie httpOnly) _(P0)_
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S1-BE-003-refresh-token`
-- **Commit :** `feat(auth): implement refresh token with httpOnly cookie`
-- **Description :**
-  - Générer 2 tokens à la connexion : `access_token` (15min) + `refresh_token` (7j)
-  - Stocker le refresh token **hashé** en base (table `RefreshToken`)
-  - Envoyer via cookie httpOnly
-
-**Pourquoi cookie httpOnly ?**
-
-- `access_token` en mémoire (NgRx store) — sécurisé contre XSS, perdu au reload
-- `refresh_token` en cookie httpOnly — jamais accessible en JavaScript,
-  envoyé automatiquement par le navigateur, survit au reload de page
-
-**Schema Prisma à ajouter :**
-
-```prisma
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-}
-```
-
-```typescript
-// POST /auth/login
-@Post('login')
-async login(@Body() body, @Res({ passthrough: true }) res: Response) {
-  const user = await this.authService.validateUser(body.email, body.password);
-  if (!user) throw new UnauthorizedException('Invalid credentials');
-  const result = await this.authService.login(user);
-
-  res.cookie('refresh_token', result.refresh_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  // Ne jamais retourner refresh_token dans le body
-  return { access_token: result.access_token, user: result.user };
-}
-
-// POST /auth/refresh — cookie envoyé automatiquement
-@Post('refresh')
-async refresh(@Req() req: Request) {
-  const refreshToken = req.cookies['refresh_token'];
-  if (!refreshToken) throw new UnauthorizedException();
-  return this.authService.refreshToken(refreshToken);
-  // Retourne : { access_token, user }
-}
-
-// POST /auth/logout
-@Post('logout')
-@UseGuards(AuthGuard('jwt'))
-async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-  const refreshToken = req.cookies['refresh_token'];
-  if (refreshToken) await this.authService.revokeRefreshToken(refreshToken);
-  res.clearCookie('refresh_token');
-  return { success: true };
-}
-```
-
-- **Acceptance Criteria :**
-  - ✅ Login retourne `{ access_token, user }` + set cookie httpOnly
-  - ✅ POST /auth/refresh valide le cookie et retourne nouveau `access_token` + `user`
-  - ✅ POST /auth/logout invalide le token en DB + efface le cookie
-  - ✅ Refresh token hashé en DB
-- **Files :**
-  - `apps/backend/src/auth/auth.controller.ts`
-  - `apps/backend/src/auth/auth.service.ts`
-  - `apps/backend/prisma/schema.prisma`
+Look at S1-BE-005
 
 ---
 
-### S1-BE-004 : Seed data utilisateurs _(déjà fait en S0-BE-006)_
+### S1-BE-004 : Seed data utilisateurs _(déjà fait en S0-BE-007)_
 
 - **Status :** ✅ Done (S0-BE-006)
 - **Note :** `ROLES_KEY` extrait en constante exportée dans le décorateur — légèrement différent du snippet du doc mais fonctionnellement identique.
+
+---
+
+### S1-BE-005 : Fix LoginResponse — access_token et refresh_token en cookies httpOnly
+
+- **Type :** Bugfix / Refactor
+- **Priority :** P0
+- **Story Points :** 2
+- **Branch :** `fix/S1-BE-005-login-response-cookies`
+- **Commit :** `fix(auth): move access_token to httpOnly cookie, return user only in body`
+
+#### Description
+
+**Nouveaux endpoints**
+
+| Endpoint | Rôle |
+| ---------------------- | ------------------------------------------------------- |
+| `POST /auth/login` | Set les deux cookies, retourne `{ user }` |
+| `POST /auth/refresh` | Vérifie le refresh token, set un nouveau access token cookie |
+| `POST /auth/logout` | Efface les deux cookies |
+
+**Corrections de design**
+
+- `register` ne connecte plus automatiquement — cohérent avec le flux B2B où c'est l'admin qui crée les comptes
+- `UserTokenData` supprimé — `UserResponseType` est la source de vérité unique, `passwordHash` ne peut plus fuiter
+- `catch` typé — les erreurs 500 ne sont plus masquées en 401
+
+**Sécurité JWT renforcée**
+
+- Deux secrets distincts : `JWT_SECRET` pour l'access, `JWT_REFRESH_SECRET` pour le refresh
+- Champ `type: 'access' | 'refresh'` dans le payload vérifié explicitement des deux côtés — un refresh token ne peut pas usurper un access token même si les secrets étaient compromis
+
+**Infrastructure**
+
+- `cookie-parser` installé et enregistré avant tous les middlewares
+- `JwtStrategy` migré vers un extracteur cookie custom au lieu du header `Authorization: Bearer`
+
+#### Acceptance Criteria
+
+- ✅ Login retourne `{ user }` + set deux cookies httpOnly (`access_token`, `refresh_token`)
+- ✅ POST `/auth/refresh` valide le cookie et retourne un nouveau cookie `access_token`
+- ✅ POST `/auth/logout` efface les deux cookies
+- ✅ `register` ne connecte plus automatiquement
+- ✅ `passwordHash` impossible à exposer via `UserResponseType`
+- ✅ `cookie-parser` enregistré avant tous les middlewares
+
+#### Files
+
+- `apps/backend/src/auth/auth.controller.ts`
+- `apps/backend/src/auth/auth.service.ts`
+- `apps/backend/src/auth/strategies/jwt.strategy.ts`
+- `apps/backend/prisma/schema.prisma`
+- `apps/backend/src/main.ts`
 
 ---
 
@@ -520,27 +499,6 @@ return next(authReq).pipe(
 
 ---
 
-### S1-FE-009 : Cleanup Sprint 1 — debug logs and dead code
-
-- **Type :** Refactor
-- **Priority :** P2
-- **Story Points :** 0
-- **Branch :** `refactor/S1-FE-009-cleanup`
-- **Commit :** `refactor(auth): remove debug logs and dead code`
-- **Description :**
-  - Retirer console.log de login$ effect
-  - Supprimer logout$ commenté dans auth.effects.ts
-  - Retirer commentaire simulation state dans app.config.ts
-- **Acceptance Criteria :**
-  - ✅ Aucun console.log en production
-  - ✅ Aucun code commenté
-- **Files :**
-  - `apps/frontend/src/app/core/auth/store/auth.effects.ts`
-  - `apps/frontend/src/app/app.config.ts`
-- **Status :** ✅ Done
-
----
-
 ### S1-FE-011 : Login page UX/UI improvement
 
 - **Type :** Feature
@@ -595,27 +553,6 @@ return next(authReq).pipe(
 
 ---
 
-## Ordre d'exécution Sprint 1
-
-```
-Backend :
-S1-BE-001 (RolesGuard)
-S1-BE-003 (Refresh token) ← P0
-S1-BE-002 (GET /auth/me)  ← P2, seulement si temps restant
-
-Frontend :
-S1-FE-001 (RoleGuard)
-  → S1-FE-002 (Shell)
-    → S1-FE-003 (Sidebar)
-    → S1-FE-004 (Header)
-      → S1-FE-005 (Logout)
-  → (attendre S1-BE-003)
-    → S1-FE-006 (Rehydratation)
-    → S1-FE-007 (Refresh interceptor)
-```
-
----
-
 ## Definition of Done - Sprint 1
 
 - ✅ Login réel frontend ↔ backend fonctionne
@@ -633,7 +570,6 @@ S1-FE-001 (RoleGuard)
 ## Convention commits Sprint 1
 
 ```
-feat(auth): create RolesGuard and @Roles decorator
 feat(auth): implement refresh token with httpOnly cookie
 feat(auth): add GET /auth/me endpoint
 feat(auth): create role guard with UrlTree
@@ -650,13 +586,3 @@ feat(auth): add refresh token interceptor for 401 handling
 ## Dépendances
 
 - Sprint 0 ✅ doit être terminé
-
----
-
-## Risques
-
-| Risque                      | Mitigation                                          |
-| --------------------------- | --------------------------------------------------- |
-| Cookie httpOnly bloqué CORS | Configurer `credentials: 'include'` + CORS backend  |
-| Refresh loop infini         | Exclure `/auth/refresh` du retry dans l'interceptor |
-| Requêtes parallèles sur 401 | Un seul refresh à la fois (flag ou BehaviorSubject) |

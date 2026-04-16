@@ -144,7 +144,7 @@ npx prisma studio --config prisma.config.ts
 - **Branch :** `feature/S0-BE-004-prisma-module`
 - **Commit :** `feat(prisma): create PrismaService and PrismaModule`
 - **Priority :** P0 | **SP :** 1
-- **Status :** ⏳ À faire
+- **Status :** ✅ Done
 - **Description :**
   Créer la couche d'accès à la base de données dans NestJS.
 
@@ -186,7 +186,7 @@ export class PrismaModule {}
 - **Branch :** `feature/S0-BE-005-auth-module`
 - **Commit :** `feat(auth): create auth module with JWT strategy`
 - **Priority :** P0 | **SP :** 3
-- **Status :** ⏳ À faire
+- **Status :** ✅ Done
 - **Description :**
   - `POST /auth/login` → retourne `{ access_token, user }` ou HTTP 401
   - JWT Strategy avec Passport
@@ -214,7 +214,7 @@ export class PrismaModule {}
 - **Branch :** `feature/S0-BE-006-roles-guard`
 - **Commit :** `feat(auth): create RolesGuard and @Roles decorator`
 - **Priority :** P0 | **SP :** 1
-- **Status :** ⏳ À faire
+- **Status :** ✅ Done
 - **Files :**
   - `apps/backend/src/auth/guards/roles.guard.ts`
   - `apps/backend/src/auth/decorators/roles.decorator.ts`
