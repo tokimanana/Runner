@@ -179,8 +179,8 @@ async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 
 ### S1-BE-004 : Seed data utilisateurs _(déjà fait en S0-BE-006)_
 
-- **Status :** ✅ Done (Sprint 0)
-- **Note :** Seed créé en S0-BE-006 avec `upsert`. Rien à faire.
+- **Status :** ✅ Done (S0-BE-006)
+- **Note :** `ROLES_KEY` extrait en constante exportée dans le décorateur — légèrement différent du snippet du doc mais fonctionnellement identique.
 
 ---
 
