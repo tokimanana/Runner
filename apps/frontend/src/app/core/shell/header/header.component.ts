@@ -1,21 +1,25 @@
+import { ThemeService } from '@/app/shared/services/theme.service';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { AsyncPipe } from '@angular/common';
-import { AvatarModule } from 'primeng/avatar';
-import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
-import { selectCurrentUser } from '../../auth/store/auth.selectors';
+import { AvatarModule } from 'primeng/avatar';
+import { ButtonModule } from 'primeng/button';
+import { MenuModule } from 'primeng/menu';
+import { TooltipModule } from 'primeng/tooltip';
 import { AuthActions } from '../../auth/store/auth.actions';
+import { selectCurrentUser } from '../../auth/store/auth.selectors';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [AsyncPipe, AvatarModule, MenuModule],
+  imports: [AsyncPipe, AvatarModule, MenuModule, ButtonModule, TooltipModule],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
   private readonly store = inject(Store);
+  readonly theme = inject(ThemeService);
   readonly currentUser$ = this.store.select(selectCurrentUser);
 
   getMenuItems(user: {

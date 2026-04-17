@@ -1,11 +1,22 @@
 <header class="header">
-  @if (currentUser$ | async; as user) {
-    <p-avatar
-      [label]="getInitials(user.firstName, user.lastName)"
-      shape="circle"
-      (click)="menu.toggle($event)"
-      [style]="{ cursor: 'pointer' }"
+  <div class="header-actions">
+    <p-button
+      [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+      [pTooltip]="theme.isDark() ? 'Light mode' : 'Dark mode'"
+      tooltipPosition="bottom"
+      variant="text"
+      rounded
+      severity="secondary"
+      (onClick)="theme.toggle()"
     />
-    <p-menu #menu [model]="getMenuItems(user)" [popup]="true" />
-  }
+
+    @if (currentUser$ | async; as user) {
+      <p-avatar
+        [label]="getInitials(user.firstName, user.lastName)"
+        shape="circle"
+        (click)="menu.toggle($event)"
+      />
+      <p-menu #menu [model]="getMenuItems(user)" [popup]="true" />
+    }
+  </div>
 </header>
