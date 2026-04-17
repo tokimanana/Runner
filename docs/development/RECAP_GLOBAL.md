@@ -14,15 +14,15 @@
 | Sprint       | Titre                | Durée           | SP      | Statut      |
 | ------------ | -------------------- | --------------- | ------- | ----------- |
 | **Sprint 0** | Setup Infrastructure | 1-2j            | 13      | ✅ Terminé  |
-| **Sprint 1** | Auth & Layout        | 2-3j            | 23      | 🔄 En cours |
-| **Sprint 2** | Hotels + Seasons     | 4-5j            | 34      | ⏳ À faire  |
+| **Sprint 1** | Auth & Layout        | 2-3j            | 23      | ✅ Terminé  |
+| **Sprint 2** | Hotels + Seasons     | 4-5j            | 38      | 🔄 En cours |
 | **Sprint 3** | Référentiels         | 3j              | 21      | ⏳ À faire  |
 | **Sprint 4** | Contracts            | 6-7j            | 55      | ⏳ À faire  |
 | **Sprint 5** | Offers               | 3-4j            | 29      | ⏳ À faire  |
 | **Sprint 6** | Booking UI           | 4-5j            | 34      | ⏳ À faire  |
 | **Sprint 7** | Pricing Engine       | 5-7j            | 47      | ⏳ À faire  |
 | **Sprint 8** | Finitions & Tests    | 3-4j            | 26      | ⏳ À faire  |
-| **TOTAL**    |                      | **31-40 jours** | **277** |             |
+| **TOTAL**    |                      | **31-40 jours** | **281** |             |
 
 ---
 
@@ -48,7 +48,7 @@
 
 **NgRx uniquement pour :**
 
-- Auth (partagée partout, tokens, rôles)
+- Auth (partagée partout, rôles)
 - Booking Wizard (état complexe multi-étapes + effects calculatePrice)
 
 **BehaviorSubject pour tous les autres services :**
@@ -152,16 +152,16 @@ export function authInterceptor(
 
 ## 🔐 Stratégie Auth
 
-| Token         | Stockage             | Durée   | Usage                                    |
-| ------------- | -------------------- | ------- | ---------------------------------------- |
-| access_token  | Mémoire (NgRx store) | 15 min  | Envoyé dans Authorization header         |
-| refresh_token | Cookie httpOnly      | 7 jours | Envoyé automatiquement par le navigateur |
+| Token         | Stockage        | Durée  | Usage                                    |
+| ------------- | --------------- | ------ | ---------------------------------------- |
+| access_token  | Cookie httpOnly | 60 min | Envoyé automatiquement par le navigateur |
+| refresh_token | Cookie httpOnly | 1 jour | Envoyé automatiquement par le navigateur |
 
 **Flux au reload :**
 
 1. App démarre → `APP_INITIALIZER` appelle `POST /auth/refresh`
 2. Cookie httpOnly envoyé automatiquement par le navigateur
-3. Succès → store rehydraté avec `access_token` + `user`
+3. Succès → store rehydraté avec `user`
 4. Échec → `AuthGuard` redirige vers `/login`
 
 **Flux sur 401 (interceptor) :**
