@@ -1,0 +1,45 @@
+# Dependencies
+
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+
+dist
+build
+out
+
+
+# NX cache
+
+.nx/cache
+.nx/workspace-data
+tmp
+
+# Angular
+.angular
+
+#Git
+.git
+.gitignore
+
+# Logs
+
+*.log
+npm-debug.log*
+
+# Docker
+
+docker-compose.yml
+**/Dockerfile*
+.dockerignore
+
+#IDE
+
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

@@ -1,0 +1,63 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <i class="pi pi-send"></i>
+      <h1>Runner</h1>
+      <p>Sign in to your account</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          pInputText
+          id="email"
+          formControlName="email"
+          type="email"
+          placeholder="you@example.com"
+          fluid
+        />
+        @if (email?.touched) {
+          @if (email?.errors?.['required']) {
+            <p-message severity="error" size="small" variant="simple">
+              Email is required.
+            </p-message>
+          }
+          @if (email?.errors?.['email']) {
+            <p-message severity="error" size="small" variant="simple">
+              Email is invalid.
+            </p-message>
+          }
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <p-password
+          inputId="password"
+          formControlName="password"
+          [feedback]="false"
+          toggleMask
+          fluid
+        />
+        @if (password?.touched && password?.invalid) {
+          <p-message severity="error" size="small" variant="simple">
+            Password is required.
+          </p-message>
+        }
+      </div>
+
+      @if (error$ | async; as error) {
+        <p-message severity="error">{{ error }}</p-message>
+      }
+
+      <p-button
+        type="submit"
+        label="Sign in"
+        [disabled]="!!(isLoading$ | async)"
+        [loading]="!!(isLoading$ | async)"
+        fluid
+      />
+    </form>
+  </div>
+</div>

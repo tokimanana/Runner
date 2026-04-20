@@ -8,7 +8,9 @@
     "types": ["node"],
     "typeRoots": ["../../node_modules/@types"],
     "target": "ES2021",
-    "sourceMap": true
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "test"]
