@@ -76,6 +76,48 @@ volumes:
   postgres-data:
   # backend_node_modules:
   # frontend_node_modules:
+      - postgres
+    networks:
+      - dev-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: runner-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/runner?schema=public
+      JWT_SECRET: dev-secret-key
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - dev-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: runner-frontend
+    restart: always
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./apps/frontend:/app/apps/frontend
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - dev-network
+
+volumes:
+  postgres-data:
 
 networks:
   dev-network:
