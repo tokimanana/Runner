@@ -21,6 +21,70 @@ model User {
   lastName       String
   role           UserRole @default(AGENT)
   tourOperatorId String
+  refreshTokens RefreshToken[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Hotel {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  name           String
+  city           String
+  country        String
+  region         String?
+  destination    String?
+  address        String?
+  email          String?
+  phone          String?
+  tourOperatorId String
+  ageCategories  AgeCategory[]
+  roomTypes      RoomType[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([tourOperatorId])
+  @@index([destination])
+}
+
+model AgeCategory {
+  id      String @id @default(cuid())
+  name    String
+  minAge  Int
+  maxAge  Int
+  order   Int    @default(0)
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId String
+}
+
+model RoomType {
+  id          String @id @default(cuid())
+  name        String
+  code        String
+  maxAdults   Int
+  maxChildren Int    @default(0)
+  hotel       Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId     String
+}
+
+model Season {
+  id             String   @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tourOperatorId])
+  @@index([startDate, endDate])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
