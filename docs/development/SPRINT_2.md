@@ -5,11 +5,189 @@
 Gestion complète des hôtels (CRUD, Age Categories, Room Types) + ajout de la gestion des Seasons réutilisables.
 
 **Durée estimée :** 4-5 jours
-**Story Points :** 34 points
+**Story Points :** 38 points
 
 ---
 
 ## Backend Tasks
+
+### S2-CHORE-001 : Créer shared NX types library
+
+- **Type :** Chore
+- **Priority :** P0
+- **Story Points :** 2
+- **Branch :** `chore/S2-CHORE-001-shared-types`
+- **Commit :** `chore(nx): create shared types library for Hotel, Season, AgeCategory, RoomType`
+- **Description :**
+  - Générer la lib : `nx g @nx/js:library types --directory=libs/shared/types`
+  - Exporter les interfaces TypeScript partagées entre frontend et backend
+  - Importer via `@runner/shared/types` dans les deux apps
+
+- **Types à créer :**
+
+```typescript
+// libs/shared/types/src/lib/hotel.types.ts
+export interface AgeCategory {
+  id: string;
+  name: string;
+  minAge: number;
+  maxAge: number;
+  order: number;
+  hotelId: string;
+}
+
+export interface RoomType {
+  id: string;
+  name: string;
+  code: string;
+  maxAdults: number;
+  maxChildren: number;
+  hotelId: string;
+}
+
+export interface Hotel {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  region?: string;
+  destination?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  tourOperatorId: string;
+  ageCategories?: AgeCategory[];
+  roomTypes?: RoomType[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// libs/shared/types/src/lib/season.types.ts
+export interface Season {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+- **Acceptance Criteria :**
+  - ✅ Lib générée et buildable
+  - ✅ Importable via `@runner/shared/types` dans frontend et backend
+  - ✅ Pas de dépendance Angular ou NestJS dans la lib (pure TypeScript)
+- **Files :**
+  - `libs/shared/types/src/lib/hotel.types.ts`
+  - `libs/shared/types/src/lib/season.types.ts`
+  - `libs/shared/types/src/index.ts`
+
+---
+
+### S2-BE-000 : Migration Prisma — Hotel, AgeCategory, RoomType, Season
+
+- **Type :** Chore
+- **Priority :** P0
+- **Story Points :** 2
+- **Branch :** `chore/S2-BE-000-prisma-migration-sprint2`
+- **Commit :** `chore(prisma): add Hotel, AgeCategory, RoomType, Season models`
+- **Description :**
+  - Ajouter les 4 modèles dans `schema.prisma`
+  - Ajouter `RefreshToken` si pas encore présent depuis S1-BE-005
+  - Lancer `migrate dev` depuis `apps/backend/`
+  - Lancer `generate`
+  - Mettre à jour le seed si nécessaire
+
+- **Schema à ajouter :**
+
+```prisma
+model Hotel {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  name           String
+  city           String
+  country        String
+  region         String?
+  destination    String?
+  address        String?
+  email          String?
+  phone          String?
+  tourOperatorId String
+  ageCategories  AgeCategory[]
+  roomTypes      RoomType[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([tourOperatorId])
+  @@index([destination])
+}
+
+model AgeCategory {
+  id      String @id @default(cuid())
+  name    String
+  minAge  Int
+  maxAge  Int
+  order   Int    @default(0)
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId String
+}
+
+model RoomType {
+  id          String @id @default(cuid())
+  name        String
+  code        String
+  maxAdults   Int
+  maxChildren Int    @default(0)
+  hotel       Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId     String
+}
+
+model Season {
+  id             String   @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tourOperatorId])
+  @@index([startDate, endDate])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+```
+
+> **Note :** `RefreshToken` était prévu dans S1-BE-003 mais S1-BE-005 a migré vers
+> full httpOnly cookie avec extracteur custom. Vérifier si le modèle est déjà présent
+> avant de l'ajouter.
+
+- **Commands :**
+```bash
+cd apps/backend
+npx prisma migrate dev --name sprint2-hotels-seasons --config prisma.config.ts
+npx prisma generate --config prisma.config.ts
+```
+
+- **Acceptance Criteria :**
+  - ✅ Migration appliquée sans erreur
+  - ✅ Tables créées en DB : Hotel, AgeCategory, RoomType, Season
+  - ✅ Client Prisma régénéré
+  - ✅ `RefreshToken` présent (créé ou déjà existant)
+- **Files :**
+  - `apps/backend/prisma/schema.prisma`
+  - `apps/backend/prisma/migrations/`
+
+---
 
 ### S2-BE-001 : Améliorer HotelsService (CRUD complet)
 
