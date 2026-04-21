@@ -19,7 +19,9 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['src/hotels/*.spec.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -29,7 +31,10 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-require-imports': ['error', { allow: ['cookie-parser'] }],
+      '@typescript-eslint/no-require-imports': [
+        'error',
+        { allow: ['cookie-parser'] },
+      ],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
