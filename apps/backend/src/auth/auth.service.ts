@@ -116,7 +116,13 @@ export class AuthService {
 
   private signAccessToken(user: UserResponseType): string {
     return this.jwtService.sign(
-      { sub: user.id, email: user.email, role: user.role, type: 'access' },
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        tourOperatorId: user.tourOperatorId,
+        type: 'access',
+      },
       { secret: process.env.JWT_SECRET, expiresIn: '15m' },
     );
   }
