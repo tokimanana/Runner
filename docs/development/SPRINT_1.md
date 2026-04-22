@@ -163,6 +163,25 @@ Look at S1-BE-005
 
 ---
 
+### S1-DOCS-BE-006 : Add tourOperatorId to JWT payload and fix token expiry
+
+- **Type :** Fix
+- **Priority :** P0
+- **Branch :** `fix/S1-DOCS-BE-006-jwt-tour-operator`
+- **Commit :** `fix(auth): add tourOperatorId to JWT payload and set token expiry 1h/24h`
+- **Description :**
+  - `tourOperatorId` manquant dans le payload JWT — découvert lors de S2-BE-001
+  - Access token expirait en 15min au lieu de 1h
+  - Cookie `access_token` avait un `maxAge` de 15min au lieu de 1h
+- **Files :**
+  - `apps/backend/src/auth/strategies/jwt.strategy.ts`
+  - `apps/backend/src/auth/auth.service.ts`
+  - `apps/backend/src/auth/types/jwt-user.type.ts`
+  - `apps/backend/src/auth/auth.controller.ts`
+- **Status :** ✅ Done
+
+---
+
 ## Frontend Tasks
 
 ### S1-FE-001 : RoleGuard
