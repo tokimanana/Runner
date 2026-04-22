@@ -63,7 +63,7 @@ export class AuthController {
 
     res.cookie('access_token', access_token, {
       ...COOKIE_OPTIONS,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 60 * 60 * 1000,
     });
 
     return { user };
@@ -98,7 +98,7 @@ export class AuthController {
   ) {
     res.cookie('access_token', accessToken, {
       ...COOKIE_OPTIONS,
-      maxAge: 15 * 60 * 1000, // 15 min
+      maxAge: 60 * 60 * 1000, // 60 min
     });
     res.cookie('refresh_token', refreshToken, {
       ...COOKIE_OPTIONS,

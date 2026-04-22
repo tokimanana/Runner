@@ -123,7 +123,7 @@ export class AuthService {
         tourOperatorId: user.tourOperatorId,
         type: 'access',
       },
-      { secret: process.env.JWT_SECRET, expiresIn: '15m' },
+      { secret: process.env.JWT_SECRET, expiresIn: '60m' },
     );
   }
 
