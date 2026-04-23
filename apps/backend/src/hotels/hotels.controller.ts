@@ -23,7 +23,7 @@ import { HotelsService } from './hotels.service';
 @Controller('hotels')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.MANAGER)
-export class HotelController {
+export class HotelsController {
   constructor(private readonly hotelsService: HotelsService) {}
 
   @Post()
