@@ -1,5 +1,4 @@
-// create-room-type.dto.ts
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateRoomTypeDto {
   @IsString()
@@ -11,7 +10,7 @@ export class CreateRoomTypeDto {
   code: string;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   maxAdults: number;
 
   @IsInt()
@@ -20,5 +19,6 @@ export class CreateRoomTypeDto {
 
   @IsInt()
   @Min(0)
+  @IsOptional()
   order?: number;
 }
