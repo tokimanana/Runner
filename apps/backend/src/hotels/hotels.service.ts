@@ -8,6 +8,7 @@ import { AgeCategory, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 
 type HotelDetail = Prisma.HotelGetPayload<{
@@ -167,6 +168,68 @@ export class HotelsService {
       },
     });
   }
-  // updateAgeCategory()
-  // removeAgeCategory()
+
+  async updateAgeCategory(
+    id: string,
+    dto: UpdateAgeCategoryDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<AgeCategory> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    const existing = await this.prisma.ageCategory.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Age category ${id} not found`);
+    }
+
+    const minAge = dto.minAge ?? existing.minAge;
+    const maxAge = dto.maxAge ?? existing.maxAge;
+
+    if (maxAge <= minAge) {
+      throw new BadRequestException('maxAge must be greater than minAge');
+    }
+
+    const overlapping = await this.prisma.ageCategory.findFirst({
+      where: {
+        hotelId,
+        id: { not: id },
+        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
+      },
+    });
+
+    if (overlapping) {
+      throw new BadRequestException('Ages must not overlap');
+    }
+
+    return this.prisma.ageCategory.update({
+      where: { id },
+      data: {
+        ...dto,
+      },
+    });
+  }
+
+  async removeAgeCategory(
+    id: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<void> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    try {
+      await this.prisma.ageCategory.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Age Category ${id} not found`);
+        }
+      }
+      throw error;
+    }
+  }
 }
