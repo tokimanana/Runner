@@ -16,7 +16,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
+import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { HotelsService } from './hotels.service';
 
@@ -71,5 +73,56 @@ export class HotelsController {
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.hotelsService.remove(id, tourOperatorId);
+  }
+
+  // GET    /hotels/:id/age-categories
+  @Get(':id/age-categories')
+  findAllAgeCategories(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.findAllAgeCategories(tourOperatorId, id);
+  }
+
+  // POST   /hotels/:id/age-categories
+  @Post(':id/age-categories')
+  createAgeCategory(
+    @Body() createAgeCategoryDto: CreateAgeCategoryDto,
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.createAgeCategory(
+      createAgeCategoryDto,
+      tourOperatorId,
+      id,
+    );
+  }
+
+  // PATCH    /hotels/:id/age-categories/:catId
+  @Patch(':id/age-categories/:catId')
+  updateAgeCategory(
+    @Param('id') id: string,
+    @Body() updateAgeCategoryDto: UpdateAgeCategoryDto,
+    @Req() req: RequestWithUser,
+    @Param('catId') catId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.updateAgeCategory(
+      catId,
+      updateAgeCategoryDto,
+      tourOperatorId,
+      id,
+    );
+  }
+
+  // DELETE /hotels/:id/age-categories/:catId
+  @Delete(':id/age-categories/:catId')
+  @HttpCode(204)
+  removeAgeCategory(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+    @Param('catId') catId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.removeAgeCategory(catId, tourOperatorId, id);
   }
 }
