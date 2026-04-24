@@ -75,14 +75,12 @@ export class HotelsController {
     return this.hotelsService.remove(id, tourOperatorId);
   }
 
-  // GET    /hotels/:id/age-categories
   @Get(':id/age-categories')
   findAllAgeCategories(@Param('id') id: string, @Req() req: RequestWithUser) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.hotelsService.findAllAgeCategories(tourOperatorId, id);
   }
 
-  // POST   /hotels/:id/age-categories
   @Post(':id/age-categories')
   createAgeCategory(
     @Body() createAgeCategoryDto: CreateAgeCategoryDto,
@@ -97,7 +95,6 @@ export class HotelsController {
     );
   }
 
-  // PATCH    /hotels/:id/age-categories/:catId
   @Patch(':id/age-categories/:catId')
   updateAgeCategory(
     @Param('id') id: string,
@@ -114,7 +111,6 @@ export class HotelsController {
     );
   }
 
-  // DELETE /hotels/:id/age-categories/:catId
   @Delete(':id/age-categories/:catId')
   @HttpCode(204)
   removeAgeCategory(
