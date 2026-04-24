@@ -146,20 +146,7 @@ export class HotelsService {
   ): Promise<AgeCategory> {
     await this.findOne(hotelId, tourOperatorId);
 
-    if (dto.maxAge <= dto.minAge) {
-      throw new BadRequestException('maxAge must be greater than minAge');
-    }
-
-    const overlapping = await this.prisma.ageCategory.findFirst({
-      where: {
-        hotelId,
-        AND: [{ minAge: { lt: dto.maxAge } }, { maxAge: { gt: dto.minAge } }],
-      },
-    });
-
-    if (overlapping) {
-      throw new BadRequestException('Ages must not overlap');
-    }
+    await this.validateAgeCategoryOverlap(hotelId, dto.minAge, dto.maxAge);
 
     return this.prisma.ageCategory.create({
       data: {
@@ -188,21 +175,7 @@ export class HotelsService {
     const minAge = dto.minAge ?? existing.minAge;
     const maxAge = dto.maxAge ?? existing.maxAge;
 
-    if (maxAge <= minAge) {
-      throw new BadRequestException('maxAge must be greater than minAge');
-    }
-
-    const overlapping = await this.prisma.ageCategory.findFirst({
-      where: {
-        hotelId,
-        id: { not: id },
-        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
-      },
-    });
-
-    if (overlapping) {
-      throw new BadRequestException('Ages must not overlap');
-    }
+    await this.validateAgeCategoryOverlap(hotelId, minAge, maxAge, id);
 
     return this.prisma.ageCategory.update({
       where: { id },
@@ -230,6 +203,29 @@ export class HotelsService {
         }
       }
       throw error;
+    }
+  }
+
+  private async validateAgeCategoryOverlap(
+    hotelId: string,
+    minAge: number,
+    maxAge: number,
+    excludedId?: string,
+  ): Promise<void> {
+    if (maxAge <= minAge) {
+      throw new BadRequestException('maxAge must be greater than minAge');
+    }
+
+    const overlapping = await this.prisma.ageCategory.findFirst({
+      where: {
+        hotelId,
+        ...(excludedId && { id: { not: excludedId } }),
+        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
+      },
+    });
+
+    if (overlapping) {
+      throw new BadRequestException('Ages must not overlap');
     }
   }
 }
