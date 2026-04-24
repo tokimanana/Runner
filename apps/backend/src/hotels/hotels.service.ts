@@ -1,11 +1,14 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AgeCategory, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 
 type HotelDetail = Prisma.HotelGetPayload<{
@@ -121,6 +124,108 @@ export class HotelsService {
         }
       }
       throw error;
+    }
+  }
+
+  async findAllAgeCategories(
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<AgeCategory[]> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    return this.prisma.ageCategory.findMany({
+      where: { hotelId },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async createAgeCategory(
+    dto: CreateAgeCategoryDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<AgeCategory> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    await this.validateAgeCategoryOverlap(hotelId, dto.minAge, dto.maxAge);
+
+    return this.prisma.ageCategory.create({
+      data: {
+        ...dto,
+        hotelId,
+      },
+    });
+  }
+
+  async updateAgeCategory(
+    id: string,
+    dto: UpdateAgeCategoryDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<AgeCategory> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    const existing = await this.prisma.ageCategory.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Age category ${id} not found`);
+    }
+
+    const minAge = dto.minAge ?? existing.minAge;
+    const maxAge = dto.maxAge ?? existing.maxAge;
+
+    await this.validateAgeCategoryOverlap(hotelId, minAge, maxAge, id);
+
+    return this.prisma.ageCategory.update({
+      where: { id },
+      data: {
+        ...dto,
+      },
+    });
+  }
+
+  async removeAgeCategory(
+    id: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<void> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    try {
+      await this.prisma.ageCategory.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Age Category ${id} not found`);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async validateAgeCategoryOverlap(
+    hotelId: string,
+    minAge: number,
+    maxAge: number,
+    excludedId?: string,
+  ): Promise<void> {
+    if (maxAge <= minAge) {
+      throw new BadRequestException('maxAge must be greater than minAge');
+    }
+
+    const overlapping = await this.prisma.ageCategory.findFirst({
+      where: {
+        hotelId,
+        ...(excludedId && { id: { not: excludedId } }),
+        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
+      },
+    });
+
+    if (overlapping) {
+      throw new BadRequestException('Ages must not overlap');
     }
   }
 }
