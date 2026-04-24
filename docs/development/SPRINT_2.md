@@ -172,10 +172,10 @@ model RefreshToken {
 > avant de l'ajouter.
 
 - **Commands :**
+
 ```bash
-cd apps/backend
-npx prisma migrate dev --name sprint2-hotels-seasons --config prisma.config.ts
-npx prisma generate --config prisma.config.ts
+npx prisma migrate dev --name sprint2-hotels-seasons --schema prisma/schema.prisma
+npx prisma generate --schema prisma/schema.prisma
 ```
 
 - **Acceptance Criteria :**
@@ -184,8 +184,8 @@ npx prisma generate --config prisma.config.ts
   - ✅ Client Prisma régénéré
   - ✅ `RefreshToken` présent (créé ou déjà existant)
 - **Files :**
-  - `apps/backend/prisma/schema.prisma`
-  - `apps/backend/prisma/migrations/`
+  - `prisma/schema.prisma`
+  - `prisma/migrations/`
 
 ---
 
