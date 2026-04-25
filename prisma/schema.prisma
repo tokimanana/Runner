@@ -76,6 +76,8 @@ model Season {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  @@unique([tourOperatorId, name])
+
   @@index([tourOperatorId])
   @@index([startDate, endDate])
 }
