@@ -1,9 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { Season } from '@prisma/client';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 
-@Injectable()
 export abstract class SeasonRepository {
   abstract findAll(
     tourOperatorId: string,
