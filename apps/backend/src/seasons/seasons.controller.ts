@@ -8,6 +8,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -27,6 +28,7 @@ export class SeasonsController {
   constructor(private readonly seasonService: SeasonsService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(
     @Body() createSeasonDto: CreateSeasonDto,
     @Req() req: RequestWithUser,

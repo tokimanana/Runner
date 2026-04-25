@@ -49,7 +49,17 @@ export class SeasonsService {
 
   async create(dto: CreateSeasonDto, tourOperatorId: string): Promise<Season> {
     this.validateDates(dto.startDate, dto.endDate);
-    return await this.seasonRepository.create(dto, tourOperatorId);
+    try {
+      return await this.seasonRepository.create(dto, tourOperatorId);
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(`Season name already exists`);
+      }
+      throw error;
+    }
   }
 
   async update(
@@ -63,7 +73,17 @@ export class SeasonsService {
 
     this.validateDates(startDate, endDate);
 
-    return await this.seasonRepository.update(id, dto, tourOperatorId);
+    try {
+      return await this.seasonRepository.update(id, dto, tourOperatorId);
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(`Season name already exists`);
+      }
+      throw error;
+    }
   }
 
   async remove(id: string, tourOperatorId: string): Promise<void> {
