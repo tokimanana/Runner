@@ -8,7 +8,7 @@ import { SeasonRepository } from './season.repository';
 
 @Injectable()
 export class PrismaSeasonRepository extends SeasonRepository {
-  constructor(private prisma: PrismaService) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
