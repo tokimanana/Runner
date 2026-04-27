@@ -17,7 +17,7 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
-export enum HotelDeleteResult {
+export enum DeleteResult {
   DELETED = 'DELETED',
   NOT_FOUND = 'NOT_FOUND',
   HAS_CONTRACTS = 'HAS_CONTRACTS',

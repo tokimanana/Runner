@@ -6,7 +6,7 @@ import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import {
-  HotelDeleteResult,
+  DeleteResult,
   HotelDetail,
   HotelQuery,
   PaginatedResult,
@@ -24,7 +24,7 @@ export interface IHotelRepository {
     tourOperatorId: string,
     data: UpdateHotelDto,
   ): Promise<HotelDetail | null>;
-  delete(id: string, tourOperatorId: string): Promise<HotelDeleteResult>;
+  delete(id: string, tourOperatorId: string): Promise<DeleteResult>;
 
   findAllAgeCategories(hotelId: string): Promise<AgeCategory[]>;
   createAgeCategory(
@@ -36,7 +36,7 @@ export interface IHotelRepository {
     id: string,
     data: UpdateAgeCategoryDto,
   ): Promise<AgeCategory>;
-  deleteAgeCategory(id: string): Promise<void>;
+  deleteAgeCategory(id: string): Promise<DeleteResult>;
   findOverlappingAgeCategory(
     hotelId: string,
     minAge: number,
@@ -48,7 +48,7 @@ export interface IHotelRepository {
   createRoomType(hotelId: string, data: CreateRoomTypeDto): Promise<RoomType>;
   findRoomTypeById(id: string): Promise<RoomType | null>;
   updateRoomType(id: string, data: UpdateRoomTypeDto): Promise<RoomType>;
-  deleteRoomType(id: string): Promise<boolean>;
+  deleteRoomType(id: string): Promise<DeleteResult>;
   findRoomTypeByCode(
     hotelId: string,
     code: string,

@@ -9,7 +9,7 @@ import { UpdateHotelDto } from '../dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
 import { IHotelRepository } from '../hotels.repository.interface';
 import {
-  HotelDeleteResult,
+  DeleteResult,
   HotelDetail,
   HotelQuery,
   PaginatedResult,
@@ -98,16 +98,17 @@ export class PrismaHotelRepository implements IHotelRepository {
     }
   }
 
-  async delete(id: string, tourOperatorId: string): Promise<HotelDeleteResult> {
+  async delete(id: string, tourOperatorId: string): Promise<DeleteResult> {
     try {
       await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
+      return DeleteResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          return HotelDeleteResult.NOT_FOUND;
+          return DeleteResult.NOT_FOUND;
         }
         if (error.code === 'P2003') {
-          return HotelDeleteResult.HAS_CONTRACTS;
+          return DeleteResult.HAS_CONTRACTS;
         }
       }
       throw error;
@@ -166,10 +167,23 @@ export class PrismaHotelRepository implements IHotelRepository {
     });
   }
 
-  async deleteAgeCategory(id: string): Promise<void> {
-    await this.prisma.ageCategory.delete({
-      where: { id },
-    });
+  async deleteAgeCategory(id: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.ageCategory.delete({
+        where: { id },
+      });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return DeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return DeleteResult.HAS_CONTRACTS;
+        }
+      }
+      throw error;
+    }
   }
 
   async findAllRoomTypes(hotelId: string): Promise<RoomType[]> {
@@ -217,5 +231,22 @@ export class PrismaHotelRepository implements IHotelRepository {
     });
   }
 
-  async deleteRoomType(id: string): Promise<boolean> {}
+  async deleteRoomType(id: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.roomType.delete({
+        where: { id },
+      });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return DeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return DeleteResult.HAS_CONTRACTS;
+        }
+      }
+      throw error;
+    }
+  }
 }

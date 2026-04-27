@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AgeCategory, Prisma, RoomType } from '@prisma/client';
+import { AgeCategory, RoomType } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
@@ -14,7 +14,7 @@ import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { IHotelRepository } from './hotels.repository.interface';
 import { IHotelsService } from './hotels.service.interface';
 import {
-  HotelDeleteResult,
+  DeleteResult,
   HotelDetail,
   HotelQuery,
   PaginatedResult,
@@ -72,10 +72,10 @@ export class HotelsService implements IHotelsService {
   async remove(id: string, tourOperatorId: string): Promise<void> {
     const result = await this.hotelRepository.delete(id, tourOperatorId);
 
-    if (result === HotelDeleteResult.NOT_FOUND)
+    if (result === DeleteResult.NOT_FOUND)
       throw new NotFoundException(`Hotel ${id} not found`);
 
-    if (result === HotelDeleteResult.HAS_CONTRACTS)
+    if (result === DeleteResult.HAS_CONTRACTS)
       throw new ConflictException(`Hotel ${id} has linked contracts`);
   }
 
@@ -126,13 +126,19 @@ export class HotelsService implements IHotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    const exising = await this.hotelRepository.findAgeCategoryById(id);
+    // const exising = await this.hotelRepository.findAgeCategoryById(id);
 
-    if (!exising) {
+    // if (!exising) {
+    //   throw new NotFoundException(`Age Category ${id} not found`);
+    // }
+
+    const result = await this.hotelRepository.deleteAgeCategory(id);
+
+    if (result === DeleteResult.NOT_FOUND)
       throw new NotFoundException(`Age Category ${id} not found`);
-    }
 
-    await this.hotelRepository.deleteAgeCategory(id);
+    if (result === DeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Age Category ${id} has linked contracts`);
   }
 
   private async validateAgeCategoryOverlap(
@@ -211,21 +217,13 @@ export class HotelsService implements IHotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    try {
-      await this.prisma.roomType.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Room type ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new ConflictException(`Room type ${id} has linked contracts`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.hotelRepository.deleteRoomType(id);
+
+    if (result === DeleteResult.NOT_FOUND)
+      throw new NotFoundException(`Room type ${id} not found`);
+
+    if (result === DeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Room type ${id} has linked contracts`);
   }
 
   private async validateRoomTypeCode(
