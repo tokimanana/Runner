@@ -44,3 +44,16 @@ export interface Season {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export enum DeleteResult {
+  DELETED = 'DELETED',
+  NOT_FOUND = 'NOT_FOUND',
+  HAS_CONTRACTS = 'HAS_CONTRACTS',
+}
