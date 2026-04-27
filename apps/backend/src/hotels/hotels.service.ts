@@ -126,12 +126,6 @@ export class HotelsService implements IHotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    // const exising = await this.hotelRepository.findAgeCategoryById(id);
-
-    // if (!exising) {
-    //   throw new NotFoundException(`Age Category ${id} not found`);
-    // }
-
     const result = await this.hotelRepository.deleteAgeCategory(id);
 
     if (result === DeleteResult.NOT_FOUND)
