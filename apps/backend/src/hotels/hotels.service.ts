@@ -4,12 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AgeCategory, Prisma } from '@prisma/client';
+import { AgeCategory, Prisma, RoomType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 type HotelDetail = Prisma.HotelGetPayload<{
   include: { ageCategories: true; roomTypes: true };
@@ -226,6 +228,114 @@ export class HotelsService {
 
     if (overlapping) {
       throw new BadRequestException('Ages must not overlap');
+    }
+  }
+
+  async findAllRoomTypes(
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomType[]> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    return this.prisma.roomType.findMany({
+      where: { hotelId },
+    });
+  }
+
+  async createRoomType(
+    dto: CreateRoomTypeDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomType> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    await this.validateRoomTypeCode(hotelId, dto.code);
+
+    return this.prisma.roomType.create({
+      data: {
+        ...dto,
+        hotelId,
+      },
+    });
+  }
+
+  async updateRoomType(
+    id: string,
+    dto: UpdateRoomTypeDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomType> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    const existing = await this.prisma.roomType.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Room type ${id} not found`);
+    }
+
+    const adults = dto.maxAdults ?? existing.maxAdults;
+    const children = dto.maxChildren ?? existing.maxChildren;
+    if (adults + children < 1) {
+      throw new BadRequestException(
+        'maxAdults + maxChildren must be at least 1',
+      );
+    }
+
+    if (dto.code) {
+      await this.validateRoomTypeCode(hotelId, dto.code, id);
+    }
+
+    return this.prisma.roomType.update({
+      where: { id },
+      data: {
+        ...dto,
+      },
+    });
+  }
+
+  async removeRoomType(
+    id: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<void> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    try {
+      await this.prisma.roomType.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Room type ${id} not found`);
+        }
+        if (error.code === 'P2003') {
+          throw new ConflictException(`Room type ${id} has linked contracts`);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async validateRoomTypeCode(
+    hotelId: string,
+    code: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const existing = await this.prisma.roomType.findFirst({
+      where: {
+        hotelId,
+        code,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Room type code "${code}" already exists in this hotel`,
+      );
     }
   }
 }

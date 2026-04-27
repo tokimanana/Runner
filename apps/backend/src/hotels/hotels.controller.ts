@@ -21,6 +21,8 @@ import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { HotelsService } from './hotels.service';
+import { CreateRoomTypeDto } from './dto/create-room-type.dto';
+import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 
 @Controller('hotels')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -120,5 +122,52 @@ export class HotelsController {
   ) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.hotelsService.removeAgeCategory(catId, tourOperatorId, id);
+  }
+
+  @Get(':id/room-types')
+  findAllRoomTypes(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.findAllRoomTypes(tourOperatorId, id);
+  }
+
+  @Post(':id/room-types')
+  createRoomType(
+    @Body() createRoomTypeDto: CreateRoomTypeDto,
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.createRoomType(
+      createRoomTypeDto,
+      tourOperatorId,
+      id,
+    );
+  }
+
+  @Patch(':id/room-types/:typeId')
+  updateRoomType(
+    @Param('id') id: string,
+    @Body() updateRoomTypeDto: UpdateRoomTypeDto,
+    @Req() req: RequestWithUser,
+    @Param('typeId') typeId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.updateRoomType(
+      typeId,
+      updateRoomTypeDto,
+      tourOperatorId,
+      id,
+    );
+  }
+
+  @Delete(':id/room-types/:typeId')
+  @HttpCode(204)
+  removeRoomType(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+    @Param('typeId') typeId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.removeRoomType(typeId, tourOperatorId, id);
   }
 }
