@@ -13,7 +13,12 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { IHotelRepository } from './hotels.repository.interface';
 import { IHotelsService } from './hotels.service.interface';
-import { HotelDetail, HotelQuery, PaginatedResult } from './hotels.types';
+import {
+  HotelDeleteResult,
+  HotelDetail,
+  HotelQuery,
+  PaginatedResult,
+} from './hotels.types';
 
 @Injectable()
 export class HotelsService implements IHotelsService {
@@ -65,19 +70,13 @@ export class HotelsService implements IHotelsService {
   }
 
   async remove(id: string, tourOperatorId: string): Promise<void> {
-    try {
-      await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Hotel ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new ConflictException(`Hotel ${id} has linked contracts`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.hotelRepository.delete(id, tourOperatorId);
+
+    if (result === HotelDeleteResult.NOT_FOUND)
+      throw new NotFoundException(`Hotel ${id} not found`);
+
+    if (result === HotelDeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Hotel ${id} has linked contracts`);
   }
 
   async findAllAgeCategories(

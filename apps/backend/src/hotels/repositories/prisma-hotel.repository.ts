@@ -4,7 +4,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
 import { IHotelRepository } from '../hotels.repository.interface';
-import { HotelDetail, HotelQuery, PaginatedResult } from '../hotels.types';
+import {
+  HotelDeleteResult,
+  HotelDetail,
+  HotelQuery,
+  PaginatedResult,
+} from '../hotels.types';
 
 const HOTEL_INCLUDE = {
   ageCategories: true,
@@ -84,6 +89,22 @@ export class PrismaHotelRepository implements IHotelRepository {
         error.code === 'P2025'
       ) {
         return null;
+      }
+      throw error;
+    }
+  }
+
+  async delete(id: string, tourOperatorId: string): Promise<HotelDeleteResult> {
+    try {
+      await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return HotelDeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return HotelDeleteResult.HAS_CONTRACTS;
+        }
       }
       throw error;
     }

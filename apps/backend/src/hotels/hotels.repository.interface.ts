@@ -5,7 +5,12 @@ import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-import { HotelDetail, HotelQuery, PaginatedResult } from './hotels.types';
+import {
+  HotelDeleteResult,
+  HotelDetail,
+  HotelQuery,
+  PaginatedResult,
+} from './hotels.types';
 
 export interface IHotelRepository {
   create(data: CreateHotelDto, tourOperatorId: string): Promise<HotelDetail>;
@@ -19,7 +24,7 @@ export interface IHotelRepository {
     tourOperatorId: string,
     data: UpdateHotelDto,
   ): Promise<HotelDetail | null>;
-  delete(id: string, tourOperatorId: string): Promise<boolean>;
+  delete(id: string, tourOperatorId: string): Promise<HotelDeleteResult>;
 
   findAllAgeCategories(hotelId: string): Promise<AgeCategory[]>;
   createAgeCategory(
