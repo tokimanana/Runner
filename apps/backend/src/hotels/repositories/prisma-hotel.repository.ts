@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AgeCategory, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
+import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
 import { IHotelRepository } from '../hotels.repository.interface';
 import {
@@ -108,5 +110,63 @@ export class PrismaHotelRepository implements IHotelRepository {
       }
       throw error;
     }
+  }
+
+  async findAllAgeCategories(hotelId: string): Promise<AgeCategory[]> {
+    return this.prisma.ageCategory.findMany({
+      where: { hotelId },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async createAgeCategory(
+    hotelId: string,
+    data: CreateAgeCategoryDto,
+  ): Promise<AgeCategory> {
+    return this.prisma.ageCategory.create({
+      data: {
+        ...data,
+        hotelId,
+      },
+    });
+  }
+
+  async updateAgeCategory(
+    id: string,
+    data: UpdateAgeCategoryDto,
+  ): Promise<AgeCategory> {
+    return this.prisma.ageCategory.update({
+      where: { id },
+      data: {
+        ...data,
+      },
+    });
+  }
+
+  async findAgeCategoryById(id: string): Promise<AgeCategory | null> {
+    return this.prisma.ageCategory.findUnique({
+      where: { id },
+    });
+  }
+
+  async findOverlappingAgeCategory(
+    hotelId: string,
+    minAge: number,
+    maxAge: number,
+    excludeId?: string,
+  ): Promise<AgeCategory | null> {
+    return this.prisma.ageCategory.findFirst({
+      where: {
+        hotelId,
+        ...(excludeId && { id: { not: excludeId } }),
+        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
+      },
+    });
+  }
+
+  async deleteAgeCategory(id: string): Promise<void> {
+    await this.prisma.ageCategory.delete({
+      where: { id },
+    });
   }
 }

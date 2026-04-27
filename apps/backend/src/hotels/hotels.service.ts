@@ -84,11 +84,7 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<AgeCategory[]> {
     await this.findOne(hotelId, tourOperatorId);
-
-    return this.prisma.ageCategory.findMany({
-      where: { hotelId },
-      orderBy: { order: 'asc' },
-    });
+    return this.hotelRepository.findAllAgeCategories(hotelId);
   }
 
   async createAgeCategory(
@@ -97,15 +93,8 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<AgeCategory> {
     await this.findOne(hotelId, tourOperatorId);
-
     await this.validateAgeCategoryOverlap(hotelId, dto.minAge, dto.maxAge);
-
-    return this.prisma.ageCategory.create({
-      data: {
-        ...dto,
-        hotelId,
-      },
-    });
+    return this.hotelRepository.createAgeCategory(hotelId, dto);
   }
 
   async updateAgeCategory(
@@ -116,9 +105,7 @@ export class HotelsService implements IHotelsService {
   ): Promise<AgeCategory> {
     await this.findOne(hotelId, tourOperatorId);
 
-    const existing = await this.prisma.ageCategory.findUnique({
-      where: { id },
-    });
+    const existing = await this.hotelRepository.findAgeCategoryById(id);
 
     if (!existing) {
       throw new NotFoundException(`Age category ${id} not found`);
@@ -129,12 +116,7 @@ export class HotelsService implements IHotelsService {
 
     await this.validateAgeCategoryOverlap(hotelId, minAge, maxAge, id);
 
-    return this.prisma.ageCategory.update({
-      where: { id },
-      data: {
-        ...dto,
-      },
-    });
+    return this.hotelRepository.updateAgeCategory(id, dto);
   }
 
   async removeAgeCategory(
@@ -144,18 +126,13 @@ export class HotelsService implements IHotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    try {
-      await this.prisma.ageCategory.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Age Category ${id} not found`);
-        }
-      }
-      throw error;
+    const exising = await this.hotelRepository.findAgeCategoryById(id);
+
+    if (!exising) {
+      throw new NotFoundException(`Age Category ${id} not found`);
     }
+
+    await this.hotelRepository.deleteAgeCategory(id);
   }
 
   private async validateAgeCategoryOverlap(
@@ -168,13 +145,12 @@ export class HotelsService implements IHotelsService {
       throw new BadRequestException('maxAge must be greater than minAge');
     }
 
-    const overlapping = await this.prisma.ageCategory.findFirst({
-      where: {
-        hotelId,
-        ...(excludedId && { id: { not: excludedId } }),
-        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
-      },
-    });
+    const overlapping = await this.hotelRepository.findOverlappingAgeCategory(
+      hotelId,
+      minAge,
+      maxAge,
+      excludedId,
+    );
 
     if (overlapping) {
       throw new BadRequestException('Ages must not overlap');
