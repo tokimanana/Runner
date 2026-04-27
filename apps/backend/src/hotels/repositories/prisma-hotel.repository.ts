@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { AgeCategory, Prisma } from '@prisma/client';
+import { AgeCategory, Prisma, RoomType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
+import { CreateRoomTypeDto } from '../dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
+import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
 import { IHotelRepository } from '../hotels.repository.interface';
 import {
   HotelDeleteResult,
@@ -169,4 +171,51 @@ export class PrismaHotelRepository implements IHotelRepository {
       where: { id },
     });
   }
+
+  async findAllRoomTypes(hotelId: string): Promise<RoomType[]> {
+    return this.prisma.roomType.findMany({
+      where: { hotelId },
+    });
+  }
+
+  async findRoomTypeByCode(
+    hotelId: string,
+    code: string,
+    excludeId?: string,
+  ): Promise<RoomType | null> {
+    return this.prisma.roomType.findFirst({
+      where: {
+        hotelId,
+        code,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+    });
+  }
+
+  async findRoomTypeById(id: string): Promise<RoomType | null> {
+    return this.prisma.roomType.findUnique({ where: { id } });
+  }
+
+  async createRoomType(
+    hotelId: string,
+    data: CreateRoomTypeDto,
+  ): Promise<RoomType> {
+    return this.prisma.roomType.create({
+      data: {
+        ...data,
+        hotelId,
+      },
+    });
+  }
+
+  async updateRoomType(id: string, data: UpdateRoomTypeDto): Promise<RoomType> {
+    return this.prisma.roomType.update({
+      where: { id },
+      data: {
+        ...data,
+      },
+    });
+  }
+
+  async deleteRoomType(id: string): Promise<boolean> {}
 }

@@ -162,10 +162,7 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<RoomType[]> {
     await this.findOne(hotelId, tourOperatorId);
-
-    return this.prisma.roomType.findMany({
-      where: { hotelId },
-    });
+    return this.hotelRepository.findAllRoomTypes(hotelId);
   }
 
   async createRoomType(
@@ -174,15 +171,8 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<RoomType> {
     await this.findOne(hotelId, tourOperatorId);
-
     await this.validateRoomTypeCode(hotelId, dto.code);
-
-    return this.prisma.roomType.create({
-      data: {
-        ...dto,
-        hotelId,
-      },
-    });
+    return this.hotelRepository.createRoomType(hotelId, dto);
   }
 
   async updateRoomType(
@@ -193,9 +183,7 @@ export class HotelsService implements IHotelsService {
   ): Promise<RoomType> {
     await this.findOne(hotelId, tourOperatorId);
 
-    const existing = await this.prisma.roomType.findUnique({
-      where: { id },
-    });
+    const existing = await this.hotelRepository.findRoomTypeById(id);
 
     if (!existing) {
       throw new NotFoundException(`Room type ${id} not found`);
@@ -213,12 +201,7 @@ export class HotelsService implements IHotelsService {
       await this.validateRoomTypeCode(hotelId, dto.code, id);
     }
 
-    return this.prisma.roomType.update({
-      where: { id },
-      data: {
-        ...dto,
-      },
-    });
+    return this.hotelRepository.updateRoomType(id, dto);
   }
 
   async removeRoomType(
@@ -250,13 +233,11 @@ export class HotelsService implements IHotelsService {
     code: string,
     excludeId?: string,
   ): Promise<void> {
-    const existing = await this.prisma.roomType.findFirst({
-      where: {
-        hotelId,
-        code,
-        ...(excludeId && { id: { not: excludeId } }),
-      },
-    });
+    const existing = await this.hotelRepository.findRoomTypeByCode(
+      hotelId,
+      code,
+      excludeId,
+    );
 
     if (existing) {
       throw new ConflictException(
