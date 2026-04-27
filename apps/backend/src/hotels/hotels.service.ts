@@ -12,10 +12,7 @@ import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-
-type HotelDetail = Prisma.HotelGetPayload<{
-  include: { ageCategories: true; roomTypes: true };
-}>;
+import { HotelDetail, HotelQuery, PaginatedResult } from './hotels.types';
 
 @Injectable()
 export class HotelsService {
@@ -39,13 +36,8 @@ export class HotelsService {
 
   async findAll(
     tourOperatorId: string,
-    query: { search?: string; limit?: number; offset?: number },
-  ): Promise<{
-    data: HotelDetail[];
-    total: number;
-    limit: number;
-    offset: number;
-  }> {
+    query: HotelQuery,
+  ): Promise<PaginatedResult<HotelDetail>> {
     const MAX_LIMIT = 100;
     const { search, limit = 50, offset = 0 } = query;
     const sanitizedLimit = Math.min(limit, MAX_LIMIT);

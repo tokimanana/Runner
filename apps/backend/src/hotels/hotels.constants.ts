@@ -1,0 +1,1 @@
+export const HOTEL_REPOSITORY = 'HOTEL_REPOSITORY';
