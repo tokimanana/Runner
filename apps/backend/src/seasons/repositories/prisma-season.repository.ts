@@ -2,6 +2,7 @@ import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
 import { Prisma, Season } from '@prisma/client';
+import { DeleteResult, PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 import { SeasonRepository } from './season.repository';
@@ -20,12 +21,7 @@ export class PrismaSeasonRepository extends SeasonRepository {
       limit?: number;
       offset?: number;
     },
-  ): Promise<{
-    data: Season[];
-    total: number;
-    limit: number;
-    offset: number;
-  }> {
+  ): Promise<PaginatedResult<Season>> {
     const { limit, offset } = query ?? {};
 
     const where: Prisma.SeasonWhereInput = {
@@ -68,9 +64,18 @@ export class PrismaSeasonRepository extends SeasonRepository {
     });
   }
 
-  async remove(id: string, tourOperatorId: string): Promise<void> {
-    await this.prisma.season.delete({
-      where: { id, tourOperatorId },
-    });
+  async remove(id: string, tourOperatorId: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.season.delete({
+        where: { id, tourOperatorId },
+      });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return DeleteResult.NOT_FOUND;
+        if (error.code === 'P2003') return DeleteResult.HAS_CONTRACTS;
+      }
+      throw error;
+    }
   }
 }
