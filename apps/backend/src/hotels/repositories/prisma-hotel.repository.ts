@@ -1,6 +1,6 @@
+import { RepositoryResult } from '@backend/common/repository.types';
 import { Injectable } from '@nestjs/common';
 import { AgeCategory, Prisma, RoomType } from '@prisma/client';
-import { RepositoryResult } from '@runner/backend/common';
 import { PaginatedResult } from '@runner/shared/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';

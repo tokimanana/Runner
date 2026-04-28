@@ -17,7 +17,7 @@ import { IHotelRepository } from './hotels.repository.interface';
 import { IHotelsService } from './hotels.service.interface';
 import { HotelDetail, HotelQuery } from './hotels.types';
 
-import { RepositoryResult } from '@runner/backend/common';
+import { RepositoryResult } from '@backend/common/repository.types';
 import { PaginatedResult } from '@runner/shared/types';
 
 @Injectable()

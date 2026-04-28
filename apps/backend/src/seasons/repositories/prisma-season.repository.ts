@@ -1,9 +1,12 @@
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
+import {
+  RepositoryException,
+  RepositoryResult,
+} from '@backend/common/repository.types';
 import { Prisma, Season } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { RepositoryException, RepositoryResult } from '@runner/backend/common';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';

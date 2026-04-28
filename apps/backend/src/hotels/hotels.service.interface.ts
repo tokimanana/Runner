@@ -5,7 +5,8 @@ import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-import { HotelDetail, HotelQuery, PaginatedResult } from './hotels.types';
+import { HotelDetail, HotelQuery } from './hotels.types';
+import { PaginatedResult } from '@runner/shared/types';
 
 export interface IHotelsService {
   create(data: CreateHotelDto, tourOperatorId: string): Promise<HotelDetail>;

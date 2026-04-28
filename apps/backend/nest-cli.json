@@ -5,10 +5,6 @@
   "compilerOptions": {
     "builder": "swc",
     "deleteOutDir": true,
-    "outDir": "../../dist/apps/backend",
     "tsConfigPath": "tsconfig.build.json"
-  },
-  "watchOptions": {
-    "ignored": ["node_modules", "dist", ".nx", "**/*.spec.ts"]
   }
 }

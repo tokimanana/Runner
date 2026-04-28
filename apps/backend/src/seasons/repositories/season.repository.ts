@@ -1,5 +1,5 @@
+import { RepositoryResult } from '@backend/common/repository.types';
 import { Season } from '@prisma/client';
-import { RepositoryResult } from '@runner/backend/common';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';

@@ -1,5 +1,5 @@
+import { RepositoryResult } from '@backend/common/repository.types';
 import { AgeCategory, RoomType } from '@prisma/client';
-import { RepositoryResult } from '@runner/backend/common';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';

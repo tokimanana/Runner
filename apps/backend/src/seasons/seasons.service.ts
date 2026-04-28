@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { Season } from '@prisma/client';
 
-import { RepositoryException, RepositoryResult } from '@runner/backend/common';
+import {
+  RepositoryException,
+  RepositoryResult,
+} from '@backend/common/repository.types';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
