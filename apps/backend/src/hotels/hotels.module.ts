@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HOTEL_REPOSITORY, HOTELS_SERVICE } from './hotels.constants';
 import { HotelsController } from './hotels.controller';
 import { HotelsService } from './hotels.service';
 import { HotelRepository } from './repositories/hotel.repository';
@@ -9,7 +10,11 @@ import { PrismaHotelRepository } from './repositories/prisma-hotel.repository';
   providers: [
     HotelsService,
     {
-      provide: HotelRepository,
+      provide: HOTELS_SERVICE,
+      useClass: HotelsService,
+    },
+    {
+      provide: HOTEL_REPOSITORY,
       useClass: PrismaHotelRepository,
     },
   ],
