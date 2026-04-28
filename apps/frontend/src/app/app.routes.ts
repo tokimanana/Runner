@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
+import { RoleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -26,6 +27,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent
+          ),
+      },
+      {
+        path: 'management',
+        canActivate: [RoleGuard],
+        data: { roles: ['ADMIN', 'MANAGER'] },
+        loadChildren: () =>
+          import('./features/management/management.routes').then(
+            (m) => m.MANAGEMENT_ROUTES
           ),
       },
       {
