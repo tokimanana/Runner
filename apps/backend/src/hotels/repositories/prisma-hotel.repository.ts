@@ -1,0 +1,252 @@
+import { Injectable } from '@nestjs/common';
+import { AgeCategory, Prisma, RoomType } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
+import { CreateHotelDto } from '../dto/create-hotel.dto';
+import { CreateRoomTypeDto } from '../dto/create-room-type.dto';
+import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
+import { UpdateHotelDto } from '../dto/update-hotel.dto';
+import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
+import { IHotelRepository } from '../hotels.repository.interface';
+import {
+  DeleteResult,
+  HotelDetail,
+  HotelQuery,
+  PaginatedResult,
+} from '../hotels.types';
+
+const HOTEL_INCLUDE = {
+  ageCategories: true,
+  roomTypes: true,
+} satisfies Prisma.HotelInclude;
+
+@Injectable()
+export class PrismaHotelRepository implements IHotelRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(
+    data: CreateHotelDto,
+    tourOperatorId: string,
+  ): Promise<HotelDetail> {
+    return this.prisma.hotel.create({
+      data: {
+        ...data,
+        tourOperatorId,
+      },
+      include: HOTEL_INCLUDE,
+    });
+  }
+
+  async findAll(
+    tourOperatorId: string,
+    query: HotelQuery,
+  ): Promise<PaginatedResult<HotelDetail>> {
+    const { search, limit = 50, offset = 0 } = query;
+
+    const where: Prisma.HotelWhereInput = {
+      tourOperatorId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { destination: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.hotel.findMany({
+        where,
+        include: { ageCategories: true, roomTypes: true },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.hotel.count({ where }),
+    ]);
+
+    return { data, total, limit, offset };
+  }
+
+  async findById(id: string): Promise<HotelDetail | null> {
+    return this.prisma.hotel.findUnique({
+      where: { id },
+      include: HOTEL_INCLUDE,
+    });
+  }
+
+  async update(
+    id: string,
+    tourOperatorId: string,
+    data: UpdateHotelDto,
+  ): Promise<HotelDetail | null> {
+    try {
+      return await this.prisma.hotel.update({
+        where: { id, tourOperatorId },
+        data,
+        include: {
+          ageCategories: true,
+          roomTypes: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async delete(id: string, tourOperatorId: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return DeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return DeleteResult.HAS_CONTRACTS;
+        }
+      }
+      throw error;
+    }
+  }
+
+  async findAllAgeCategories(hotelId: string): Promise<AgeCategory[]> {
+    return this.prisma.ageCategory.findMany({
+      where: { hotelId },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async createAgeCategory(
+    hotelId: string,
+    data: CreateAgeCategoryDto,
+  ): Promise<AgeCategory> {
+    return this.prisma.ageCategory.create({
+      data: {
+        ...data,
+        hotelId,
+      },
+    });
+  }
+
+  async updateAgeCategory(
+    id: string,
+    data: UpdateAgeCategoryDto,
+  ): Promise<AgeCategory> {
+    return this.prisma.ageCategory.update({
+      where: { id },
+      data: {
+        ...data,
+      },
+    });
+  }
+
+  async findAgeCategoryById(id: string): Promise<AgeCategory | null> {
+    return this.prisma.ageCategory.findUnique({
+      where: { id },
+    });
+  }
+
+  async findOverlappingAgeCategory(
+    hotelId: string,
+    minAge: number,
+    maxAge: number,
+    excludeId?: string,
+  ): Promise<AgeCategory | null> {
+    return this.prisma.ageCategory.findFirst({
+      where: {
+        hotelId,
+        ...(excludeId && { id: { not: excludeId } }),
+        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
+      },
+    });
+  }
+
+  async deleteAgeCategory(id: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.ageCategory.delete({
+        where: { id },
+      });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return DeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return DeleteResult.HAS_CONTRACTS;
+        }
+      }
+      throw error;
+    }
+  }
+
+  async findAllRoomTypes(hotelId: string): Promise<RoomType[]> {
+    return this.prisma.roomType.findMany({
+      where: { hotelId },
+    });
+  }
+
+  async findRoomTypeByCode(
+    hotelId: string,
+    code: string,
+    excludeId?: string,
+  ): Promise<RoomType | null> {
+    return this.prisma.roomType.findFirst({
+      where: {
+        hotelId,
+        code,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+    });
+  }
+
+  async findRoomTypeById(id: string): Promise<RoomType | null> {
+    return this.prisma.roomType.findUnique({ where: { id } });
+  }
+
+  async createRoomType(
+    hotelId: string,
+    data: CreateRoomTypeDto,
+  ): Promise<RoomType> {
+    return this.prisma.roomType.create({
+      data: {
+        ...data,
+        hotelId,
+      },
+    });
+  }
+
+  async updateRoomType(id: string, data: UpdateRoomTypeDto): Promise<RoomType> {
+    return this.prisma.roomType.update({
+      where: { id },
+      data: {
+        ...data,
+      },
+    });
+  }
+
+  async deleteRoomType(id: string): Promise<DeleteResult> {
+    try {
+      await this.prisma.roomType.delete({
+        where: { id },
+      });
+      return DeleteResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return DeleteResult.NOT_FOUND;
+        }
+        if (error.code === 'P2003') {
+          return DeleteResult.HAS_CONTRACTS;
+        }
+      }
+      throw error;
+    }
+  }
+}

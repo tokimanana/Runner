@@ -1,86 +1,57 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AgeCategory, Prisma, RoomType } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { AgeCategory, RoomType } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-
-type HotelDetail = Prisma.HotelGetPayload<{
-  include: { ageCategories: true; roomTypes: true };
-}>;
+import { HOTEL_REPOSITORY } from './hotels.constants';
+import { IHotelRepository } from './hotels.repository.interface';
+import { IHotelsService } from './hotels.service.interface';
+import {
+  DeleteResult,
+  HotelDetail,
+  HotelQuery,
+  PaginatedResult,
+} from './hotels.types';
 
 @Injectable()
-export class HotelsService {
-  constructor(private prisma: PrismaService) {}
+export class HotelsService implements IHotelsService {
+  private readonly MAX_LIMIT = 100;
+
+  constructor(
+    @Inject(HOTEL_REPOSITORY)
+    private readonly hotelRepository: IHotelRepository,
+  ) {}
 
   async create(
     dto: CreateHotelDto,
     tourOperatorId: string,
   ): Promise<HotelDetail> {
-    return this.prisma.hotel.create({
-      data: {
-        ...dto,
-        tourOperatorId,
-      },
-      include: {
-        ageCategories: true,
-        roomTypes: true,
-      },
-    });
+    return this.hotelRepository.create(dto, tourOperatorId);
   }
 
   async findAll(
     tourOperatorId: string,
-    query: { search?: string; limit?: number; offset?: number },
-  ): Promise<{
-    data: HotelDetail[];
-    total: number;
-    limit: number;
-    offset: number;
-  }> {
-    const MAX_LIMIT = 100;
-    const { search, limit = 50, offset = 0 } = query;
-    const sanitizedLimit = Math.min(limit, MAX_LIMIT);
+    query: HotelQuery,
+  ): Promise<PaginatedResult<HotelDetail>> {
+    const sanitizedLimit = Math.min(query.limit ?? 50, this.MAX_LIMIT);
 
-    const where: Prisma.HotelWhereInput = {
-      tourOperatorId,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { destination: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
-
-    const [data, total] = await this.prisma.$transaction([
-      this.prisma.hotel.findMany({
-        where,
-        include: { ageCategories: true, roomTypes: true },
-        take: sanitizedLimit,
-        skip: offset,
-      }),
-      this.prisma.hotel.count({ where }),
-    ]);
-
-    return { data, total, limit: sanitizedLimit, offset };
+    return this.hotelRepository.findAll(tourOperatorId, {
+      ...query,
+      limit: sanitizedLimit,
+    });
   }
 
   async findOne(id: string, tourOperatorId: string): Promise<HotelDetail> {
-    const hotel = await this.prisma.hotel.findUnique({
-      where: { id },
-      include: {
-        ageCategories: true,
-        roomTypes: true,
-      },
-    });
+    const hotel = await this.hotelRepository.findById(id);
 
     if (!hotel || hotel.tourOperatorId !== tourOperatorId) {
       throw new NotFoundException(`Hotel ${id} not found`);
@@ -94,39 +65,23 @@ export class HotelsService {
     dto: UpdateHotelDto,
     tourOperatorId: string,
   ): Promise<HotelDetail> {
-    try {
-      return await this.prisma.hotel.update({
-        where: { id, tourOperatorId },
-        data: dto,
-        include: {
-          ageCategories: true,
-          roomTypes: true,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Hotel ${id} not found`);
-        }
-      }
-      throw error;
+    const hotel = await this.hotelRepository.update(id, tourOperatorId, dto);
+
+    if (!hotel) {
+      throw new NotFoundException(`Hotel ${id} not found`);
     }
+
+    return hotel;
   }
 
   async remove(id: string, tourOperatorId: string): Promise<void> {
-    try {
-      await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Hotel ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new ConflictException(`Hotel ${id} has linked contracts`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.hotelRepository.delete(id, tourOperatorId);
+
+    if (result === DeleteResult.NOT_FOUND)
+      throw new NotFoundException(`Hotel ${id} not found`);
+
+    if (result === DeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Hotel ${id} has linked contracts`);
   }
 
   async findAllAgeCategories(
@@ -134,11 +89,7 @@ export class HotelsService {
     hotelId: string,
   ): Promise<AgeCategory[]> {
     await this.findOne(hotelId, tourOperatorId);
-
-    return this.prisma.ageCategory.findMany({
-      where: { hotelId },
-      orderBy: { order: 'asc' },
-    });
+    return this.hotelRepository.findAllAgeCategories(hotelId);
   }
 
   async createAgeCategory(
@@ -147,15 +98,8 @@ export class HotelsService {
     hotelId: string,
   ): Promise<AgeCategory> {
     await this.findOne(hotelId, tourOperatorId);
-
     await this.validateAgeCategoryOverlap(hotelId, dto.minAge, dto.maxAge);
-
-    return this.prisma.ageCategory.create({
-      data: {
-        ...dto,
-        hotelId,
-      },
-    });
+    return this.hotelRepository.createAgeCategory(hotelId, dto);
   }
 
   async updateAgeCategory(
@@ -166,9 +110,7 @@ export class HotelsService {
   ): Promise<AgeCategory> {
     await this.findOne(hotelId, tourOperatorId);
 
-    const existing = await this.prisma.ageCategory.findUnique({
-      where: { id },
-    });
+    const existing = await this.hotelRepository.findAgeCategoryById(id);
 
     if (!existing) {
       throw new NotFoundException(`Age category ${id} not found`);
@@ -179,12 +121,7 @@ export class HotelsService {
 
     await this.validateAgeCategoryOverlap(hotelId, minAge, maxAge, id);
 
-    return this.prisma.ageCategory.update({
-      where: { id },
-      data: {
-        ...dto,
-      },
-    });
+    return this.hotelRepository.updateAgeCategory(id, dto);
   }
 
   async removeAgeCategory(
@@ -194,18 +131,13 @@ export class HotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    try {
-      await this.prisma.ageCategory.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Age Category ${id} not found`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.hotelRepository.deleteAgeCategory(id);
+
+    if (result === DeleteResult.NOT_FOUND)
+      throw new NotFoundException(`Age Category ${id} not found`);
+
+    if (result === DeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Age Category ${id} has linked contracts`);
   }
 
   private async validateAgeCategoryOverlap(
@@ -218,13 +150,12 @@ export class HotelsService {
       throw new BadRequestException('maxAge must be greater than minAge');
     }
 
-    const overlapping = await this.prisma.ageCategory.findFirst({
-      where: {
-        hotelId,
-        ...(excludedId && { id: { not: excludedId } }),
-        AND: [{ minAge: { lt: maxAge } }, { maxAge: { gt: minAge } }],
-      },
-    });
+    const overlapping = await this.hotelRepository.findOverlappingAgeCategory(
+      hotelId,
+      minAge,
+      maxAge,
+      excludedId,
+    );
 
     if (overlapping) {
       throw new BadRequestException('Ages must not overlap');
@@ -236,10 +167,7 @@ export class HotelsService {
     hotelId: string,
   ): Promise<RoomType[]> {
     await this.findOne(hotelId, tourOperatorId);
-
-    return this.prisma.roomType.findMany({
-      where: { hotelId },
-    });
+    return this.hotelRepository.findAllRoomTypes(hotelId);
   }
 
   async createRoomType(
@@ -248,15 +176,8 @@ export class HotelsService {
     hotelId: string,
   ): Promise<RoomType> {
     await this.findOne(hotelId, tourOperatorId);
-
     await this.validateRoomTypeCode(hotelId, dto.code);
-
-    return this.prisma.roomType.create({
-      data: {
-        ...dto,
-        hotelId,
-      },
-    });
+    return this.hotelRepository.createRoomType(hotelId, dto);
   }
 
   async updateRoomType(
@@ -267,9 +188,7 @@ export class HotelsService {
   ): Promise<RoomType> {
     await this.findOne(hotelId, tourOperatorId);
 
-    const existing = await this.prisma.roomType.findUnique({
-      where: { id },
-    });
+    const existing = await this.hotelRepository.findRoomTypeById(id);
 
     if (!existing) {
       throw new NotFoundException(`Room type ${id} not found`);
@@ -287,12 +206,7 @@ export class HotelsService {
       await this.validateRoomTypeCode(hotelId, dto.code, id);
     }
 
-    return this.prisma.roomType.update({
-      where: { id },
-      data: {
-        ...dto,
-      },
-    });
+    return this.hotelRepository.updateRoomType(id, dto);
   }
 
   async removeRoomType(
@@ -302,21 +216,13 @@ export class HotelsService {
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
 
-    try {
-      await this.prisma.roomType.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Room type ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new ConflictException(`Room type ${id} has linked contracts`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.hotelRepository.deleteRoomType(id);
+
+    if (result === DeleteResult.NOT_FOUND)
+      throw new NotFoundException(`Room type ${id} not found`);
+
+    if (result === DeleteResult.HAS_CONTRACTS)
+      throw new ConflictException(`Room type ${id} has linked contracts`);
   }
 
   private async validateRoomTypeCode(
@@ -324,13 +230,11 @@ export class HotelsService {
     code: string,
     excludeId?: string,
   ): Promise<void> {
-    const existing = await this.prisma.roomType.findFirst({
-      where: {
-        hotelId,
-        code,
-        ...(excludeId && { id: { not: excludeId } }),
-      },
-    });
+    const existing = await this.hotelRepository.findRoomTypeByCode(
+      hotelId,
+      code,
+      excludeId,
+    );
 
     if (existing) {
       throw new ConflictException(
