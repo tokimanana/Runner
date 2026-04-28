@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,22 +11,17 @@ import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-import { HOTEL_REPOSITORY } from './hotels.constants';
-import { IHotelRepository } from './hotels.repository.interface';
 import { IHotelsService } from './hotels.service.interface';
 import { HotelDetail, HotelQuery } from './hotels.types';
-
 import { RepositoryResult } from '@backend/common/repository.types';
 import { PaginatedResult } from '@runner/shared/types';
+import { HotelRepository } from './repositories/hotel.repository';
 
 @Injectable()
 export class HotelsService implements IHotelsService {
   private readonly MAX_LIMIT = 100;
 
-  constructor(
-    @Inject(HOTEL_REPOSITORY)
-    private readonly hotelRepository: IHotelRepository,
-  ) {}
+  constructor(private readonly hotelRepository: HotelRepository) {}
 
   async create(
     dto: CreateHotelDto,
