@@ -9,8 +9,8 @@ import { CreateRoomTypeDto } from '../dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
-import { IHotelRepository } from '../hotels.repository.interface';
 import { HotelDetail, HotelQuery } from '../hotels.types';
+import { HotelRepository } from './hotel.repository';
 
 const HOTEL_INCLUDE = {
   ageCategories: true,
@@ -18,7 +18,7 @@ const HOTEL_INCLUDE = {
 } satisfies Prisma.HotelInclude;
 
 @Injectable()
-export class PrismaHotelRepository implements IHotelRepository {
+export class PrismaHotelRepository implements HotelRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
