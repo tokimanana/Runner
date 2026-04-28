@@ -18,7 +18,8 @@
     "paths": {
       "@backend/*": ["apps/backend/src/*"],
       "@frontend/*": ["apps/frontend/src/*"],
-      "types": ["libs/shared/types/src/index.ts"]
+      "@runner/shared/types": ["libs/shared/types/src/index.ts"],
+      "@runner/backend/common": ["libs/backend/common/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

@@ -5,10 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Season } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+
+import { RepositoryException, RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
 import { SeasonRepository } from './repositories/season.repository';
+import { SeasonQuery } from './seasons.type';
+
+const MAX_LIMIT = 100;
 
 @Injectable()
 export class SeasonsService {
@@ -16,23 +21,12 @@ export class SeasonsService {
 
   async findAll(
     tourOperatorId: string,
-    query?: {
-      startDate?: Date;
-      endDate?: Date;
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<{
-    data: Season[];
-    total: number;
-    limit: number;
-    offset: number;
-  }> {
-    const MAX_LIMIT = 100;
+    query?: SeasonQuery,
+  ): Promise<PaginatedResult<Season>> {
     const { limit = 50, offset = 0 } = query ?? {};
     const sanitizedLimit = Math.min(limit, MAX_LIMIT);
 
-    return await this.seasonRepository.findAll(tourOperatorId, {
+    return this.seasonRepository.findAll(tourOperatorId, {
       ...query,
       limit: sanitizedLimit,
       offset,
@@ -53,11 +47,10 @@ export class SeasonsService {
       return await this.seasonRepository.create(dto, tourOperatorId);
     } catch (error) {
       if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
         throw new ConflictException(`Season name already exists`);
-      }
       throw error;
     }
   }
@@ -77,29 +70,22 @@ export class SeasonsService {
       return await this.seasonRepository.update(id, dto, tourOperatorId);
     } catch (error) {
       if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
         throw new ConflictException(`Season name already exists`);
-      }
       throw error;
     }
   }
 
   async remove(id: string, tourOperatorId: string): Promise<void> {
-    try {
-      await this.seasonRepository.remove(id, tourOperatorId);
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Season ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new ConflictException(`Season ${id} has linked Periods`);
-        }
-      }
-      throw error;
-    }
+    const result = await this.seasonRepository.remove(id, tourOperatorId);
+
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Season ${id} not found`);
+
+    if (result === RepositoryResult.HAS_CONTRACTS)
+      throw new ConflictException(`Season ${id} has linked Periods`);
   }
 
   private validateDates(startDate: Date, endDate: Date): void {

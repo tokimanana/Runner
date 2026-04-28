@@ -2,6 +2,9 @@ import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
 import { Prisma, Season } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { RepositoryException, RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 import { SeasonRepository } from './season.repository';
@@ -20,12 +23,7 @@ export class PrismaSeasonRepository extends SeasonRepository {
       limit?: number;
       offset?: number;
     },
-  ): Promise<{
-    data: Season[];
-    total: number;
-    limit: number;
-    offset: number;
-  }> {
+  ): Promise<PaginatedResult<Season>> {
     const { limit, offset } = query ?? {};
 
     const where: Prisma.SeasonWhereInput = {
@@ -49,12 +47,18 @@ export class PrismaSeasonRepository extends SeasonRepository {
   }
 
   async create(dto: CreateSeasonDto, tourOperatorId: string): Promise<Season> {
-    return this.prisma.season.create({
-      data: {
-        ...dto,
-        tourOperatorId,
-      },
-    });
+    try {
+      return await this.prisma.season.create({
+        data: { ...dto, tourOperatorId },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
   }
 
   async update(
@@ -62,15 +66,33 @@ export class PrismaSeasonRepository extends SeasonRepository {
     dto: UpdateSeasonDto,
     tourOperatorId: string,
   ): Promise<Season> {
-    return this.prisma.season.update({
-      where: { id, tourOperatorId },
-      data: dto,
-    });
+    try {
+      return await this.prisma.season.update({
+        where: { id, tourOperatorId },
+        data: dto,
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
   }
 
-  async remove(id: string, tourOperatorId: string): Promise<void> {
-    await this.prisma.season.delete({
-      where: { id, tourOperatorId },
-    });
+  async remove(id: string, tourOperatorId: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.season.delete({
+        where: { id, tourOperatorId },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
+      }
+      throw error;
+    }
   }
 }
