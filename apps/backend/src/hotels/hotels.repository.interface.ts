@@ -1,16 +1,13 @@
 import { AgeCategory, RoomType } from '@prisma/client';
+import { RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
-import {
-  DeleteResult,
-  HotelDetail,
-  HotelQuery,
-  PaginatedResult,
-} from './hotels.types';
+import { HotelDetail, HotelQuery } from './hotels.types';
 
 export interface IHotelRepository {
   create(data: CreateHotelDto, tourOperatorId: string): Promise<HotelDetail>;
@@ -24,7 +21,7 @@ export interface IHotelRepository {
     tourOperatorId: string,
     data: UpdateHotelDto,
   ): Promise<HotelDetail | null>;
-  delete(id: string, tourOperatorId: string): Promise<DeleteResult>;
+  delete(id: string, tourOperatorId: string): Promise<RepositoryResult>;
 
   findAllAgeCategories(hotelId: string): Promise<AgeCategory[]>;
   createAgeCategory(
@@ -36,7 +33,7 @@ export interface IHotelRepository {
     id: string,
     data: UpdateAgeCategoryDto,
   ): Promise<AgeCategory>;
-  deleteAgeCategory(id: string): Promise<DeleteResult>;
+  deleteAgeCategory(id: string): Promise<RepositoryResult>;
   findOverlappingAgeCategory(
     hotelId: string,
     minAge: number,
@@ -48,7 +45,7 @@ export interface IHotelRepository {
   createRoomType(hotelId: string, data: CreateRoomTypeDto): Promise<RoomType>;
   findRoomTypeById(id: string): Promise<RoomType | null>;
   updateRoomType(id: string, data: UpdateRoomTypeDto): Promise<RoomType>;
-  deleteRoomType(id: string): Promise<DeleteResult>;
+  deleteRoomType(id: string): Promise<RepositoryResult>;
   findRoomTypeByCode(
     hotelId: string,
     code: string,

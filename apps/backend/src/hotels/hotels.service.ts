@@ -15,12 +15,10 @@ import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { HOTEL_REPOSITORY } from './hotels.constants';
 import { IHotelRepository } from './hotels.repository.interface';
 import { IHotelsService } from './hotels.service.interface';
-import {
-  DeleteResult,
-  HotelDetail,
-  HotelQuery,
-  PaginatedResult,
-} from './hotels.types';
+import { HotelDetail, HotelQuery } from './hotels.types';
+
+import { RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 
 @Injectable()
 export class HotelsService implements IHotelsService {
@@ -76,11 +74,9 @@ export class HotelsService implements IHotelsService {
 
   async remove(id: string, tourOperatorId: string): Promise<void> {
     const result = await this.hotelRepository.delete(id, tourOperatorId);
-
-    if (result === DeleteResult.NOT_FOUND)
+    if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Hotel ${id} not found`);
-
-    if (result === DeleteResult.HAS_CONTRACTS)
+    if (result === RepositoryResult.HAS_CONTRACTS)
       throw new ConflictException(`Hotel ${id} has linked contracts`);
   }
 
@@ -130,13 +126,10 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
-
     const result = await this.hotelRepository.deleteAgeCategory(id);
-
-    if (result === DeleteResult.NOT_FOUND)
+    if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Age Category ${id} not found`);
-
-    if (result === DeleteResult.HAS_CONTRACTS)
+    if (result === RepositoryResult.HAS_CONTRACTS)
       throw new ConflictException(`Age Category ${id} has linked contracts`);
   }
 
@@ -215,13 +208,10 @@ export class HotelsService implements IHotelsService {
     hotelId: string,
   ): Promise<void> {
     await this.findOne(hotelId, tourOperatorId);
-
     const result = await this.hotelRepository.deleteRoomType(id);
-
-    if (result === DeleteResult.NOT_FOUND)
+    if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Room type ${id} not found`);
-
-    if (result === DeleteResult.HAS_CONTRACTS)
+    if (result === RepositoryResult.HAS_CONTRACTS)
       throw new ConflictException(`Room type ${id} has linked contracts`);
   }
 

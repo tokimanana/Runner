@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AgeCategory, Prisma, RoomType } from '@prisma/client';
+import { RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
@@ -8,12 +10,7 @@ import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
 import { IHotelRepository } from '../hotels.repository.interface';
-import {
-  DeleteResult,
-  HotelDetail,
-  HotelQuery,
-  PaginatedResult,
-} from '../hotels.types';
+import { HotelDetail, HotelQuery } from '../hotels.types';
 
 const HOTEL_INCLUDE = {
   ageCategories: true,
@@ -98,18 +95,14 @@ export class PrismaHotelRepository implements IHotelRepository {
     }
   }
 
-  async delete(id: string, tourOperatorId: string): Promise<DeleteResult> {
+  async delete(id: string, tourOperatorId: string): Promise<RepositoryResult> {
     try {
       await this.prisma.hotel.delete({ where: { id, tourOperatorId } });
-      return DeleteResult.DELETED;
+      return RepositoryResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          return DeleteResult.NOT_FOUND;
-        }
-        if (error.code === 'P2003') {
-          return DeleteResult.HAS_CONTRACTS;
-        }
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
       }
       throw error;
     }
@@ -167,20 +160,16 @@ export class PrismaHotelRepository implements IHotelRepository {
     });
   }
 
-  async deleteAgeCategory(id: string): Promise<DeleteResult> {
+  async deleteAgeCategory(id: string): Promise<RepositoryResult> {
     try {
       await this.prisma.ageCategory.delete({
         where: { id },
       });
-      return DeleteResult.DELETED;
+      return RepositoryResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          return DeleteResult.NOT_FOUND;
-        }
-        if (error.code === 'P2003') {
-          return DeleteResult.HAS_CONTRACTS;
-        }
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
       }
       throw error;
     }
@@ -231,20 +220,16 @@ export class PrismaHotelRepository implements IHotelRepository {
     });
   }
 
-  async deleteRoomType(id: string): Promise<DeleteResult> {
+  async deleteRoomType(id: string): Promise<RepositoryResult> {
     try {
       await this.prisma.roomType.delete({
         where: { id },
       });
-      return DeleteResult.DELETED;
+      return RepositoryResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          return DeleteResult.NOT_FOUND;
-        }
-        if (error.code === 'P2003') {
-          return DeleteResult.HAS_CONTRACTS;
-        }
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
       }
       throw error;
     }
