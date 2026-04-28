@@ -33,6 +33,18 @@ export class SidebarComponent {
       route: '/dashboard',
       roles: ['ADMIN', 'MANAGER', 'AGENT'],
     },
+    {
+      label: 'hotels',
+      icon: 'pi pi-building',
+      route: '/management/hotels',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'seasons',
+      icon: 'pi pi-calendar',
+      route: '/management/seasons',
+      roles: ['ADMIN', 'MANAGER'],
+    },
   ];
 
   onMouseEnter(): void {
