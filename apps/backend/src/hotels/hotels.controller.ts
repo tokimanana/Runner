@@ -8,6 +8,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Inject,
   Param,
   Patch,
   Post,
@@ -18,17 +19,21 @@ import {
 import { UserRole } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
-import { HotelsService } from './hotels.service';
-import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
+import { HOTELS_SERVICE } from './hotels.constants';
+import { IHotelsService } from './hotels.service.interface';
 
 @Controller('hotels')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.MANAGER)
 export class HotelsController {
-  constructor(private readonly hotelsService: HotelsService) {}
+  constructor(
+    @Inject(HOTELS_SERVICE)
+    private readonly hotelsService: IHotelsService,
+  ) {}
 
   @Post()
   create(@Body() createHotelDto: CreateHotelDto, @Req() req: RequestWithUser) {
