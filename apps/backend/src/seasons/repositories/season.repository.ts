@@ -1,5 +1,6 @@
 import { Season } from '@prisma/client';
-import { DeleteResult, PaginatedResult } from '@runner/shared/types';
+import { RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 
@@ -27,5 +28,8 @@ export abstract class SeasonRepository {
     tourOperatorId: string,
   ): Promise<Season>;
 
-  abstract remove(id: string, tourOperatorId: string): Promise<DeleteResult>;
+  abstract remove(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<RepositoryResult>;
 }

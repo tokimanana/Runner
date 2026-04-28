@@ -5,8 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Season } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { DeleteResult, PaginatedResult } from '@runner/shared/types';
+
+import { RepositoryException, RepositoryResult } from '@runner/backend/common';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
 import { SeasonRepository } from './repositories/season.repository';
@@ -46,11 +47,10 @@ export class SeasonsService {
       return await this.seasonRepository.create(dto, tourOperatorId);
     } catch (error) {
       if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
         throw new ConflictException(`Season name already exists`);
-      }
       throw error;
     }
   }
@@ -70,11 +70,10 @@ export class SeasonsService {
       return await this.seasonRepository.update(id, dto, tourOperatorId);
     } catch (error) {
       if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
         throw new ConflictException(`Season name already exists`);
-      }
       throw error;
     }
   }
@@ -82,10 +81,10 @@ export class SeasonsService {
   async remove(id: string, tourOperatorId: string): Promise<void> {
     const result = await this.seasonRepository.remove(id, tourOperatorId);
 
-    if (result === DeleteResult.NOT_FOUND)
+    if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Season ${id} not found`);
 
-    if (result === DeleteResult.HAS_CONTRACTS)
+    if (result === RepositoryResult.HAS_CONTRACTS)
       throw new ConflictException(`Season ${id} has linked Periods`);
   }
 

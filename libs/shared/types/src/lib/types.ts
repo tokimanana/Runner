@@ -51,9 +51,3 @@ export interface PaginatedResult<T> {
   limit: number;
   offset: number;
 }
-
-export enum DeleteResult {
-  DELETED = 'DELETED',
-  NOT_FOUND = 'NOT_FOUND',
-  HAS_CONTRACTS = 'HAS_CONTRACTS',
-}
