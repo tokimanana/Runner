@@ -8,7 +8,10 @@ import { PrismaHotelRepository } from './repositories/prisma-hotel.repository';
 @Module({
   controllers: [HotelsController],
   providers: [
-    HotelsService,
+    {
+      provide: HOTELS_SERVICE,
+      useClass: HotelsService,
+    },
     {
       provide: HOTELS_SERVICE,
       useClass: HotelsService,
