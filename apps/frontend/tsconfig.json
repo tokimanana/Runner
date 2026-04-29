@@ -1,6 +1,5 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
+  "extends": "../../tsconfig.json",
   "compileOnSave": false,
   "compilerOptions": {
     "outDir": "../../dist/apps/frontend",
@@ -20,7 +19,8 @@
     "baseUrl": ".",
     "types": ["jest", "node"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@runner/shared/types": ["../../libs/shared/types/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

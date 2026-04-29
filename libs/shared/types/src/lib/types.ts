@@ -51,3 +51,21 @@ export interface PaginatedResult<T> {
   limit: number;
   offset: number;
 }
+
+export interface PaginationParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+}
+
+export interface HotelDto {
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  region?: string;
+  destination?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+}
