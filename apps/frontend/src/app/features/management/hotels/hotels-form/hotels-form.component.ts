@@ -18,11 +18,12 @@ import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
+import { TabsModule } from 'primeng/tabs';
 import { HotelsService } from '../hotels.service';
 
 @Component({
   selector: 'app-hotels-form',
-  imports: [Card, InputTextModule, ReactiveFormsModule, Button],
+  imports: [Card, InputTextModule, ReactiveFormsModule, Button, TabsModule],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
