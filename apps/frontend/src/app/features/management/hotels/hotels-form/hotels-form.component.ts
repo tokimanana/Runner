@@ -15,15 +15,22 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AgeCategory } from '@runner/shared/types';
 import { Button } from 'primeng/button';
-import { Card } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
+import { AgeCategoriesListComponent } from '../age-categories/age-categories-list.component';
 import { HotelsService } from '../hotels.service';
 
 @Component({
   selector: 'app-hotels-form',
-  imports: [Card, InputTextModule, ReactiveFormsModule, Button, TabsModule],
+  imports: [
+    InputTextModule,
+    ReactiveFormsModule,
+    Button,
+    TabsModule,
+    AgeCategoriesListComponent,
+  ],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,6 +103,14 @@ export class HotelsFormComponent {
 
   cancel(): void {
     this.navigateToList();
+  }
+
+  onAddCategory(): void {
+    console.log('add category');
+  }
+
+  onEditCategory(category: AgeCategory): void {
+    console.log('edit category', category);
   }
 
   private navigateToList(): void {

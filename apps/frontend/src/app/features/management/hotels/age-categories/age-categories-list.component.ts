@@ -1,50 +1,45 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
-import { AgeCategory } from '@runner/shared/types';
 import { take } from 'rxjs';
+
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
+
+import { AgeCategory } from '@runner/shared/types';
 import { HotelsService } from '../hotels.service';
 
 @Component({
   selector: 'app-age-categories-list',
-  imports: [],
+  imports: [
+    ButtonModule,
+    CardModule,
+    ProgressBarModule,
+    TableModule,
+    TooltipModule,
+  ],
   templateUrl: './age-categories-list.component.html',
-  styleUrl: './age-categories-list.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-@Component({
-  selector: 'app-age-categories-list',
-  imports: [],
-  templateUrl: './age-categories-list.component.html',
-  styleUrl: './age-categories-list.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AgeCategoriesListComponent {
   private readonly hotelsService = inject(HotelsService);
 
   readonly hotelId = input.required<string>();
-
   readonly categories = signal<AgeCategory[]>([]);
   readonly loading = signal(false);
 
+  readonly addCategory = output<void>();
+  readonly editCategory = output<AgeCategory>();
+
   constructor() {
     effect(() => this.loadCategories(this.hotelId()));
-  }
-
-  deleteAgeCategory(catId: string): void {
-    this.loading.set(true);
-    this.hotelsService
-      .deleteAgeCategory(this.hotelId(), catId)
-      .pipe(take(1))
-      .subscribe({
-        next: () => this.loadCategories(this.hotelId()),
-        error: () => this.loading.set(false),
-      });
   }
 
   private loadCategories(hotelId: string): void {

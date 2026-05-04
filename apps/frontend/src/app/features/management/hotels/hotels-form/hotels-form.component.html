@@ -155,7 +155,15 @@
       </p-tabpanel>
       @if (hotelId()) {
         <p-tabpanel value="1">
-          <!-- AgeCategoriesListComponent ici -->
+          @if (hotelId()) {
+            <p-tabpanel value="1">
+              <app-age-categories-list
+                [hotelId]="hotelId()!"
+                (addCategory)="onAddCategory()"
+                (editCategory)="onEditCategory($event)"
+              />
+            </p-tabpanel>
+          }
         </p-tabpanel>
       }
     </p-tabpanels>
