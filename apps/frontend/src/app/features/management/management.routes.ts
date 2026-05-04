@@ -19,7 +19,14 @@ export const MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
-        path: 'hotels-form',
+        path: 'create',
+        loadComponent: () =>
+          import('./hotels/hotels-form/hotels-form.component').then(
+            (m) => m.HotelsFormComponent
+          ),
+      },
+      {
+        path: ':hotelId/edit',
         loadComponent: () =>
           import('./hotels/hotels-form/hotels-form.component').then(
             (m) => m.HotelsFormComponent

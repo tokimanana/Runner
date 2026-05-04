@@ -1,1 +1,68 @@
-<p>hotels-list works!</p>
+<div class="hotels-list">
+  <div class="list-toolbar">
+    <div class="list-header">
+      <h2 class="list-title">Hotels</h2>
+      <span class="list-subtitle">
+        {{ (hotels$ | async)?.length ?? 0 }} properties configured
+      </span>
+    </div>
+    <p-button
+      label="Add hotel"
+      icon="pi pi-plus"
+      [routerLink]="['/management/hotels/create']"
+    />
+  </div>
+
+  <p-table
+    [value]="(hotels$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    [tableStyle]="{ 'min-width': '50rem' }"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>City</th>
+        <th>Country</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-hotel>
+      <tr>
+        <td>
+          <span class="hotel-code">{{ hotel.code }}</span>
+        </td>
+        <td>{{ hotel.name }}</td>
+        <td>{{ hotel.city }}</td>
+        <td>{{ hotel.country }}</td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              severity="secondary"
+              [routerLink]="['/management/hotels', hotel.id, 'edit']"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [text]="true"
+              severity="danger"
+              (onClick)="onDelete(hotel.id)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5" class="empty-state">No hotels configured yet.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <div class="list-footer">
+    <span>Showing {{ (hotels$ | async)?.length ?? 0 }} hotels</span>
+  </div>
+</div>
