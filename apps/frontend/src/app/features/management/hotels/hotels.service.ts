@@ -4,6 +4,8 @@ import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, take, tap } from 'rxjs';
 
 import {
+  AgeCategory,
+  AgeCategoryDto,
   Hotel,
   HotelDto,
   PaginatedResult,
@@ -87,5 +89,38 @@ export class HotelsService {
   private refresh(): void {
     this.loaded = false;
     this.loadHotels();
+  }
+
+  getAgeCategories(hotelId: string): Observable<AgeCategory[]> {
+    return this.http.get<AgeCategory[]>(
+      `${this.apiUrl}/hotels/${hotelId}/age-categories`
+    );
+  }
+
+  createAgeCategory(
+    hotelId: string,
+    dto: AgeCategoryDto
+  ): Observable<AgeCategory> {
+    return this.http.post<AgeCategory>(
+      `${this.apiUrl}/hotels/${hotelId}/age-categories`,
+      dto
+    );
+  }
+
+  updateAgeCategory(
+    hotelId: string,
+    catId: string,
+    dto: Partial<AgeCategoryDto>
+  ): Observable<AgeCategory> {
+    return this.http.patch<AgeCategory>(
+      `${this.apiUrl}/hotels/${hotelId}/age-categories/${catId}`,
+      dto
+    );
+  }
+
+  deleteAgeCategory(hotelId: string, catId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/hotels/${hotelId}/age-categories/${catId}`
+    );
   }
 }
