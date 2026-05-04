@@ -1,6 +1,5 @@
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   computed,
   effect,
@@ -19,7 +18,8 @@ import { AgeCategory } from '@runner/shared/types';
 import { Button } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
-import { AgeCategoriesListComponent } from '../age-categories/age-categories-list.component';
+import { take } from 'rxjs';
+import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
 import { HotelsService } from '../hotels.service';
 
 @Component({
@@ -38,7 +38,6 @@ import { HotelsService } from '../hotels.service';
 export class HotelsFormComponent {
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly hotelId = input<string>();
   readonly isEditMode = computed(() => !!this.hotelId());
@@ -71,14 +70,14 @@ export class HotelsFormComponent {
   constructor() {
     effect(() => {
       const hotelId = this.hotelId();
-      {
-        if (!hotelId) return;
-        this.cdr.markForCheck();
-      }
+      if (!hotelId) return;
 
-      this.hotelsService.getHotelById(hotelId).subscribe((hotel) => {
-        this.form.patchValue(hotel);
-      });
+      this.hotelsService
+        .getHotelById(hotelId)
+        .pipe(take(1))
+        .subscribe((hotel) => {
+          this.form.patchValue(hotel);
+        });
     });
   }
 
@@ -95,7 +94,7 @@ export class HotelsFormComponent {
       ? this.hotelsService.updateHotel(hotelId, dto)
       : this.hotelsService.createHotel(dto);
 
-    request$.subscribe({
+    request$.pipe(take(1)).subscribe({
       next: () => this.navigateToList(),
       error: () => this.isSubmitting.set(false),
     });
