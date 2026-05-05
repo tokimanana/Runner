@@ -42,7 +42,7 @@ export class AgeCategoriesFormComponent {
   readonly saved = output<void>();
   readonly cancelled = output<void>();
 
-  readonly _category = signal<AgeCategory | undefined>(undefined);
+  protected readonly _category = signal<AgeCategory | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._category());
   readonly isSubmitting = signal(false);
   visible = false;

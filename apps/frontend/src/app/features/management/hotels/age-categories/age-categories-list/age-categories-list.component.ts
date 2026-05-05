@@ -45,8 +45,10 @@ export class AgeCategoriesListComponent {
 
   readonly filtered = computed(() => {
     const q = this.search().toLowerCase().trim();
-    if (!q) return this.categories();
-    return this.categories().filter((c) => c.name.toLowerCase().includes(q));
+    const list = q
+      ? this.categories().filter((c) => c.name.toLowerCase().includes(q))
+      : this.categories();
+    return [...list].sort((a, b) => a.minAge - b.minAge);
   });
 
   constructor() {
