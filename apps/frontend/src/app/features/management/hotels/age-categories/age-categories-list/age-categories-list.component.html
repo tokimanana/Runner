@@ -9,6 +9,7 @@
     <p-button
       label="Add Category"
       icon="pi pi-plus"
+      [outlined]="true"
       (onClick)="addCategory.emit()"
       [disabled]="loading()"
     />

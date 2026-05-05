@@ -5,7 +5,15 @@
 }
 
 .form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 1.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .form-title {
@@ -59,11 +67,4 @@
   color: var(--p-red-500);
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 0.5px solid var(--p-surface-200);
-}
+
