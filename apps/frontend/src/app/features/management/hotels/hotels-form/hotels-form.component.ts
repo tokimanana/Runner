@@ -40,6 +40,7 @@ import { HotelsService } from '../hotels.service';
 })
 export class HotelsFormComponent {
   readonly categoriesList = viewChild(AgeCategoriesListComponent);
+  readonly categoriesForm = viewChild(AgeCategoriesFormComponent);
 
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
@@ -113,24 +114,16 @@ export class HotelsFormComponent {
   }
 
   onAddCategory(): void {
-    this.selectedCategory.set(undefined);
-    this.dialogVisible.set(true);
+    this.categoriesForm()?.open();
   }
 
   onEditCategory(category: AgeCategory): void {
-    this.selectedCategory.set(category);
-    this.dialogVisible.set(true);
+    this.categoriesForm()?.open(category);
   }
 
   onCategorySaved(): void {
-    this.dialogVisible.set(false);
-    this.selectedCategory.set(undefined);
+    this.categoriesForm()?.close();
     this.categoriesList()?.loadCategories(this.hotelId()!);
-  }
-
-  onCategoryCancelled(): void {
-    this.dialogVisible.set(false);
-    this.selectedCategory.set(undefined);
   }
 
   private navigateToList(): void {

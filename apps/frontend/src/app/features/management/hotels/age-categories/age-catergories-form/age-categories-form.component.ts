@@ -19,7 +19,6 @@ import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
@@ -31,7 +30,6 @@ import { HotelsService } from '../../hotels.service';
     InputNumberModule,
     InputTextModule,
     Button,
-    ProgressSpinnerModule,
   ],
   templateUrl: './age-categories-form.component.html',
   styleUrl: './age-categories-form.component.scss',
@@ -41,14 +39,15 @@ export class AgeCategoriesFormComponent {
   private readonly hotelsService = inject(HotelsService);
 
   readonly hotelId = input.required<string>();
-  readonly category = input<AgeCategory>();
-  readonly visible = input.required<boolean>();
-
   readonly saved = output<void>();
   readonly cancelled = output<void>();
 
+  readonly _category = signal<AgeCategory | undefined>(undefined);
+  readonly isEditMode = computed(() => !!this._category());
   readonly isSubmitting = signal(false);
-  readonly isEditMode = computed(() => !!this.category());
+  visible = false;
+
+  private _suppressCancelledOnHide = false;
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -65,7 +64,7 @@ export class AgeCategoriesFormComponent {
 
   constructor() {
     effect(() => {
-      const category = this.category();
+      const category = this._category();
       if (category) {
         this.form.patchValue(category);
       } else {
@@ -74,20 +73,35 @@ export class AgeCategoriesFormComponent {
     });
   }
 
+  open(category?: AgeCategory): void {
+    this._category.set(category);
+    this.visible = true;
+  }
+
+  close(): void {
+    this._suppressCancelledOnHide = true;
+    this.visible = false;
+    this._reset();
+  }
+
+  onDialogHide(): void {
+    this._reset();
+    if (!this._suppressCancelledOnHide) {
+      this.cancelled.emit();
+    }
+    this._suppressCancelledOnHide = false;
+  }
+
   submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
-    const raw = this.form.getRawValue();
-    const dto: AgeCategoryDto = {
-      name: raw.name,
-      minAge: raw.minAge as number,
-      maxAge: raw.maxAge as number,
-    };
+    const { name, minAge, maxAge } = this.form.getRawValue();
+    const dto: AgeCategoryDto = { name, minAge: minAge!, maxAge: maxAge! };
+    const category = this._category();
 
     this.isSubmitting.set(true);
 
-    const category = this.category();
     const request$ = category
       ? this.hotelsService.updateAgeCategory(this.hotelId(), category.id, dto)
       : this.hotelsService.createAgeCategory(this.hotelId(), dto);
@@ -96,22 +110,23 @@ export class AgeCategoriesFormComponent {
       next: () => {
         this.isSubmitting.set(false);
         this.saved.emit();
-        this.form.reset();
       },
       error: () => this.isSubmitting.set(false),
     });
   }
 
   deleteAgeCategory(catId: string): void {
-    // this.loading.set(true);
     this.hotelsService
       .deleteAgeCategory(this.hotelId(), catId)
       .pipe(take(1))
       .subscribe({
-        next: () => {
-          this.saved.emit();
-        },
+        next: () => this.saved.emit(),
         error: () => this.isSubmitting.set(false),
       });
+  }
+
+  private _reset(): void {
+    this.form.reset();
+    this._category.set(undefined);
   }
 }
