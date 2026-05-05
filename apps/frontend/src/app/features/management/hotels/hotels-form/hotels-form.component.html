@@ -1,120 +1,171 @@
 <div class="form-page">
   <div class="form-header">
-    <h2 class="form-title">{{ isEditMode() ? 'Edit hotel' : 'New hotel' }}</h2>
-    <p class="form-subtitle">
-      {{
-        isEditMode()
-          ? 'Update hotel information'
-          : 'Add a new property to your portfolio'
-      }}
-    </p>
+    <div>
+      <h2 class="form-title">
+        {{ isEditMode() ? 'Edit hotel' : 'New hotel' }}
+      </h2>
+      <p class="form-subtitle">
+        {{
+          isEditMode()
+            ? 'Update hotel information'
+            : 'Add a new property to your portfolio'
+        }}
+      </p>
+    </div>
+    <div class="form-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancel()"
+      />
+      <p-button
+        type="submit"
+        (onClick)="submit()"
+        [label]="isEditMode() ? 'Save changes' : 'Create hotel'"
+        [loading]="isSubmitting()"
+      />
+    </div>
   </div>
 
-  <p-card>
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <p class="section-label">General</p>
-      <div class="form-row">
-        <div class="field">
-          <label for="code">Code <span class="required">*</span></label>
-          <input pInputText id="code" formControlName="code" class="w-full" />
-          @if (form.controls.code.invalid && form.controls.code.touched) {
-            <small class="error">Code is required</small>
+  <p-tabs value="0">
+    <p-tablist>
+      <p-tab value="0">General</p-tab>
+      @if (hotelId()) {
+        <p-tab value="1">Configuration</p-tab>
+      }
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="0">
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <p class="section-label">General</p>
+          <div class="form-row">
+            <div class="field">
+              <label for="code">Code <span class="required">*</span></label>
+              <input
+                pInputText
+                id="code"
+                formControlName="code"
+                class="w-full"
+              />
+              @if (form.controls.code.invalid && form.controls.code.touched) {
+                <small class="error">Code is required</small>
+              }
+            </div>
+            <div class="field">
+              <label for="name">Name <span class="required">*</span></label>
+              <input
+                pInputText
+                id="name"
+                formControlName="name"
+                class="w-full"
+              />
+              @if (form.controls.name.invalid && form.controls.name.touched) {
+                <small class="error">Name is required</small>
+              }
+            </div>
+          </div>
+
+          <p class="section-label">Location</p>
+          <div class="form-row">
+            <div class="field">
+              <label for="city">City <span class="required">*</span></label>
+              <input
+                pInputText
+                id="city"
+                formControlName="city"
+                class="w-full"
+              />
+              @if (form.controls.city.invalid && form.controls.city.touched) {
+                <small class="error">City is required</small>
+              }
+            </div>
+            <div class="field">
+              <label for="country"
+                >Country <span class="required">*</span></label
+              >
+              <input
+                pInputText
+                id="country"
+                formControlName="country"
+                class="w-full"
+              />
+              @if (
+                form.controls.country.invalid && form.controls.country.touched
+              ) {
+                <small class="error">Country is required</small>
+              }
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label for="region">Region</label>
+              <input
+                pInputText
+                id="region"
+                formControlName="region"
+                class="w-full"
+              />
+            </div>
+            <div class="field">
+              <label for="destination">Destination</label>
+              <input
+                pInputText
+                id="destination"
+                formControlName="destination"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="address">Address</label>
+            <input
+              pInputText
+              id="address"
+              formControlName="address"
+              class="w-full"
+            />
+          </div>
+
+          <p class="section-label">Contact</p>
+          <div class="form-row">
+            <div class="field">
+              <label for="email">Email</label>
+              <input
+                pInputText
+                id="email"
+                formControlName="email"
+                type="email"
+                class="w-full"
+              />
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input
+                pInputText
+                id="phone"
+                formControlName="phone"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </form>
+      </p-tabpanel>
+      @if (hotelId()) {
+        <p-tabpanel value="1">
+          @if (hotelId()) {
+            <p-tabpanel value="1">
+              <app-age-categories-list
+                [hotelId]="hotelId()!"
+                (addCategory)="onAddCategory()"
+                (editCategory)="onEditCategory($event)"
+              />
+            </p-tabpanel>
           }
-        </div>
-        <div class="field">
-          <label for="name">Name <span class="required">*</span></label>
-          <input pInputText id="name" formControlName="name" class="w-full" />
-          @if (form.controls.name.invalid && form.controls.name.touched) {
-            <small class="error">Name is required</small>
-          }
-        </div>
-      </div>
-
-      <p class="section-label">Location</p>
-      <div class="form-row">
-        <div class="field">
-          <label for="city">City <span class="required">*</span></label>
-          <input pInputText id="city" formControlName="city" class="w-full" />
-          @if (form.controls.city.invalid && form.controls.city.touched) {
-            <small class="error">City is required</small>
-          }
-        </div>
-        <div class="field">
-          <label for="country">Country <span class="required">*</span></label>
-          <input
-            pInputText
-            id="country"
-            formControlName="country"
-            class="w-full"
-          />
-          @if (form.controls.country.invalid && form.controls.country.touched) {
-            <small class="error">Country is required</small>
-          }
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="field">
-          <label for="region">Region</label>
-          <input
-            pInputText
-            id="region"
-            formControlName="region"
-            class="w-full"
-          />
-        </div>
-        <div class="field">
-          <label for="destination">Destination</label>
-          <input
-            pInputText
-            id="destination"
-            formControlName="destination"
-            class="w-full"
-          />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="address">Address</label>
-        <input
-          pInputText
-          id="address"
-          formControlName="address"
-          class="w-full"
-        />
-      </div>
-
-      <p class="section-label">Contact</p>
-      <div class="form-row">
-        <div class="field">
-          <label for="email">Email</label>
-          <input
-            pInputText
-            id="email"
-            formControlName="email"
-            type="email"
-            class="w-full"
-          />
-        </div>
-        <div class="field">
-          <label for="phone">Phone</label>
-          <input pInputText id="phone" formControlName="phone" class="w-full" />
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <p-button
-          label="Cancel"
-          severity="secondary"
-          [outlined]="true"
-          (onClick)="cancel()"
-        />
-        <p-button
-          type="submit"
-          [label]="isEditMode() ? 'Save changes' : 'Create hotel'"
-          [loading]="isSubmitting()"
-        />
-      </div>
-    </form>
-  </p-card>
+        </p-tabpanel>
+      }
+    </p-tabpanels>
+  </p-tabs>
 </div>
