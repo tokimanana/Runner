@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   FormControl,
@@ -20,6 +21,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
 import { take } from 'rxjs';
 import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
+import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-form/age-categories-form.component';
 import { HotelsService } from '../hotels.service';
 
 @Component({
@@ -30,18 +32,24 @@ import { HotelsService } from '../hotels.service';
     Button,
     TabsModule,
     AgeCategoriesListComponent,
+    AgeCategoriesFormComponent,
   ],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HotelsFormComponent {
+  readonly categoriesList = viewChild(AgeCategoriesListComponent);
+
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
 
   readonly hotelId = input<string>();
   readonly isEditMode = computed(() => !!this.hotelId());
   readonly isSubmitting = signal(false);
+
+  readonly dialogVisible = signal(false);
+  readonly selectedCategory = signal<AgeCategory | undefined>(undefined);
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -105,11 +113,24 @@ export class HotelsFormComponent {
   }
 
   onAddCategory(): void {
-    console.log('add category');
+    this.selectedCategory.set(undefined);
+    this.dialogVisible.set(true);
   }
 
   onEditCategory(category: AgeCategory): void {
-    console.log('edit category', category);
+    this.selectedCategory.set(category);
+    this.dialogVisible.set(true);
+  }
+
+  onCategorySaved(): void {
+    this.dialogVisible.set(false);
+    this.selectedCategory.set(undefined);
+    this.categoriesList()?.loadCategories(this.hotelId()!);
+  }
+
+  onCategoryCancelled(): void {
+    this.dialogVisible.set(false);
+    this.selectedCategory.set(undefined);
   }
 
   private navigateToList(): void {

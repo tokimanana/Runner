@@ -155,15 +155,19 @@
       </p-tabpanel>
       @if (hotelId()) {
         <p-tabpanel value="1">
-          @if (hotelId()) {
-            <p-tabpanel value="1">
-              <app-age-categories-list
-                [hotelId]="hotelId()!"
-                (addCategory)="onAddCategory()"
-                (editCategory)="onEditCategory($event)"
-              />
-            </p-tabpanel>
-          }
+          <app-age-categories-list
+            [hotelId]="hotelId()!"
+            (addCategory)="onAddCategory()"
+            (editCategory)="onEditCategory($event)"
+          />
+
+          <app-age-categories-form
+            [hotelId]="hotelId()!"
+            [visible]="dialogVisible()"
+            [category]="selectedCategory()"
+            (saved)="onCategorySaved()"
+            (cancelled)="onCategoryCancelled()"
+          />
         </p-tabpanel>
       }
     </p-tabpanels>
