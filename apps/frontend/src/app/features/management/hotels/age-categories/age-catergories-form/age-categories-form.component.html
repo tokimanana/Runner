@@ -1,0 +1,60 @@
+<p-dialog
+  [visible]="visible()"
+  [header]="isEditMode() ? 'Edit Category' : 'Add Category'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="w-30rem"
+  (onHide)="cancelled.emit()"
+>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label for="name">Category Name <span class="required">*</span></label>
+      <input pInputText id="name" formControlName="name" class="w-full" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="error">Name is required</small>
+      }
+    </div>
+
+    <div class="field">
+      <label for="minAge">Min Age <span class="required">*</span></label>
+      <p-inputnumber inputId="minAge" formControlName="minAge" class="w-full" />
+      <small class="text-color-secondary">Inclusive starting age</small>
+      @if (form.controls.minAge.invalid && form.controls.minAge.touched) {
+        <small class="error">Min Age is required (≥ 0)</small>
+      }
+    </div>
+
+    <div class="field">
+      <label for="maxAge">Max Age <span class="required">*</span></label>
+      <p-inputnumber inputId="maxAge" formControlName="maxAge" class="w-full" />
+      <small class="text-color-secondary">Inclusive ending age</small>
+      @if (form.controls.maxAge.invalid && form.controls.maxAge.touched) {
+        <small class="error">Max Age is required (≥ 0)</small>
+      }
+    </div>
+
+    <div class="flex justify-content-end gap-2 pt-3">
+      @if (isEditMode()) {
+        <p-button
+          label="Delete"
+          class="mr-auto"
+          [outlined]="true"
+          severity="danger"
+          (onClick)="deleteAgeCategory(category()!.id)"
+        />
+      }
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancelled.emit()"
+      />
+      <p-button
+        type="submit"
+        [label]="isEditMode() ? 'Save changes' : 'Create'"
+        [loading]="isSubmitting()"
+      />
+    </div>
+  </form>
+</p-dialog>
