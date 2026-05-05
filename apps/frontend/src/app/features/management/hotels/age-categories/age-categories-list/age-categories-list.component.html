@@ -15,20 +15,8 @@
     />
   </div>
 
-  <p-iconfield class="age-categories__search">
-    <p-inputicon styleClass="pi pi-search" />
-    <input
-      pInputText
-      type="text"
-      placeholder="Search categories..."
-      [ngModel]="search()"
-      (ngModelChange)="search.set($event)"
-      class="w-full"
-    />
-  </p-iconfield>
-
   <p-table
-    [value]="filtered()"
+    [value]="categories()"
     [loading]="loading()"
     styleClass="p-datatable-sm"
     [tableStyle]="{ 'min-width': '30rem' }"
@@ -65,8 +53,8 @@
     <ng-template pTemplate="footer">
       <tr>
         <td colspan="4" class="age-categories__footer">
-          Showing {{ filtered().length }} categor{{
-            filtered().length === 1 ? 'y' : 'ies'
+          Showing {{ categories().length }} categor{{
+            categories().length === 1 ? 'y' : 'ies'
           }}
         </td>
       </tr>

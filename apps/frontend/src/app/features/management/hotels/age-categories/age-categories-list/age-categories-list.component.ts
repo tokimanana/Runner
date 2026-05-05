@@ -1,17 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { AgeCategory } from '@runner/shared/types';
 import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
@@ -20,14 +17,7 @@ import { HotelsService } from '../../hotels.service';
 
 @Component({
   selector: 'app-age-categories-list',
-  imports: [
-    ButtonModule,
-    FormsModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
-    TableModule,
-  ],
+  imports: [ButtonModule, InputIconModule, InputTextModule, TableModule],
   templateUrl: './age-categories-list.component.html',
   styleUrl: './age-categories-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,16 +30,6 @@ export class AgeCategoriesListComponent {
   readonly loading = signal(false);
   readonly addCategory = output<void>();
   readonly editCategory = output<AgeCategory>();
-
-  readonly search = signal('');
-
-  readonly filtered = computed(() => {
-    const q = this.search().toLowerCase().trim();
-    const list = q
-      ? this.categories().filter((c) => c.name.toLowerCase().includes(q))
-      : this.categories();
-    return [...list].sort((a, b) => a.minAge - b.minAge);
-  });
 
   constructor() {
     effect(() => this.loadCategories(this.hotelId()));
