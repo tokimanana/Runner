@@ -11,8 +11,6 @@ export interface RoomType {
   id: string;
   name: string;
   code: string;
-  maxAdults: number;
-  maxChildren: number;
   hotelId: string;
 }
 
@@ -74,4 +72,9 @@ export interface AgeCategoryDto {
   name: string;
   minAge: number;
   maxAge: number;
+}
+
+export interface RoomTypeDto {
+  code: string;
+  name: string;
 }

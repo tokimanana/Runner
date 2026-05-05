@@ -10,6 +10,8 @@ import {
   HotelDto,
   PaginatedResult,
   PaginationParams,
+  RoomType,
+  RoomTypeDto,
 } from '@runner/shared/types';
 
 @Injectable({
@@ -121,6 +123,36 @@ export class HotelsService {
   deleteAgeCategory(hotelId: string, catId: string): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/hotels/${hotelId}/age-categories/${catId}`
+    );
+  }
+
+  getRoomTypes(hotelId: string): Observable<RoomType[]> {
+    return this.http.get<RoomType[]>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types`
+    );
+  }
+
+  createRoomType(hotelId: string, dto: RoomTypeDto): Observable<RoomType> {
+    return this.http.post<RoomType>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types`,
+      dto
+    );
+  }
+
+  updateRoomType(
+    hotelId: string,
+    typeId: string,
+    dto: Partial<RoomTypeDto>
+  ): Observable<RoomType> {
+    return this.http.patch<RoomType>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}`,
+      dto
+    );
+  }
+
+  deleteRoomType(hotelId: string, typeId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}`
     );
   }
 }
