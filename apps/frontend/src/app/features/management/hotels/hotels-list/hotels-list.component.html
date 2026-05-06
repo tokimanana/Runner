@@ -48,7 +48,7 @@
               icon="pi pi-trash"
               [text]="true"
               severity="danger"
-              (onClick)="onDelete(hotel.id)"
+              (onClick)="confirmDelete(hotel)"
             />
           </div>
         </td>
@@ -66,3 +66,5 @@
     <span>Showing {{ (hotels$ | async)?.length ?? 0 }} hotels</span>
   </div>
 </div>
+
+<p-confirmdialog />
