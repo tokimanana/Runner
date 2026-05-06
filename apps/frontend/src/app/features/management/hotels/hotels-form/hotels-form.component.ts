@@ -1,12 +1,12 @@
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   computed,
   effect,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   FormControl,
@@ -19,7 +19,9 @@ import { AgeCategory } from '@runner/shared/types';
 import { Button } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
-import { AgeCategoriesListComponent } from '../age-categories/age-categories-list.component';
+import { take } from 'rxjs';
+import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
+import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-form/age-categories-form.component';
 import { HotelsService } from '../hotels.service';
 
 @Component({
@@ -30,19 +32,25 @@ import { HotelsService } from '../hotels.service';
     Button,
     TabsModule,
     AgeCategoriesListComponent,
+    AgeCategoriesFormComponent,
   ],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HotelsFormComponent {
+  readonly categoriesList = viewChild(AgeCategoriesListComponent);
+  readonly categoriesForm = viewChild(AgeCategoriesFormComponent);
+
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly hotelId = input<string>();
   readonly isEditMode = computed(() => !!this.hotelId());
   readonly isSubmitting = signal(false);
+
+  readonly dialogVisible = signal(false);
+  readonly selectedCategory = signal<AgeCategory | undefined>(undefined);
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -71,14 +79,14 @@ export class HotelsFormComponent {
   constructor() {
     effect(() => {
       const hotelId = this.hotelId();
-      {
-        if (!hotelId) return;
-        this.cdr.markForCheck();
-      }
+      if (!hotelId) return;
 
-      this.hotelsService.getHotelById(hotelId).subscribe((hotel) => {
-        this.form.patchValue(hotel);
-      });
+      this.hotelsService
+        .getHotelById(hotelId)
+        .pipe(take(1))
+        .subscribe((hotel) => {
+          this.form.patchValue(hotel);
+        });
     });
   }
 
@@ -95,7 +103,7 @@ export class HotelsFormComponent {
       ? this.hotelsService.updateHotel(hotelId, dto)
       : this.hotelsService.createHotel(dto);
 
-    request$.subscribe({
+    request$.pipe(take(1)).subscribe({
       next: () => this.navigateToList(),
       error: () => this.isSubmitting.set(false),
     });
@@ -106,11 +114,16 @@ export class HotelsFormComponent {
   }
 
   onAddCategory(): void {
-    console.log('add category');
+    this.categoriesForm()?.open();
   }
 
   onEditCategory(category: AgeCategory): void {
-    console.log('edit category', category);
+    this.categoriesForm()?.open(category);
+  }
+
+  onCategorySaved(): void {
+    this.categoriesForm()?.close();
+    this.categoriesList()?.loadCategories(this.hotelId()!);
   }
 
   private navigateToList(): void {

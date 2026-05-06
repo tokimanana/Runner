@@ -1,39 +1,43 @@
-<p-card>
-  <ng-template pTemplate="header">
-    <div class="flex align-items-center justify-content-between px-4 pt-4">
-      <div class="flex align-items-center gap-2">
-        <i class="pi pi-users text-xl text-color-secondary"></i>
-        <span class="text-xl font-semibold">Age Categories</span>
-      </div>
-      <p-button
-        label="Add Category"
-        icon="pi pi-plus"
-        (onClick)="addCategory.emit()"
-        [disabled]="loading()"
-      />
+<div class="age-categories">
+  <div class="age-categories__header">
+    <div>
+      <h2 class="age-categories__title">Age Categories</h2>
+      <p class="age-categories__subtitle">
+        Manage pricing demographics for hotel configurations.
+      </p>
     </div>
-  </ng-template>
-
-  @if (loading()) {
-    <p-progressBar
-      mode="indeterminate"
-      styleClass="mb-3"
-      [style]="{ height: '3px' }"
+    <p-button
+      label="Add Category"
+      icon="pi pi-plus"
+      (onClick)="addCategory.emit()"
+      [disabled]="loading()"
     />
-  }
+  </div>
+
+  <p-iconfield class="age-categories__search">
+    <p-inputicon styleClass="pi pi-search" />
+    <input
+      pInputText
+      type="text"
+      placeholder="Search categories..."
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+      class="w-full"
+    />
+  </p-iconfield>
 
   <p-table
-    [value]="categories()"
+    [value]="filtered()"
     [loading]="loading()"
-    styleClass="p-datatable-sm p-datatable-striped"
+    styleClass="p-datatable-sm"
     [tableStyle]="{ 'min-width': '30rem' }"
   >
     <ng-template pTemplate="header">
       <tr>
-        <th>Category</th>
+        <th>Name</th>
         <th>Min Age</th>
         <th>Max Age</th>
-        <th class="text-right">Actions</th>
+        <th></th>
       </tr>
     </ng-template>
 
@@ -51,10 +55,18 @@
               [rounded]="true"
               size="small"
               (onClick)="editCategory.emit(category)"
-              pTooltip="Edit"
-              tooltipPosition="top"
             />
           </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+      <tr>
+        <td colspan="4" class="age-categories__footer">
+          Showing {{ filtered().length }} categor{{
+            filtered().length === 1 ? 'y' : 'ies'
+          }}
         </td>
       </tr>
     </ng-template>
@@ -66,10 +78,10 @@
             class="flex flex-column align-items-center gap-2 py-5 text-color-secondary"
           >
             <i class="pi pi-inbox text-4xl"></i>
-            <span>No age categories defined yet.</span>
+            <span>No age categories found.</span>
           </div>
         </td>
       </tr>
     </ng-template>
   </p-table>
-</p-card>
+</div>

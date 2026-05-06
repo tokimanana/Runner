@@ -1,0 +1,79 @@
+<p-dialog
+  [(visible)]="visible"
+  [header]="isEditMode() ? 'Edit Age Category' : 'Add Age Category'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="w-40rem"
+  (onHide)="onDialogHide()"
+>
+  <p class="dialog-description">
+    Define the age range for this category. These settings will affect pricing
+    rules and capacity calculations.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label for="name">Category Name <span class="required">*</span></label>
+      <input pInputText id="name" formControlName="name" class="w-full" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="error">Name is required</small>
+      }
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="minAge">Min Age <span class="required">*</span></label>
+        <p-inputnumber
+          inputId="minAge"
+          formControlName="minAge"
+          class="w-full"
+          [min]="0"
+        />
+        <small class="text-color-secondary">Inclusive starting age.</small>
+        @if (form.controls.minAge.invalid && form.controls.minAge.touched) {
+          <small class="error">Min Age is required (≥ 0)</small>
+        }
+      </div>
+      <div class="field">
+        <label for="maxAge">Max Age <span class="required">*</span></label>
+        <p-inputnumber
+          inputId="maxAge"
+          formControlName="maxAge"
+          class="w-full"
+          [min]="0"
+        />
+        <small class="text-color-secondary">Inclusive ending age.</small>
+        @if (form.controls.maxAge.invalid && form.controls.maxAge.touched) {
+          <small class="error">Max Age is required (≥ 0)</small>
+        }
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      @if (isEditMode()) {
+        <p-button
+          label="Delete"
+          icon="pi pi-trash"
+          severity="danger"
+          [outlined]="true"
+          (onClick)="deleteAgeCategory(_category()!.id)"
+        />
+      }
+      <div class="dialog-footer__actions">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="close()"
+        />
+        <p-button
+          type="submit"
+          [label]="isEditMode() ? 'Save Changes' : 'Create'"
+          [loading]="isSubmitting()"
+          (onClick)="submit()"
+        />
+      </div>
+    </div>
+  </form>
+</p-dialog>
