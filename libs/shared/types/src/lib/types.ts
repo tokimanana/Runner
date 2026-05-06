@@ -78,3 +78,9 @@ export interface RoomTypeDto {
   code: string;
   name: string;
 }
+
+export interface SeasonDto {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
