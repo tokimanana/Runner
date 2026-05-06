@@ -18,7 +18,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { take } from 'rxjs';
-import { HotelsService } from '../hotels.service';
+import { HotelsService } from '../../hotels.service';
 
 @Component({
   selector: 'app-room-types-list',

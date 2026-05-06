@@ -23,7 +23,7 @@ import { take } from 'rxjs';
 import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
 import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-form/age-categories-form.component';
 import { HotelsService } from '../hotels.service';
-import { RoomTypesListComponent } from '../room-types/room-types-list.component';
+import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-types-list.component';
 
 @Component({
   selector: 'app-hotels-form',
