@@ -10,7 +10,9 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoomType } from '@runner/shared/types';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -22,6 +24,7 @@ import { HotelsService } from '../hotels.service';
   selector: 'app-room-types-list',
   imports: [
     ButtonModule,
+    ConfirmDialogModule,
     IconFieldModule,
     InputIconModule,
     FormsModule,
@@ -34,6 +37,7 @@ import { HotelsService } from '../hotels.service';
 })
 export class RoomTypesListComponent {
   private readonly hotelsService = inject(HotelsService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   readonly hotelId = input.required<string>();
 
@@ -69,5 +73,22 @@ export class RoomTypesListComponent {
         },
         error: () => this.loading.set(false),
       });
+  }
+
+  confirmDelete(room: RoomType): void {
+    this.confirmationService.confirm({
+      message: `Delete "${room.name}"?`,
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.hotelsService
+          .deleteRoomType(this.hotelId(), room.id)
+          .pipe(take(1))
+          .subscribe({
+            next: () => this.loadRooms(this.hotelId()),
+            error: () => {},
+          });
+      },
+    });
   }
 }

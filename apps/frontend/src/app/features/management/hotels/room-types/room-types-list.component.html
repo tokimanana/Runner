@@ -49,7 +49,7 @@
         </td>
         <td>{{ room.name }}</td>
         <td>
-          <div class="flex justify-content-end">
+          <div class="flex justify-content-end gap-1">
             <p-button
               icon="pi pi-pencil"
               severity="secondary"
@@ -57,6 +57,14 @@
               [rounded]="true"
               size="small"
               (onClick)="editRoom.emit(room)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              (onClick)="confirmDelete(room)"
             />
           </div>
         </td>
@@ -87,3 +95,5 @@
     </ng-template>
   </p-table>
 </div>
+
+<p-confirmdialog />
