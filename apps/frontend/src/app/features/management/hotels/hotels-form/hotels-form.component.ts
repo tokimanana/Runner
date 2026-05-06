@@ -15,7 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AgeCategory } from '@runner/shared/types';
+import { AgeCategory, RoomType } from '@runner/shared/types';
 import { Button } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
@@ -23,6 +23,7 @@ import { take } from 'rxjs';
 import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
 import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-form/age-categories-form.component';
 import { HotelsService } from '../hotels.service';
+import { RoomTypesListComponent } from '../room-types/room-types-list.component';
 
 @Component({
   selector: 'app-hotels-form',
@@ -33,6 +34,7 @@ import { HotelsService } from '../hotels.service';
     TabsModule,
     AgeCategoriesListComponent,
     AgeCategoriesFormComponent,
+    RoomTypesListComponent,
   ],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
@@ -41,6 +43,8 @@ import { HotelsService } from '../hotels.service';
 export class HotelsFormComponent {
   readonly categoriesList = viewChild(AgeCategoriesListComponent);
   readonly categoriesForm = viewChild(AgeCategoriesFormComponent);
+  // readonly roomsForm = viewChild(RoomTypesFormComponent);
+  readonly roomsList = viewChild(RoomTypesListComponent);
 
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
@@ -48,9 +52,6 @@ export class HotelsFormComponent {
   readonly hotelId = input<string>();
   readonly isEditMode = computed(() => !!this.hotelId());
   readonly isSubmitting = signal(false);
-
-  readonly dialogVisible = signal(false);
-  readonly selectedCategory = signal<AgeCategory | undefined>(undefined);
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -124,6 +125,19 @@ export class HotelsFormComponent {
   onCategorySaved(): void {
     this.categoriesForm()?.close();
     this.categoriesList()?.loadCategories(this.hotelId()!);
+  }
+
+  onAddRoom(): void {
+    // this.roomsForm()?.open();
+  }
+
+  onEditRoom(room: RoomType): void {
+    // this.roomsForm()?.open(room);
+  }
+
+  onRoomSaved(): void {
+    // this.roomsForm()?.close();
+    this.roomsList()?.loadRooms(this.hotelId()!);
   }
 
   private navigateToList(): void {

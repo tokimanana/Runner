@@ -1,0 +1,89 @@
+<div class="room-types">
+  <div class="room-types__header">
+    <div>
+      <h2 class="room-types__title">Room Types</h2>
+      <p class="room-types__subtitle">
+        Manage room configurations for this hotel.
+      </p>
+    </div>
+    <p-button
+      label="Add Room Type"
+      icon="pi pi-plus"
+      [outlined]="true"
+      (onClick)="addRoom.emit()"
+      [disabled]="loading()"
+    />
+  </div>
+
+  <div class="room-types__toolbar">
+    <p-iconfield>
+      <p-inputicon styleClass="pi pi-search" />
+      <input
+        pInputText
+        type="text"
+        placeholder="Search room types..."
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </p-iconfield>
+    <span class="room-types__count">Total: {{ roomTypes().length }} rooms</span>
+  </div>
+
+  <p-table
+    [value]="filtered()"
+    [loading]="loading()"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-room>
+      <tr>
+        <td>
+          <code>{{ room.code }}</code>
+        </td>
+        <td>{{ room.name }}</td>
+        <td>
+          <div class="flex justify-content-end">
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              (onClick)="editRoom.emit(room)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+      <tr>
+        <td colspan="3" class="room-types__footer">
+          Showing {{ filtered().length }} room{{
+            filtered().length === 1 ? '' : 's'
+          }}
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="3">
+          <div
+            class="flex flex-column align-items-center gap-2 py-5 text-color-secondary"
+          >
+            <i class="pi pi-inbox text-4xl"></i>
+            <span>No room types found.</span>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
