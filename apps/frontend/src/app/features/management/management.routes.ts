@@ -52,7 +52,14 @@ export const MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
-        path: 'seasons-form',
+        path: 'create',
+        loadComponent: () =>
+          import('./seasons/seasons-form/seasons-form.component').then(
+            (m) => m.SeasonsFormComponent
+          ),
+      },
+      {
+        path: ':seasonId/edit',
         loadComponent: () =>
           import('./seasons/seasons-form/seasons-form.component').then(
             (m) => m.SeasonsFormComponent
