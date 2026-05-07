@@ -1,0 +1,58 @@
+<p-dialog
+  [(visible)]="visible"
+  [header]="isEditMode() ? 'Edit Room Type' : 'Add Room Type'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '40rem' }"
+  (onHide)="onDialogHide()"
+>
+  <p class="dialog-description">
+    Define the room configuration. The code must be unique within this hotel.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-row">
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input pInputText id="name" formControlName="name" class="w-full" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="error">Name is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="code">Code <span class="required">*</span></label>
+        <input pInputText id="code" formControlName="code" class="w-full" />
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="error">Code is required</small>
+        }
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      @if (isEditMode()) {
+        <p-button
+          label="Delete"
+          icon="pi pi-trash"
+          [outlined]="true"
+          severity="danger"
+          (onClick)="deleteRoomType(_roomType()!.id)"
+        />
+      }
+      <div class="dialog-footer__actions">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="close()"
+        />
+        <p-button
+          type="submit"
+          [label]="isEditMode() ? 'Save Changes' : 'Create'"
+          [loading]="isSubmitting()"
+          (onClick)="submit()"
+        />
+      </div>
+    </div>
+  </form>
+</p-dialog>

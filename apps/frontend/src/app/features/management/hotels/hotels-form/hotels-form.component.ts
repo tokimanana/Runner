@@ -23,7 +23,8 @@ import { take } from 'rxjs';
 import { AgeCategoriesListComponent } from '../age-categories/age-categories-list/age-categories-list.component';
 import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-form/age-categories-form.component';
 import { HotelsService } from '../hotels.service';
-import { RoomTypesListComponent } from '../room-types/room-types-list.component';
+import { RoomTypesFormComponent } from '../room-types/room-types-form/room-types-form.component';
+import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-types-list.component';
 
 @Component({
   selector: 'app-hotels-form',
@@ -35,6 +36,7 @@ import { RoomTypesListComponent } from '../room-types/room-types-list.component'
     AgeCategoriesListComponent,
     AgeCategoriesFormComponent,
     RoomTypesListComponent,
+    RoomTypesFormComponent,
   ],
   templateUrl: './hotels-form.component.html',
   styleUrl: './hotels-form.component.scss',
@@ -43,8 +45,8 @@ import { RoomTypesListComponent } from '../room-types/room-types-list.component'
 export class HotelsFormComponent {
   readonly categoriesList = viewChild(AgeCategoriesListComponent);
   readonly categoriesForm = viewChild(AgeCategoriesFormComponent);
-  // readonly roomsForm = viewChild(RoomTypesFormComponent);
   readonly roomsList = viewChild(RoomTypesListComponent);
+  readonly roomsForm = viewChild(RoomTypesFormComponent);
 
   private readonly router = inject(Router);
   private readonly hotelsService = inject(HotelsService);
@@ -128,15 +130,15 @@ export class HotelsFormComponent {
   }
 
   onAddRoom(): void {
-    // this.roomsForm()?.open();
+    this.roomsForm()?.open();
   }
 
   onEditRoom(room: RoomType): void {
-    // this.roomsForm()?.open(room);
+    this.roomsForm()?.open(room);
   }
 
   onRoomSaved(): void {
-    // this.roomsForm()?.close();
+    this.roomsForm()?.close();
     this.roomsList()?.loadRooms(this.hotelId()!);
   }
 
