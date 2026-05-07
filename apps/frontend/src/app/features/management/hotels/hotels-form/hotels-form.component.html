@@ -165,6 +165,14 @@
             [hotelId]="hotelId()!"
             (saved)="onCategorySaved()"
           />
+
+          <app-room-types-list
+            [hotelId]="hotelId()!"
+            (addRoom)="onAddRoom()"
+            (editRoom)="onEditRoom($event)"
+          />
+
+          <!-- <app-room-types-form [hotelId]="hotelId()!" (saved)="onRoomSaved()" /> -->
         </p-tabpanel>
       }
     </p-tabpanels>
