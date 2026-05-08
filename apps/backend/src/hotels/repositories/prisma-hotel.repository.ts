@@ -174,7 +174,14 @@ export class PrismaHotelRepository implements HotelRepository {
   }
 
   async findAllRoomTypes(hotelId: string): Promise<RoomType[]> {
-    return this.prisma.roomType.findMany({ where: { hotelId } });
+    return this.prisma.roomType.findMany({
+      where: { hotelId },
+      include: {
+        capacities: {
+          include: { ageCategory: true },
+        },
+      },
+    });
   }
 
   async findRoomTypeByCode(
