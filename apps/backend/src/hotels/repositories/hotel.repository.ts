@@ -1,11 +1,13 @@
 import { RepositoryResult } from '@backend/common/repository.types';
-import { AgeCategory, RoomType } from '@prisma/client';
+import { AgeCategory, RoomType, RoomTypeCapacity } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
+import { CreateRoomTypeCapacityDto } from '../dto/create-room-type-capacity.dto';
 import { CreateRoomTypeDto } from '../dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
+import { UpdateRoomTypeCapacityDto } from '../dto/update-room-type-capacity.dto';
 import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
 import { HotelDetail, HotelQuery } from '../hotels.types';
 
@@ -63,4 +65,16 @@ export abstract class HotelRepository {
     code: string,
     excludeId?: string,
   ): Promise<RoomType | null>;
+
+  abstract createRoomTypeCapacity(
+    roomTypeId: string,
+    dto: CreateRoomTypeCapacityDto,
+  ): Promise<RoomTypeCapacity>;
+  abstract updateRoomTypeCapacity(
+    capacityId: string,
+    dto: UpdateRoomTypeCapacityDto,
+  ): Promise<RoomTypeCapacity>;
+  abstract deleteRoomTypeCapacity(
+    capacityId: string,
+  ): Promise<RepositoryResult>;
 }
