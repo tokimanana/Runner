@@ -77,4 +77,7 @@ export abstract class HotelRepository {
   abstract deleteRoomTypeCapacity(
     capacityId: string,
   ): Promise<RepositoryResult>;
+  abstract findRoomTypeCapacityById(
+    id: string,
+  ): Promise<RoomTypeCapacity | null>;
 }

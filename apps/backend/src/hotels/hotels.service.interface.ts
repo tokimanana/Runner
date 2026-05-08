@@ -1,4 +1,4 @@
-import { AgeCategory, RoomType } from '@prisma/client';
+import { AgeCategory, RoomType, RoomTypeCapacity } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
@@ -7,6 +7,8 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { HotelDetail, HotelQuery } from './hotels.types';
 import { PaginatedResult } from '@runner/shared/types';
+import { CreateRoomTypeCapacityDto } from './dto/create-room-type-capacity.dto';
+import { UpdateRoomTypeCapacityDto } from './dto/update-room-type-capacity.dto';
 
 export interface IHotelsService {
   create(data: CreateHotelDto, tourOperatorId: string): Promise<HotelDetail>;
@@ -59,6 +61,24 @@ export interface IHotelsService {
     hotelId: string,
   ): Promise<RoomType>;
   removeRoomType(
+    id: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<void>;
+
+  createRoomTypeCapacity(
+    data: CreateRoomTypeCapacityDto,
+    roomTypeId: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomTypeCapacity>;
+  updateRoomTypeCapacity(
+    id: string,
+    data: UpdateRoomTypeCapacityDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomTypeCapacity>;
+  removeRoomTypeCapacity(
     id: string,
     tourOperatorId: string,
     hotelId: string,
