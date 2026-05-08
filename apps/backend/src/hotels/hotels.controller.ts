@@ -19,9 +19,11 @@ import {
 import { UserRole } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { CreateRoomTypeCapacityDto } from './dto/create-room-type-capacity.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { UpdateRoomTypeCapacityDto } from './dto/update-room-type-capacity.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { HOTELS_SERVICE } from './hotels.constants';
 import { IHotelsService } from './hotels.service.interface';
@@ -174,5 +176,52 @@ export class HotelsController {
   ) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.hotelsService.removeRoomType(typeId, tourOperatorId, id);
+  }
+
+  @Post(':id/room-types/:typeId/capacities')
+  createRoomTypeCapacity(
+    @Body() dto: CreateRoomTypeCapacityDto,
+    @Req() req: RequestWithUser,
+    @Param('id') hotelId: string,
+    @Param('typeId') typeId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.createRoomTypeCapacity(
+      dto,
+      typeId,
+      tourOperatorId,
+      hotelId,
+    );
+  }
+
+  @Patch(':id/room-types/:typeId/capacities/:capacityId')
+  updateRoomTypeCapacity(
+    @Param('id') hotelId: string,
+    @Body() dto: UpdateRoomTypeCapacityDto,
+    @Req() req: RequestWithUser,
+    @Param('capacityId') capacityId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.updateRoomTypeCapacity(
+      capacityId,
+      dto,
+      tourOperatorId,
+      hotelId,
+    );
+  }
+
+  @Delete(':id/room-types/:typeId/capacities/:capacityId')
+  @HttpCode(204)
+  removeRoomTypeCapacity(
+    @Param('id') hotelId: string,
+    @Req() req: RequestWithUser,
+    @Param('capacityId') capacityId: string,
+  ) {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.hotelsService.removeRoomTypeCapacity(
+      capacityId,
+      tourOperatorId,
+      hotelId,
+    );
   }
 }
