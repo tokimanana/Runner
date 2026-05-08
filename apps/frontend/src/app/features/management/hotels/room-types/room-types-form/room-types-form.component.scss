@@ -1,0 +1,132 @@
+.dialog-description {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+  margin: 0 0 1.25rem;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--p-text-muted-color);
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.5px solid var(--p-surface-200);
+}
+
+.capacities-section {
+  margin-top: 0.5rem;
+}
+
+.capacity-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.capacity-row {
+  display: grid;
+  grid-template-columns: 1fr 5rem auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
+  background: var(--p-surface-50);
+  border: 1px solid var(--p-surface-200);
+  transition: background 0.15s ease;
+
+  &.available {
+    background: transparent;
+    border-style: dashed;
+  }
+}
+
+.age-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--p-text-color);
+
+  small {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.capacity-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.capacities-disabled {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  border-radius: 6px;
+  background: var(--p-surface-50);
+  border: 1px dashed var(--p-surface-300);
+  color: var(--p-text-muted-color);
+  font-size: 0.8125rem;
+
+  i {
+    font-size: 1rem;
+  }
+  p {
+    margin: 0;
+  }
+}
+
+.empty-state {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 0.5px solid var(--p-surface-200);
+}
+
+.dialog-footer__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+
+  label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--p-text-color);
+  }
+}
+
+.required {
+  color: var(--p-red-500);
+}
+.error {
+  font-size: 0.75rem;
+  color: var(--p-red-500);
+}
