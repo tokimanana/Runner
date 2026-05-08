@@ -246,7 +246,16 @@ export class HotelsService implements IHotelsService {
       );
     }
 
-    return this.hotelRepository.createRoomTypeCapacity(roomTypeId, data);
+    const result = await this.hotelRepository.createRoomTypeCapacity(
+      roomTypeId,
+      data,
+    );
+    if (result === RepositoryResult.CONFLICT) {
+      throw new ConflictException(
+        `Capacity already exists for this age category`,
+      );
+    }
+    return result as RoomTypeCapacity;
   }
 
   async updateRoomTypeCapacity(

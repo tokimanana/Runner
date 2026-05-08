@@ -69,7 +69,7 @@ export abstract class HotelRepository {
   abstract createRoomTypeCapacity(
     roomTypeId: string,
     dto: CreateRoomTypeCapacityDto,
-  ): Promise<RoomTypeCapacity>;
+  ): Promise<RoomTypeCapacity | RepositoryResult>;
   abstract updateRoomTypeCapacity(
     capacityId: string,
     dto: UpdateRoomTypeCapacityDto,

@@ -245,10 +245,17 @@ export class PrismaHotelRepository implements HotelRepository {
   async createRoomTypeCapacity(
     roomTypeId: string,
     dto: CreateRoomTypeCapacityDto,
-  ): Promise<RoomTypeCapacity> {
-    return this.prisma.roomTypeCapacity.create({
-      data: { ...dto, roomTypeId },
-    });
+  ): Promise<RoomTypeCapacity | RepositoryResult> {
+    try {
+      return await this.prisma.roomTypeCapacity.create({
+        data: { ...dto, roomTypeId },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') return RepositoryResult.CONFLICT;
+      }
+      throw error;
+    }
   }
 
   async findRoomTypeCapacityById(id: string): Promise<RoomTypeCapacity | null> {
