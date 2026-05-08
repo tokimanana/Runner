@@ -161,9 +161,10 @@
             (editCategory)="onEditCategory($event)"
           />
 
-          <app-age-categories-form
+          <app-room-types-form
             [hotelId]="hotelId()!"
-            (saved)="onCategorySaved()"
+            [ageCategories]="ageCategories()"
+            (saved)="onRoomSaved()"
           />
 
           <app-room-types-list
