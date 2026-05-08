@@ -14,7 +14,13 @@ import { HotelRepository } from './hotel.repository';
 
 const HOTEL_INCLUDE = {
   ageCategories: true,
-  roomTypes: true,
+  roomTypes: {
+    include: {
+      capacities: {
+        include: { ageCategory: true },
+      },
+    },
+  },
 } satisfies Prisma.HotelInclude;
 
 @Injectable()
@@ -53,7 +59,7 @@ export class PrismaHotelRepository implements HotelRepository {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.hotel.findMany({
         where,
-        include: { ageCategories: true, roomTypes: true },
+        include: HOTEL_INCLUDE,
         take: limit,
         skip: offset,
       }),
@@ -79,10 +85,7 @@ export class PrismaHotelRepository implements HotelRepository {
       return await this.prisma.hotel.update({
         where: { id, tourOperatorId },
         data,
-        include: {
-          ageCategories: true,
-          roomTypes: true,
-        },
+        include: HOTEL_INCLUDE,
       });
     } catch (error) {
       if (
@@ -111,7 +114,7 @@ export class PrismaHotelRepository implements HotelRepository {
   async findAllAgeCategories(hotelId: string): Promise<AgeCategory[]> {
     return this.prisma.ageCategory.findMany({
       where: { hotelId },
-      orderBy: { order: 'asc' },
+      orderBy: { minAge: 'asc' },
     });
   }
 
