@@ -14,16 +14,16 @@ enum UserRole {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
+  id             String        @id @default(cuid())
+  email          String        @unique
   passwordHash   String
   firstName      String
   lastName       String
-  role           UserRole @default(AGENT)
+  role           UserRole      @default(AGENT)
   tourOperatorId String
-  refreshTokens RefreshToken[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  refreshTokens  RefreshToken[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model Hotel {
@@ -48,23 +48,33 @@ model Hotel {
 }
 
 model AgeCategory {
-  id      String @id @default(cuid())
-  name    String
-  minAge  Int
-  maxAge  Int
-  order   Int    @default(0)
-  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  hotelId String
+  id                 String             @id @default(cuid())
+  name               String
+  minAge             Int
+  maxAge             Int
+  hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId            String
+  roomTypeCapacities RoomTypeCapacity[]
 }
 
 model RoomType {
-  id          String @id @default(cuid())
-  name        String
-  code        String
-  maxAdults   Int
-  maxChildren Int    @default(0)
-  hotel       Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  hotelId     String
+  id         String             @id @default(cuid())
+  name       String
+  code       String
+  hotel      Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId    String
+  capacities RoomTypeCapacity[]
+}
+
+model RoomTypeCapacity {
+  id            String      @id @default(cuid())
+  roomTypeId    String
+  ageCategoryId String
+  maxPax        Int
+  roomType      RoomType    @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  ageCategory   AgeCategory @relation(fields: [ageCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, ageCategoryId])
 }
 
 model Season {
