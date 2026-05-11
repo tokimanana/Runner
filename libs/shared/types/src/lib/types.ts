@@ -12,6 +12,14 @@ export interface RoomType {
   name: string;
   code: string;
   hotelId: string;
+  capacities?: RoomTypeCapacity[];
+}
+
+export interface RoomTypeCapacity {
+  id: string;
+  roomTypeId: string;
+  ageCategoryId: string;
+  maxPax: number;
 }
 
 export interface Hotel {
