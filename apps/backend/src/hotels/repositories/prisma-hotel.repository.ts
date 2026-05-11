@@ -21,7 +21,13 @@ import { HotelRepository } from './hotel.repository';
 
 const HOTEL_INCLUDE = {
   ageCategories: true,
-  roomTypes: true,
+  roomTypes: {
+    include: {
+      capacities: {
+        include: { ageCategory: true },
+      },
+    },
+  },
 } satisfies Prisma.HotelInclude;
 
 @Injectable()
@@ -33,10 +39,7 @@ export class PrismaHotelRepository implements HotelRepository {
     tourOperatorId: string,
   ): Promise<HotelDetail> {
     return this.prisma.hotel.create({
-      data: {
-        ...data,
-        tourOperatorId,
-      },
+      data: { ...data, tourOperatorId },
       include: HOTEL_INCLUDE,
     });
   }
@@ -60,7 +63,7 @@ export class PrismaHotelRepository implements HotelRepository {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.hotel.findMany({
         where,
-        include: { ageCategories: true, roomTypes: true },
+        include: HOTEL_INCLUDE,
         take: limit,
         skip: offset,
       }),
@@ -86,10 +89,7 @@ export class PrismaHotelRepository implements HotelRepository {
       return await this.prisma.hotel.update({
         where: { id, tourOperatorId },
         data,
-        include: {
-          ageCategories: true,
-          roomTypes: true,
-        },
+        include: HOTEL_INCLUDE,
       });
     } catch (error) {
       if (
@@ -118,7 +118,7 @@ export class PrismaHotelRepository implements HotelRepository {
   async findAllAgeCategories(hotelId: string): Promise<AgeCategory[]> {
     return this.prisma.ageCategory.findMany({
       where: { hotelId },
-      orderBy: { order: 'asc' },
+      orderBy: { minAge: 'asc' },
     });
   }
 
@@ -127,10 +127,7 @@ export class PrismaHotelRepository implements HotelRepository {
     data: CreateAgeCategoryDto,
   ): Promise<AgeCategory> {
     return this.prisma.ageCategory.create({
-      data: {
-        ...data,
-        hotelId,
-      },
+      data: { ...data, hotelId },
     });
   }
 
@@ -140,16 +137,12 @@ export class PrismaHotelRepository implements HotelRepository {
   ): Promise<AgeCategory> {
     return this.prisma.ageCategory.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data: { ...data },
     });
   }
 
   async findAgeCategoryById(id: string): Promise<AgeCategory | null> {
-    return this.prisma.ageCategory.findUnique({
-      where: { id },
-    });
+    return this.prisma.ageCategory.findUnique({ where: { id } });
   }
 
   async findOverlappingAgeCategory(
@@ -169,9 +162,7 @@ export class PrismaHotelRepository implements HotelRepository {
 
   async deleteAgeCategory(id: string): Promise<RepositoryResult> {
     try {
-      await this.prisma.ageCategory.delete({
-        where: { id },
-      });
+      await this.prisma.ageCategory.delete({ where: { id } });
       return RepositoryResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -183,9 +174,7 @@ export class PrismaHotelRepository implements HotelRepository {
   }
 
   async findAllRoomTypes(hotelId: string): Promise<RoomType[]> {
-    return this.prisma.roomType.findMany({
-      where: { hotelId },
-    });
+    return this.prisma.roomType.findMany({ where: { hotelId } });
   }
 
   async findRoomTypeByCode(
@@ -211,19 +200,14 @@ export class PrismaHotelRepository implements HotelRepository {
     data: CreateRoomTypeDto,
   ): Promise<RoomType> {
     return this.prisma.roomType.create({
-      data: {
-        ...data,
-        hotelId,
-      },
+      data: { ...data, hotelId },
     });
   }
 
   async updateRoomType(id: string, data: UpdateRoomTypeDto): Promise<RoomType> {
     return this.prisma.roomType.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data: { ...data },
     });
   }
 
