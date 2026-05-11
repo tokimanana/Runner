@@ -1,13 +1,20 @@
 import { RepositoryResult } from '@backend/common/repository.types';
 import { Injectable } from '@nestjs/common';
-import { AgeCategory, Prisma, RoomType } from '@prisma/client';
+import {
+  AgeCategory,
+  Prisma,
+  RoomType,
+  RoomTypeCapacity,
+} from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAgeCategoryDto } from '../dto/create-age-category.dto';
 import { CreateHotelDto } from '../dto/create-hotel.dto';
+import { CreateRoomTypeCapacityDto } from '../dto/create-room-type-capacity.dto';
 import { CreateRoomTypeDto } from '../dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from '../dto/update-age-category.dto';
 import { UpdateHotelDto } from '../dto/update-hotel.dto';
+import { UpdateRoomTypeCapacityDto } from '../dto/update-room-type-capacity.dto';
 import { UpdateRoomTypeDto } from '../dto/update-room-type.dto';
 import { HotelDetail, HotelQuery } from '../hotels.types';
 import { HotelRepository } from './hotel.repository';
@@ -225,6 +232,49 @@ export class PrismaHotelRepository implements HotelRepository {
       await this.prisma.roomType.delete({
         where: { id },
       });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
+      }
+      throw error;
+    }
+  }
+
+  async createRoomTypeCapacity(
+    roomTypeId: string,
+    dto: CreateRoomTypeCapacityDto,
+  ): Promise<RoomTypeCapacity | RepositoryResult> {
+    try {
+      return await this.prisma.roomTypeCapacity.create({
+        data: { ...dto, roomTypeId },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') return RepositoryResult.CONFLICT;
+      }
+      throw error;
+    }
+  }
+
+  async findRoomTypeCapacityById(id: string): Promise<RoomTypeCapacity | null> {
+    return this.prisma.roomTypeCapacity.findUnique({ where: { id } });
+  }
+
+  async updateRoomTypeCapacity(
+    id: string,
+    dto: UpdateRoomTypeCapacityDto,
+  ): Promise<RoomTypeCapacity> {
+    return this.prisma.roomTypeCapacity.update({
+      where: { id },
+      data: { ...dto },
+    });
+  }
+
+  async deleteRoomTypeCapacity(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.roomTypeCapacity.delete({ where: { id } });
       return RepositoryResult.DELETED;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

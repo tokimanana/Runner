@@ -4,12 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AgeCategory, RoomType } from '@prisma/client';
+import { AgeCategory, RoomType, RoomTypeCapacity } from '@prisma/client';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { CreateRoomTypeCapacityDto } from './dto/create-room-type-capacity.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateAgeCategoryDto } from './dto/update-age-category.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { UpdateRoomTypeCapacityDto } from './dto/update-room-type-capacity.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { IHotelsService } from './hotels.service.interface';
 import { HotelDetail, HotelQuery } from './hotels.types';
@@ -225,5 +227,66 @@ export class HotelsService implements IHotelsService {
         `Room type code "${code}" already exists in this hotel`,
       );
     }
+  }
+
+  async createRoomTypeCapacity(
+    data: CreateRoomTypeCapacityDto,
+    roomTypeId: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomTypeCapacity> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    const ageCategory = await this.hotelRepository.findAgeCategoryById(
+      data.ageCategoryId,
+    );
+    if (!ageCategory || ageCategory.hotelId !== hotelId) {
+      throw new ConflictException(
+        `Age category ${data.ageCategoryId} does not belong to hotel ${hotelId}`,
+      );
+    }
+
+    const result = await this.hotelRepository.createRoomTypeCapacity(
+      roomTypeId,
+      data,
+    );
+    if (result === RepositoryResult.CONFLICT) {
+      throw new ConflictException(
+        `Capacity already exists for this age category`,
+      );
+    }
+    return result as RoomTypeCapacity;
+  }
+
+  async updateRoomTypeCapacity(
+    id: string,
+    data: UpdateRoomTypeCapacityDto,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<RoomTypeCapacity> {
+    await this.findOne(hotelId, tourOperatorId);
+
+    const existing = await this.hotelRepository.findRoomTypeCapacityById(id);
+
+    if (!existing) {
+      throw new NotFoundException(`Room type Capacity ${id} not found`);
+    }
+
+    return this.hotelRepository.updateRoomTypeCapacity(id, data);
+  }
+
+  async removeRoomTypeCapacity(
+    id: string,
+    tourOperatorId: string,
+    hotelId: string,
+  ): Promise<void> {
+    await this.findOne(hotelId, tourOperatorId);
+    const result = await this.hotelRepository.deleteRoomTypeCapacity(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Room type Capacity ${id} not found`);
+    if (result === RepositoryResult.HAS_CONTRACTS)
+      throw new ConflictException(
+        `Room type Capacity ${id} has linked contracts`,
+      );
   }
 }
