@@ -251,6 +251,12 @@ export class RoomTypesFormComponent {
       });
   }
 
+  cancelEdit(row: CapacityRow): void {
+    row.maxPax.setValue(row.capacity?.maxPax ?? 1);
+    row.editing = false;
+    this.capacityRows.set([...this.capacityRows()]);
+  }
+
   private _buildCapacityRows(room: RoomType): void {
     const rows = this.ageCategories().map((cat) => {
       const existing =

@@ -78,6 +78,13 @@
                     [loading]="row.saving"
                     (onClick)="saveCapacity(row)"
                   />
+                  <p-button
+                    icon="pi pi-times"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    (onClick)="cancelEdit(row)"
+                  />
                 }
                 <p-button
                   icon="pi pi-trash"
