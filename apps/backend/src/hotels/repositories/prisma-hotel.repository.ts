@@ -236,7 +236,7 @@ export class PrismaHotelRepository implements HotelRepository {
   async createRoomTypeCapacity(
     roomTypeId: string,
     dto: CreateRoomTypeCapacityDto,
-  ): Promise<RoomTypeCapacity | RepositoryResult> {
+  ): Promise<RoomTypeCapacity | RepositoryResult.CONFLICT> {
     try {
       return await this.prisma.roomTypeCapacity.create({
         data: { ...dto, roomTypeId },
