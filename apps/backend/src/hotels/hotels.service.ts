@@ -1,4 +1,3 @@
-import { RepositoryResult } from '@backend/common/repository.types';
 import {
   BadRequestException,
   ConflictException,
@@ -6,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AgeCategory, RoomType } from '@prisma/client';
-import { PaginatedResult } from '@runner/shared/types';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
@@ -15,6 +13,8 @@ import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { IHotelsService } from './hotels.service.interface';
 import { HotelDetail, HotelQuery } from './hotels.types';
+import { RepositoryResult } from '@backend/common/repository.types';
+import { PaginatedResult } from '@runner/shared/types';
 import { HotelRepository } from './repositories/hotel.repository';
 
 @Injectable()
@@ -179,6 +179,14 @@ export class HotelsService implements IHotelsService {
 
     if (!existing) {
       throw new NotFoundException(`Room type ${id} not found`);
+    }
+
+    const adults = dto.maxAdults ?? existing.maxAdults;
+    const children = dto.maxChildren ?? existing.maxChildren;
+    if (adults + children < 1) {
+      throw new BadRequestException(
+        'maxAdults + maxChildren must be at least 1',
+      );
     }
 
     if (dto.code) {

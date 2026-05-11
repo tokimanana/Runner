@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
 
 export class CreateRoomTypeDto {
   @IsString()
@@ -8,4 +8,12 @@ export class CreateRoomTypeDto {
   @IsString()
   @IsNotEmpty()
   code: string;
+
+  @IsInt()
+  @Min(1)
+  maxAdults: number;
+
+  @IsInt()
+  @Min(0)
+  maxChildren: number;
 }
