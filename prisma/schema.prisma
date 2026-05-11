@@ -100,3 +100,16 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model MealPlan {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  description    String?
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+}
