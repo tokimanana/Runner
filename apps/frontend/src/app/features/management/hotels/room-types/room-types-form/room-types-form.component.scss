@@ -42,6 +42,22 @@
   }
 }
 
+.capacity-row input[readonly] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  cursor: default;
+  color: var(--p-text-color);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.capacity-row input:not([readonly]) {
+  background: var(--p-surface-0);
+  border-color: var(--p-primary-color);
+  box-shadow: 0 0 0 1px var(--p-primary-color);
+}
+
 .age-label {
   font-size: 0.875rem;
   font-weight: 500;

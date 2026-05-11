@@ -60,6 +60,7 @@ export class RoomTypesFormComponent {
   protected readonly _roomType = signal<RoomType | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._roomType());
   readonly isSubmitting = signal(false);
+  readonly recentlySaved = signal(new Set<string>());
   visible = false;
 
   readonly capacityRows = signal<CapacityRow[]>([]);
@@ -134,6 +135,7 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: () => {
             this.isSubmitting.set(false);
+            this.close();
             this.saved.emit();
           },
           error: () => this.isSubmitting.set(false),
@@ -178,6 +180,16 @@ export class RoomTypesFormComponent {
             row.saving = false;
             row.editing = false;
             this.capacityRows.set([...this.capacityRows()]);
+
+            const id = row.ageCategory.id;
+            this.recentlySaved.update((s) => new Set(s).add(id));
+            setTimeout(() => {
+              this.recentlySaved.update((s) => {
+                const n = new Set(s);
+                n.delete(id);
+                return n;
+              });
+            }, 2000);
           },
           error: () => {
             row.saving = false;
