@@ -11,6 +11,8 @@ import {
   PaginatedResult,
   PaginationParams,
   RoomType,
+  RoomTypeCapacity,
+  RoomTypeCapacityDto,
   RoomTypeDto,
 } from '@runner/shared/types';
 
@@ -52,7 +54,6 @@ export class HotelsService {
     if (!this.loaded) {
       this.loadHotels(params);
     }
-
     return this.hotels$;
   }
 
@@ -153,6 +154,39 @@ export class HotelsService {
   deleteRoomType(hotelId: string, typeId: string): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}`
+    );
+  }
+
+  createRoomTypeCapacity(
+    hotelId: string,
+    typeId: string,
+    dto: RoomTypeCapacityDto
+  ): Observable<RoomTypeCapacity> {
+    return this.http.post<RoomTypeCapacity>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}/capacities`,
+      dto
+    );
+  }
+
+  updateRoomTypeCapacity(
+    hotelId: string,
+    typeId: string,
+    capacityId: string,
+    dto: Partial<RoomTypeCapacityDto>
+  ): Observable<RoomTypeCapacity> {
+    return this.http.patch<RoomTypeCapacity>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}/capacities/${capacityId}`,
+      dto
+    );
+  }
+
+  deleteRoomTypeCapacity(
+    hotelId: string,
+    typeId: string,
+    capacityId: string
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}/capacities/${capacityId}`
     );
   }
 }

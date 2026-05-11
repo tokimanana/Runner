@@ -34,7 +34,6 @@ import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-type
     Button,
     TabsModule,
     AgeCategoriesListComponent,
-    AgeCategoriesFormComponent,
     RoomTypesListComponent,
     RoomTypesFormComponent,
   ],
@@ -54,6 +53,9 @@ export class HotelsFormComponent {
   readonly hotelId = input<string>();
   readonly isEditMode = computed(() => !!this.hotelId());
   readonly isSubmitting = signal(false);
+  readonly ageCategories = computed(
+    () => this.categoriesList()?.categories() ?? []
+  );
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -138,7 +140,6 @@ export class HotelsFormComponent {
   }
 
   onRoomSaved(): void {
-    this.roomsForm()?.close();
     this.roomsList()?.loadRooms(this.hotelId()!);
   }
 

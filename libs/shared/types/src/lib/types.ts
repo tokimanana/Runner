@@ -3,7 +3,6 @@ export interface AgeCategory {
   name: string;
   minAge: number;
   maxAge: number;
-  order: number;
   hotelId: string;
 }
 
@@ -90,4 +89,9 @@ export interface SeasonDto {
   name: string;
   startDate: string;
   endDate: string;
+}
+
+export interface RoomTypeCapacityDto {
+  ageCategoryId: string;
+  maxPax: number;
 }

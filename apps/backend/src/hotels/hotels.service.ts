@@ -247,7 +247,8 @@ export class HotelsService implements IHotelsService {
         `Capacity already exists for this age category`,
       );
     }
-    return result as RoomTypeCapacity;
+
+    return result;
   }
 
   async updateRoomTypeCapacity(
