@@ -1,0 +1,83 @@
+<div class="seasons-list">
+  <div class="list-toolbar">
+    <p-iconfield>
+      <p-inputicon styleClass="pi pi-search" />
+      <input
+        pInputText
+        type="text"
+        placeholder="Search seasons..."
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </p-iconfield>
+    <p-button
+      label="Add Season"
+      icon="pi pi-plus"
+      [routerLink]="['/management/seasons/create']"
+    />
+  </div>
+
+  <p-table
+    [value]="filtered()"
+    [loading]="loading()"
+    [tableStyle]="{ 'min-width': '50rem' }"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Season Name</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-season>
+      <tr>
+        <td>{{ season.name }}</td>
+        <td>{{ season.startDate | date: 'dd MMM yyyy' }}</td>
+        <td>{{ season.endDate | date: 'dd MMM yyyy' }}</td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              severity="secondary"
+              [routerLink]="['/management/seasons', season.id, 'edit']"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              severity="danger"
+              (onClick)="confirmDelete(season)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="4">
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <span>No seasons configured yet.</span>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <div class="list-footer">
+    <span
+      >Showing {{ filtered().length }} season{{
+        filtered().length === 1 ? '' : 's'
+      }}</span
+    >
+  </div>
+</div>
+
+<p-confirmdialog />

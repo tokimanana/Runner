@@ -4,564 +4,614 @@
 
 Gestion complète des hôtels (CRUD, Age Categories, Room Types) + ajout de la gestion des Seasons réutilisables.
 
-**Durée estimée :** 4-5 jours
-**Story Points :** 34 points
+**Durée estimée :** 4-5 jours  
+**Story Points :** 38 points (+ 8 points nouveaux tickets)
+
+---
+
+## Ordre d'exécution
+
+```
+S2-CHORE-001  (shared types lib)        ✅ Done
+S2-BE-000     (migration Prisma)        ✅ Done
+
+Backend :
+  S2-BE-002 (DTOs Hotels)              ✅ Done
+  S2-BE-001 (Hotels CRUD)              ✅ Done
+  S2-BE-003 (Age Categories)           ✅ Done
+  S2-BE-004 (Room Types)               ✅ Done
+  S2-BE-005 (Seasons)                  ✅ Done
+  S2-BE-006 (Indexes Prisma)           ✅ Done (déjà présents depuis S2-BE-000)
+  S2-BE-007 (RoomTypeCapacity)         🔲 À faire
+  S2-BE-008 (RoomTypeCapacity endpoints) 🔲 À faire (bloqué sur S2-BE-007)
+  S2-BE-009 (Supprimer order AgeCategory) 🔲 À faire
+
+Frontend :
+  S2-FE-009 (Routes)                   ✅ Done
+  S2-FE-001 (HotelsService)            ✅ Done
+  S2-FE-002 (HotelsList)               ✅ Done
+  S2-FE-003 (HotelsForm)               ✅ Done
+  S2-FE-004 (AgeCategoryDto + méthodes) ✅ Done
+  S2-FE-005 (AgeCategoriesListComponent) ✅ Done
+  S2-FE-006 (AgeCategoriesFormComponent) ✅ Done
+  S2-FE-007 (RoomTypes service methods) ✅ Done
+  S2-FE-008 (RoomTypesListComponent)   ✅ Done
+  S2-FE-009 (RoomTypesFormComponent)   ✅ Done
+  S2-FE-010 (SeasonsService)           ✅ Done
+  S2-FE-011 (SeasonsListComponent)     ✅ Done
+  S2-FE-012 (SeasonsFormComponent)     ✅ Done
+  S2-FE-013 (RoomTypeCapacity UI)      🔲 À faire (bloqué sur S2-BE-007, S2-BE-008)
+```
+
+---
+
+## Architecture Decisions
+
+### Backend
+
+- **Repository Pattern** — interface + string token injection
+  - Repository = data access only, no HTTP exceptions, no sanitization
+  - Service = business logic, HTTP exceptions, sanitization (MAX_LIMIT)
+  - Pattern : Controller → Service → Repository (interface) → PrismaRepository (implementation)
+- **RepositoryResult enum** — partagé entre tous les repositories, dans `@backend/common/repository.types`
+- **PaginatedResult\<T\>** — dans `@runner/shared/types` (partagé frontend + backend)
+- **HOTEL_INCLUDE constant** — extrait dans `PrismaHotelRepository` pour éviter la duplication
+- **Multi-tenancy** — `tourOperatorId` toujours extrait du JWT, jamais du request body
+- **Pagination** — `$transaction([findMany, count])` — MAX_LIMIT = 100 enforced in service
+- **Age Categories overlap** — formule : deux intervalles [A,B] et [C,D] se chevauchent si A < D AND B > C
+- **Room Types** — code unique par hôtel (pas globalement)
+- **Seasons** — `@@unique([tourOperatorId, name])` — pas de doublon de nom par tour operator. Pas de validation de chevauchement entre seasons (sera validé sur ContractPeriod en Sprint 4)
+
+### Frontend
+
+- **BehaviorSubject** pour HotelsService et SeasonsService (pas NgRx — réservé à l'auth)
+- **Signal local + HTTP direct** pour les sub-resources (AgeCategories, RoomTypes) — l'id change selon l'hôtel
+- **`take(1)`** sur tous les subscribe() dans les services
+- **`toSignal()`** pour convertir Observable → Signal dans les composants liste
+- **`open()`/`close()`** via `viewChild` pour les dialogs — évite le conflit `[visible]` + `input()`
+- **Delete dans le dialog**, pas sur la ligne de liste
+- **Tab Configuration** uniquement en edit mode (`@if(hotelId())`)
+- **Tri par `minAge`** côté frontend pour les Age Categories (pas de champ `order`)
+- **`_forms.scss`** — styles partagés entre tous les formulaires (`form-page`, `form-header`, `form-row`, `field`, `dialog-footer`, etc.)
 
 ---
 
 ## Backend Tasks
 
-### S2-BE-001 : Améliorer HotelsService (CRUD complet)
+### ✅ S2-CHORE-001 : Créer shared NX types library
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
+- **Branch :** `chore/S2-CHORE-001-shared-types`
+- **Commit :** `chore(nx): create shared types library for Hotel, Season, AgeCategory, RoomType`
+- Lib générée : `libs/shared/types`
+- Importable via `@runner/shared/types`
+
+---
+
+### ✅ S2-BE-000 : Migration Prisma — Hotel, AgeCategory, RoomType, Season
+
+- **Branch :** `chore/S2-BE-000-prisma-migration-sprint2`
+- **Commit :** `chore(prisma): add Hotel, AgeCategory, RoomType, Season models`
+
+---
+
+### ✅ S2-BE-001 : Hotels CRUD complet
+
 - **Branch :** `feature/S2-BE-001-hotels-crud`
 - **Commit :** `feat(hotels): implement complete CRUD with validation`
-- **Description :**
-  - Compléter les méthodes : `findAll()`, `findOne()`, `create()`, `update()`, `remove()`
-  - Filtrage par tourOperatorId (isolation multi-tenant)
-  - Pagination (limit 50 par défaut)
-  - Recherche par nom/destination
-  - Inclure ageCategories et roomTypes dans les réponses
-- **Acceptance Criteria :**
-  - ✅ GET /hotels retourne liste paginée
-  - ✅ GET /hotels?search=Paris filtre correctement
-  - ✅ POST /hotels crée un hôtel avec validation
-  - ✅ PUT /hotels/:id met à jour
-  - ✅ DELETE /hotels/:id supprime (si pas de contrats liés)
-  - ✅ Filtrage par tourOperatorId automatique
-- **Files :**
-  - `apps/backend/src/hotels/hotels.service.ts`
-  - `apps/backend/src/hotels/hotels.controller.ts`
+- `findAll()` paginé, `findOne()`, `create()`, `update()`, `remove()`
+- Inclut `ageCategories` et `roomTypes` dans les réponses
 
 ---
 
-### S2-BE-002 : DTOs Hotels (validation complète)
+### ✅ S2-BE-002 : DTOs Hotels
 
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 2
 - **Branch :** `feature/S2-BE-002-hotels-dto`
 - **Commit :** `feat(hotels): add CreateHotelDto and UpdateHotelDto with validation`
-- **Description :**
-  - Créer `CreateHotelDto` avec class-validator
-  - Créer `UpdateHotelDto` (PartialType)
-  - Validations : code (unique), name (required), city, country
-- **Acceptance Criteria :**
-  - ✅ Validation fonctionne sur tous les champs
-  - ✅ Messages d'erreur clairs
-- **Files :**
-  - `apps/backend/src/hotels/dto/create-hotel.dto.ts`
-  - `apps/backend/src/hotels/dto/update-hotel.dto.ts`
 
 ---
 
-### S2-BE-003 : Endpoints Age Categories (sous-ressource)
+### ✅ S2-BE-003 : Endpoints Age Categories
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
 - **Branch :** `feature/S2-BE-003-age-categories`
 - **Commit :** `feat(hotels): add age categories CRUD endpoints`
-- **Description :**
-  - GET /hotels/:id/age-categories
-  - POST /hotels/:id/age-categories
-  - PUT /hotels/:id/age-categories/:catId
-  - DELETE /hotels/:id/age-categories/:catId
-  - Validation : minAge < maxAge, pas de chevauchement
-- **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation des âges
-  - ✅ Erreur si chevauchement de catégories
-- **Files :**
-  - `apps/backend/src/hotels/hotels.controller.ts`
-  - `apps/backend/src/hotels/hotels.service.ts`
+- Validation : minAge < maxAge, pas de chevauchement
+- Endpoints :
+
+```
+GET    /hotels/:id/age-categories
+POST   /hotels/:id/age-categories
+PATCH  /hotels/:id/age-categories/:catId
+DELETE /hotels/:id/age-categories/:catId
+```
 
 ---
 
-### S2-BE-004 : Endpoints Room Types (sous-ressource)
+### ✅ S2-BE-004 : Endpoints Room Types
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
 - **Branch :** `feature/S2-BE-004-room-types`
 - **Commit :** `feat(hotels): add room types CRUD endpoints`
-- **Description :**
-  - GET /hotels/:id/room-types
-  - POST /hotels/:id/room-types
-  - PUT /hotels/:id/room-types/:typeId
-  - DELETE /hotels/:id/room-types/:typeId
-  - Validation : maxAdults > 0, maxChildren >= 0
-- **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation des capacités
-- **Files :**
-  - `apps/backend/src/hotels/hotels.controller.ts`
-  - `apps/backend/src/hotels/hotels.service.ts`
+- Validation : code unique par hôtel, maxAdults >= 1
+- Endpoints :
+
+```
+GET    /hotels/:id/room-types
+POST   /hotels/:id/room-types
+PATCH  /hotels/:id/room-types/:typeId
+DELETE /hotels/:id/room-types/:typeId
+```
 
 ---
 
-### S2-BE-005 : Créer SeasonsModule
+### ✅ S2-BE-005 : SeasonsModule
+
+- **Branch :** `feature/S2-BE-005-seasons-module`
+- **Commit :** `feat(seasons): create seasons module with CRUD`
+- Validation : startDate < endDate
+- Endpoints :
+
+```
+GET    /seasons
+GET    /seasons/:id
+POST   /seasons
+PATCH  /seasons/:id
+DELETE /seasons/:id
+```
+
+---
+
+### ✅ S2-BE-006 : Indexes Prisma
+
+- **Status :** Déjà présents depuis S2-BE-000
+- Hotel: `@@index([tourOperatorId])`, `@@index([destination])`
+- Season: `@@index([tourOperatorId])`, `@@index([startDate, endDate])`
+
+---
+
+### ✅ S2-REFACTOR-BE-001 : Hotel Repository Pattern
+
+- **Commit :** `refactor(hotels): adopt Repository Pattern for Hotels, AgeCategory, RoomType`
+- `HotelRepository` interface + `PrismaHotelRepository`
+
+---
+
+### ✅ S2-REFACTOR-BE-004 : Season Repository Pattern
+
+- **Commit :** `refactor(seasons): adopt Repository Pattern for Seasons`
+- `ISeasonRepository` interface + `PrismaSeasonRepository`
+
+---
+
+### 🔲 S2-BE-007 : Refactor RoomType — RoomTypeCapacity
+
+- **Type :** Feature / Breaking Change
+- **Priority :** P0
+- **Branch :** `feature/S2-BE-007-room-type-capacity`
+- **Commit :** `feat(hotels): replace maxAdults/maxChildren with RoomTypeCapacity model`
+- **Description :**
+  - Supprimer `maxAdults` et `maxChildren` de `RoomType`
+  - Ajouter modèle `RoomTypeCapacity`
+  - Mettre à jour `CreateRoomTypeDto` / `UpdateRoomTypeDto`
+  - Mettre à jour `PrismaHotelRepository` — étendre `HOTEL_INCLUDE` avec `capacities`
+  - Mettre à jour `RoomType` dans `@runner/shared/types`
+
+```prisma
+model RoomTypeCapacity {
+  id            String      @id @default(cuid())
+  roomTypeId    String
+  ageCategoryId String
+  maxPax        Int
+  roomType      RoomType    @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  ageCategory   AgeCategory @relation(fields: [ageCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, ageCategoryId])
+}
+```
+
+- **Acceptance Criteria :**
+  - ✅ Migration appliquée sans erreur
+  - ✅ `RoomType` ne contient plus `maxAdults` / `maxChildren`
+  - ✅ `RoomType.capacities` disponible dans les réponses
+  - ✅ `@runner/shared/types` mis à jour
+- **Bloquant pour :** S2-BE-008, S2-FE-013
+
+---
+
+### 🔲 S2-BE-008 : RoomTypeCapacity endpoints
 
 - **Type :** Feature
 - **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S2-BE-005-seasons-module`
-- **Commit :** `feat(seasons): create seasons module with CRUD`
-- **Description :**
-  - Générer module : `nest g module seasons`
-  - Endpoints : GET, POST, PUT, DELETE /seasons
-  - Validation : startDate < endDate
-  - Vérification optionnelle : pas de chevauchement de dates
-  - Filtrage par tourOperatorId
-- **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation des dates
-  - ✅ Filtrage par tourOperatorId
-- **Files :**
-  - `apps/backend/src/seasons/seasons.module.ts`
-  - `apps/backend/src/seasons/seasons.controller.ts`
-  - `apps/backend/src/seasons/seasons.service.ts`
-  - `apps/backend/src/seasons/dto/create-season.dto.ts`
+- **Branch :** `feature/S2-BE-008-room-type-capacity-endpoints`
+- **Commit :** `feat(hotels): add room type capacity CRUD endpoints`
+- **Bloqué sur :** S2-BE-007
+- **Endpoints :**
+
+```
+POST   /hotels/:hotelId/room-types/:typeId/capacities
+PATCH  /hotels/:hotelId/room-types/:typeId/capacities/:capacityId
+DELETE /hotels/:hotelId/room-types/:typeId/capacities/:capacityId
+```
+
+- **DTOs :**
+  - `CreateRoomTypeCapacityDto { ageCategoryId: string, maxPax: number }`
+  - `UpdateRoomTypeCapacityDto { maxPax?: number }`
+- **Validation :**
+  - `maxPax >= 1`
+  - `ageCategoryId` doit appartenir au même hôtel
+- **Repository Pattern :** `IRoomTypeCapacityRepository` + `PrismaRoomTypeCapacityRepository`
 
 ---
 
-### S2-BE-006 : Indexes Prisma pour performance
+### 🔲 S2-BE-009 : Supprimer `order` de AgeCategory
 
-- **Type :** Enhancement
+- **Type :** Refactor
 - **Priority :** P1
-- **Story Points :** 1
-- **Branch :** `chore/S2-BE-006-prisma-indexes`
-- **Commit :** `perf(prisma): add indexes for hotels and seasons queries`
+- **Branch :** `refactor/S2-BE-009-remove-age-category-order`
+- **Commit :** `refactor(hotels): remove order field from AgeCategory, sort by minAge`
 - **Description :**
-  - Ajouter indexes sur :
-    - `hotels.tourOperatorId`
-    - `hotels.destination`
-    - `seasons.tourOperatorId`
-    - `seasons.startDate` et `endDate`
-  - Créer migration
+  - Migration Prisma : retirer le champ `order` du modèle `AgeCategory`
+  - Mettre à jour `CreateAgeCategoryDto` / `UpdateAgeCategoryDto` — retirer `order`
+  - Trier par `minAge ASC` dans `PrismaHotelRepository.findAgeCategories()`
+  - Mettre à jour `AgeCategory` dans `@runner/shared/types` — retirer `order`
 - **Acceptance Criteria :**
-  - ✅ Indexes créés dans la DB
   - ✅ Migration appliquée sans erreur
-- **Files :**
-  - `apps/backend/prisma/schema.prisma`
+  - ✅ `order` retiré de tous les DTOs et types
+  - ✅ GET `/hotels/:id/age-categories` retourne les catégories triées par `minAge ASC`
 
 ---
 
 ## Frontend Tasks
 
-### S2-FE-001 : Créer HotelsService
+### ✅ S2-FE-009 : Management Routes Setup
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
+- **Branch :** `feature/S2-FE-009-management-routes`
+- **Commit :** `feat(routing): setup management lazy-loaded routes with RoleGuard`
+- Routes : `/management/hotels`, `/management/seasons`
+- RoleGuard au niveau du groupe `management`
+
+---
+
+### ✅ S2-FE-001 : HotelsService
+
 - **Branch :** `feature/S2-FE-001-hotels-service`
-- **Commit :** `feat(hotels): create hotels service with API methods`
-- **Description :**
-  - Créer `features/hotels/services/hotels.service.ts`
-  - Utiliser **BehaviorSubject** (pas NgRx — réservé à l'auth)
-  - Méthodes : getHotels(), getHotel(id), createHotel(), updateHotel(), deleteHotel()
-  - Méthodes Age Categories et Room Types
-  - Cache simple avec flag `loaded`
-
-```typescript
-// ✅ Pattern BehaviorSubject correct
-@Injectable({ providedIn: 'root' })
-export class HotelsService {
-  private hotels$ = new BehaviorSubject<Hotel[]>([]);
-  private loaded = false;
-
-  getHotels(): Observable<Hotel[]> {
-    if (!this.loaded) this.loadHotels();
-    return this.hotels$.asObservable();
-  }
-
-  private loadHotels(): void {
-    this.http
-      .get<Hotel[]>(`${this.apiUrl}/hotels`)
-      .pipe(take(1)) // ✅ take(1) — évite les fuites mémoire
-      .subscribe({
-        next: (data) => {
-          this.hotels$.next(data);
-          this.loaded = true;
-        },
-        error: (err) => console.error('Failed to load hotels', err),
-      });
-  }
-
-  createHotel(hotel: Partial<Hotel>): Observable<Hotel> {
-    return this.http
-      .post<Hotel>(`${this.apiUrl}/hotels`, hotel)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  updateHotel(id: string, hotel: Partial<Hotel>): Observable<Hotel> {
-    return this.http
-      .put<Hotel>(`${this.apiUrl}/hotels/${id}`, hotel)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  deleteHotel(id: string): Observable<void> {
-    return this.http
-      .delete<void>(`${this.apiUrl}/hotels/${id}`)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  private refresh(): void {
-    this.loaded = false;
-    this.loadHotels();
-  }
-}
-```
-
-> **Pourquoi BehaviorSubject et pas NgRx ?**
-> Les données Hotels sont locales à la feature. NgRx est réservé
-> à l'auth (partagée partout, besoin de traçabilité globale).
-> BehaviorSubject est plus simple et suffisant pour un CRUD de feature.
-
-> **Pourquoi `take(1)` ?**
-> `subscribe()` dans un service sans `take(1)` = fuite mémoire potentielle.
-> `take(1)` se désabonne automatiquement après la première valeur.
-
-- **Acceptance Criteria :**
-  - ✅ Tous les appels API fonctionnels
-  - ✅ Cache évite les appels multiples
-  - ✅ Typage TypeScript correct
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/services/hotels.service.ts`
+- **Commit :** `feat(hotels): create hotels service with BehaviorSubject and API methods`
+- BehaviorSubject, loaded flag, refresh(), loading$
+- Méthodes : `getHotels()`, `getHotelById()`, `createHotel()`, `updateHotel()`, `deleteHotel()`
+- Méthodes Age Categories et Room Types incluses
 
 ---
 
-### S2-FE-002 : Créer HotelsList Component
+### ✅ S2-FE-002 : HotelsListComponent
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
 - **Branch :** `feature/S2-FE-002-hotels-list`
-- **Commit :** `feat(hotels): create hotels list component with search and pagination`
-- **Description :**
-  - Créer `features/hotels/components/hotels-list/`
-  - Tableau **PrimeNG `p-table`** avec colonnes : Code, Name, City, Destination, Actions
-  - Barre de recherche
-  - Pagination PrimeNG
-  - Boutons : Create, Edit, Delete, Manage Age Categories, Manage Room Types
-  - Données depuis `HotelsService` via `async pipe`
-- **Acceptance Criteria :**
-  - ✅ Liste affichée depuis le service
-  - ✅ Recherche fonctionne
-  - ✅ Pagination fonctionne
-  - ✅ Actions Edit/Delete fonctionnelles
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/components/hotels-list/hotels-list.component.ts`
-  - `apps/frontend/src/app/features/hotels/components/hotels-list/hotels-list.component.html`
+- **Commit :** `feat(hotels): implement hotels list component with p-table`
+- `p-table`, `toSignal()`, confirm delete avec avertissement si données liées
 
 ---
 
-### S2-FE-003 : Créer HotelForm Component (Create/Edit)
+### ✅ S2-FE-003 : HotelsFormComponent
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 4
-- **Branch :** `feature/S2-FE-003-hotel-form`
-- **Commit :** `feat(hotels): create hotel form component with validation`
-- **Description :**
-  - Créer `features/hotels/components/hotel-form/`
-  - **Reactive Form** avec validation (pas template-driven)
-  - Champs : code, name, city, country, region, destination, address, email, phone
-  - Mode Create / Edit
-  - PrimeNG `p-inputtext`, `p-button`
-  - Boutons : Cancel, Save
-- **Acceptance Criteria :**
-  - ✅ Formulaire valide avant submit
-  - ✅ Create fonctionne
-  - ✅ Edit pré-remplit les champs
-  - ✅ Messages de succès/erreur
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/components/hotel-form/hotel-form.component.ts`
-  - `apps/frontend/src/app/features/hotels/components/hotel-form/hotel-form.component.html`
+- **Branch :** `feature/S2-FE-003-hotels-form`
+- **Commit :** `feat(hotels): implement hotel form component for create and edit`
+- Tabs General / Configuration (Configuration uniquement en edit mode)
+- `withComponentInputBinding()` pour `hotelId` depuis route params
 
 ---
 
-### S2-FE-004 : Créer AgeCategoriesManager Component
+### ✅ S2-FE-004 : AgeCategoryDto + méthodes HotelsService
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S2-FE-004-age-categories`
-- **Commit :** `feat(hotels): create age categories manager component`
-- **Description :**
-  - Créer `features/hotels/components/age-categories-manager/`
-  - Liste des catégories avec **`p-table`** PrimeNG
-  - Boutons : Add, Edit, Delete
-  - Modal **`p-dialog`** PrimeNG pour ajouter/éditer
-  - Réordonnancement avec **`p-orderlist`** PrimeNG
-- **Acceptance Criteria :**
-  - ✅ Liste affichée
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation : minAge < maxAge
-  - ✅ Réordonnancement fonctionne
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/components/age-categories-manager/age-categories-manager.component.ts`
+- **Branch :** `feature/S2-FE-004-age-categories-service`
+- **Commit :** `feat(hotels): add age categories methods to HotelsService`
 
 ---
 
-### S2-FE-005 : Créer RoomTypesManager Component
+### ✅ S2-FE-005 : AgeCategoriesListComponent
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
-- **Branch :** `feature/S2-FE-005-room-types`
-- **Commit :** `feat(hotels): create room types manager component`
-- **Description :**
-  - Créer `features/hotels/components/room-types-manager/`
-  - Liste des types avec **`p-table`** PrimeNG
-  - Boutons : Add, Edit, Delete
-  - Modal **`p-dialog`** PrimeNG pour ajouter/éditer
-- **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation des capacités
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/components/room-types-manager/room-types-manager.component.ts`
+- **Branch :** `feature/S2-FE-005-age-categories-list`
+- **Commit :** `feat(hotels): implement age categories list component`
+- Tri par `minAge` côté frontend
+- Pas de search bar (trop peu de catégories)
 
 ---
 
-### S2-FE-006 : Créer SeasonsService
+### ✅ S2-FE-006 : AgeCategoriesFormComponent
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `feature/S2-FE-006-seasons-service`
+- **Branch :** `feature/S2-FE-006-age-categories-form`
+- **Commit :** `feat(hotels): implement age categories form component`
+- `open()`/`close()` via `viewChild` — évite conflit `[visible]` + `input()`
+- Delete dans le dialog
+- Validation `minAge < maxAge`
+
+---
+
+### ✅ S2-FE-007 : RoomTypes service methods
+
+- **Branch :** `feature/S2-FE-007-room-types-service`
+- **Commit :** `feat(hotels): add room types service methods and RoomTypeDto`
+- `RoomTypeDto { code, name }` — sans `maxAdults/maxChildren` (remplacés par `RoomTypeCapacity`)
+
+---
+
+### ✅ S2-FE-008 : RoomTypesListComponent
+
+- **Branch :** `feature/S2-FE-008-room-types-list`
+- **Commit :** `feat(hotels): implement room types list with confirm delete`
+- Colonnes : `code`, `name` (capacités à ajouter en S2-FE-013)
+- Search bar, confirm delete via `ConfirmationService`
+
+---
+
+### ✅ S2-FE-009 : RoomTypesFormComponent
+
+- **Branch :** `feature/S2-FE-009-room-types-form`
+- **Commit :** `feat(hotels): implement room types form component`
+- `open()`/`close()` — même pattern qu'AgeCategoriesFormComponent
+- Champs : `code`, `name`
+
+---
+
+### ✅ S2-FE-010 : SeasonsService
+
+- **Branch :** `feature/S2-FE-010-seasons-service`
 - **Commit :** `feat(seasons): create seasons service with BehaviorSubject`
-- **Description :**
-  - Créer `features/seasons/services/seasons.service.ts`
-  - Utiliser **BehaviorSubject** (pas NgRx)
-  - Méthodes : getSeasons(), create(), update(), delete()
-  - Cache simple avec flag `loaded`
-  - **`take(1)`** obligatoire sur tous les subscribe()
-
-```typescript
-@Injectable({ providedIn: 'root' })
-export class SeasonsService {
-  private seasons$ = new BehaviorSubject<Season[]>([]);
-  private loaded = false;
-  private readonly apiUrl = `${environment.apiUrl}/seasons`;
-  private readonly http = inject(HttpClient);
-
-  getSeasons(): Observable<Season[]> {
-    if (!this.loaded) this.loadSeasons();
-    return this.seasons$.asObservable();
-  }
-
-  private loadSeasons(): void {
-    this.http
-      .get<Season[]>(this.apiUrl)
-      .pipe(take(1))
-      .subscribe({
-        next: (data) => {
-          this.seasons$.next(data);
-          this.loaded = true;
-        },
-        error: (err) => console.error('Failed to load seasons', err),
-      });
-  }
-
-  create(season: Partial<Season>): Observable<Season> {
-    return this.http
-      .post<Season>(this.apiUrl, season)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  update(id: string, season: Partial<Season>): Observable<Season> {
-    return this.http
-      .put<Season>(`${this.apiUrl}/${id}`, season)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  delete(id: string): Observable<void> {
-    return this.http
-      .delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.refresh()));
-  }
-
-  private refresh(): void {
-    this.loaded = false;
-    this.loadSeasons();
-  }
-}
-```
-
-- **Acceptance Criteria :**
-  - ✅ Service fonctionnel
-  - ✅ Cache évite les appels API multiples
-  - ✅ Pas de fuite mémoire (take(1) sur tous les subscribe)
-- **Files :**
-  - `apps/frontend/src/app/features/seasons/services/seasons.service.ts`
+- Même pattern qu'HotelsService
 
 ---
 
-### S2-FE-007 : Créer SeasonsList Component
+### ✅ S2-FE-011 : SeasonsListComponent
+
+- **Branch :** `feature/S2-FE-011-seasons-list`
+- **Commit :** `feat(seasons): implement seasons list component`
+- `toSignal()`, dates formatées `dd MMM yyyy`
+- Row expand prévu pour les Periods (Sprint 3)
+
+---
+
+### ✅ S2-FE-012 : SeasonsFormComponent
+
+- **Branch :** `feature/S2-FE-012-seasons-form`
+- **Commit :** `feat(seasons): implement seasons form component`
+- `p-datepicker`, conversion `Date ↔ ISO string`
+- Validation `startDate < endDate` via cross-field validator
+
+---
+
+### 🔲 S2-FE-013 : RoomTypeCapacity — affichage et gestion
 
 - **Type :** Feature
 - **Priority :** P0
-- **Story Points :** 2
-- **Branch :** `feature/S2-FE-007-seasons-list`
-- **Commit :** `feat(seasons): create seasons list component`
+- **Branch :** `feature/S2-FE-013-room-type-capacity`
+- **Commit :** `feat(hotels): implement room type capacity management`
+- **Bloqué sur :** S2-BE-007, S2-BE-008
 - **Description :**
-  - Créer `features/seasons/components/seasons-list/`
-  - Tableau **`p-table`** PrimeNG : Name, Start Date, End Date, Actions
-  - Boutons : Create, Edit, Delete
+  - Dans `RoomTypesFormComponent`, ajouter un tableau de capacités par `AgeCategory`
+  - Pour chaque catégorie de l'hôtel, l'utilisateur définit un `maxPax`
+  - UI : tableau inline dans le dialog, pas de nouveau dialog
+  - Charger les `AgeCategory` de l'hôtel dynamiquement
+  - Appeler les nouveaux endpoints capacity au submit
 - **Acceptance Criteria :**
-  - ✅ Liste affichée
-  - ✅ CRUD fonctionnel
-- **Files :**
-  - `apps/frontend/src/app/features/seasons/components/seasons-list/seasons-list.component.ts`
+  - ✅ Capacités affichées dans le form room type
+  - ✅ Create/update capacités via les nouveaux endpoints
+  - ✅ AgeCategories de l'hôtel chargées dynamiquement
+  - ✅ No any, strict TypeScript
 
 ---
 
-### S2-FE-008 : Créer SeasonForm Component
+## File Structure Frontend
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
-- **Branch :** `feature/S2-FE-008-season-form`
-- **Commit :** `feat(seasons): create season form component`
-- **Description :**
-  - Créer `features/seasons/components/season-form/`
-  - **Reactive Form** : name, startDate, endDate
-  - Validation : startDate < endDate
-  - **`p-datepicker`** PrimeNG
-- **Acceptance Criteria :**
-  - ✅ Formulaire valide
-  - ✅ Create/Edit fonctionnent
-- **Files :**
-  - `apps/frontend/src/app/features/seasons/components/season-form/season-form.component.ts`
-
----
-
-### S2-FE-009 : Configurer les routes Hotels & Seasons
-
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `chore/S2-FE-009-routes`
-- **Commit :** `chore(routing): add hotels and seasons routes with guards`
-- **Description :**
-  - Créer `features/hotels/hotels.routes.ts`
-  - Créer `features/seasons/seasons.routes.ts`
-  - Protéger avec `AuthGuard` + `RoleGuard`
-  - Hotels : ADMIN, MANAGER
-  - Seasons : ADMIN, MANAGER
-  - Lazy loading via `loadComponent`
-  - Ajouter items dans la Sidebar
-
-```typescript
-// hotels.routes.ts
-export const hotelsRoutes: Routes = [
-  {
-    path: '',
-    loadComponent: () =>
-      import('./components/hotels-list/hotels-list.component').then(
-        (m) => m.HotelsListComponent
-      ),
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-  },
-  {
-    path: 'new',
-    loadComponent: () =>
-      import('./components/hotel-form/hotel-form.component').then(
-        (m) => m.HotelFormComponent
-      ),
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-  },
-  {
-    path: ':id/edit',
-    loadComponent: () =>
-      import('./components/hotel-form/hotel-form.component').then(
-        (m) => m.HotelFormComponent
-      ),
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-  },
-];
+```
+apps/frontend/src/
+├── styles/
+│   └── _forms.scss                        — styles partagés (form-page, form-header, form-row, field, dialog-footer...)
+└── app/
+    └── features/
+        └── management/
+            ├── hotels/
+            │   ├── age-categories/
+            │   │   ├── age-categories-form/
+            │   │   │   ├── age-categories-form.component.ts
+            │   │   │   ├── age-categories-form.component.html
+            │   │   │   └── age-categories-form.component.scss
+            │   │   └── age-categories-list/
+            │   │       ├── age-categories-list.component.ts
+            │   │       ├── age-categories-list.component.html
+            │   │       └── age-categories-list.component.scss
+            │   ├── hotels-form/
+            │   │   ├── hotels-form.component.ts
+            │   │   ├── hotels-form.component.html
+            │   │   └── hotels-form.component.scss
+            │   ├── hotels-list/
+            │   │   ├── hotels-list.component.ts
+            │   │   ├── hotels-list.component.html
+            │   │   └── hotels-list.component.scss
+            │   ├── room-types/
+            │   │   ├── room-types-form/
+            │   │   │   ├── room-types-form.component.ts
+            │   │   │   ├── room-types-form.component.html
+            │   │   │   └── room-types-form.component.scss
+            │   │   └── room-types-list/
+            │   │       ├── room-types-list.component.ts
+            │   │       ├── room-types-list.component.html
+            │   │       └── room-types-list.component.scss
+            │   └── hotels.service.ts
+            └── seasons/
+                ├── seasons-form/
+                │   ├── seasons-form.component.ts
+                │   ├── seasons-form.component.html
+                │   └── seasons-form.component.scss
+                ├── seasons-list/
+                │   ├── seasons-list.component.ts
+                │   ├── seasons-list.component.html
+                │   └── seasons-list.component.scss
+                └── seasons.service.ts
 ```
 
-- **Acceptance Criteria :**
-  - ✅ Routes accessibles avec les bons rôles
-  - ✅ AGENT redirigé vers /dashboard si accès non autorisé
-  - ✅ Lazy loading fonctionne
-  - ✅ Items ajoutés dans la Sidebar
-- **Files :**
-  - `apps/frontend/src/app/features/hotels/hotels.routes.ts`
-  - `apps/frontend/src/app/features/seasons/seasons.routes.ts`
-  - `apps/frontend/src/app/app.routes.ts`
-  - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.ts`
+---
+
+## File Structure Backend
+
+```
+apps/backend/src/
+├── common/
+│   └── repository.types.ts              — RepositoryResult enum
+├── hotels/
+│   ├── dto/
+│   │   ├── create-hotel.dto.ts
+│   │   ├── update-hotel.dto.ts
+│   │   ├── create-age-category.dto.ts
+│   │   ├── update-age-category.dto.ts
+│   │   ├── create-room-type.dto.ts
+│   │   └── update-room-type.dto.ts
+│   ├── repositories/
+│   │   ├── hotel.repository.ts          — interface HotelRepository
+│   │   └── prisma-hotel.repository.ts   — PrismaHotelRepository
+│   ├── hotels.constants.ts              — HOTEL_REPOSITORY token
+│   ├── hotels.types.ts                  — HotelDetail, HotelQuery
+│   ├── hotels.controller.ts
+│   ├── hotels.service.ts
+│   └── hotels.module.ts
+└── seasons/
+    ├── dto/
+    │   ├── create-season.dto.ts
+    │   └── update-season.dto.ts
+    ├── repositories/
+    │   ├── season.repository.ts          — ISeasonRepository interface
+    │   └── prisma-season.repository.ts   — PrismaSeasonRepository
+    ├── seasons.constants.ts
+    ├── seasons.types.ts                  — SeasonQuery
+    ├── seasons.controller.ts
+    ├── seasons.service.ts
+    └── seasons.module.ts
+
+libs/shared/types/src/
+├── lib/
+│   └── types.ts    — Hotel, AgeCategory, RoomType, RoomTypeDto, Season, SeasonDto, AgeCategoryDto, PaginatedResult<T>, PaginationParams, HotelDto
+└── index.ts
+```
 
 ---
 
-## Definition of Done - Sprint 2
+## Prisma Schema State
 
-### Backend
+```prisma
+model User          — id, email, passwordHash, firstName, lastName, role, tourOperatorId, refreshTokens[]
+model Hotel         — id, code(@unique), name, city, country, region?, destination?, address?, email?, phone?, tourOperatorId, ageCategories[], roomTypes[]
+model AgeCategory   — id, name, minAge, maxAge, hotelId (cascade delete) — order supprimé (S2-BE-009)
+model RoomType      — id, name, code, hotelId, capacities[] (cascade delete) — maxAdults/maxChildren supprimés (S2-BE-007)
+model RoomTypeCapacity — id, roomTypeId, ageCategoryId, maxPax @@unique([roomTypeId, ageCategoryId]) — (S2-BE-007)
+model Season        — id, name, startDate, endDate, tourOperatorId @@unique([tourOperatorId, name])
+model RefreshToken  — id, token(@unique), userId, expiresAt
+
+Indexes:
+  Hotel: @@index([tourOperatorId]), @@index([destination])
+  Season: @@index([tourOperatorId]), @@index([startDate, endDate])
+```
+
+---
+
+## Available Endpoints
+
+### Hotels
+
+```
+GET    /hotels                              — paginated { data, total, limit, offset }
+GET    /hotels/:id                          — detail with ageCategories + roomTypes
+POST   /hotels                              — create (201)
+PATCH  /hotels/:id                          — update
+DELETE /hotels/:id                          — delete (204)
+
+GET    /hotels/:id/age-categories           — list sorted by minAge ASC
+POST   /hotels/:id/age-categories           — create with overlap validation
+PATCH  /hotels/:id/age-categories/:catId
+DELETE /hotels/:id/age-categories/:catId    — (204)
+
+GET    /hotels/:id/room-types
+POST   /hotels/:id/room-types               — create with code uniqueness validation
+PATCH  /hotels/:id/room-types/:typeId
+DELETE /hotels/:id/room-types/:typeId       — (204)
+
+POST   /hotels/:hotelId/room-types/:typeId/capacities         — (S2-BE-008)
+PATCH  /hotels/:hotelId/room-types/:typeId/capacities/:id     — (S2-BE-008)
+DELETE /hotels/:hotelId/room-types/:typeId/capacities/:id     — (S2-BE-008)
+```
+
+### Seasons
+
+```
+GET    /seasons
+GET    /seasons/:id
+POST   /seasons           — create (201)
+PATCH  /seasons/:id
+DELETE /seasons/:id       — (204)
+```
+
+---
+
+## Test Data
+
+```
+Hotel: cmobxqdno00026da758zr27eh (Hotel Tropicana)
+  AgeCategories: Bébé(0-2), Enfant(3-11), Adulte(12-99)
+  RoomTypes: SGL(1 adult), DBL(2 adults), FAM(2 adults + 2 children)
+
+Seasons:
+  Été 2026: 2026-06-01 → 2026-08-31
+  Hiver 2026: 2026-12-01 → 2027-02-28
+  Pâques 2026: 2026-04-01 → 2026-04-30
+```
+
+---
+
+## Definition of Done — Sprint 2
+
+### Backend ✅
 
 - ✅ CRUD hôtel complet avec validation
-- ✅ Age categories gérées par hôtel (CRUD)
-- ✅ Room types gérés par hôtel (CRUD)
+- ✅ Age categories gérées par hôtel (CRUD + overlap validation)
+- ✅ Room types gérés par hôtel (CRUD + code uniqueness)
 - ✅ CRUD seasons complet avec validation dates
 - ✅ Indexes Prisma pour performance
-- ✅ HTTP 401/403/404 retournés correctement (jamais `{ error }` avec HTTP 200)
+- ✅ Repository Pattern adopté sur tous les modules
+- ✅ HTTP 401/403/404 retournés correctement
+- 🔲 RoomTypeCapacity (S2-BE-007, S2-BE-008)
+- 🔲 Suppression order AgeCategory (S2-BE-009)
 
-### Frontend
+### Frontend ✅
 
-- ✅ Liste des hôtels avec recherche et pagination (p-table)
-- ✅ Formulaire création/édition hôtel (Reactive Forms + PrimeNG)
-- ✅ Gestionnaire Age Categories (p-orderlist pour drag & drop)
-- ✅ Gestionnaire Room Types
-- ✅ CRUD seasons complet
-- ✅ Routes protégées selon rôles
-- ✅ BehaviorSubject pour Hotels et Seasons (pas NgRx)
-- ✅ `take(1)` sur tous les subscribe() dans les services
+- ✅ Liste hôtels avec search et confirm delete
+- ✅ Formulaire hôtel create/edit avec tabs General/Configuration
+- ✅ Age Categories : list + form dans dialog (open/close via viewChild)
+- ✅ Room Types : list + form dans dialog
+- ✅ CRUD seasons complet avec validation dates
+- ✅ Routes protégées par RoleGuard
+- ✅ BehaviorSubject pour Hotels et Seasons
+- ✅ toSignal() dans les composants liste
+- ✅ \_forms.scss partagé
+- 🔲 RoomTypeCapacity UI (S2-FE-013)
 
-### Intégration
-
-- ✅ Toutes les actions CRUD fonctionnent end-to-end
-- ✅ Validation frontend + backend
-- ✅ Messages de succès/erreur
-
----
-
-## Convention commits Sprint 2
+### Convention commits Sprint 2
 
 ```
+chore(nx): create shared types library
+chore(prisma): add Hotel, AgeCategory, RoomType, Season models
 feat(hotels): implement complete CRUD with validation
 feat(hotels): add age categories CRUD endpoints
 feat(hotels): add room types CRUD endpoints
 feat(seasons): create seasons module with CRUD
-perf(prisma): add indexes for hotels and seasons queries
-feat(hotels): create hotels service with BehaviorSubject
-feat(hotels): create hotels list component
-feat(hotels): create hotel form component
-feat(hotels): create age categories manager component
-feat(hotels): create room types manager component
+feat(hotels): create hotels service with BehaviorSubject and API methods
+feat(hotels): implement hotels list component with p-table
+feat(hotels): implement hotel form component for create and edit
+feat(hotels): add age categories methods to HotelsService
+feat(hotels): implement age categories list component
+feat(hotels): implement age categories form component
+feat(hotels): add room types service methods and RoomTypeDto
+feat(hotels): implement room types list with confirm delete
+feat(hotels): implement room types form component
 feat(seasons): create seasons service with BehaviorSubject
-feat(seasons): create seasons list component
-feat(seasons): create season form component
-chore(routing): add hotels and seasons routes with guards
+feat(seasons): implement seasons list component
+feat(seasons): implement seasons form component
+refactor(styles): extract shared form styles to _forms.scss
+feat(hotels): replace maxAdults/maxChildren with RoomTypeCapacity model
+feat(hotels): add room type capacity CRUD endpoints
+refactor(hotels): remove order field from AgeCategory, sort by minAge
+feat(hotels): implement room type capacity management
 ```
-
----
-
-## Dépendances
-
-- Sprint 0 ✅ et Sprint 1 ✅ doivent être terminés
-
----
-
-## Risques
-
-| Risque                          | Mitigation                              |
-| ------------------------------- | --------------------------------------- |
-| Validation âges chevauchement   | Tester avec différents cas edge         |
-| Réordonnancement Age Categories | Utiliser p-orderlist PrimeNG            |
-| Cache BehaviorSubject périmé    | Appeler refresh() après chaque mutation |

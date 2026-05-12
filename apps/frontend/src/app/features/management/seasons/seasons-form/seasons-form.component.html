@@ -1,0 +1,78 @@
+<div class="form-page">
+  <div class="form-header">
+    <div>
+      <h2 class="form-title">
+        {{ isEditMode() ? 'Edit Season' : 'New Season' }}
+      </h2>
+      <p class="form-subtitle">
+        {{
+          isEditMode()
+            ? 'Update season information'
+            : 'Add a new season to your portfolio'
+        }}
+      </p>
+    </div>
+    <div class="form-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancel()"
+      />
+      <p-button
+        (onClick)="submit()"
+        [label]="isEditMode() ? 'Save changes' : 'Create season'"
+        [loading]="isSubmitting()"
+      />
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <p class="section-label">General</p>
+    <div class="field">
+      <label for="name">Name <span class="required">*</span></label>
+      <input pInputText id="name" formControlName="name" class="w-full" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="error">Name is required</small>
+      }
+    </div>
+
+    <p class="section-label">Period</p>
+    <div class="form-row">
+      <div class="field">
+        <label for="startDate"
+          >Start Date <span class="required">*</span></label
+        >
+        <p-datepicker
+          inputId="startDate"
+          formControlName="startDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          class="w-full"
+        />
+        @if (
+          form.controls.startDate.invalid && form.controls.startDate.touched
+        ) {
+          <small class="error">Start date is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="endDate">End Date <span class="required">*</span></label>
+        <p-datepicker
+          inputId="endDate"
+          formControlName="endDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          class="w-full"
+        />
+        @if (form.controls.endDate.invalid && form.controls.endDate.touched) {
+          <small class="error">End date is required</small>
+        }
+      </div>
+    </div>
+
+    @if (form.errors?.['dateRange'] && form.touched) {
+      <small class="error">End date must be after start date</small>
+    }
+  </form>
+</div>

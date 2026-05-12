@@ -15,7 +15,6 @@ Auth complète avec refresh token cookie httpOnly + layout de l'application (She
 ### S1-BE-001 : RolesGuard + décorateurs
 
 - **Type :** Feature
-- **Status :** ✅ Done
 - **Priority :** P0
 - **Story Points :** 1
 - **Branch :** `feature/S1-BE-001-roles-guard`
@@ -47,6 +46,7 @@ export class RolesGuard implements CanActivate {
 export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ```
 
+  - **Status :** ✅ Done
 - **Acceptance Criteria :**
   - ✅ Guard fonctionne avec 1 ou plusieurs rôles
   - ✅ HTTP 403 si rôle insuffisant
@@ -59,7 +59,6 @@ export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ### S1-BE-002 : Endpoint GET /auth/me _(P2 — optionnel)_
 
 - **Type :** Feature
-- **Status :** Skipped
 - **Priority :** P2
 - **Story Points :** 1
 - **Branch :** `feature/S1-BE-002-auth-me`
@@ -106,7 +105,7 @@ Look at S1-BE-005
 
 ### S1-BE-004 : Seed data utilisateurs _(déjà fait en S0-BE-007)_
 
-- **Status :** ✅ Done (S0-BE-006)
+- **Status :** ✅ Done (S0-BE-007)
 - **Note :** `ROLES_KEY` extrait en constante exportée dans le décorateur — légèrement différent du snippet du doc mais fonctionnellement identique.
 
 ---
@@ -161,6 +160,25 @@ Look at S1-BE-005
 - `apps/backend/src/auth/strategies/jwt.strategy.ts`
 - `apps/backend/prisma/schema.prisma`
 - `apps/backend/src/main.ts`
+
+---
+
+### S1-DOCS-BE-006 : Add tourOperatorId to JWT payload and fix token expiry
+
+- **Type :** Fix
+- **Priority :** P0
+- **Branch :** `fix/S1-DOCS-BE-006-jwt-tour-operator`
+- **Commit :** `fix(auth): add tourOperatorId to JWT payload and set token expiry 1h/24h`
+- **Description :**
+  - `tourOperatorId` manquant dans le payload JWT — découvert lors de S2-BE-001
+  - Access token expirait en 15min au lieu de 1h
+  - Cookie `access_token` avait un `maxAge` de 15min au lieu de 1h
+- **Files :**
+  - `apps/backend/src/auth/strategies/jwt.strategy.ts`
+  - `apps/backend/src/auth/auth.service.ts`
+  - `apps/backend/src/auth/types/jwt-user.type.ts`
+  - `apps/backend/src/auth/auth.controller.ts`
+- **Status :** ✅ Done
 
 ---
 
@@ -549,7 +567,7 @@ return next(authReq).pipe(
 - **Files :**
   - `apps/frontend/src/app/core/shell/header/header.component.ts`
   - `apps/frontend/src/app/core/shell/header/header.component.html`
-- **Status :** ⏳ À faire
+- **Status :** ✅ Done
 
 ---
 

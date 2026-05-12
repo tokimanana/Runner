@@ -17,7 +17,8 @@
     "types": ["jest", "node"],
     "paths": {
       "@backend/*": ["apps/backend/src/*"],
-      "@frontend/*": ["apps/frontend/src/*"]
+      "@frontend/*": ["apps/frontend/src/*"],
+      "@runner/shared/types": ["libs/shared/types/src/index.ts"],
     }
   },
   "angularCompilerOptions": {

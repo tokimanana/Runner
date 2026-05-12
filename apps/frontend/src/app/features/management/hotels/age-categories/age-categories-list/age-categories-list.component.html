@@ -1,0 +1,76 @@
+<div class="age-categories">
+  <div class="age-categories__header">
+    <div>
+      <h2 class="age-categories__title">Age Categories</h2>
+      <p class="age-categories__subtitle">
+        Manage pricing demographics for hotel configurations.
+      </p>
+    </div>
+    <p-button
+      label="Add Category"
+      icon="pi pi-plus"
+      [outlined]="true"
+      (onClick)="addCategory.emit()"
+      [disabled]="loading()"
+    />
+  </div>
+
+  <p-table
+    [value]="categories()"
+    [loading]="loading()"
+    styleClass="p-datatable-sm"
+    [tableStyle]="{ 'min-width': '30rem' }"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>Min Age</th>
+        <th>Max Age</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-category>
+      <tr>
+        <td class="font-medium">{{ category.name }}</td>
+        <td>{{ category.minAge }}</td>
+        <td>{{ category.maxAge }}</td>
+        <td>
+          <div class="flex justify-content-end">
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              (onClick)="editCategory.emit(category)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+      <tr>
+        <td colspan="4" class="age-categories__footer">
+          Showing {{ categories().length }} categor{{
+            categories().length === 1 ? 'y' : 'ies'
+          }}
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <tr>
+        <td colspan="4">
+          <div
+            class="flex flex-column align-items-center gap-2 py-5 text-color-secondary"
+          >
+            <i class="pi pi-inbox text-4xl"></i>
+            <span>No age categories found.</span>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

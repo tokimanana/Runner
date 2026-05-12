@@ -119,13 +119,13 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/runner"
 JWT_SECRET="dev-secret-key"
 ```
 
-**Commands — toujours depuis `apps/backend/` :**
+**Commands - Depuis la racine du monorepo:**
 
 ```bash
-cd apps/backend
-npx prisma migrate dev --name init --config prisma.config.ts
-npx prisma generate --config prisma.config.ts
-npx prisma studio --config prisma.config.ts
+npx prisma migrate dev --name <nom> --schema prisma/schema.prisma
+npx prisma generate --schema prisma/schema.prisma
+npx prisma db seed --schema prisma/schema.prisma
+npx prisma studio --schema prisma/schema.prisma
 ```
 
 > **Règle :** après chaque modification du schema → `migrate dev` puis `generate`. `generated/` est gitignored.
@@ -581,11 +581,11 @@ docker compose up -d postgres pgadmin
 cd apps/backend
 nx serve backend
 
-# Prisma (depuis apps/backend/)
-npx prisma migrate dev --config prisma.config.ts
-npx prisma generate --config prisma.config.ts
-npx prisma db seed --config prisma.config.ts
-npx prisma studio --config prisma.config.ts
+# Depuis la racine du monorepo
+npx prisma migrate dev --name <nom> --schema prisma/schema.prisma
+npx prisma generate --schema prisma/schema.prisma
+npx prisma db seed --schema prisma/schema.prisma
+npx prisma studio --schema prisma/schema.prisma
 
 # Frontend
 nx serve frontend
