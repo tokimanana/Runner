@@ -1,6 +1,5 @@
 <p-dialog
-  [visible]="visible()"
-  (visibleChange)="visible.set($event)"
+  [visible]="dialogState().visible"
   [header]="isEditMode() ? 'Edit Age Category' : 'Add Age Category'"
   [modal]="true"
   [draggable]="false"
@@ -71,7 +70,7 @@
         <p-button
           type="submit"
           [label]="isEditMode() ? 'Save Changes' : 'Create'"
-          [loading]="isSubmitting()"
+          [loading]="dialogState().submitting"
           (onClick)="submit()"
         />
       </div>
