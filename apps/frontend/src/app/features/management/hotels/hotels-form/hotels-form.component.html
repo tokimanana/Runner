@@ -161,6 +161,12 @@
             (editCategory)="onEditCategory($event)"
           />
 
+          <app-age-categories-form
+            [hotelId]="hotelId()!"
+            (saved)="onCategorySaved()"
+            (cancelled)="categoriesForm()?.close()"
+          />
+
           <app-room-types-form
             [hotelId]="hotelId()!"
             [ageCategories]="ageCategories()"
@@ -173,7 +179,6 @@
             (editRoom)="onEditRoom($event)"
           />
 
-          <app-room-types-form [hotelId]="hotelId()!" (saved)="onRoomSaved()" />
         </p-tabpanel>
       }
     </p-tabpanels>

@@ -61,7 +61,7 @@ export class RoomTypesFormComponent {
   readonly isEditMode = computed(() => !!this._roomType());
   readonly isSubmitting = signal(false);
   readonly recentlySaved = signal(new Set<string>());
-  visible = false;
+  readonly visible = signal(false);
 
   readonly capacityRows = signal<CapacityRow[]>([]);
 
@@ -101,12 +101,12 @@ export class RoomTypesFormComponent {
 
   open(room?: RoomType): void {
     this._roomType.set(room);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
     this._suppressCancelledOnHide = true;
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 

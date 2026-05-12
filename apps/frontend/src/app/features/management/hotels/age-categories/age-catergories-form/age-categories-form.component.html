@@ -1,5 +1,6 @@
 <p-dialog
-  [(visible)]="visible"
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
   [header]="isEditMode() ? 'Edit Age Category' : 'Add Age Category'"
   [modal]="true"
   [draggable]="false"

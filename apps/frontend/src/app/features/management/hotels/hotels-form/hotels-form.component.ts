@@ -34,6 +34,7 @@ import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-type
     Button,
     TabsModule,
     AgeCategoriesListComponent,
+    AgeCategoriesFormComponent,
     RoomTypesListComponent,
     RoomTypesFormComponent,
   ],

@@ -1,5 +1,6 @@
 <p-dialog
-  [(visible)]="visible"
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
   [header]="isEditMode() ? 'Edit Room Type' : 'Add Room Type'"
   [modal]="true"
   [draggable]="false"

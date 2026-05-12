@@ -45,7 +45,7 @@ export class AgeCategoriesFormComponent {
   protected readonly _category = signal<AgeCategory | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._category());
   readonly isSubmitting = signal(false);
-  visible = false;
+  readonly visible = signal(false);
 
   private _suppressCancelledOnHide = false;
 
@@ -75,12 +75,12 @@ export class AgeCategoriesFormComponent {
 
   open(category?: AgeCategory): void {
     this._category.set(category);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
     this._suppressCancelledOnHide = true;
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 
