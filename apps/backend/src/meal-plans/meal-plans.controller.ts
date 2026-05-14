@@ -1,3 +1,6 @@
+import { Roles } from '@backend/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '@backend/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@backend/auth/guards/roles.guard';
 import { RequestWithUser } from '@backend/auth/types/jwt-user.type';
 import {
   Body,
@@ -11,13 +14,17 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { CreateMealPlanDto } from './dto/create-meal-plan.dto';
 import { UpdateMealPlanDto } from './dto/update-meal-plan.dto';
 import { MealPlansService } from './meal-plans.service';
 import { MealPlanQuery } from './meal-plans.type';
 
 @Controller('meal-plans')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.MANAGER)
 export class MealPlansController {
   constructor(private readonly mealPlansService: MealPlansService) {}
 
