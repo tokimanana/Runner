@@ -113,3 +113,15 @@ model MealPlan {
   @@unique([tourOperatorId, code])
   @@index([tourOperatorId])
 }
+
+model Market {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+}
