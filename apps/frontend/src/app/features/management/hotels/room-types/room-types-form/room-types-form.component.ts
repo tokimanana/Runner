@@ -28,12 +28,23 @@ import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
+export enum CapacityRowState {
+  Idle = 'idle',
+  Editing = 'editing',
+  Saving = 'saving',
+  Saved = 'saved',
+}
+
+interface DialogState {
+  visible: boolean;
+  submitting: boolean;
+}
+
 interface CapacityRow {
   ageCategory: AgeCategory;
   capacity: RoomTypeCapacity | null;
   maxPax: FormControl<number>;
-  saving: boolean;
-  editing: boolean;
+  state: ReturnType<typeof signal<CapacityRowState>>;
 }
 
 @Component({
@@ -59,19 +70,22 @@ export class RoomTypesFormComponent {
 
   protected readonly _roomType = signal<RoomType | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._roomType());
-  readonly isSubmitting = signal(false);
-  readonly recentlySaved = signal(new Set<string>());
-  visible = false;
 
+  readonly dialogState = signal<DialogState>({
+    visible: false,
+    submitting: false,
+  });
   readonly capacityRows = signal<CapacityRow[]>([]);
 
   readonly configuredRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity !== null)
   );
-
   readonly availableRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity === null)
   );
+
+  // Expose enum to template
+  readonly CapacityRowState = CapacityRowState;
 
   private _suppressCancelledOnHide = false;
 
@@ -101,12 +115,12 @@ export class RoomTypesFormComponent {
 
   open(room?: RoomType): void {
     this._roomType.set(room);
-    this.visible = true;
+    this.dialogState.set({ visible: true, submitting: false });
   }
 
   close(): void {
     this._suppressCancelledOnHide = true;
-    this.visible = false;
+    this.dialogState.update((s) => ({ ...s, visible: false }));
     this._reset();
   }
 
@@ -126,7 +140,7 @@ export class RoomTypesFormComponent {
     const dto: RoomTypeDto = { name, code };
     const room = this._roomType();
 
-    this.isSubmitting.set(true);
+    this.dialogState.update((s) => ({ ...s, submitting: true }));
 
     if (room) {
       this.hotelsService
@@ -134,11 +148,12 @@ export class RoomTypesFormComponent {
         .pipe(take(1))
         .subscribe({
           next: () => {
-            this.isSubmitting.set(false);
+            this.dialogState.update((s) => ({ ...s, submitting: false }));
             this.close();
             this.saved.emit();
           },
-          error: () => this.isSubmitting.set(false),
+          error: () =>
+            this.dialogState.update((s) => ({ ...s, submitting: false })),
         });
     } else {
       this.hotelsService
@@ -146,26 +161,30 @@ export class RoomTypesFormComponent {
         .pipe(take(1))
         .subscribe({
           next: (created) => {
-            this.isSubmitting.set(false);
+            this.dialogState.update((s) => ({ ...s, submitting: false }));
             this._roomType.set(created);
             this._buildCapacityRows(created);
           },
-          error: () => this.isSubmitting.set(false),
+          error: () =>
+            this.dialogState.update((s) => ({ ...s, submitting: false })),
         });
     }
   }
 
   enableEditing(row: CapacityRow): void {
-    row.editing = true;
-    this.capacityRows.set([...this.capacityRows()]);
+    row.state.set(CapacityRowState.Editing);
+  }
+
+  cancelEdit(row: CapacityRow): void {
+    row.maxPax.setValue(row.capacity?.maxPax ?? 1);
+    row.state.set(CapacityRowState.Idle);
   }
 
   saveCapacity(row: CapacityRow): void {
     const room = this._roomType();
     if (!room || row.maxPax.invalid) return;
 
-    row.saving = true;
-    this.capacityRows.set([...this.capacityRows()]);
+    row.state.set(CapacityRowState.Saving);
     const maxPax = row.maxPax.value;
 
     if (row.capacity) {
@@ -177,24 +196,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (updated) => {
             row.capacity = updated;
-            row.saving = false;
-            row.editing = false;
-            this.capacityRows.set([...this.capacityRows()]);
-
-            const id = row.ageCategory.id;
-            this.recentlySaved.update((s) => new Set(s).add(id));
-            setTimeout(() => {
-              this.recentlySaved.update((s) => {
-                const n = new Set(s);
-                n.delete(id);
-                return n;
-              });
-            }, 2000);
+            row.state.set(CapacityRowState.Saved);
+            setTimeout(() => row.state.set(CapacityRowState.Idle), 2000);
           },
-          error: () => {
-            row.saving = false;
-            this.capacityRows.set([...this.capacityRows()]);
-          },
+          error: () => row.state.set(CapacityRowState.Editing),
         });
     } else {
       const dto: RoomTypeCapacityDto = {
@@ -207,14 +212,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (created) => {
             row.capacity = created;
-            row.saving = false;
-            row.editing = false;
+            row.state.set(CapacityRowState.Idle);
             this.capacityRows.set([...this.capacityRows()]);
           },
-          error: () => {
-            row.saving = false;
-            this.capacityRows.set([...this.capacityRows()]);
-          },
+          error: () => row.state.set(CapacityRowState.Idle),
         });
     }
   }
@@ -230,7 +231,7 @@ export class RoomTypesFormComponent {
         next: () => {
           row.capacity = null;
           row.maxPax.setValue(1);
-          row.editing = false;
+          row.state.set(CapacityRowState.Idle);
           this.capacityRows.set([...this.capacityRows()]);
         },
       });
@@ -251,12 +252,6 @@ export class RoomTypesFormComponent {
       });
   }
 
-  cancelEdit(row: CapacityRow): void {
-    row.maxPax.setValue(row.capacity?.maxPax ?? 1);
-    row.editing = false;
-    this.capacityRows.set([...this.capacityRows()]);
-  }
-
   private _buildCapacityRows(room: RoomType): void {
     const rows = this.ageCategories().map((cat) => {
       const existing =
@@ -268,8 +263,7 @@ export class RoomTypesFormComponent {
           validators: [Validators.required, Validators.min(1)],
           nonNullable: true,
         }),
-        saving: false,
-        editing: false,
+        state: signal(CapacityRowState.Idle),
       };
     });
     this.capacityRows.set(rows);

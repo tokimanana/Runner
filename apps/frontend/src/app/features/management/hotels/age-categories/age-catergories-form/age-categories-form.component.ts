@@ -22,6 +22,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
+interface DialogState {
+  visible: boolean;
+  submitting: boolean;
+}
+
 @Component({
   selector: 'app-age-categories-form',
   imports: [
@@ -44,8 +49,11 @@ export class AgeCategoriesFormComponent {
 
   protected readonly _category = signal<AgeCategory | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._category());
-  readonly isSubmitting = signal(false);
-  visible = false;
+
+  readonly dialogState = signal<DialogState>({
+    visible: false,
+    submitting: false,
+  });
 
   private _suppressCancelledOnHide = false;
 
@@ -75,12 +83,12 @@ export class AgeCategoriesFormComponent {
 
   open(category?: AgeCategory): void {
     this._category.set(category);
-    this.visible = true;
+    this.dialogState.set({ visible: true, submitting: false });
   }
 
   close(): void {
     this._suppressCancelledOnHide = true;
-    this.visible = false;
+    this.dialogState.update((s) => ({ ...s, visible: false }));
     this._reset();
   }
 
@@ -100,7 +108,7 @@ export class AgeCategoriesFormComponent {
     const dto: AgeCategoryDto = { name, minAge: minAge!, maxAge: maxAge! };
     const category = this._category();
 
-    this.isSubmitting.set(true);
+    this.dialogState.update((s) => ({ ...s, submitting: true }));
 
     const request$ = category
       ? this.hotelsService.updateAgeCategory(this.hotelId(), category.id, dto)
@@ -108,10 +116,11 @@ export class AgeCategoriesFormComponent {
 
     request$.pipe(take(1)).subscribe({
       next: () => {
-        this.isSubmitting.set(false);
+        this.dialogState.update((s) => ({ ...s, submitting: false }));
         this.saved.emit();
       },
-      error: () => this.isSubmitting.set(false),
+      error: () =>
+        this.dialogState.update((s) => ({ ...s, submitting: false })),
     });
   }
 
@@ -121,7 +130,6 @@ export class AgeCategoriesFormComponent {
       .pipe(take(1))
       .subscribe({
         next: () => this.saved.emit(),
-        error: () => this.isSubmitting.set(false),
       });
   }
 
