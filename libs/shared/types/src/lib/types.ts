@@ -37,8 +37,6 @@ export interface Hotel {
   createdAt: string;
   updatedAt: string;
 }
-
-// Season
 export interface Season {
   id: string;
   name: string;
@@ -49,6 +47,15 @@ export interface Season {
   updatedAt: string;
 }
 
+export interface MealPlan {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -94,4 +101,10 @@ export interface SeasonDto {
 export interface RoomTypeCapacityDto {
   ageCategoryId: string;
   maxPax: number;
+}
+
+export interface MealPlanDto {
+  code: string;
+  name: string;
+  description?: string;
 }
