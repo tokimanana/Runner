@@ -56,6 +56,16 @@ export interface MealPlan {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Market {
+  id: string;
+  code: string;
+  name: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -107,4 +117,9 @@ export interface MealPlanDto {
   code: string;
   name: string;
   description?: string;
+}
+
+export interface MarketDto {
+  code: string;
+  name: string;
 }
