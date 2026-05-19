@@ -11,6 +11,7 @@ import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 import { SeasonRepository } from './season.repository';
+import { SeasonQuery } from '../seasons.type';
 
 @Injectable()
 export class PrismaSeasonRepository extends SeasonRepository {
@@ -20,12 +21,7 @@ export class PrismaSeasonRepository extends SeasonRepository {
 
   async findAll(
     tourOperatorId: string,
-    query?: {
-      startDate?: Date;
-      endDate?: Date;
-      limit?: number;
-      offset?: number;
-    },
+    query?: SeasonQuery,
   ): Promise<PaginatedResult<Season>> {
     const { limit, offset } = query ?? {};
 
