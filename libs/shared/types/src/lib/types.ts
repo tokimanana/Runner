@@ -66,6 +66,13 @@ export interface Market {
   updatedAt: string;
 }
 
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+}
+
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -122,4 +129,10 @@ export interface MealPlanDto {
 export interface MarketDto {
   code: string;
   name: string;
+}
+
+export interface CurrencyDto {
+  code: string;
+  name: string;
+  symbol: string;
 }
