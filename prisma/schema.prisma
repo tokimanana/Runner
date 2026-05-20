@@ -125,3 +125,10 @@ model Market {
   @@unique([tourOperatorId, code])
   @@index([tourOperatorId])
 }
+
+model Currency {
+  id     String @id @default(cuid())
+  code   String @unique
+  name   String
+  symbol String
+}
