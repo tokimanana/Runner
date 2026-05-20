@@ -7,6 +7,7 @@ import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { UsersModule } from './users/users.module';
+import { MarketsModule } from './markets/markets.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module';
     HotelsModule,
     SeasonsModule,
     MealPlansModule,
+    MarketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
