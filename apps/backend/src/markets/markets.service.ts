@@ -9,12 +9,14 @@ import {
 } from '@nestjs/common';
 import { Market } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
+import {
+  DEFAULT_PAGINATION_LIMIT,
+  MAX_PAGINATION_LIMIT,
+} from '../common/pagination.constants';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { UpdateMarketDto } from './dto/update-market.dto';
 import { MarketQuery } from './market.types';
 import { MarketRepository } from './repository/market.repository';
-
-const MAX_LIMIT = 100;
 
 @Injectable()
 export class MarketsService {
@@ -43,8 +45,8 @@ export class MarketsService {
     tourOperatorId: string,
     query?: MarketQuery,
   ): Promise<PaginatedResult<Market>> {
-    const { limit = 50, offset = 0 } = query ?? {};
-    const sanitizedLimit = Math.min(limit, MAX_LIMIT);
+    const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
+    const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);
 
     return this.marketRepository.findAll(tourOperatorId, {
       ...query,
@@ -66,6 +68,7 @@ export class MarketsService {
     dto: UpdateMarketDto,
     tourOperatorId: string,
   ): Promise<Market> {
+    await this.findOne(id, tourOperatorId);
     try {
       return await this.marketRepository.update(id, dto, tourOperatorId);
     } catch (error) {

@@ -73,9 +73,12 @@ export class PrismaHotelRepository implements HotelRepository {
     return { data, total, limit, offset };
   }
 
-  async findById(id: string): Promise<HotelDetail | null> {
+  async findById(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<HotelDetail | null> {
     return this.prisma.hotel.findUnique({
-      where: { id },
+      where: { id, tourOperatorId },
       include: HOTEL_INCLUDE,
     });
   }

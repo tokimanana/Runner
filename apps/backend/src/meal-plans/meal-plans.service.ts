@@ -9,12 +9,14 @@ import {
 } from '@nestjs/common';
 import { MealPlan } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
+import {
+  DEFAULT_PAGINATION_LIMIT,
+  MAX_PAGINATION_LIMIT,
+} from '../common/pagination.constants';
 import { CreateMealPlanDto } from './dto/create-meal-plan.dto';
 import { UpdateMealPlanDto } from './dto/update-meal-plan.dto';
 import { MealPlanQuery } from './meal-plans.type';
 import { MealPlanRepository } from './repositories/meal-plan.repository';
-
-const MAX_LIMIT = 100;
 
 @Injectable()
 export class MealPlansService {
@@ -43,8 +45,8 @@ export class MealPlansService {
     tourOperatorId: string,
     query?: MealPlanQuery,
   ): Promise<PaginatedResult<MealPlan>> {
-    const { limit = 50, offset = 0 } = query ?? {};
-    const sanitizedLimit = Math.min(limit, MAX_LIMIT);
+    const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
+    const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);
 
     return this.mealPlanRepository.findAll(tourOperatorId, {
       ...query,
