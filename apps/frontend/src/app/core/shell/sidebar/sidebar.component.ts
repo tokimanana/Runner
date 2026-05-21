@@ -1,7 +1,7 @@
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { AsyncPipe } from '@angular/common';
 import { TooltipModule } from 'primeng/tooltip';
 import { selectUserRole } from '../../auth/store/auth.selectors';
 
@@ -34,15 +34,39 @@ export class SidebarComponent {
       roles: ['ADMIN', 'MANAGER', 'AGENT'],
     },
     {
-      label: 'hotels',
+      label: 'Hotels',
       icon: 'pi pi-building',
       route: '/management/hotels',
       roles: ['ADMIN', 'MANAGER'],
     },
     {
-      label: 'seasons',
+      label: 'Seasons',
       icon: 'pi pi-calendar',
       route: '/management/seasons',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'Meal Plans',
+      icon: 'pi pi-utensils',
+      route: '/management/meal-plans',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'Markets',
+      icon: 'pi pi-globe',
+      route: '/management/markets',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'Currencies',
+      icon: 'pi pi-dollar',
+      route: '/management/currencies',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'Supplements',
+      icon: 'pi pi-tag',
+      route: '/management/supplements',
       roles: ['ADMIN', 'MANAGER'],
     },
   ];
