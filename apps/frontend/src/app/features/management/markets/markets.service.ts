@@ -1,63 +1,65 @@
 import { buildPaginationParams } from '@/app/shared/utils/http-params.util';
+import { environment } from '@/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
-  MealPlan,
-  MealPlanDto,
+  Market,
+  MarketDto,
   PaginatedResult,
   PaginationParams,
 } from '@runner/shared/types';
 import { BehaviorSubject, Observable, take, tap } from 'rxjs';
-import { environment } from '../../../../environments/environment';
 
-@Injectable({ providedIn: 'root' })
-export class MealPlansService {
-  private readonly apiUrl = `${environment.apiUrl}/meal-plans`;
+@Injectable({
+  providedIn: 'root',
+})
+export class MarketsService {
+  private readonly apiUrl = `${environment.apiUrl}/markets`;
   private readonly http = inject(HttpClient);
 
-  private readonly _mealPlans$ = new BehaviorSubject<MealPlan[]>([]);
+  private readonly _markets$ = new BehaviorSubject<Market[]>([]);
   private readonly _loading$ = new BehaviorSubject<boolean>(false);
   private loaded = false;
 
-  readonly mealPlans$ = this._mealPlans$.asObservable();
+  readonly markets$ = this._markets$.asObservable();
   readonly loading$ = this._loading$.asObservable();
 
   private load(params?: PaginationParams): void {
     this._loading$.next(true);
     this.http
-      .get<PaginatedResult<MealPlan>>(this.apiUrl, {
+      .get<PaginatedResult<Market>>(this.apiUrl, {
         params: buildPaginationParams(params),
       })
       .pipe(take(1))
       .subscribe({
         next: (result) => {
-          this._mealPlans$.next(result.data);
+          this._markets$.next(result.data);
           this.loaded = true;
           this._loading$.next(false);
         },
         error: (err) => {
-          console.error('Failed to load meal plans', err);
+          console.error('Failed to load markets', err);
           this._loading$.next(false);
         },
       });
   }
 
-  getAll(params?: PaginationParams): Observable<MealPlan[]> {
+  getAll(params?: PaginationParams): Observable<Market[]> {
     if (!this.loaded) {
       this.load(params);
     }
-    return this.mealPlans$;
+    return this.markets$;
   }
 
-  create(dto: MealPlanDto): Observable<MealPlan> {
+  create(dto: MarketDto): Observable<Market> {
     return this.http
-      .post<MealPlan>(this.apiUrl, dto)
+      .post<Market>(this.apiUrl, dto)
       .pipe(tap(() => this.refresh()));
   }
 
-  update(id: string, dto: Partial<MealPlanDto>): Observable<MealPlan> {
+  update(id: string, dto: Partial<MarketDto>): Observable<Market> {
     return this.http
-      .patch<MealPlan>(`${this.apiUrl}/${id}`, dto)
+      .patch<Market>(`${this.apiUrl}/${id}`, dto)
       .pipe(tap(() => this.refresh()));
   }
 
