@@ -1,4 +1,5 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { buildPaginationParams } from '@/app/shared/utils/http-params.util';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
   MealPlan,
@@ -6,8 +7,8 @@ import {
   PaginatedResult,
   PaginationParams,
 } from '@runner/shared/types';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { take, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, take, tap } from 'rxjs';
+
 import { environment } from '../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -26,7 +27,7 @@ export class MealPlansService {
     this._loading$.next(true);
     this.http
       .get<PaginatedResult<MealPlan>>(this.apiUrl, {
-        params: this.buildParams(params),
+        params: buildPaginationParams(params),
       })
       .pipe(take(1))
       .subscribe({
@@ -65,16 +66,6 @@ export class MealPlansService {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`)
       .pipe(tap(() => this.refresh()));
-  }
-
-  private buildParams(params?: PaginationParams): HttpParams {
-    let httpParams = new HttpParams();
-    if (params?.limit !== undefined)
-      httpParams = httpParams.set('limit', params.limit);
-    if (params?.offset !== undefined)
-      httpParams = httpParams.set('offset', params.offset);
-    if (params?.search) httpParams = httpParams.set('search', params.search);
-    return httpParams;
   }
 
   private refresh(): void {
