@@ -67,4 +67,32 @@ export const MANAGEMENT_ROUTES: Routes = [
       },
     ],
   },
+  {
+    path: 'meal-plans',
+    loadComponent: () =>
+      import('./meal-plans/meal-plans-list/meal-plans-list.component').then(
+        (m) => m.MealPlansListComponent
+      ),
+  },
+  {
+    path: 'markets',
+    loadComponent: () =>
+      import('./markets/markets-list/markets-list.component').then(
+        (m) => m.MarketsListComponent
+      ),
+  },
+  {
+    path: 'currencies',
+    loadComponent: () =>
+      import('./currencies/currencies-list/currencies-list.component').then(
+        (m) => m.CurrenciesListComponent
+      ),
+  },
+  {
+    path: 'supplements',
+    loadComponent: () =>
+      import('./supplements/supplements-list/supplements-list.component').then(
+        (m) => m.SupplementsListComponent
+      ),
+  },
 ];
