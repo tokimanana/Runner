@@ -1,9 +1,17 @@
 import { Module } from '@nestjs/common';
-import { SupplementsService } from './supplements.service';
+import { PrismaSupplementRepository } from './repositories/prisma-supplement.repository';
+import { SupplementRepository } from './repositories/supplement.repository';
 import { SupplementsController } from './supplements.controller';
+import { SupplementsService } from './supplements.service';
 
 @Module({
   controllers: [SupplementsController],
-  providers: [SupplementsService],
+  providers: [
+    SupplementsService,
+    {
+      provide: SupplementRepository,
+      useClass: PrismaSupplementRepository,
+    },
+  ],
 })
 export class SupplementsModule {}
