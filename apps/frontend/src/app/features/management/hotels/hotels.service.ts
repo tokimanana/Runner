@@ -1,8 +1,9 @@
 import { environment } from '@/environments/environment';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, take, tap } from 'rxjs';
 
+import { buildPaginationParams } from '@/app/shared/utils/http-params.util';
 import {
   AgeCategory,
   AgeCategoryDto,
@@ -34,7 +35,7 @@ export class HotelsService {
     this.loadingSubject.next(true);
     this.http
       .get<PaginatedResult<Hotel>>(`${this.apiUrl}/hotels`, {
-        params: this.buildParams(params),
+        params: buildPaginationParams(params),
       })
       .pipe(take(1))
       .subscribe({
@@ -77,16 +78,6 @@ export class HotelsService {
     return this.http
       .delete<void>(`${this.apiUrl}/hotels/${id}`)
       .pipe(tap(() => this.refresh()));
-  }
-
-  private buildParams(params?: PaginationParams): HttpParams {
-    let httpParams = new HttpParams();
-    if (params?.limit !== undefined)
-      httpParams = httpParams.set('limit', params.limit);
-    if (params?.offset !== undefined)
-      httpParams = httpParams.set('offset', params.offset);
-    if (params?.search) httpParams = httpParams.set('search', params.search);
-    return httpParams;
   }
 
   private refresh(): void {
