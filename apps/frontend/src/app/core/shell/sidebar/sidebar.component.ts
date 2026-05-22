@@ -47,7 +47,7 @@ export class SidebarComponent {
     },
     {
       label: 'Meal Plans',
-      icon: 'pi pi-utensils',
+      icon: 'pi pi-server',
       route: '/management/meal-plans',
       roles: ['ADMIN', 'MANAGER'],
     },
