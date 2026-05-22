@@ -1,13 +1,14 @@
 import { RepositoryResult } from '@backend/common/repository.types';
 import { Supplement } from '@prisma/client';
-import { PaginatedResult, PaginationParams } from '@runner/shared/types';
+import { PaginatedResult } from '@runner/shared/types';
 import { CreateSupplementDto } from '../dto/create-supplement.dto';
 import { UpdateSupplementDto } from '../dto/update-supplement.dto';
+import { SupplementQuery } from '../supplements.types';
 
 export abstract class SupplementRepository {
   abstract findAll(
     tourOperatorId: string,
-    params: PaginationParams,
+    query?: SupplementQuery,
   ): Promise<PaginatedResult<Supplement>>;
   abstract findOne(
     id: string,
