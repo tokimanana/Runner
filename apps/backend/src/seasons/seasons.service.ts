@@ -15,8 +15,10 @@ import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
 import { SeasonRepository } from './repositories/season.repository';
 import { SeasonQuery } from './seasons.type';
-
-const MAX_LIMIT = 100;
+import {
+  DEFAULT_PAGINATION_LIMIT,
+  MAX_PAGINATION_LIMIT,
+} from '../common/pagination.constants';
 
 @Injectable()
 export class SeasonsService {
@@ -26,8 +28,8 @@ export class SeasonsService {
     tourOperatorId: string,
     query?: SeasonQuery,
   ): Promise<PaginatedResult<Season>> {
-    const { limit = 50, offset = 0 } = query ?? {};
-    const sanitizedLimit = Math.min(limit, MAX_LIMIT);
+    const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
+    const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);
 
     return this.seasonRepository.findAll(tourOperatorId, {
       ...query,
