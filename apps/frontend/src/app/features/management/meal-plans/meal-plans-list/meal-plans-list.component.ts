@@ -46,6 +46,10 @@ export class MealPlansListComponent {
     this.mealPlanForm()?.open(mealPlan);
   }
 
+  onMealPlanSaved(): void {
+    this.mealPlanForm()?.close();
+  }
+
   confirmDelete(mealPlan: MealPlan): void {
     this.confirmationService.confirm({
       header: 'Delete Meal Plan',
