@@ -21,8 +21,8 @@ import { MealPlansService } from '../meal-plans.service';
     AsyncPipe,
     TableModule,
     Button,
-    ToastModule,
     ConfirmDialog,
+    ToastModule,
     MealPlansFormComponent,
   ],
   templateUrl: './meal-plans-list.component.html',
@@ -30,14 +30,13 @@ import { MealPlansService } from '../meal-plans.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MealPlansListComponent {
-  readonly mealPlanForm = viewChild(MealPlansFormComponent);
-
-  private readonly mealPlanService = inject(MealPlansService);
+  private readonly mealPlansService = inject(MealPlansService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
-  readonly mealPlans$ = this.mealPlanService.getAll();
-  readonly loading$ = this.mealPlanService.loading$;
+  readonly mealPlanForm = viewChild(MealPlansFormComponent);
+  readonly mealPlans$ = this.mealPlansService.getAll();
+  readonly loading$ = this.mealPlansService.loading$;
 
   onAddMealPlan(): void {
     this.mealPlanForm()?.open();
@@ -53,7 +52,7 @@ export class MealPlansListComponent {
       message: `Are you sure you want to delete "${mealPlan.name}"?`,
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.mealPlanService
+        this.mealPlansService
           .remove(mealPlan.id)
           .pipe(take(1))
           .subscribe({
@@ -65,13 +64,14 @@ export class MealPlansListComponent {
               });
             },
             error: (err) => {
-              if (err.status === 409) {
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Cannot delete',
-                  detail: `"${mealPlan.name}" is used in existing contracts.`,
-                });
-              }
+              this.messageService.add({
+                severity: err.status === 409 ? 'warn' : 'error',
+                summary: err.status === 409 ? 'Cannot delete' : 'Error',
+                detail:
+                  err.status === 409
+                    ? `"${mealPlan.name}" is used in existing contracts.`
+                    : 'An unexpected error occurred. Please try again.',
+              });
             },
           });
       },
