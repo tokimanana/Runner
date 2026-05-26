@@ -1,1 +1,60 @@
-<p>meal-plans-form works!</p>
+<p-dialog
+  [visible]="dialogState().visible"
+  [header]="isEditMode() ? 'Edit Meal Plan' : 'Add Meal Plan'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '44rem' }"
+  (onHide)="onDialogHide()"
+>
+  <p class="dialog-description">
+    Define the meal plan configuration. The code must be unique within this
+    hotel.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-row">
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input pInputText id="name" formControlName="name" class="w-full" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="error">Name is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="code">Code <span class="required">*</span></label>
+        <input pInputText id="code" formControlName="code" class="w-full" />
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="error">Code is required (min. 3 characters)</small>
+        }
+      </div>
+      <div class="field">
+        <label for="description">Description </label>
+        <textarea
+          formControlName="description"
+          type="text"
+          pTextarea
+          id="description"
+          class="w-full"
+        ></textarea>
+      </div>
+    </div>
+  </form>
+
+  <div class="dialog-footer">
+    <div class="dialog-footer__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="close()"
+      />
+      <p-button
+        type="submit"
+        [label]="isEditMode() ? 'Save Changes' : 'Create'"
+        [loading]="dialogState().submitting"
+        (onClick)="submit()"
+      />
+    </div>
+  </div>
+</p-dialog>
