@@ -22,11 +22,6 @@ import { TextareaModule } from 'primeng/textarea';
 import { take } from 'rxjs';
 import { MealPlansService } from '../meal-plans.service';
 
-interface DialogState {
-  visible: boolean;
-  submitting: boolean;
-}
-
 @Component({
   selector: 'app-meal-plans-form',
   imports: [
@@ -46,14 +41,10 @@ export class MealPlansFormComponent {
 
   private readonly _mealPlan = signal<MealPlan | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._mealPlan());
-  readonly dialogState = signal<DialogState>({
-    visible: false,
-    submitting: false,
-  });
+  readonly isSubmitting = signal(false);
 
   readonly saved = output<void>();
-
-  private _suppressCancelledOnHide = false;
+  visible = false;
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -82,18 +73,16 @@ export class MealPlansFormComponent {
 
   open(mealPlan?: MealPlan): void {
     this._mealPlan.set(mealPlan);
-    this.dialogState.set({ visible: true, submitting: false });
+    this.visible = true;
   }
 
   close(): void {
-    this._suppressCancelledOnHide = true;
-    this.dialogState.update((s) => ({ ...s, visible: false }));
+    this.visible = false;
     this._reset();
   }
 
   onDialogHide(): void {
     this._reset();
-    this._suppressCancelledOnHide = false;
   }
 
   submit(): void {
@@ -103,7 +92,7 @@ export class MealPlansFormComponent {
     const dto = this.form.getRawValue() as MealPlanDto;
     const mealPlan = this._mealPlan();
 
-    this.dialogState.update((s) => ({ ...s, submitting: true }));
+    this.isSubmitting.set(true);
 
     const request$ = mealPlan
       ? this.mealPlansService.update(mealPlan.id, dto)
@@ -116,7 +105,7 @@ export class MealPlansFormComponent {
           summary: mealPlan ? 'Updated' : 'Created',
           detail: `Meal plan "${dto.name}" has been ${mealPlan ? 'updated' : 'created'}.`,
         });
-        this.dialogState.update((s) => ({ ...s, submitting: false }));
+        this.isSubmitting.set(false);
         this.close();
         this.saved.emit();
       },
@@ -126,7 +115,7 @@ export class MealPlansFormComponent {
           summary: 'Error',
           detail: 'Could not save meal plan. Please try again.',
         });
-        this.dialogState.update((s) => ({ ...s, submitting: false }));
+        this.isSubmitting.set(false);
       },
     });
   }
