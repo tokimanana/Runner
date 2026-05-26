@@ -20,7 +20,10 @@ export abstract class HotelRepository {
     tourOperatorId: string,
     query: HotelQuery,
   ): Promise<PaginatedResult<HotelDetail>>;
-  abstract findById(id: string, tourOperatorId): Promise<HotelDetail | null>;
+  abstract findById(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<HotelDetail | null>;
   abstract update(
     id: string,
     tourOperatorId: string,
