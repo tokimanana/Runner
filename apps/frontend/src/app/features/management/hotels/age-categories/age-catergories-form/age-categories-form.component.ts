@@ -22,11 +22,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
-interface DialogState {
-  visible: boolean;
-  submitting: boolean;
-}
-
 @Component({
   selector: 'app-age-categories-form',
   imports: [
@@ -50,12 +45,9 @@ export class AgeCategoriesFormComponent {
   protected readonly _category = signal<AgeCategory | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._category());
 
-  readonly dialogState = signal<DialogState>({
-    visible: false,
-    submitting: false,
-  });
+  readonly isSubmitting = signal(false);
 
-  private _suppressCancelledOnHide = false;
+  visible = false;
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -83,21 +75,16 @@ export class AgeCategoriesFormComponent {
 
   open(category?: AgeCategory): void {
     this._category.set(category);
-    this.dialogState.set({ visible: true, submitting: false });
+    this.visible = true;
   }
 
   close(): void {
-    this._suppressCancelledOnHide = true;
-    this.dialogState.update((s) => ({ ...s, visible: false }));
+    this.visible = false;
     this._reset();
   }
 
   onDialogHide(): void {
     this._reset();
-    if (!this._suppressCancelledOnHide) {
-      this.cancelled.emit();
-    }
-    this._suppressCancelledOnHide = false;
   }
 
   submit(): void {
@@ -108,7 +95,7 @@ export class AgeCategoriesFormComponent {
     const dto: AgeCategoryDto = { name, minAge: minAge!, maxAge: maxAge! };
     const category = this._category();
 
-    this.dialogState.update((s) => ({ ...s, submitting: true }));
+    this.isSubmitting.set(true);
 
     const request$ = category
       ? this.hotelsService.updateAgeCategory(this.hotelId(), category.id, dto)
@@ -116,11 +103,10 @@ export class AgeCategoriesFormComponent {
 
     request$.pipe(take(1)).subscribe({
       next: () => {
-        this.dialogState.update((s) => ({ ...s, submitting: false }));
+        this.isSubmitting.set(false);
         this.saved.emit();
       },
-      error: () =>
-        this.dialogState.update((s) => ({ ...s, submitting: false })),
+      error: () => this.isSubmitting.set(false),
     });
   }
 

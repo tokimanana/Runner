@@ -1,5 +1,5 @@
 <p-dialog
-  [visible]="dialogState().visible"
+  [(visible)]="visible"
   [header]="isEditMode() ? 'Edit Age Category' : 'Add Age Category'"
   [modal]="true"
   [draggable]="false"
@@ -70,7 +70,7 @@
         <p-button
           type="submit"
           [label]="isEditMode() ? 'Save Changes' : 'Create'"
-          [loading]="dialogState().submitting"
+          [loading]="isSubmitting()"
           (onClick)="submit()"
         />
       </div>
