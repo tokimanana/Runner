@@ -1,4 +1,5 @@
 import { PanelState } from '@/app/shared/types/panel-state.type';
+import { AsyncPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,9 +7,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
 import { Market } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { take } from 'rxjs';
@@ -17,7 +18,13 @@ import { MarketsService } from '../markets.service';
 
 @Component({
   selector: 'app-markets-list',
-  imports: [AsyncPipe, MarketsFormComponent, ConfirmDialog, ToastModule],
+  imports: [
+    AsyncPipe,
+    MarketsFormComponent,
+    ConfirmDialog,
+    ToastModule,
+    Button,
+  ],
   templateUrl: './markets-list.component.html',
   styleUrl: './markets-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,5 +92,10 @@ export class MarketsListComponent {
           });
       },
     });
+  }
+
+  onDeleteClick(market: Market, event: Event): void {
+    event.stopPropagation();
+    this.confirmDelete(market);
   }
 }
