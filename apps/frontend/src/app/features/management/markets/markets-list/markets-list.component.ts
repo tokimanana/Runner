@@ -2,17 +2,22 @@ import { PanelState } from '@/app/shared/types/panel-state.type';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   signal,
 } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { Market } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
 import { take } from 'rxjs';
+import { MarketsFormComponent } from '../markets-form/markets-form.component';
 import { MarketsService } from '../markets.service';
 
 @Component({
   selector: 'app-markets-list',
-  imports: [],
+  imports: [AsyncPipe, MarketsFormComponent, ConfirmDialog, ToastModule],
   templateUrl: './markets-list.component.html',
   styleUrl: './markets-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +30,13 @@ export class MarketsListComponent {
   readonly panelState = signal<PanelState<Market>>({ mode: 'idle' });
   readonly markets$ = this.marketsService.getAll();
   readonly loading$ = this.marketsService.loading$;
+
+  readonly selectedMarket = computed(() => {
+    const state = this.panelState();
+    return state.mode === 'edit' ? state.item : null;
+  });
+
+  readonly isPanelOpen = computed(() => this.panelState().mode !== 'idle');
 
   startCreate(): void {
     this.panelState.set({ mode: 'create' });
@@ -53,6 +65,7 @@ export class MarketsListComponent {
           .pipe(take(1))
           .subscribe({
             next: () => {
+              this.onSaved();
               this.messageService.add({
                 severity: 'success',
                 summary: 'Deleted',
