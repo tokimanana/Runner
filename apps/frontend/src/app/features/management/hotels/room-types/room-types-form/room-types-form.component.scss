@@ -30,9 +30,14 @@
   grid-template-columns: 1fr 5rem auto;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.625rem 0.25rem;
+  border-radius: 0;
+  border-bottom: 1px solid var(--p-surface-700);
   transition: background 0.15s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   &.available {
     border-style: dashed;
