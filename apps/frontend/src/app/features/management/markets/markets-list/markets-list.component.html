@@ -1,12 +1,10 @@
 <div class="markets-layout">
   <div class="markets-panel">
     <div class="panel-header">
-      <div>
-        <h2 class="panel-title">Markets</h2>
-        <span class="panel-subtitle">
-          {{ (markets$ | async)?.length ?? 0 }} markets configured
-        </span>
-      </div>
+      <h2 class="panel-title">Markets</h2>
+      <span class="panel-subtitle">
+        {{ (markets$ | async)?.length ?? 0 }} markets configured
+      </span>
     </div>
 
     <div class="markets-items">
@@ -19,22 +17,11 @@
       @for (market of (markets$ | async) ?? []; track market.id) {
         <div
           class="market-item"
-          [class.selected]="
-            panelState().mode === 'edit' &&
-            panelState().mode === 'edit' &&
-            selectedMarket()?.id === market.id
-          "
+          [class.selected]="selectedMarket()?.id === market.id"
           (click)="selectMarket(market)"
         >
           <span class="market-code">{{ market.code }}</span>
           <span class="market-name">{{ market.name }}</span>
-          <p-button
-            icon="pi pi-trash"
-            [text]="true"
-            severity="danger"
-            size="small"
-            (onClick)="onDeleteClick(market, $event)"
-          />
         </div>
       } @empty {
         <div class="empty-state">
@@ -48,7 +35,7 @@
       <p-button
         label="Add Market"
         icon="pi pi-plus"
-        class="w-full"
+        styleClass="w-full"
         (onClick)="startCreate()"
       />
     </div>
@@ -70,5 +57,4 @@
   }
 </div>
 
-<p-confirmdialog />
 <p-toast />

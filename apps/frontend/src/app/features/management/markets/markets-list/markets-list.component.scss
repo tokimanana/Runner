@@ -1,17 +1,17 @@
 .markets-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  height: 100%;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - 8rem);
   border: 1px solid var(--p-surface-200);
-  border-radius: var(--p-border-radius);
+  border-radius: 8px;
   overflow: hidden;
+  margin: 1.5rem;
 }
 
 .markets-panel {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--p-surface-200);
-  height: 100%;
 }
 
 .panel-header {
