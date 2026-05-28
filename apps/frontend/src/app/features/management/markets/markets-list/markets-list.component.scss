@@ -51,6 +51,7 @@
   &.selected {
     background: var(--p-surface-200);
     border-left: 3px solid var(--p-primary-color);
+    color: var(--p-surface-900);
   }
 }
 
@@ -61,7 +62,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 6px;
-  background: var(--p-surface-200);
+  border: 1px solid var(--p-surface-400);
   font-family: monospace;
   font-size: 0.8rem;
   font-weight: 700;
