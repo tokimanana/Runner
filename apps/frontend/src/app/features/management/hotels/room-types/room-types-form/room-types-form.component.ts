@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -69,14 +70,14 @@ export class RoomTypesFormComponent {
   readonly isSubmitting = signal(false);
   readonly capacityRows = signal<CapacityRow[]>([]);
 
+  readonly visible = model(false);
+
   readonly configuredRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity !== null)
   );
   readonly availableRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity === null)
   );
-
-  visible = false;
 
   readonly CapacityRowState = CapacityRowState;
 
@@ -106,11 +107,11 @@ export class RoomTypesFormComponent {
 
   open(room?: RoomType): void {
     this._roomType.set(room);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 
