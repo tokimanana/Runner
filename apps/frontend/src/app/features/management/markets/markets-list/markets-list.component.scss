@@ -1,17 +1,18 @@
 .markets-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  height: 100%;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - 8rem);
   border: 1px solid var(--p-surface-200);
-  border-radius: var(--p-border-radius);
+  border-radius: 8px;
   overflow: hidden;
+  margin: 1.5rem;
 }
 
 .markets-panel {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--p-surface-200);
-  height: 100%;
+  overflow: hidden;
 }
 
 .panel-header {
@@ -46,11 +47,13 @@
 
   &:hover {
     background: var(--p-surface-100);
+    color: var(--p-surface-900);
   }
 
   &.selected {
     background: var(--p-surface-200);
     border-left: 3px solid var(--p-primary-color);
+    color: var(--p-surface-900);
   }
 }
 
@@ -61,7 +64,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 6px;
-  background: var(--p-surface-200);
+  border: 1px solid var(--p-surface-400);
   font-family: monospace;
   font-size: 0.8rem;
   font-weight: 700;
@@ -76,6 +79,7 @@
 .panel-footer {
   padding: 1rem;
   border-top: 1px solid var(--p-surface-200);
+  background: var(--p-surface-0);
 }
 
 .form-panel {

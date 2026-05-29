@@ -1,1 +1,71 @@
-<p>markets-form works!</p>
+<div class="form-container">
+  <div class="form-header">
+    <div>
+      <h3 class="form-title">
+        {{ isEditMode() ? market()!.name : 'New Market' }}
+      </h3>
+      <span class="form-subtitle">
+        {{ isEditMode() ? 'Edit market details' : 'Add a new market' }}
+      </span>
+    </div>
+    @if (isEditMode()) {
+      <p-button
+        label="Delete"
+        icon="pi pi-trash"
+        severity="danger"
+        [outlined]="true"
+        size="small"
+        (onClick)="confirmDelete()"
+      />
+    }
+  </div>
+
+  <form [formGroup]="form">
+    <div class="form-row">
+      <div class="field">
+        <label for="code">Code <span class="required">*</span></label>
+        <input
+          pInputText
+          id="code"
+          formControlName="code"
+          class="w-full"
+          placeholder="e.g. FR, UK"
+          autocomplete="off"
+        />
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="error">Code is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input
+          pInputText
+          id="name"
+          formControlName="name"
+          class="w-full"
+          placeholder="e.g. France, United Kingdom"
+          autocomplete="off"
+        />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="error">Name is required</small>
+        }
+      </div>
+    </div>
+  </form>
+
+  <div class="form-footer">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="cancelled.emit()"
+    />
+    <p-button
+      [label]="isEditMode() ? 'Save changes' : 'Create market'"
+      [loading]="isSubmitting()"
+      (onClick)="submit()"
+    />
+  </div>
+</div>
+
+<p-confirmdialog />
