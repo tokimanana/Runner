@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -46,8 +47,7 @@ export class AgeCategoriesFormComponent {
   readonly isEditMode = computed(() => !!this._category());
 
   readonly isSubmitting = signal(false);
-
-  visible = false;
+  readonly visible = model(false);
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -75,11 +75,11 @@ export class AgeCategoriesFormComponent {
 
   open(category?: AgeCategory): void {
     this._category.set(category);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 
