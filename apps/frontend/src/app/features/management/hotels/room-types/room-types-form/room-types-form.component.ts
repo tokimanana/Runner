@@ -35,11 +35,6 @@ export enum CapacityRowState {
   Saved = 'saved',
 }
 
-interface DialogState {
-  visible: boolean;
-  submitting: boolean;
-}
-
 interface CapacityRow {
   ageCategory: AgeCategory;
   capacity: RoomTypeCapacity | null;
@@ -71,10 +66,7 @@ export class RoomTypesFormComponent {
   protected readonly _roomType = signal<RoomType | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._roomType());
 
-  readonly dialogState = signal<DialogState>({
-    visible: false,
-    submitting: false,
-  });
+  readonly isSubmitting = signal(false);
   readonly capacityRows = signal<CapacityRow[]>([]);
 
   readonly configuredRows = computed(() =>
@@ -84,10 +76,9 @@ export class RoomTypesFormComponent {
     this.capacityRows().filter((r) => r.capacity === null)
   );
 
-  // Expose enum to template
-  readonly CapacityRowState = CapacityRowState;
+  visible = false;
 
-  private _suppressCancelledOnHide = false;
+  readonly CapacityRowState = CapacityRowState;
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -115,21 +106,16 @@ export class RoomTypesFormComponent {
 
   open(room?: RoomType): void {
     this._roomType.set(room);
-    this.dialogState.set({ visible: true, submitting: false });
+    this.visible = true;
   }
 
   close(): void {
-    this._suppressCancelledOnHide = true;
-    this.dialogState.update((s) => ({ ...s, visible: false }));
+    this.visible = false;
     this._reset();
   }
 
   onDialogHide(): void {
     this._reset();
-    if (!this._suppressCancelledOnHide) {
-      this.cancelled.emit();
-    }
-    this._suppressCancelledOnHide = false;
   }
 
   submit(): void {
@@ -140,7 +126,7 @@ export class RoomTypesFormComponent {
     const dto: RoomTypeDto = { name, code };
     const room = this._roomType();
 
-    this.dialogState.update((s) => ({ ...s, submitting: true }));
+    this.isSubmitting.set(true);
 
     if (room) {
       this.hotelsService
@@ -148,12 +134,11 @@ export class RoomTypesFormComponent {
         .pipe(take(1))
         .subscribe({
           next: () => {
-            this.dialogState.update((s) => ({ ...s, submitting: false }));
+            this.isSubmitting.set(false);
             this.close();
             this.saved.emit();
           },
-          error: () =>
-            this.dialogState.update((s) => ({ ...s, submitting: false })),
+          error: () => this.isSubmitting.set(false),
         });
     } else {
       this.hotelsService
@@ -161,12 +146,11 @@ export class RoomTypesFormComponent {
         .pipe(take(1))
         .subscribe({
           next: (created) => {
-            this.dialogState.update((s) => ({ ...s, submitting: false }));
+            this.isSubmitting.set(false);
             this._roomType.set(created);
             this._buildCapacityRows(created);
           },
-          error: () =>
-            this.dialogState.update((s) => ({ ...s, submitting: false })),
+          error: () => this.isSubmitting.set(false),
         });
     }
   }
