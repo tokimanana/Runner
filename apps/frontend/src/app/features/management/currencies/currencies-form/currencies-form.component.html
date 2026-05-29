@@ -1,1 +1,94 @@
-<p>currencies-form works!</p>
+<div class="form-container">
+  <div class="symbol-hero">
+    <div class="symbol-display">
+      {{ liveSymbol() || '?' }}
+    </div>
+    <div class="symbol-meta">
+      @if (form.controls.code.value) {
+        <span class="hero-code">{{ form.controls.code.value }}</span>
+      }
+      <h3 class="hero-name">
+        {{ form.controls.name.value || 'New Currency' }}
+      </h3>
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <form [formGroup]="form" class="form-fields">
+    <div class="form-row">
+      <div class="field">
+        <label for="code">Currency Code <span class="required">*</span></label>
+        <input
+          pInputText
+          id="code"
+          formControlName="code"
+          class="w-full"
+          placeholder="e.g. EUR, USD"
+          autocomplete="off"
+        />
+        <span class="field-hint">ISO 4217 standard 3-letter code.</span>
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="error">Code is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="symbol">Symbol <span class="required">*</span></label>
+        <input
+          pInputText
+          id="symbol"
+          formControlName="symbol"
+          class="w-full"
+          placeholder="e.g. €, $, £"
+          autocomplete="off"
+        />
+        <span class="field-hint">Visual symbol for display.</span>
+        @if (form.controls.symbol.invalid && form.controls.symbol.touched) {
+          <small class="error">Symbol is required</small>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="name">Full Name <span class="required">*</span></label>
+      <input
+        pInputText
+        id="name"
+        formControlName="name"
+        class="w-full"
+        placeholder="e.g. Euro, US Dollar"
+        autocomplete="off"
+      />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="error">Name is required</small>
+      }
+    </div>
+  </form>
+
+  <div class="form-footer">
+    @if (isEditMode()) {
+      <p-button
+        label="Delete Currency"
+        icon="pi pi-trash"
+        severity="danger"
+        [outlined]="true"
+        (onClick)="confirmDelete()"
+      />
+    }
+    <div class="footer-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancelled.emit()"
+      />
+      <p-button
+        [label]="isEditMode() ? 'Save changes' : 'Create currency'"
+        [loading]="isSubmitting()"
+        (onClick)="submit()"
+      />
+    </div>
+  </div>
+</div>
+
+<p-confirmdialog />
