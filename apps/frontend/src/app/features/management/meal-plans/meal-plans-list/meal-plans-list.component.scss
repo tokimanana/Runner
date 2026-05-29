@@ -1,0 +1,68 @@
+.meal-plans-list {
+  padding: 1.5rem;
+}
+
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.list-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.list-subtitle {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.code-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--p-surface-100);
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.description-cell {
+  display: block;
+  max-width: 28rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  color: var(--p-text-muted-color);
+  opacity: 0.4;
+}
+
+.empty-state-message {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.95rem;
+}

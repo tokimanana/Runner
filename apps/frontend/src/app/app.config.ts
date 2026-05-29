@@ -20,7 +20,7 @@ import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 import { refreshInterceptor } from './core/auth/interceptors/refresh.interceptor';
 import { AuthEffects } from './core/auth/store/auth.effects';
 import { authReducer } from './core/auth/store/auth.reducer';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 const RunnerPreset = definePreset(Aura, {
   semantic: {
@@ -63,5 +63,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(authInitializer),
     ConfirmationService,
+    MessageService,
   ],
 };

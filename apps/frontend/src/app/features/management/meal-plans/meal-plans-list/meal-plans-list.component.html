@@ -1,1 +1,84 @@
-<p>meal-plans-list works!</p>
+<div class="meal-plans-list">
+  <div class="list-toolbar">
+    <div class="list-header">
+      <h2 class="list-title">Meal Plans</h2>
+      <span class="list-subtitle">
+        {{ (mealPlans$ | async)?.length ?? 0 }} meal plans configured
+      </span>
+    </div>
+    <p-button
+      label="Add meal plan"
+      icon="pi pi-plus"
+      (onClick)="onAddMealPlan()"
+    />
+  </div>
+
+  <p-table
+    [value]="(mealPlans$ | async) ?? []"
+    [loading]="(loading$ | async) ?? false"
+    [tableStyle]="{ 'min-width': '50rem' }"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="width: 8rem">Code</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th style="width: 6rem"></th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-mealPlan>
+      <tr>
+        <td>
+          <span class="code-badge">{{ mealPlan.code }}</span>
+        </td>
+        <td>{{ mealPlan.name }}</td>
+        <td>
+          <span class="description-cell">{{ mealPlan.description ?? '—' }}</span>
+        </td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              severity="secondary"
+              (onClick)="onEditMealPlan(mealPlan)"
+              pTooltip="Edit"
+              tooltipPosition="top"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [text]="true"
+              severity="danger"
+              (onClick)="confirmDelete(mealPlan)"
+              pTooltip="Delete"
+              tooltipPosition="top"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">
+          <div class="empty-state">
+            <i class="pi pi-inbox empty-state-icon"></i>
+            <p class="empty-state-message">No meal plans configured yet.</p>
+            <p-button
+              label="Add your first meal plan"
+              icon="pi pi-plus"
+              [outlined]="true"
+              size="small"
+              (onClick)="onAddMealPlan()"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<app-meal-plans-form (saved)="onMealPlanSaved()" />
+<p-confirmdialog />
+<p-toast />
