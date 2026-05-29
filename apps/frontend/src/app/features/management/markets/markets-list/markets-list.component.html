@@ -1,1 +1,74 @@
-<p>markets-list works!</p>
+<div class="markets-layout">
+  <div class="markets-panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Markets</h2>
+        <span class="panel-subtitle">
+          {{ (markets$ | async)?.length ?? 0 }} markets configured
+        </span>
+      </div>
+    </div>
+
+    <div class="markets-items">
+      @if (loading$ | async) {
+        <div class="loading-state">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+      }
+
+      @for (market of (markets$ | async) ?? []; track market.id) {
+        <div
+          class="market-item"
+          [class.selected]="
+            panelState().mode === 'edit' &&
+            panelState().mode === 'edit' &&
+            selectedMarket()?.id === market.id
+          "
+          (click)="selectMarket(market)"
+        >
+          <span class="market-code">{{ market.code }}</span>
+          <span class="market-name">{{ market.name }}</span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            size="small"
+            (onClick)="onDeleteClick(market, $event)"
+          />
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <i class="pi pi-globe"></i>
+          <p>No markets configured yet.</p>
+        </div>
+      }
+    </div>
+
+    <div class="panel-footer">
+      <p-button
+        label="Add Market"
+        icon="pi pi-plus"
+        class="w-full"
+        (onClick)="startCreate()"
+      />
+    </div>
+  </div>
+
+  @if (isPanelOpen()) {
+    <div class="form-panel">
+      <app-markets-form
+        [market]="selectedMarket()"
+        (saved)="onSaved()"
+        (cancelled)="onCancelled()"
+      />
+    </div>
+  } @else {
+    <div class="form-panel idle-state">
+      <i class="pi pi-arrow-left"></i>
+      <p>Select a market to edit, or add a new one.</p>
+    </div>
+  }
+</div>
+
+<p-confirmdialog />
+<p-toast />
