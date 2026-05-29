@@ -1,0 +1,151 @@
+.currencies-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - 8rem);
+  border: 1px solid var(--p-surface-200);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1.5rem;
+}
+
+.currencies-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--p-surface-200);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid var(--p-surface-200);
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.panel-subtitle {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.currencies-items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.currency-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--p-surface-100);
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--p-surface-100);
+    color: var(--p-surface-900);
+  }
+
+  &.selected {
+    background: var(--p-surface-200);
+    border-left: 3px solid var(--p-primary-color);
+    color: var(--p-surface-900);
+  }
+}
+
+.currency-symbol-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--p-surface-300);
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.currency-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.currency-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.currency-code {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  font-family: monospace;
+}
+
+.chevron {
+  font-size: 0.7rem;
+  color: var(--p-text-muted-color);
+  opacity: 0.5;
+}
+
+.panel-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--p-surface-200);
+}
+
+.form-panel {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.idle-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 0.75rem;
+  color: var(--p-text-muted-color);
+
+  i {
+    font-size: 1.5rem;
+    opacity: 0.4;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--p-text-muted-color);
+
+  i {
+    font-size: 1.5rem;
+    opacity: 0.4;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--p-text-muted-color);
+}
