@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -44,7 +45,7 @@ export class MealPlansFormComponent {
   readonly isSubmitting = signal(false);
 
   readonly saved = output<void>();
-  visible = false;
+  readonly visible = model(false);
 
   readonly form = new FormGroup({
     code: new FormControl('', {
@@ -73,11 +74,11 @@ export class MealPlansFormComponent {
 
   open(mealPlan?: MealPlan): void {
     this._mealPlan.set(mealPlan);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 
