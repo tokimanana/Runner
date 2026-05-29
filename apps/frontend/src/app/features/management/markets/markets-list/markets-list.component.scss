@@ -12,6 +12,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--p-surface-200);
+  overflow: hidden;
 }
 
 .panel-header {
@@ -46,6 +47,7 @@
 
   &:hover {
     background: var(--p-surface-100);
+    color: var(--p-surface-900);
   }
 
   &.selected {
@@ -77,6 +79,7 @@
 .panel-footer {
   padding: 1rem;
   border-top: 1px solid var(--p-surface-200);
+  background: var(--p-surface-0);
 }
 
 .form-panel {
