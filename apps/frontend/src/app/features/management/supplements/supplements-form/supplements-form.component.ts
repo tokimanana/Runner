@@ -63,7 +63,7 @@ export class SupplementsFormComponent {
     { label: 'Per person / per stay', value: 'PER_PERSON_PER_STAY' },
     { label: 'Per room / per night', value: 'PER_ROOM_PER_NIGHT' },
     { label: 'Per room / per stay', value: 'PER_ROOM_PER_STAY' },
-  ] as const;
+  ];
 
   readonly form = new FormGroup({
     name: new FormControl('', {
