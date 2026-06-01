@@ -1,3 +1,4 @@
+import { SupplementUnitPipe } from '@/app/shared/pipes/supplement-unit.pipe';
 import { PanelState } from '@/app/shared/types/panel-state.type';
 import { AsyncPipe } from '@angular/common';
 import {
@@ -24,6 +25,7 @@ import { SupplementsService } from '../supplements.service';
     FormsModule,
     InputTextModule,
     SupplementsFormComponent,
+    SupplementUnitPipe,
   ],
   templateUrl: './supplements-list.component.html',
   styleUrl: './supplements-list.component.scss',
