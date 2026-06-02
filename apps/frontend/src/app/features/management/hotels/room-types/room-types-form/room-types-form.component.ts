@@ -25,6 +25,7 @@ import {
 } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -53,6 +54,7 @@ interface CapacityRow {
     ReactiveFormsModule,
     InputTextModule,
     InputNumberModule,
+    ConfirmDialogModule,
   ],
   templateUrl: './room-types-form.component.html',
   styleUrl: './room-types-form.component.scss',
