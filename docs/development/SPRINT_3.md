@@ -1377,9 +1377,7 @@ confirmDelete(season: Season): void {
 }
 ```
 
----
-
-#### Fichiers modifiés
+- **Files:**
 
 ```
 apps/frontend/src/app/shared/utils/confirm-delete.util.ts         ← nouveau
@@ -1390,9 +1388,7 @@ apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/m
 apps/frontend/src/app/features/management/seasons/seasons-list/seasons-list.component.ts
 ```
 
----
-
-#### Acceptance Criteria
+- **Acceptance Criteria :**
 
 - ✅ `confirm-delete.util.ts` créé dans `shared/utils/`
 - ✅ Aucune des 6 méthodes `confirmDelete` existantes ne contient plus de `subscribe` inline
