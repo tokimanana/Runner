@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import { AsyncPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -11,7 +12,6 @@ import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { take } from 'rxjs';
 import { MealPlansFormComponent } from '../meal-plans-form/meal-plans-form.component';
 import { MealPlansService } from '../meal-plans.service';
 
@@ -51,34 +51,13 @@ export class MealPlansListComponent {
   }
 
   confirmDelete(mealPlan: MealPlan): void {
-    this.confirmationService.confirm({
+    confirmDelete({
       header: 'Delete Meal Plan',
-      message: `Are you sure you want to delete "${mealPlan.name}"?`,
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.mealPlansService
-          .remove(mealPlan.id)
-          .pipe(take(1))
-          .subscribe({
-            next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Deleted',
-                detail: `"${mealPlan.name}" has been deleted.`,
-              });
-            },
-            error: (err) => {
-              this.messageService.add({
-                severity: err.status === 409 ? 'warn' : 'error',
-                summary: err.status === 409 ? 'Cannot delete' : 'Error',
-                detail:
-                  err.status === 409
-                    ? `"${mealPlan.name}" is used in existing contracts.`
-                    : 'An unexpected error occurred. Please try again.',
-              });
-            },
-          });
-      },
+      entityName: mealPlan.name,
+      delete$: this.mealPlansService.remove(mealPlan.id),
+      conflictMessage: `"${mealPlan.name}" is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }

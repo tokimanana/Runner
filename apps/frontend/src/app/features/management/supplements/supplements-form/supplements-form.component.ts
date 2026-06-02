@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -140,35 +141,14 @@ export class SupplementsFormComponent {
     const supplement = this.supplement();
     if (!supplement) return;
 
-    this.confirmationService.confirm({
+    confirmDelete({
       header: 'Delete Supplement',
-      message: `Are you sure you want to delete "${supplement.name}"?`,
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.supplementsService
-          .remove(supplement.id)
-          .pipe(take(1))
-          .subscribe({
-            next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Deleted',
-                detail: `"${supplement.name}" has been deleted.`,
-              });
-              this.saved.emit();
-            },
-            error: (err) => {
-              this.messageService.add({
-                severity: err.status === 409 ? 'warn' : 'error',
-                summary: err.status === 409 ? 'Cannot delete' : 'Error',
-                detail:
-                  err.status === 409
-                    ? `"${supplement.name}" is used in existing contracts.`
-                    : 'An unexpected error occurred.',
-              });
-            },
-          });
-      },
+      entityName: supplement.name,
+      delete$: this.supplementsService.remove(supplement.id),
+      onSuccess: () => this.saved.emit(),
+      conflictMessage: `"${supplement.name}" is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }

@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -101,35 +102,14 @@ export class MarketsFormComponent {
     const market = this.market();
     if (!market) return;
 
-    this.confirmationService.confirm({
+    confirmDelete({
       header: 'Delete Market',
-      message: `Are you sure you want to delete "${market.name}"?`,
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.marketsService
-          .remove(market.id)
-          .pipe(take(1))
-          .subscribe({
-            next: () => {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Deleted',
-                detail: `"${market.name}" has been deleted.`,
-              });
-              this.saved.emit();
-            },
-            error: (err) => {
-              this.messageService.add({
-                severity: err.status === 409 ? 'warn' : 'error',
-                summary: err.status === 409 ? 'Cannot delete' : 'Error',
-                detail:
-                  err.status === 409
-                    ? `"${market.name}" is used in existing contracts.`
-                    : 'An unexpected error occurred.',
-              });
-            },
-          });
-      },
+      entityName: market.name,
+      delete$: this.marketsService.remove(market.id),
+      onSuccess: () => this.saved.emit(),
+      conflictMessage: `"${market.name}" is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }
