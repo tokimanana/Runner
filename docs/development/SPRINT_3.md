@@ -1212,23 +1212,16 @@ model Supplement {
 - **Story Points :** 2
 - **Branch :** `refactor/S3-REFACTOR-FE-001-confirm-delete-util`
 - **Commit :** `refactor(shared): extract confirmDelete utility to eliminate duplication`
-- **Depends on :** S3-FE-007, S3-FE-009, S3-FE-011, S3-FE-013 (tous les composants list/form du Sprint 3 terminés)
 
-- **Contexte :**
+#### Contexte
 
-> Six composants implémentent une logique `confirmDelete` quasi-identique :
-> `SupplementFormComponent` (×2), `RoomTypesListComponent`, `MarketFormComponent`,
-> `MealPlansListComponent`, `SeasonsListComponent`. Le code est dupliqué mot pour mot
-> à l'exception des labels et du message 409. Tout bug ou évolution (nouveau code
-> d'erreur, changement d'icône, ajout d'un log) devra être corrigé 6 fois.
+Six composants implémentent une logique `confirmDelete` quasi-identique :
+`SupplementFormComponent` (×2), `RoomTypesListComponent`, `MarketFormComponent`,
+`MealPlansListComponent`, `SeasonsListComponent`. Le code est dupliqué mot pour mot
+à l'exception des labels et du message 409. Tout bug ou évolution devra être corrigé
+6 fois.
 
-- **Tâches :**
-
-1. Créer `apps/frontend/src/app/shared/utils/confirm-delete.util.ts`
-2. Remplacer les 6 implémentations existantes par un appel au helper
-3. Vérifier que le comportement est identique dans chaque composant
-
-- **Implémentation :**
+#### Tâche 1 — Créer le helper
 
 **`apps/frontend/src/app/shared/utils/confirm-delete.util.ts`**
 
@@ -1242,11 +1235,18 @@ export interface ConfirmDeleteOptions {
   header: string;
   /** Nom affiché de l'entité. Ex: supplement.name */
   entityName: string;
+  /**
+   * Message affiché dans la dialog.
+   * Si absent, génère : `Are you sure you want to delete "${entityName}"?`
+   * Utiliser uniquement quand le message standard ne suffit pas
+   * (ex: avertissement cascade, données liées visibles).
+   */
+  message?: string;
   /** Observable retourné par le service de suppression */
   delete$: Observable<void>;
   /** Appelé après une suppression réussie (reload, emit, navigate…) */
   onSuccess?: () => void;
-  /** Message affiché si le backend retourne 409 (entité utilisée ailleurs) */
+  /** Message affiché si le backend retourne 409 */
   conflictMessage?: string;
   confirmationService: ConfirmationService;
   messageService: MessageService;
@@ -1255,7 +1255,8 @@ export interface ConfirmDeleteOptions {
 export function confirmDelete(opts: ConfirmDeleteOptions): void {
   opts.confirmationService.confirm({
     header: opts.header,
-    message: `Are you sure you want to delete "${opts.entityName}"?`,
+    message:
+      opts.message ?? `Are you sure you want to delete "${opts.entityName}"?`,
     icon: 'pi pi-exclamation-triangle',
     accept: () => {
       opts.delete$.pipe(take(1)).subscribe({
@@ -1284,17 +1285,11 @@ export function confirmDelete(opts: ConfirmDeleteOptions): void {
 }
 ```
 
----
-
-#### Migration des composants existants
-
-Remplacer dans chaque composant la méthode complète par le pattern ci-dessous.
+#### Tâche 2 — Migrer les composants existants
 
 **`supplement-form.component.ts`**
 
 ```typescript
-// Avant : ~32 lignes
-// Après :
 confirmDelete(): void {
   const supplement = this.supplement();
   if (!supplement) return;
@@ -1311,9 +1306,12 @@ confirmDelete(): void {
 }
 ```
 
-**`room-types-list.component.ts`** (ou `room-types-form.component.ts` selon l'implémentation)
+**`room-types-list.component.ts`**
 
 ```typescript
+// Ajouter l'injection
+private readonly messageService = inject(MessageService);
+
 confirmDelete(room: RoomType): void {
   confirmDelete({
     header: 'Delete Room Type',
@@ -1361,7 +1359,7 @@ confirmDelete(mealPlan: MealPlan): void {
 }
 ```
 
-**`seasons-list.component.ts`**
+**`seasons-list.component.ts`** _(dépend de S3-FIX-FE-001)_
 
 ```typescript
 confirmDelete(season: Season): void {
@@ -1370,17 +1368,17 @@ confirmDelete(season: Season): void {
     entityName: season.name,
     delete$: this.seasonsService.deleteSeason(season.id),
     onSuccess: () => this.seasonsService.reload(),
-    conflictMessage: `"${season.name}" is linked to existing contract periods.`,
+    conflictMessage: `"${season.name}" cannot be deleted because it is used in contract periods.`,
     confirmationService: this.confirmationService,
     messageService: this.messageService,
   });
 }
 ```
 
-- **Files:**
+#### Fichiers modifiés
 
 ```
-apps/frontend/src/app/shared/utils/confirm-delete.util.ts         ← nouveau
+apps/frontend/src/app/shared/utils/confirm-delete.util.ts                                    ← nouveau
 apps/frontend/src/app/features/management/supplements/components/supplement-form/supplement-form.component.ts
 apps/frontend/src/app/features/management/hotels/room-types/room-types-list/room-types-list.component.ts
 apps/frontend/src/app/features/management/markets/components/market-form/market-form.component.ts
@@ -1388,14 +1386,375 @@ apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/m
 apps/frontend/src/app/features/management/seasons/seasons-list/seasons-list.component.ts
 ```
 
-- **Acceptance Criteria :**
+#### Acceptance Criteria
 
 - ✅ `confirm-delete.util.ts` créé dans `shared/utils/`
 - ✅ Aucune des 6 méthodes `confirmDelete` existantes ne contient plus de `subscribe` inline
-- ✅ Comportement identique avant/après dans chaque composant (succès, erreur 409, erreur générique)
-- ✅ `conflictMessage` renseigné dans tous les appels (pas de fallback silencieux)
-- ✅ Pas de `any` — `err` typé `{ status: number }`
+- ✅ Comportement identique avant/après (succès, erreur 409, erreur générique)
+- ✅ `conflictMessage` renseigné dans tous les appels
+- ✅ `err` typé `{ status: number }` — pas de `any`
 - ✅ `take(1)` centralisé dans le helper, supprimé des composants
+
+---
+
+### S3-FIX-FE-001 — Expose `reload()` on `SeasonsService`
+
+- **Type :** Fix
+- **Priority :** P0 ← bloque S3-REFACTOR-FE-001 sur le composant seasons
+- **Story Points :** 1
+- **Branch :** `fix/S3-FIX-FE-001-seasons-service-reload`
+- **Commit :** `fix(seasons): expose public reload() method on SeasonsService`
+
+#### Contexte
+
+`SeasonsService` a une méthode `refresh()` privée. `SeasonsListComponent` ne peut pas
+l'appeler depuis l'extérieur. Tous les autres services du projet exposent `reload()` —
+`SeasonsService` doit être aligné.
+
+#### Tâche
+
+```typescript
+// Avant — privé, inaccessible
+private refresh(): void {
+  this.loaded = false;
+  this.loadSeasons();
+}
+
+// Après — public, aligné sur le pattern projet
+reload(): void {
+  this.loaded = false;
+  this.loadSeasons();
+}
+
+// Mettre à jour les 3 appels internes
+createSeason(dto: SeasonDto): Observable<Season> {
+  return this.http.post<Season>(this.apiUrl, dto)
+    .pipe(tap(() => this.reload()));
+}
+
+updateSeason(id: string, dto: Partial<SeasonDto>): Observable<Season> {
+  return this.http.patch<Season>(`${this.apiUrl}/${id}`, dto)
+    .pipe(tap(() => this.reload()));
+}
+
+deleteSeason(id: string): Observable<void> {
+  return this.http.delete<void>(`${this.apiUrl}/${id}`)
+    .pipe(tap(() => this.reload()));
+}
+```
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/features/management/seasons/seasons.service.ts
+```
+
+#### Acceptance Criteria
+
+- ✅ `reload()` est public
+- ✅ `refresh()` n'existe plus — renommé, pas dupliqué
+- ✅ Les trois `tap()` internes pointent vers `this.reload()`
+- ✅ `SeasonsListComponent` compile sans erreur
+
+---
+
+### S3-FIX-BE-001 — Corriger `HAS_CONTRACTS` → `HAS_PERIODS` pour Season
+
+- **Type :** Fix
+- **Priority :** P1
+- **Story Points :** 1
+- **Branch :** `fix/S3-FIX-BE-001-season-conflict-message`
+- **Commit :** `fix(seasons): use HAS_PERIODS result code and clarify 409 conflict message`
+
+#### Contexte
+
+`PrismaSeasonRepository.remove()` retourne `RepositoryResult.HAS_CONTRACTS` quand une
+Season est liée à des `ContractPeriod`. Le nom est trompeur : une Season n'est pas liée
+à des `Contract` mais à des `ContractPeriod`. Le message d'erreur backend est également
+vague.
+
+`HAS_CONTRACTS` doit rester dans l'enum — il est correct pour MealPlan, Market,
+Supplement qui sont eux bien liés à des `Contract`. Ne pas le supprimer.
+
+#### Tâches
+
+**`apps/backend/src/common/repository.types.ts`**
+
+```typescript
+export enum RepositoryResult {
+  DELETED = 'DELETED',
+  NOT_FOUND = 'NOT_FOUND',
+  CONFLICT = 'CONFLICT',
+  HAS_CONTRACTS = 'HAS_CONTRACTS', // ← garder — MealPlan, Market, Supplement
+  HAS_PERIODS = 'HAS_PERIODS', // ← nouveau — Season → ContractPeriod
+}
+```
+
+**`apps/backend/src/seasons/repositories/prisma-season.repository.ts`**
+
+```typescript
+// Avant
+if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
+
+// Après
+if (error.code === 'P2003') return RepositoryResult.HAS_PERIODS;
+```
+
+**`apps/backend/src/seasons/seasons.service.ts`**
+
+```typescript
+// Avant
+if (result === RepositoryResult.HAS_CONTRACTS)
+  throw new ConflictException(`Season ${id} has linked Periods`);
+
+// Après
+if (result === RepositoryResult.HAS_PERIODS)
+  throw new ConflictException(
+    `Season ${id} cannot be deleted — it is linked to existing contract periods`
+  );
+```
+
+#### Fichiers modifiés
+
+```
+apps/backend/src/common/repository.types.ts
+apps/backend/src/seasons/repositories/prisma-season.repository.ts
+apps/backend/src/seasons/seasons.service.ts
+```
+
+#### Acceptance Criteria
+
+- ✅ `HAS_PERIODS` existe dans `RepositoryResult`
+- ✅ `HAS_CONTRACTS` conservé (MealPlan/Market/Supplement non impactés)
+- ✅ Supprimer une Season liée → HTTP 409 avec message clair
+- ✅ Supprimer une Season non liée → HTTP 204 (comportement inchangé)
+
+---
+
+### S3-REFACTOR-FE-003 — Migrate `HotelsListComponent.confirmDelete` + extend helper
+
+- **Type :** Refactor
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `refactor/S3-REFACTOR-FE-003-hotels-confirm-delete`
+- **Commit :** `refactor(hotels): migrate confirmDelete to shared utility with custom message support`
+- **Depends on :** S3-REFACTOR-FE-001
+
+#### Contexte
+
+`HotelsListComponent.confirmDelete()` a trois problèmes :
+
+1. Message conditionnel (hôtel avec/sans données) non supporté par le helper actuel
+2. Succès silencieux — liste non rafraîchie, pas de toast
+3. Erreur 409 silencieuse — commentaire vide, zéro feedback utilisateur
+
+#### Tâche 1 — Étendre `ConfirmDeleteOptions` avec `message?`
+
+Le helper créé en S3-REFACTOR-FE-001 reçoit un nouveau champ optionnel. Les 5 appels
+existants sans `message` ne sont pas modifiés.
+
+```typescript
+// confirm-delete.util.ts — seul changement dans l'interface
+export interface ConfirmDeleteOptions {
+  // ... champs existants ...
+  message?: string;   // ← nouveau, optionnel
+}
+
+// Dans la fonction — une ligne change
+message: opts.message ?? `Are you sure you want to delete "${opts.entityName}"?`,
+```
+
+#### Tâche 2 — Migrer `HotelsListComponent`
+
+```typescript
+// Ajouter l'injection si absente
+private readonly messageService = inject(MessageService);
+
+confirmDelete(hotel: Hotel): void {
+  const hasData =
+    (hotel.ageCategories?.length ?? 0) > 0 ||
+    (hotel.roomTypes?.length ?? 0) > 0;
+
+  confirmDelete({
+    header: 'Delete Hotel',
+    entityName: hotel.name,
+    message: hasData
+      ? `"${hotel.name}" has configured age categories or room types. Deleting it will remove all associated data. Continue?`
+      : undefined,
+    delete$: this.hotelsService.deleteHotel(hotel.id),
+    onSuccess: () => this.hotelsService.reload(),
+    conflictMessage: `"${hotel.name}" cannot be deleted because it is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/shared/utils/confirm-delete.util.ts
+apps/frontend/src/app/features/management/hotels/hotels-list/hotels-list.component.ts
+```
+
+#### Acceptance Criteria
+
+- ✅ `message?: string` ajouté dans `ConfirmDeleteOptions`
+- ✅ Les 5 appels existants sans `message` compilent sans modification
+- ✅ Hôtel avec données → message d'avertissement cascade
+- ✅ Hôtel sans données → message standard généré par le helper
+- ✅ Succès → toast success + `hotelsService.reload()`
+- ✅ Erreur 409 → toast warn avec `conflictMessage`
+- ✅ Plus de `subscribe` inline dans `confirmDelete()`
+
+---
+
+### S3-REFACTOR-FE-002 — Add confirmation dialog to `RoomTypesFormComponent.deleteRoomType()`
+
+- **Type :** Refactor
+- **Priority :** P1
+- **Story Points :** 1
+- **Branch :** `refactor/S3-REFACTOR-FE-002-room-type-form-confirm-delete`
+- **Commit :** `refactor(hotels): add confirmation dialog before room type deletion in form`
+- **Depends on :** S3-REFACTOR-FE-001
+
+#### Contexte
+
+`RoomTypesFormComponent.deleteRoomType()` supprime sans confirmation. Un clic
+accidentel supprime le room type avec toutes ses capacités (cascade Prisma).
+`RoomTypesListComponent` a été migré en S3-REFACTOR-FE-001 — le formulaire doit
+avoir le même comportement.
+
+#### Tâche
+
+```typescript
+// Ajouter les imports
+import { confirmDelete } from '../../../../../shared/utils/confirm-delete.util';
+import { ConfirmationService, MessageService } from 'primeng/api';
+
+// Ajouter les injections
+private readonly confirmationService = inject(ConfirmationService);
+private readonly messageService      = inject(MessageService);
+
+// Remplacer deleteRoomType()
+deleteRoomType(): void {
+  const room = this._roomType();
+  if (!room) return;
+
+  confirmDelete({
+    header: 'Delete Room Type',
+    entityName: room.name,
+    delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
+    onSuccess: () => {
+      this.close();
+      this.saved.emit();
+    },
+    conflictMessage: `"${room.name}" is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+Ajouter `ConfirmDialogModule` dans les `imports` du composant et `<p-confirmDialog />`
+dans le template si absent (vérifier si le parent `hotels-form` le rend déjà).
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room-types-form.component.ts
+apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room-types-form.component.html
+```
+
+#### Acceptance Criteria
+
+- ✅ Cliquer "Delete" ouvre une `p-confirmDialog`
+- ✅ Confirmer → supprime, ferme le dialog, émet `saved`
+- ✅ Annuler → rien
+- ✅ Erreur 409 → toast warn
+- ✅ Erreur générique → toast error
+- ✅ Plus de `subscribe` inline dans `deleteRoomType()`
+
+---
+
+### S3-DOC-001 — Mettre à jour `SPRINT_3.md` avec les nouveaux tickets
+
+- **Type :** Docs
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `docs/S3-DOC-001-update-sprint3-refacto-tickets`
+- **Commit :** `docs(sprint3): add refacto and fix tickets to Sprint 3 doc`
+- **Depends on :** tous les tickets précédents mergés
+
+#### Contexte
+
+`SPRINT_3.md` ne référence pas les tickets de refacto et fix ajoutés en cours de
+sprint. Le document doit refléter l'état réel du sprint pour servir de référence
+aux sprints suivants.
+
+#### Tâches
+
+1. Ajouter une section **Refacto & Fix** à la fin de `SPRINT_3.md`, après les tâches
+   frontend existantes et avant la Definition of Done
+2. Y lister les 5 nouveaux tickets avec leur statut final :
+
+```markdown
+## Refacto & Fix — ajoutés en cours de sprint
+
+| Ticket             | Type     | Description                                    | SP  |
+| ------------------ | -------- | ---------------------------------------------- | --- |
+| S3-REFACTOR-FE-001 | Refactor | Extract `confirmDelete` shared utility         | 2   |
+| S3-FIX-FE-001      | Fix      | Expose `reload()` public on SeasonsService     | 1   |
+| S3-FIX-BE-001      | Fix      | HAS_PERIODS result code + Season 409 message   | 1   |
+| S3-REFACTOR-FE-003 | Refactor | Extend helper with `message?` + migrate Hotels | 2   |
+| S3-REFACTOR-FE-002 | Refactor | Add confirmDialog to RoomTypesFormComponent    | 1   |
+| **Total**          |          |                                                | 7   |
+```
+
+3. Mettre à jour le total Story Points du sprint dans l'en-tête :
+   `Story Points : 21 → 28`
+4. Ajouter dans **Architecture Decisions → Frontend** :
+
+```markdown
+- **`confirmDelete` utility** — `shared/utils/confirm-delete.util.ts` centralise
+  toute la logique de confirmation + feedback toast. Chaque composant passe
+  `header`, `entityName`, `delete$`, `onSuccess?`, `conflictMessage?`, et
+  optionnellement `message?` pour les cas avec avertissement cascade.
+  Règle : tout nouveau `confirmDelete` dans Sprint 4+ **doit** utiliser ce helper.
+```
+
+5. Mettre à jour la **Definition of Done → Frontend** :
+
+```markdown
+- ✅ `confirmDelete` utility créée dans `shared/utils/`
+- ✅ Tous les composants list/form utilisent le helper (zéro `subscribe` inline dans confirmDelete)
+- ✅ `SeasonsService.reload()` public
+```
+
+6. Ajouter dans **Notes for Sprint 4** :
+
+```markdown
+- **`confirmDelete` helper disponible** — importer depuis
+  `@/app/shared/utils/confirm-delete.util`. Champ `message?` disponible pour
+  les cas avec avertissement cascade (ex: contrat avec périodes liées).
+- **`HAS_PERIODS`** ajouté dans `RepositoryResult` — utiliser pour tout
+  repository dont l'entité est liée à des `ContractPeriod`.
+```
+
+#### Fichiers modifiés
+
+```
+SPRINT_3.md
+```
+
+#### Acceptance Criteria
+
+- ✅ Section "Refacto & Fix" présente avec les 5 tickets et le total SP
+- ✅ Total SP mis à jour (21 → 28)
+- ✅ Architecture Decisions mis à jour avec la règle `confirmDelete`
+- ✅ Definition of Done mis à jour
+- ✅ Notes for Sprint 4 mis à jour
+- ✅ Aucune autre section du document modifiée
 
 ---
 
