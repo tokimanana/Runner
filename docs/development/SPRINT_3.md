@@ -1205,6 +1205,204 @@ model Supplement {
 
 ---
 
+### S3-REFACTOR-FE-001 — Extract `confirmDelete` shared utility
+
+- **Type :** Refactor
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `refactor/S3-REFACTOR-FE-001-confirm-delete-util`
+- **Commit :** `refactor(shared): extract confirmDelete utility to eliminate duplication`
+- **Depends on :** S3-FE-007, S3-FE-009, S3-FE-011, S3-FE-013 (tous les composants list/form du Sprint 3 terminés)
+
+- **Contexte :**
+
+> Six composants implémentent une logique `confirmDelete` quasi-identique :
+> `SupplementFormComponent` (×2), `RoomTypesListComponent`, `MarketFormComponent`,
+> `MealPlansListComponent`, `SeasonsListComponent`. Le code est dupliqué mot pour mot
+> à l'exception des labels et du message 409. Tout bug ou évolution (nouveau code
+> d'erreur, changement d'icône, ajout d'un log) devra être corrigé 6 fois.
+
+- **Tâches :**
+
+1. Créer `apps/frontend/src/app/shared/utils/confirm-delete.util.ts`
+2. Remplacer les 6 implémentations existantes par un appel au helper
+3. Vérifier que le comportement est identique dans chaque composant
+
+- **Implémentation :**
+
+**`apps/frontend/src/app/shared/utils/confirm-delete.util.ts`**
+
+```typescript
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
+
+export interface ConfirmDeleteOptions {
+  /** Titre de la dialog de confirmation. Ex: 'Delete Supplement' */
+  header: string;
+  /** Nom affiché de l'entité. Ex: supplement.name */
+  entityName: string;
+  /** Observable retourné par le service de suppression */
+  delete$: Observable<void>;
+  /** Appelé après une suppression réussie (reload, emit, navigate…) */
+  onSuccess?: () => void;
+  /** Message affiché si le backend retourne 409 (entité utilisée ailleurs) */
+  conflictMessage?: string;
+  confirmationService: ConfirmationService;
+  messageService: MessageService;
+}
+
+export function confirmDelete(opts: ConfirmDeleteOptions): void {
+  opts.confirmationService.confirm({
+    header: opts.header,
+    message: `Are you sure you want to delete "${opts.entityName}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    accept: () => {
+      opts.delete$.pipe(take(1)).subscribe({
+        next: () => {
+          opts.messageService.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: `"${opts.entityName}" has been deleted.`,
+          });
+          opts.onSuccess?.();
+        },
+        error: (err: { status: number }) => {
+          const is409 = err.status === 409;
+          opts.messageService.add({
+            severity: is409 ? 'warn' : 'error',
+            summary: is409 ? 'Cannot delete' : 'Error',
+            detail: is409
+              ? (opts.conflictMessage ??
+                `"${opts.entityName}" is used by existing records.`)
+              : 'An unexpected error occurred.',
+          });
+        },
+      });
+    },
+  });
+}
+```
+
+---
+
+#### Migration des composants existants
+
+Remplacer dans chaque composant la méthode complète par le pattern ci-dessous.
+
+**`supplement-form.component.ts`**
+
+```typescript
+// Avant : ~32 lignes
+// Après :
+confirmDelete(): void {
+  const supplement = this.supplement();
+  if (!supplement) return;
+
+  confirmDelete({
+    header: 'Delete Supplement',
+    entityName: supplement.name,
+    delete$: this.supplementsService.remove(supplement.id),
+    onSuccess: () => this.saved.emit(),
+    conflictMessage: `"${supplement.name}" is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+**`room-types-list.component.ts`** (ou `room-types-form.component.ts` selon l'implémentation)
+
+```typescript
+confirmDelete(room: RoomType): void {
+  confirmDelete({
+    header: 'Delete Room Type',
+    entityName: room.name,
+    delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
+    onSuccess: () => this.loadRooms(this.hotelId()),
+    conflictMessage: `"${room.name}" is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+**`market-form.component.ts`**
+
+```typescript
+confirmDelete(): void {
+  const market = this.market();
+  if (!market) return;
+
+  confirmDelete({
+    header: 'Delete Market',
+    entityName: market.name,
+    delete$: this.marketsService.remove(market.id),
+    onSuccess: () => this.saved.emit(),
+    conflictMessage: `"${market.name}" is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+**`meal-plans-list.component.ts`** (ou `meal-plan-form.component.ts`)
+
+```typescript
+confirmDelete(mealPlan: MealPlan): void {
+  confirmDelete({
+    header: 'Delete Meal Plan',
+    entityName: mealPlan.name,
+    delete$: this.mealPlansService.remove(mealPlan.id),
+    conflictMessage: `"${mealPlan.name}" is used in existing contracts.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+**`seasons-list.component.ts`**
+
+```typescript
+confirmDelete(season: Season): void {
+  confirmDelete({
+    header: 'Delete Season',
+    entityName: season.name,
+    delete$: this.seasonsService.deleteSeason(season.id),
+    onSuccess: () => this.seasonsService.reload(),
+    conflictMessage: `"${season.name}" is linked to existing contract periods.`,
+    confirmationService: this.confirmationService,
+    messageService: this.messageService,
+  });
+}
+```
+
+---
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/shared/utils/confirm-delete.util.ts         ← nouveau
+apps/frontend/src/app/features/management/supplements/components/supplement-form/supplement-form.component.ts
+apps/frontend/src/app/features/management/hotels/room-types/room-types-list/room-types-list.component.ts
+apps/frontend/src/app/features/management/markets/components/market-form/market-form.component.ts
+apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/meal-plan-form.component.ts
+apps/frontend/src/app/features/management/seasons/seasons-list/seasons-list.component.ts
+```
+
+---
+
+#### Acceptance Criteria
+
+- ✅ `confirm-delete.util.ts` créé dans `shared/utils/`
+- ✅ Aucune des 6 méthodes `confirmDelete` existantes ne contient plus de `subscribe` inline
+- ✅ Comportement identique avant/après dans chaque composant (succès, erreur 409, erreur générique)
+- ✅ `conflictMessage` renseigné dans tous les appels (pas de fallback silencieux)
+- ✅ Pas de `any` — `err` typé `{ status: number }`
+- ✅ `take(1)` centralisé dans le helper, supprimé des composants
+
+---
+
 ## Definition of Done - Sprint 3
 
 ### Backend

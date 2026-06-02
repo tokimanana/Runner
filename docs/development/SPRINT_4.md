@@ -1,4 +1,4 @@
-# Sprint 4 — Contracts (Tarification Complexe) · **REVISED**
+# Sprint 4 — Contracts (Tarification Complexe)
 
 > **Document de référence révisé** — toutes les corrections issues des décisions prises en
 > Sprint 2 (RoomTypeCapacity) et Sprint 3 (Repository Pattern, PATCH, shared types) sont
