@@ -89,7 +89,7 @@ export class PrismaSeasonRepository extends SeasonRepository {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
-        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
+        if (error.code === 'P2003') return RepositoryResult.HAS_PERIODS;
       }
       throw error;
     }

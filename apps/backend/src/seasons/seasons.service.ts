@@ -11,14 +11,14 @@ import {
   RepositoryResult,
 } from '@backend/common/repository.types';
 import { PaginatedResult } from '@runner/shared/types';
-import { CreateSeasonDto } from './dto/create-season.dto';
-import { UpdateSeasonDto } from './dto/update-season.dto';
-import { SeasonRepository } from './repositories/season.repository';
-import { SeasonQuery } from './seasons.type';
 import {
   DEFAULT_PAGINATION_LIMIT,
   MAX_PAGINATION_LIMIT,
 } from '../common/pagination.constants';
+import { CreateSeasonDto } from './dto/create-season.dto';
+import { UpdateSeasonDto } from './dto/update-season.dto';
+import { SeasonRepository } from './repositories/season.repository';
+import { SeasonQuery } from './seasons.type';
 
 @Injectable()
 export class SeasonsService {
@@ -89,8 +89,10 @@ export class SeasonsService {
     if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Season ${id} not found`);
 
-    if (result === RepositoryResult.HAS_CONTRACTS)
-      throw new ConflictException(`Season ${id} has linked Periods`);
+    if (result === RepositoryResult.HAS_PERIODS)
+      throw new ConflictException(
+        `Season ${id} cannot be deleted — it is linked to existing contract periods`,
+      );
   }
 
   private validateDates(startDate: Date, endDate: Date): void {
