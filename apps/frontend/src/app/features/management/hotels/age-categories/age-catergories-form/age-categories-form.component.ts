@@ -18,7 +18,6 @@ import {
 import { AgeCategory, AgeCategoryDto } from '@runner/shared/types';
 import { ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -33,7 +32,6 @@ import { HotelsService } from '../../hotels.service';
     InputNumberModule,
     InputTextModule,
     Button,
-    ConfirmDialogModule,
   ],
   templateUrl: './age-categories-form.component.html',
   styleUrl: './age-categories-form.component.scss',
