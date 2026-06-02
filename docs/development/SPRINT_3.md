@@ -29,6 +29,11 @@ Backend first (unblock the APIs), then routing (unblock navigation), then fronte
 - **BehaviorSubject** + `loaded` flag for all 4 services (HotelsService pattern — not SeasonsService)
 - **`take(1)`** on all `subscribe()` calls
 - All components under `features/management/<feature>/` — consistent with hotels and seasons
+- **`confirmDelete` utility** — `shared/utils/confirm-delete.util.ts` centralise
+  toute la logique de confirmation + feedback toast. Chaque composant passe
+  `header`, `entityName`, `delete$`, `onSuccess?`, `conflictMessage?`, et
+  optionnellement `message?` pour les cas avec avertissement cascade.
+  Règle : tout nouveau `confirmDelete` dans Sprint 4+ **doit** utiliser ce helper.
 
 ---
 
@@ -1609,34 +1614,75 @@ apps/frontend/src/app/features/management/hotels/hotels-list/hotels-list.compone
 
 ---
 
-### S3-REFACTOR-FE-002 — Add confirmation dialog to `RoomTypesFormComponent.deleteRoomType()`
+### S3-REFACTOR-FE-002 — Add confirmation dialogs to `RoomTypesFormComponent`
 
 - **Type :** Refactor
 - **Priority :** P1
-- **Story Points :** 1
+- **Story Points :** 2  ← était 1, ajusté car deux méthodes traitées
 - **Branch :** `refactor/S3-REFACTOR-FE-002-room-type-form-confirm-delete`
-- **Commit :** `refactor(hotels): add confirmation dialog before room type deletion in form`
-- **Depends on :** S3-REFACTOR-FE-001
+- **Commit :** `refactor(hotels): add confirmation dialogs for deleteRoomType and deleteCapacity`
+- **Depends on :** S3-REFACTOR-FE-001 (le helper `confirmDelete` doit exister)
+
 
 #### Contexte
 
-`RoomTypesFormComponent.deleteRoomType()` supprime sans confirmation. Un clic
-accidentel supprime le room type avec toutes ses capacités (cascade Prisma).
-`RoomTypesListComponent` a été migré en S3-REFACTOR-FE-001 — le formulaire doit
-avoir le même comportement.
+`RoomTypesFormComponent` a deux méthodes de suppression sans confirmation :
 
-#### Tâche
+| Méthode | Supprime | Cascade Prisma | Risque |
+|---|---|---|---|
+| `deleteCapacity(row)` | Une `RoomTypeCapacity` | Non | Faible — recréable facilement |
+| `deleteRoomType()` | Le `RoomType` entier | Oui (toutes ses capacités) | Élevé — bloqué si lié à un contrat |
+
+Les deux suppriment immédiatement au clic. Un clic accidentel sur `deleteRoomType()`
+supprime le room type **et toutes ses capacités** sans avertissement, et peut retourner
+une erreur 409 silencieuse si des contrats y sont liés.
+
+`RoomTypesListComponent` a déjà été migré vers `confirmDelete()` en S3-REFACTOR-FE-001.
+Le formulaire doit être aligné sur le même comportement.
+
+
+#### Décision — deux niveaux de confirmation différents
+
+Les deux suppressions n'ont pas le même poids — elles ne méritent pas la même UX.
+
+**`deleteCapacity`** — confirmation légère : la perte est limitée (une seule ligne de
+config, recréable en 2 clics). Une `p-confirmDialog` standard suffit, sans le helper
+`confirmDelete` car il n'y a pas de toast attendu ni de gestion 409 (les capacités ne
+peuvent pas être liées à des contrats directement).
+
+**`deleteRoomType`** — confirmation complète via le helper `confirmDelete` : la perte
+est lourde (room type + toutes ses capacités), et le backend peut bloquer avec un 409
+si le room type est utilisé dans un contrat. Le helper gère les toasts et le 409.
+
+#### Tâche 1 — `deleteRoomType()` via le helper `confirmDelete`
+
+Ajouter les injections :
 
 ```typescript
-// Ajouter les imports
-import { confirmDelete } from '../../../../../shared/utils/confirm-delete.util';
-import { ConfirmationService, MessageService } from 'primeng/api';
-
-// Ajouter les injections
 private readonly confirmationService = inject(ConfirmationService);
 private readonly messageService      = inject(MessageService);
+```
 
-// Remplacer deleteRoomType()
+Remplacer la méthode :
+
+```typescript
+// Avant — suppression directe, sans confirmation, sans feedback 409
+deleteRoomType(): void {
+  const room = this._roomType();
+  if (!room) return;
+
+  this.hotelsService
+    .deleteRoomType(this.hotelId(), room.id)
+    .pipe(take(1))
+    .subscribe({
+      next: () => {
+        this.close();
+        this.saved.emit();
+      },
+    });
+}
+
+// Après
 deleteRoomType(): void {
   const room = this._roomType();
   if (!room) return;
@@ -1649,15 +1695,86 @@ deleteRoomType(): void {
       this.close();
       this.saved.emit();
     },
-    conflictMessage: `"${room.name}" is used in existing contracts.`,
+    conflictMessage: `"${room.name}" cannot be deleted because it is used in existing contracts.`,
     confirmationService: this.confirmationService,
     messageService: this.messageService,
   });
 }
 ```
 
-Ajouter `ConfirmDialogModule` dans les `imports` du composant et `<p-confirmDialog />`
-dans le template si absent (vérifier si le parent `hotels-form` le rend déjà).
+#### Tâche 2 — `deleteCapacity()` avec confirmation inline
+
+`deleteCapacity` ne passe pas par le helper — pas de toast attendu, pas de 409 possible.
+Une confirmation `ConfirmationService` directe suffit.
+
+```typescript
+// Avant — suppression directe, sans confirmation
+deleteCapacity(row: CapacityRow): void {
+  const room = this._roomType();
+  if (!room || !row.capacity) return;
+
+  this.hotelsService
+    .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity.id)
+    .pipe(take(1))
+    .subscribe({
+      next: () => {
+        row.capacity = null;
+        row.maxPax.setValue(1);
+        row.state.set(CapacityRowState.Idle);
+        this.capacityRows.set([...this.capacityRows()]);
+      },
+    });
+}
+
+// Après
+deleteCapacity(row: CapacityRow): void {
+  const room = this._roomType();
+  if (!room || !row.capacity) return;
+
+  this.confirmationService.confirm({
+    header: 'Remove Capacity',
+    message: `Remove the capacity for "${row.ageCategory.name}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    accept: () => {
+      this.hotelsService
+        .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity!.id)
+        .pipe(take(1))
+        .subscribe({
+          next: () => {
+            row.capacity = null;
+            row.maxPax.setValue(1);
+            row.state.set(CapacityRowState.Idle);
+            this.capacityRows.set([...this.capacityRows()]);
+          },
+        });
+    },
+  });
+}
+```
+
+> **Pourquoi ne pas passer `deleteCapacity` par le helper ?**
+> Le helper émet toujours un toast "Deleted" — ce serait du bruit pour une action aussi
+> granulaire que retirer une ligne de capacité. L'UX correcte ici est la confirmation
+> seule, sans toast. Le helper est conçu pour des suppressions d'entités de premier
+> niveau (Hotel, RoomType, Market…), pas pour des sous-ressources de formulaire.
+> Règle : ne pas généraliser un helper au-delà de son périmètre d'origine.
+
+
+#### Tâche 3 — Template
+
+Vérifier que `<p-confirmDialog />` est présent dans `room-types-form.component.html`.
+Si le composant parent (`hotels-form`) le rend déjà, ne pas le dupliquer.
+
+Ajouter `ConfirmDialogModule` dans le tableau `imports` du composant.
+
+
+#### Imports à ajouter
+
+```typescript
+import { confirmDelete }                    from '../../../../../shared/utils/confirm-delete.util';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialogModule }              from 'primeng/confirmdialog';
+```
 
 #### Fichiers modifiés
 
@@ -1668,12 +1785,19 @@ apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room
 
 #### Acceptance Criteria
 
-- ✅ Cliquer "Delete" ouvre une `p-confirmDialog`
+**`deleteRoomType()`**
+- ✅ Cliquer "Delete Room Type" ouvre une `p-confirmDialog`
 - ✅ Confirmer → supprime, ferme le dialog, émet `saved`
 - ✅ Annuler → rien
-- ✅ Erreur 409 → toast warn
+- ✅ Erreur 409 → toast warn avec `conflictMessage`
 - ✅ Erreur générique → toast error
 - ✅ Plus de `subscribe` inline dans `deleteRoomType()`
+
+**`deleteCapacity()`**
+- ✅ Cliquer "Remove" sur une ligne de capacité ouvre une `p-confirmDialog`
+- ✅ Confirmer → supprime la capacité, remet `maxPax` à 1, state → Idle
+- ✅ Annuler → rien, la ligne reste intacte
+- ✅ Pas de toast (action granulaire — confirmation seule suffit)
 
 ---
 
@@ -1713,33 +1837,6 @@ aux sprints suivants.
 
 3. Mettre à jour le total Story Points du sprint dans l'en-tête :
    `Story Points : 21 → 28`
-4. Ajouter dans **Architecture Decisions → Frontend** :
-
-```markdown
-- **`confirmDelete` utility** — `shared/utils/confirm-delete.util.ts` centralise
-  toute la logique de confirmation + feedback toast. Chaque composant passe
-  `header`, `entityName`, `delete$`, `onSuccess?`, `conflictMessage?`, et
-  optionnellement `message?` pour les cas avec avertissement cascade.
-  Règle : tout nouveau `confirmDelete` dans Sprint 4+ **doit** utiliser ce helper.
-```
-
-5. Mettre à jour la **Definition of Done → Frontend** :
-
-```markdown
-- ✅ `confirmDelete` utility créée dans `shared/utils/`
-- ✅ Tous les composants list/form utilisent le helper (zéro `subscribe` inline dans confirmDelete)
-- ✅ `SeasonsService.reload()` public
-```
-
-6. Ajouter dans **Notes for Sprint 4** :
-
-```markdown
-- **`confirmDelete` helper disponible** — importer depuis
-  `@/app/shared/utils/confirm-delete.util`. Champ `message?` disponible pour
-  les cas avec avertissement cascade (ex: contrat avec périodes liées).
-- **`HAS_PERIODS`** ajouté dans `RepositoryResult` — utiliser pour tout
-  repository dont l'entité est liée à des `ContractPeriod`.
-```
 
 #### Fichiers modifiés
 
@@ -1782,6 +1879,9 @@ SPRINT_3.md
 - ✅ Delete confirmation (`p-confirmdialog`)
 - ✅ Tooltips on supplement unit types
 - ✅ Components under `features/management/<feature>/`
+- ✅ `confirmDelete` utility créée dans `shared/utils/`
+- ✅ Tous les composants list/form utilisent le helper (zéro `subscribe` inline dans confirmDelete)
+- ✅ `SeasonsService.reload()` public
 
 ### Angular Standards
 
@@ -1799,16 +1899,18 @@ SPRINT_3.md
 
 ## Story Points Summary
 
-| Area                | Tickets         | Total SP |
-| ------------------- | --------------- | -------- |
-| MealPlans backend   | S3-BE-001 → 008 | 14       |
-| Markets backend     | S3-BE-009 → 016 | 14       |
-| Currencies backend  | S3-BE-017 → 024 | 14       |
-| Supplements backend | S3-BE-025 → 032 | 14       |
-| Routing & Sidebar   | S3-FE-001 → 002 | 4        |
-| Frontend services   | S3-FE-003 → 006 | 12       |
-| Frontend components | S3-FE-007 → 014 | 26       |
-| **Total**           | **32 tickets**  | **98**   |
+| Area                | Tickets                 | Total SP |
+| ------------------- | ----------------------- | -------- |
+| MealPlans backend   | S3-BE-001 → 008         | 14       |
+| Markets backend     | S3-BE-009 → 016         | 14       |
+| Currencies backend  | S3-BE-017 → 024         | 14       |
+| Supplements backend | S3-BE-025 → 032         | 14       |
+| Routing & Sidebar   | S3-FE-001 → 002         | 4        |
+| Frontend services   | S3-FE-003 → 006         | 12       |
+| Frontend components | S3-FE-007 → 014         | 26       |
+| Refacto & Fix       | S3-REFACTOR/FIX 001→003 | 7        |
+| Documentation       | S3-DOC-001              | 1        |
+| **Total**           | **38 tickets**          | **106**  |
 
 ---
 
@@ -1858,3 +1960,8 @@ The following decisions made in Sprint 3 will affect Sprint 4 (Contracts):
 - **`PUT` vs `PATCH`** — Sprint 3 uses `PATCH` on all update endpoints (partial update, `PartialType`). Sprint 4 currently uses `PUT` in several places — align to `PATCH` for consistency unless full replacement is intentional.
 - **`features/contracts/` vs `features/management/contracts/`** — Sprint 4 places Contracts under `features/contracts/`, outside the `management/` group used by Sprint 3 referentials. Confirm whether Contracts should live under `management/` or be a top-level feature (impacts routing group and sidebar).
 - **Unit tests** — Sprint 4 introduces unit tests (`> 80% coverage`) for the first time. Sprints 0–3 have no test tasks. Decide whether to backfill tests on earlier services or keep the boundary at Sprint 4 forward.
+- **`confirmDelete` helper disponible** — importer depuis
+  `@/app/shared/utils/confirm-delete.util`. Champ `message?` disponible pour
+  les cas avec avertissement cascade (ex: contrat avec périodes liées).
+- **`HAS_PERIODS`** ajouté dans `RepositoryResult` — utiliser pour tout
+  repository dont l'entité est liée à des `ContractPeriod`.
