@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +23,9 @@ import {
   RoomTypeCapacityDto,
   RoomTypeDto,
 } from '@runner/shared/types';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -51,6 +54,7 @@ interface CapacityRow {
     ReactiveFormsModule,
     InputTextModule,
     InputNumberModule,
+    ConfirmDialogModule,
   ],
   templateUrl: './room-types-form.component.html',
   styleUrl: './room-types-form.component.scss',
@@ -58,6 +62,8 @@ interface CapacityRow {
 })
 export class RoomTypesFormComponent {
   private readonly hotelsService = inject(HotelsService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly messageService = inject(MessageService);
 
   readonly hotelId = input.required<string>();
   readonly ageCategories = input<AgeCategory[]>([]);
@@ -209,32 +215,42 @@ export class RoomTypesFormComponent {
     const room = this._roomType();
     if (!room || !row.capacity) return;
 
-    this.hotelsService
-      .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity.id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          row.capacity = null;
-          row.maxPax.setValue(1);
-          row.state.set(CapacityRowState.Idle);
-          this.capacityRows.set([...this.capacityRows()]);
-        },
-      });
+    this.confirmationService.confirm({
+      header: 'Remove Capacity',
+      message: `Remove the capacity for "${row.ageCategory.name}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.hotelsService
+          .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity!.id)
+          .pipe(take(1))
+          .subscribe({
+            next: () => {
+              row.capacity = null;
+              row.maxPax.setValue(1);
+              row.state.set(CapacityRowState.Idle);
+              this.capacityRows.set([...this.capacityRows()]);
+            },
+          });
+      },
+    });
   }
 
   deleteRoomType(): void {
     const room = this._roomType();
     if (!room) return;
 
-    this.hotelsService
-      .deleteRoomType(this.hotelId(), room.id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.close();
-          this.saved.emit();
-        },
-      });
+    confirmDelete({
+      header: 'Delete Room Type',
+      entityName: room.name,
+      delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
+      onSuccess: () => {
+        this.close();
+        this.saved.emit();
+      },
+      conflictMessage: `"${room.name}" cannot be deleted because it is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
+    });
   }
 
   private _buildCapacityRows(room: RoomType): void {
