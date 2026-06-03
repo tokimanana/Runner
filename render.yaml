@@ -1,10 +1,11 @@
 services:
   - type: web
     name: runner-backend
-    runtime: node
+    env: node
     region: oregon
+    plan: free
     branch: main
-    buildCommand: npm ci && npx nx build backend --configuration=production
+    buildCommand: NODE_ENV=development npm install && npx prisma generate && npx nx build backend --configuration=production
     startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js
     envVars:
       - key: DATABASE_URL
@@ -16,20 +17,44 @@ services:
       - key: JWT_EXPIRATION
         value: 1d
       - key: PORT
-        value: 3000
+        value: 10000
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGIN
         sync: false
+    buildFilter:
+      paths:
+        - apps/backend/**
+        - prisma/**
+        - libs/**
+        - package.json
+        - package-lock.json
+        - nx.json
+        - tsconfig.base.json
+      ignoredPaths:
+        - '**/*.md'
+        - '**/*.spec.ts'
 
   - type: web
     name: runner-frontend
-    runtime: static
+    env: static
     region: oregon
+    plan: free
     branch: main
-    buildCommand: npm ci && npx nx build frontend --configuration=production
+    buildCommand: NODE_ENV=development npm install && npx nx build frontend --configuration=production
     staticPublishPath: dist/apps/frontend/browser
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+    buildFilter:
+      paths:
+        - apps/frontend/**
+        - libs/**
+        - package.json
+        - package-lock.json
+        - nx.json
+        - tsconfig.base.json
+      ignoredPaths:
+        - '**/*.md'
+        - '**/*.spec.ts'
