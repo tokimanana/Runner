@@ -65,22 +65,22 @@ export class HotelsService {
   createHotel(dto: HotelDto): Observable<Hotel> {
     return this.http
       .post<Hotel>(`${this.apiUrl}/hotels`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   updateHotel(id: string, dto: Partial<HotelDto>): Observable<Hotel> {
     return this.http
       .patch<Hotel>(`${this.apiUrl}/hotels/${id}`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   deleteHotel(id: string): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/hotels/${id}`)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
-  private refresh(): void {
+  reload(): void {
     this.loaded = false;
     this.loadHotels();
   }
