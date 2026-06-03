@@ -5,6 +5,7 @@ import { take } from 'rxjs/operators';
 export interface ConfirmDeleteOptions {
   header: string;
   entityName: string;
+  message?: string;
   delete$: Observable<void>;
   onSuccess?: () => void;
   conflictMessage?: string;
@@ -15,7 +16,8 @@ export interface ConfirmDeleteOptions {
 export function confirmDelete(opts: ConfirmDeleteOptions): void {
   opts.confirmationService.confirm({
     header: opts.header,
-    message: `Are you sure you want to delete "${opts.entityName}"?`,
+    message:
+      opts.message ?? `Are you sure you want to delete "${opts.entityName}"?`,
     icon: 'pi pi-exclamation-triangle',
     accept: () => {
       opts.delete$.pipe(take(1)).subscribe({
