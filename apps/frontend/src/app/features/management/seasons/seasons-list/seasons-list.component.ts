@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -17,7 +18,6 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
-import { take } from 'rxjs';
 import { SeasonsService } from '../seasons.service';
 
 @Component({
@@ -57,22 +57,14 @@ export class SeasonsListComponent {
   });
 
   confirmDelete(season: Season): void {
-    this.confirmationService.confirm({
+    confirmDelete({
       header: 'Delete Season',
-      message: `Are you sure you want to delete "${season.name}"?`,
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.seasonsService
-          .deleteSeason(season.id)
-          .pipe(take(1))
-          .subscribe({
-            error: (err) => {
-              if (err.status === 409) {
-                // HAS_PERIODS — backend bloque
-              }
-            },
-          });
-      },
+      entityName: season.name,
+      delete$: this.seasonsService.deleteSeason(season.id),
+      onSuccess: () => this.seasonsService.reload(),
+      conflictMessage: `"${season.name}" is linked to existing contract periods.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }
