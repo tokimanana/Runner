@@ -59,22 +59,22 @@ export class SeasonsService {
   createSeason(dto: SeasonDto): Observable<Season> {
     return this.http
       .post<Season>(this.apiUrl, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   updateSeason(id: string, dto: Partial<SeasonDto>): Observable<Season> {
     return this.http
       .patch<Season>(`${this.apiUrl}/${id}`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   deleteSeason(id: string): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
-  private refresh(): void {
+  reload(): void {
     this.loaded = false;
     this.loadSeasons();
   }

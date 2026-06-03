@@ -16,6 +16,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { AgeCategory, AgeCategoryDto } from '@runner/shared/types';
+import { ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -38,6 +39,7 @@ import { HotelsService } from '../../hotels.service';
 })
 export class AgeCategoriesFormComponent {
   private readonly hotelsService = inject(HotelsService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   readonly hotelId = input.required<string>();
   readonly saved = output<void>();
@@ -111,12 +113,25 @@ export class AgeCategoriesFormComponent {
   }
 
   deleteAgeCategory(catId: string): void {
-    this.hotelsService
-      .deleteAgeCategory(this.hotelId(), catId)
-      .pipe(take(1))
-      .subscribe({
-        next: () => this.saved.emit(),
-      });
+    const category = this._category();
+    if (!category) return;
+
+    this.confirmationService.confirm({
+      header: 'Delete Age Category',
+      message: `Delete "${category.name}"? This may affect existing pricing rules.`,
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.hotelsService
+          .deleteAgeCategory(this.hotelId(), catId)
+          .pipe(take(1))
+          .subscribe({
+            next: () => {
+              this.close();
+              this.saved.emit();
+            },
+          });
+      },
+    });
   }
 
   private _reset(): void {

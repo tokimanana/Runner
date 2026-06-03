@@ -13,7 +13,6 @@ import { FormsModule } from '@angular/forms';
 import { RoomType } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -25,7 +24,6 @@ import { HotelsService } from '../../hotels.service';
   selector: 'app-room-types-list',
   imports: [
     ButtonModule,
-    ConfirmDialogModule,
     IconFieldModule,
     InputIconModule,
     FormsModule,
