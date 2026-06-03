@@ -1618,20 +1618,19 @@ apps/frontend/src/app/features/management/hotels/hotels-list/hotels-list.compone
 
 - **Type :** Refactor
 - **Priority :** P1
-- **Story Points :** 2  ← était 1, ajusté car deux méthodes traitées
+- **Story Points :** 2 ← était 1, ajusté car deux méthodes traitées
 - **Branch :** `refactor/S3-REFACTOR-FE-002-room-type-form-confirm-delete`
 - **Commit :** `refactor(hotels): add confirmation dialogs for deleteRoomType and deleteCapacity`
 - **Depends on :** S3-REFACTOR-FE-001 (le helper `confirmDelete` doit exister)
-
 
 #### Contexte
 
 `RoomTypesFormComponent` a deux méthodes de suppression sans confirmation :
 
-| Méthode | Supprime | Cascade Prisma | Risque |
-|---|---|---|---|
-| `deleteCapacity(row)` | Une `RoomTypeCapacity` | Non | Faible — recréable facilement |
-| `deleteRoomType()` | Le `RoomType` entier | Oui (toutes ses capacités) | Élevé — bloqué si lié à un contrat |
+| Méthode               | Supprime               | Cascade Prisma             | Risque                             |
+| --------------------- | ---------------------- | -------------------------- | ---------------------------------- |
+| `deleteCapacity(row)` | Une `RoomTypeCapacity` | Non                        | Faible — recréable facilement      |
+| `deleteRoomType()`    | Le `RoomType` entier   | Oui (toutes ses capacités) | Élevé — bloqué si lié à un contrat |
 
 Les deux suppriment immédiatement au clic. Un clic accidentel sur `deleteRoomType()`
 supprime le room type **et toutes ses capacités** sans avertissement, et peut retourner
@@ -1639,7 +1638,6 @@ une erreur 409 silencieuse si des contrats y sont liés.
 
 `RoomTypesListComponent` a déjà été migré vers `confirmDelete()` en S3-REFACTOR-FE-001.
 Le formulaire doit être aligné sur le même comportement.
-
 
 #### Décision — deux niveaux de confirmation différents
 
@@ -1759,7 +1757,6 @@ deleteCapacity(row: CapacityRow): void {
 > niveau (Hotel, RoomType, Market…), pas pour des sous-ressources de formulaire.
 > Règle : ne pas généraliser un helper au-delà de son périmètre d'origine.
 
-
 #### Tâche 3 — Template
 
 Vérifier que `<p-confirmDialog />` est présent dans `room-types-form.component.html`.
@@ -1767,13 +1764,12 @@ Si le composant parent (`hotels-form`) le rend déjà, ne pas le dupliquer.
 
 Ajouter `ConfirmDialogModule` dans le tableau `imports` du composant.
 
-
 #### Imports à ajouter
 
 ```typescript
-import { confirmDelete }                    from '../../../../../shared/utils/confirm-delete.util';
+import { confirmDelete } from '../../../../../shared/utils/confirm-delete.util';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ConfirmDialogModule }              from 'primeng/confirmdialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 ```
 
 #### Fichiers modifiés
@@ -1786,6 +1782,7 @@ apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room
 #### Acceptance Criteria
 
 **`deleteRoomType()`**
+
 - ✅ Cliquer "Delete Room Type" ouvre une `p-confirmDialog`
 - ✅ Confirmer → supprime, ferme le dialog, émet `saved`
 - ✅ Annuler → rien
@@ -1794,6 +1791,7 @@ apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room
 - ✅ Plus de `subscribe` inline dans `deleteRoomType()`
 
 **`deleteCapacity()`**
+
 - ✅ Cliquer "Remove" sur une ligne de capacité ouvre une `p-confirmDialog`
 - ✅ Confirmer → supprime la capacité, remet `maxPax` à 1, state → Idle
 - ✅ Annuler → rien, la ligne reste intacte
@@ -1822,27 +1820,6 @@ aux sprints suivants.
    frontend existantes et avant la Definition of Done
 2. Y lister les 5 nouveaux tickets avec leur statut final :
 
-```markdown
-## Refacto & Fix — ajoutés en cours de sprint
-
-| Ticket             | Type     | Description                                    | SP  |
-| ------------------ | -------- | ---------------------------------------------- | --- |
-| S3-REFACTOR-FE-001 | Refactor | Extract `confirmDelete` shared utility         | 2   |
-| S3-FIX-FE-001      | Fix      | Expose `reload()` public on SeasonsService     | 1   |
-| S3-FIX-BE-001      | Fix      | HAS_PERIODS result code + Season 409 message   | 1   |
-| S3-REFACTOR-FE-003 | Refactor | Extend helper with `message?` + migrate Hotels | 2   |
-| S3-REFACTOR-FE-002 | Refactor | Add confirmDialog to RoomTypesFormComponent    | 1   |
-| **Total**          |          |                                                | 7   |
-```
-
-3. Mettre à jour le total Story Points du sprint dans l'en-tête :
-   `Story Points : 21 → 28`
-
-#### Fichiers modifiés
-
-```
-SPRINT_3.md
-```
 
 #### Acceptance Criteria
 
@@ -1852,6 +1829,166 @@ SPRINT_3.md
 - ✅ Definition of Done mis à jour
 - ✅ Notes for Sprint 4 mis à jour
 - ✅ Aucune autre section du document modifiée
+
+
+### S3-FIX-FE-002 — Fix missing `#roomTypesForm` template ref in `hotels-form.component.html`
+
+- **Type :** Fix
+- **Priority :** P0
+- **Story Points :** 1
+- **Branch :** `fix/S3-FIX-FE-002-room-types-form-viewchild-ref`
+- **Commit :** `fix(hotels): add missing #roomTypesForm template ref`
+
+---
+
+#### Contexte
+
+`hotels-form.component.html` rend `<app-room-types-form>` sans référence template :
+
+```html
+<!-- État actuel — ref absente -->
+<app-room-types-form
+  [hotelId]="hotelId()!"
+  [ageCategories]="ageCategories()"
+  (saved)="onRoomSaved()"
+/>
+````
+
+Sans `#roomTypesForm`, le `viewChild` dans `hotels-form.component.ts` résout `undefined`.
+`onAddRoom()` et `onEditRoom($event)` appellent `this.roomTypesForm()?.open(...)` sur
+`undefined` — le dialog ne s'ouvre jamais.
+
+Le pattern `viewChild` + ref template est établi dans ce projet depuis Sprint 2
+(même pattern que `AgeCategoriesFormComponent`).
+
+#### Tâche 1 — Ajouter `#roomTypesForm` dans le template
+
+**`hotels-form.component.html`**
+
+```html
+<!-- Après -->
+<app-room-types-form
+  #roomTypesForm
+  [hotelId]="hotelId()!"
+  [ageCategories]="ageCategories()"
+  (saved)="onRoomSaved()"
+/>
+```
+
+#### Tâche 2 — Vérifier le `viewChild` dans le composant
+
+**`hotels-form.component.ts`** — vérifier que la déclaration existe :
+
+```typescript
+readonly roomTypesForm = viewChild<RoomTypesFormComponent>('roomTypesForm');
+```
+
+Si absent, l'ajouter et vérifier que `onAddRoom()` / `onEditRoom()` l'utilisent :
+
+```typescript
+onAddRoom(): void {
+  this.roomTypesForm()?.open();
+}
+
+onEditRoom(room: RoomType): void {
+  this.roomTypesForm()?.open(room);
+}
+```
+
+#### Note sur `<p-confirmDialog />`
+
+Le pattern du projet est de déclarer `<p-confirmDialog />` localement dans chaque
+composant liste (visible dans `hotels-list.component.html`).
+
+Pour S3-REFACTOR-FE-002, `room-types-form.component.html` est un dialog (`<p-dialog>`)
+— pas un composant liste. Le `<p-confirmDialog />` doit y être ajouté **en dehors**
+du `<p-dialog>`, au niveau racine du template :
+
+```html
+<!-- room-types-form.component.html -->
+
+<p-confirmDialog /> ← au niveau racine, jamais à l'intérieur de p-dialog
+
+<p-dialog [(visible)]="visible" ...> ... </p-dialog>
+```
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/features/management/hotels/hotels-form/hotels-form.component.html
+apps/frontend/src/app/features/management/hotels/hotels-form/hotels-form.component.ts   (si viewChild absent)
+```
+
+#### Acceptance Criteria
+
+- ✅ `#roomTypesForm` présent dans `hotels-form.component.html`
+- ✅ `viewChild<RoomTypesFormComponent>('roomTypesForm')` présent dans `hotels-form.component.ts`
+- ✅ Cliquer "Add Room Type" ouvre le dialog
+- ✅ Cliquer "Edit" sur une ligne de room type ouvre le dialog pré-rempli
+- ✅ `<p-confirmDialog />` placé au niveau racine de `room-types-form.component.html` (hors `<p-dialog>`) pour S3-REFACTOR-FE-002
+
+---
+
+### S3-FIX-FE-003 — Expose `reload()` on `HotelsService`
+
+- **Type :** Fix
+- **Priority :** P0 ← bloque S3-REFACTOR-FE-003 (`onSuccess: () => this.hotelsService.reload()`)
+- **Story Points :** 1
+- **Branch :** `fix/S3-FIX-FE-003-hotels-service-reload`
+- **Commit :** `fix(hotels): expose public reload() method on HotelsService`
+
+
+#### Contexte
+
+`HotelsService` a une méthode `refresh()` privée — même anomalie que `SeasonsService`
+corrigée en S3-FIX-FE-001. `HotelsListComponent` ne peut pas l'appeler depuis
+l'extérieur, ce qui bloque S3-REFACTOR-FE-003 dont le `onSuccess` appelle
+`this.hotelsService.reload()`.
+
+#### Tâche
+
+```typescript
+// Avant — privé, inaccessible
+private refresh(): void {
+  this.loaded = false;
+  this.loadHotels();
+}
+
+// Après — public, aligné sur le pattern projet
+reload(): void {
+  this.loaded = false;
+  this.loadHotels();
+}
+
+// Mettre à jour les 3 appels internes
+createHotel(dto: HotelDto): Observable<Hotel> {
+  return this.http.post<Hotel>(`${this.apiUrl}/hotels`, dto)
+    .pipe(tap(() => this.reload()));
+}
+
+updateHotel(id: string, dto: Partial<HotelDto>): Observable<Hotel> {
+  return this.http.patch<Hotel>(`${this.apiUrl}/hotels/${id}`, dto)
+    .pipe(tap(() => this.reload()));
+}
+
+deleteHotel(id: string): Observable<void> {
+  return this.http.delete<void>(`${this.apiUrl}/hotels/${id}`)
+    .pipe(tap(() => this.reload()));
+}
+```
+
+#### Fichiers modifiés
+
+```
+apps/frontend/src/app/features/management/hotels/hotels.service.ts
+```
+
+#### Acceptance Criteria
+
+- ✅ `reload()` est public
+- ✅ `refresh()` n'existe plus — renommé, pas dupliqué
+- ✅ Les trois `tap(() => this.refresh())` internes pointent vers `this.reload()`
+- ✅ `HotelsListComponent` compile sans erreur après S3-REFACTOR-FE-003
 
 ---
 
