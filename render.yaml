@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: runner-backend
+    runtime: node
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npx nx build backend --configuration=production
+    startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 1d
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: web
+    name: runner-frontend
+    runtime: static
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npx nx build frontend --configuration=production
+    staticPublishPath: dist/apps/frontend/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
