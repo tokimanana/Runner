@@ -46,22 +46,22 @@ export class CurrenciesService {
   create(dto: CurrencyDto): Observable<Currency> {
     return this.http
       .post<Currency>(this.apiUrl, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   update(id: string, dto: Partial<CurrencyDto>): Observable<Currency> {
     return this.http
       .patch<Currency>(`${this.apiUrl}/${id}`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   remove(id: string): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
-  private refresh(): void {
+  reload(): void {
     this.loaded = false;
     this.load();
   }
