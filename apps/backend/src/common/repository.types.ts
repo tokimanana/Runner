@@ -3,6 +3,7 @@ export enum RepositoryResult {
   NOT_FOUND = 'NOT_FOUND',
   HAS_CONTRACTS = 'HAS_CONTRACTS',
   CONFLICT = 'CONFLICT',
+  HAS_PERIODS = 'HAS_PERIODS',
 }
 
 export class RepositoryException extends Error {
