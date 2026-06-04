@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.monapp.com',
+  apiUrl: 'https://runner-backend-dmd9.onrender.com',
 };
