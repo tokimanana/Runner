@@ -19,10 +19,12 @@ import { UserRole } from '@prisma/client';
 import { Request, Response } from 'express';
 import { RegisterDto } from './dto/register.dto';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: isProduction,
+  sameSite: isProduction ? ('none' as const) : ('lax' as const),
 };
 
 @Controller('auth')
