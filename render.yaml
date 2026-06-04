@@ -40,8 +40,6 @@ services:
   - type: web
     name: runner-frontend
     env: static
-    region: oregon
-    plan: free
     branch: main
     buildCommand: NODE_ENV=development npm install && npx nx build frontend --configuration=production
     staticPublishPath: dist/apps/frontend/browser
