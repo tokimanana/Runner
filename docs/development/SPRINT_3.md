@@ -1820,7 +1820,6 @@ aux sprints suivants.
    frontend existantes et avant la Definition of Done
 2. Y lister les 5 nouveaux tickets avec leur statut final :
 
-
 #### Acceptance Criteria
 
 - ✅ Section "Refacto & Fix" présente avec les 5 tickets et le total SP
@@ -1829,7 +1828,6 @@ aux sprints suivants.
 - ✅ Definition of Done mis à jour
 - ✅ Notes for Sprint 4 mis à jour
 - ✅ Aucune autre section du document modifiée
-
 
 ### S3-FIX-FE-002 — Fix missing `#roomTypesForm` template ref in `hotels-form.component.html`
 
@@ -1852,7 +1850,7 @@ aux sprints suivants.
   [ageCategories]="ageCategories()"
   (saved)="onRoomSaved()"
 />
-````
+```
 
 Sans `#roomTypesForm`, le `viewChild` dans `hotels-form.component.ts` résout `undefined`.
 `onAddRoom()` et `onEditRoom($event)` appellent `this.roomTypesForm()?.open(...)` sur
@@ -1937,7 +1935,6 @@ apps/frontend/src/app/features/management/hotels/hotels-form/hotels-form.compone
 - **Branch :** `fix/S3-FIX-FE-003-hotels-service-reload`
 - **Commit :** `fix(hotels): expose public reload() method on HotelsService`
 
-
 #### Contexte
 
 `HotelsService` a une méthode `refresh()` privée — même anomalie que `SeasonsService`
@@ -1989,6 +1986,255 @@ apps/frontend/src/app/features/management/hotels/hotels.service.ts
 - ✅ `refresh()` n'existe plus — renommé, pas dupliqué
 - ✅ Les trois `tap(() => this.refresh())` internes pointent vers `this.reload()`
 - ✅ `HotelsListComponent` compile sans erreur après S3-REFACTOR-FE-003
+
+---
+
+### S3-OPS-002 — Déploiement Sprint 3 sur Render
+
+- **Type :** Ops / Deployment
+- **Priority :** P0
+- **Story Points :** 3 ← était 2, ajusté (migration Neon plus complexe que prévu)
+- **Dépend de :** S3-OPS-001 (main à jour avec le tag v0.3.0)
+- **Plateforme :** Render + Neon (PostgreSQL)
+
+## Architecture cible
+
+```
+Render Services
+├── runner-backend    (Web Service — NestJS)
+└── runner-frontend   (Static Site — Angular)
+
+Base de données
+└── Neon PostgreSQL   (projet Runner, branch production, DB neondb)
+```
+
+## ✅ Phase 1 — Migration DB Runner vers Neon
+
+### 1. Configuration connexion Neon
+
+Deux connection strings récupérées depuis le dashboard Neon
+(projet Runner, branch production, DB neondb) :
+
+| Variable       | URL                                                                         | Usage             |
+| -------------- | --------------------------------------------------------------------------- | ----------------- |
+| `DATABASE_URL` | `postgresql://...pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require` | Runtime NestJS    |
+| `DIRECT_URL`   | `postgresql://...c-8.us-east-1.aws.neon.tech/neondb?sslmode=require`        | Migrations Prisma |
+
+`directUrl = env("DIRECT_URL")` ajouté dans le `datasource` de `schema.prisma`.
+
+> **Pourquoi deux URLs ?**
+> Neon expose un pooler PgBouncer pour les requêtes runtime (scalable, gère les
+> connexions concurrentes). Mais Prisma migrate utilise des advisory locks PostgreSQL
+> incompatibles avec PgBouncer — la connexion directe est obligatoire pour les
+> migrations.
+
+### 2. Diagnostic état initial
+
+```bash
+npx prisma migrate status --schema=./prisma/schema.prisma
+```
+
+Résultat : 8 migrations présentes dans le repo, aucune appliquée. Une migration
+`20260325130609_init` existait dans `_prisma_migrations` marquée `failed`
+(créée par le collègue, exécution interrompue). La DB contenait des tables
+partiellement créées — état incohérent.
+
+### 3. Reset et migration propre
+
+Décision : vider la DB et repartir proprement.
+
+```bash
+npx prisma migrate reset --schema=./prisma/schema.prisma
+```
+
+Résultat :
+
+- 8 migrations appliquées dans l'ordre
+- Prisma Client régénéré (v6.19.2)
+- Seed exécuté automatiquement (`tsx prisma/seed.ts`) → `Seeding done!`
+
+### 4. Import des données métier locales
+
+Export depuis PostgreSQL local :
+
+```bash
+pg_dump -h localhost -U postgres -d runner \
+  --data-only \
+  --no-owner \
+  --no-privileges \
+  -f data_export.sql
+```
+
+Import dans Neon (connexion directe) :
+
+```bash
+psql "postgresql://neondb_owner:***@ep-cool-waterfall-aqaeu4dx.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require" \
+  -f data_export.sql
+```
+
+Résultat : toutes les tables importées. Seul conflit : table `User` —
+`admin@runner.com` existait déjà via le seed. Ignoré (données identiques).
+
+### État final DB Neon
+
+| Statut         | Détail         |
+| -------------- | -------------- |
+| Migrations     | 8/8 appliquées |
+| Seed           | Exécuté        |
+| Données métier | Importées      |
+| DB locale      | Inchangée      |
+
+## ✅ Phase 2 — Préparation du code (TERMINÉE)
+
+### `render.yaml` — créé à la racine du repo
+
+```yaml
+services:
+  - type: web
+    name: runner-backend
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: NODE_ENV=development npm install && npx prisma generate && npx nx build backend --configuration=production
+    startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 1d
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false
+    buildFilter:
+      paths:
+        - apps/backend/**
+        - prisma/**
+        - libs/**
+        - package.json
+        - package-lock.json
+        - nx.json
+        - tsconfig.base.json
+      ignoredPaths:
+        - '**/*.md'
+        - '**/*.spec.ts'
+
+  - type: web
+    name: runner-frontend
+    env: static
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: NODE_ENV=development npm install && npx nx build frontend --configuration=production
+    staticPublishPath: dist/apps/frontend/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    buildFilter:
+      paths:
+        - apps/frontend/**
+        - libs/**
+        - package.json
+        - package-lock.json
+        - nx.json
+        - tsconfig.base.json
+      ignoredPaths:
+        - '**/*.md'
+        - '**/*.spec.ts'
+```
+
+### `main.ts` — CORS depuis variable d'environnement
+
+```typescript
+app.enableCors({
+  origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
+```
+
+Commit : `chore(ops): add render.yaml and fix CORS origin from env var`
+Branch : `chore/S3-OPS-002-render-deployment` → mergée dans `main`
+
+## 🔄 Phase 3 — Déploiement Render (EN COURS)
+
+### Étape 1 — Créer les services via Blueprint
+
+1. [render.com](https://render.com) → **New** → **Blueprint**
+2. Connecter le repo GitHub `tokimanana/Runner`
+3. Render détecte `render.yaml` → propose de créer `runner-backend` et `runner-frontend`
+4. Cliquer **Apply**
+
+Variables `sync: false` à renseigner manuellement :
+
+| Service        | Variable       | Valeur                                 |
+| -------------- | -------------- | -------------------------------------- |
+| runner-backend | `DATABASE_URL` | URL pooler Neon                        |
+| runner-backend | `DIRECT_URL`   | URL directe Neon                       |
+| runner-backend | `CORS_ORIGIN`  | `https://runner-frontend.onrender.com` |
+
+### Étape 2 — Vérifier le déploiement backend
+
+```bash
+curl https://runner-backend.onrender.com/health
+```
+
+Réponse attendue : HTTP 200
+
+### Étape 3 — Mettre à jour `environment.prod.ts`
+
+Une fois l'URL backend connue (ex: `https://runner-backend.onrender.com`) :
+
+```typescript
+// apps/frontend/src/environments/environment.prod.ts
+export const environment = {
+  production: true,
+  apiUrl: 'https://runner-backend.onrender.com',
+};
+```
+
+Commit : `chore(ops): set production API URL for frontend`
+
+### Étape 4 — Vérifier le déploiement frontend
+
+- Ouvrir `https://runner-frontend.onrender.com`
+- Login avec `admin@runner.com`
+- Naviguer sur Hotels, MealPlans, Markets, Currencies, Supplements
+- Tester un CRUD complet
+- Tester une suppression avec confirmation dialog
+
+## Problèmes rencontrés et solutions
+
+| Problème                         | Cause                                            | Solution                                               |
+| -------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `migrate resolve` timeout        | Advisory lock incompatible avec pooler Neon      | Utiliser `DIRECT_URL` + `directUrl` dans schema.prisma |
+| Migration `init` failed en base  | Collègue avait tenté une migration interrompue   | `prisma migrate reset` sur la DB Neon                  |
+| `db pull` écrase `schema.prisma` | Commande d'introspection modifie le schéma local | `git checkout prisma/schema.prisma` pour revenir       |
+| CORS bloqué en prod              | `origin` hardcodé sur `localhost:4200`           | Lire depuis `process.env.CORS_ORIGIN`                  |
+
+## Acceptance Criteria
+
+- ✅ `render.yaml` commité dans `main`
+- ✅ CORS lit depuis `process.env.CORS_ORIGIN`
+- ✅ DB Neon : 8/8 migrations appliquées + données importées
+- ✅ `runner-backend` déployé et en ligne sur Render
+- ✅ `runner-frontend` déployé et en ligne sur Render
+- ✅ `GET /health` répond HTTP 200
+- ✅ Login fonctionne depuis le frontend déployé
+- ✅ Navigation et CRUD fonctionnels sur tous les référentiels
+- ✅ `environment.prod.ts` mis à jour avec l'URL Render réelle
+- ✅ Routing SPA fonctionne (refresh sur une route Angular ne donne pas 404)
 
 ---
 
