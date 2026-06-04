@@ -37,13 +37,55 @@ export interface Hotel {
   createdAt: string;
   updatedAt: string;
 }
-
-// Season
 export interface Season {
   id: string;
   name: string;
   startDate: string;
   endDate: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealPlan {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Market {
+  id: string;
+  code: string;
+  name: string;
+  tourOperatorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export type SupplementUnit =
+  | 'PER_PERSON_PER_NIGHT'
+  | 'PER_PERSON_PER_STAY'
+  | 'PER_ROOM_PER_NIGHT'
+  | 'PER_ROOM_PER_STAY';
+
+export interface Supplement {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  unit: SupplementUnit;
+  canReceiveDiscount: boolean;
   tourOperatorId: string;
   createdAt: string;
   updatedAt: string;
@@ -94,4 +136,29 @@ export interface SeasonDto {
 export interface RoomTypeCapacityDto {
   ageCategoryId: string;
   maxPax: number;
+}
+
+export interface MealPlanDto {
+  code: string;
+  name: string;
+  description?: string;
+}
+
+export interface MarketDto {
+  code: string;
+  name: string;
+}
+
+export interface CurrencyDto {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export interface SupplementDto {
+  name: string;
+  description?: string;
+  price: number;
+  unit: SupplementUnit;
+  canReceiveDiscount: boolean;
 }

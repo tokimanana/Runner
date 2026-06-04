@@ -1,0 +1,64 @@
+<div class="currencies-layout">
+  <div class="currencies-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Currencies</h2>
+      <span class="panel-subtitle">
+        {{ (currencies$ | async)?.length ?? 0 }} currencies configured
+      </span>
+    </div>
+
+    <div class="currencies-items">
+      @if (loading$ | async) {
+        <div class="loading-state">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+      }
+
+      @for (currency of (currencies$ | async) ?? []; track currency.id) {
+        <div
+          class="currency-item"
+          [class.selected]="selectedCurrency()?.id === currency.id"
+          (click)="selectCurrency(currency)"
+        >
+          <span class="currency-symbol-badge">{{ currency.symbol }}</span>
+          <div class="currency-info">
+            <span class="currency-name">{{ currency.name }}</span>
+            <span class="currency-code">{{ currency.code }}</span>
+          </div>
+          <i class="pi pi-chevron-right chevron"></i>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <i class="pi pi-dollar"></i>
+          <p>No currencies configured yet.</p>
+        </div>
+      }
+    </div>
+
+    <div class="panel-footer">
+      <p-button
+        label="Add Currency"
+        icon="pi pi-plus"
+        styleClass="w-full"
+        (onClick)="startCreate()"
+      />
+    </div>
+  </div>
+
+  @if (isPanelOpen()) {
+    <div class="form-panel">
+      <app-currencies-form
+        [currency]="selectedCurrency()"
+        (saved)="onSaved()"
+        (cancelled)="onCancelled()"
+      />
+    </div>
+  } @else {
+    <div class="form-panel idle-state">
+      <i class="pi pi-dollar"></i>
+      <p>Select a currency to edit, or add a new one.</p>
+    </div>
+  }
+</div>
+
+<p-toast />

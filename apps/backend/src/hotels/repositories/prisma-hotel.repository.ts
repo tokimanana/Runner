@@ -73,9 +73,12 @@ export class PrismaHotelRepository implements HotelRepository {
     return { data, total, limit, offset };
   }
 
-  async findById(id: string): Promise<HotelDetail | null> {
+  async findById(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<HotelDetail | null> {
     return this.prisma.hotel.findUnique({
-      where: { id },
+      where: { id, tourOperatorId },
       include: HOTEL_INCLUDE,
     });
   }
@@ -247,42 +250,6 @@ export class PrismaHotelRepository implements HotelRepository {
       }
       throw error;
     }
-  }
-
-  async findRoomTypeCapacityById(id: string): Promise<RoomTypeCapacity | null> {
-    return this.prisma.roomTypeCapacity.findUnique({ where: { id } });
-  }
-
-  async updateRoomTypeCapacity(
-    id: string,
-    dto: UpdateRoomTypeCapacityDto,
-  ): Promise<RoomTypeCapacity> {
-    return this.prisma.roomTypeCapacity.update({
-      where: { id },
-      data: { ...dto },
-    });
-  }
-
-  async deleteRoomTypeCapacity(id: string): Promise<RepositoryResult> {
-    try {
-      await this.prisma.roomTypeCapacity.delete({ where: { id } });
-      return RepositoryResult.DELETED;
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
-        if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
-      }
-      throw error;
-    }
-  }
-
-  async createRoomTypeCapacity(
-    roomTypeId: string,
-    dto: CreateRoomTypeCapacityDto,
-  ): Promise<RoomTypeCapacity> {
-    return this.prisma.roomTypeCapacity.create({
-      data: { ...dto, roomTypeId },
-    });
   }
 
   async findRoomTypeCapacityById(id: string): Promise<RoomTypeCapacity | null> {

@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -99,4 +100,57 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model MealPlan {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  description    String?
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+}
+
+model Market {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  tourOperatorId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
+}
+
+model Currency {
+  id     String @id @default(cuid())
+  code   String @unique
+  name   String
+  symbol String
+}
+
+enum SupplementUnit {
+  PER_PERSON_PER_NIGHT
+  PER_PERSON_PER_STAY
+  PER_ROOM_PER_NIGHT
+  PER_ROOM_PER_STAY
+}
+
+model Supplement {
+  id                 String         @id @default(cuid())
+  name               String
+  description        String?
+  price              Decimal
+  unit               SupplementUnit
+  canReceiveDiscount Boolean        @default(false)
+  tourOperatorId     String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([tourOperatorId])
 }

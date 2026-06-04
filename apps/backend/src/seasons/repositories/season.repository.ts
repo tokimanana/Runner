@@ -3,16 +3,12 @@ import { Season } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
+import { SeasonQuery } from '../seasons.type';
 
 export abstract class SeasonRepository {
   abstract findAll(
     tourOperatorId: string,
-    query?: {
-      startDate?: Date;
-      endDate?: Date;
-      limit?: number;
-      offset?: number;
-    },
+    query?: SeasonQuery,
   ): Promise<PaginatedResult<Season>>;
 
   abstract findOne(id: string, tourOperatorId: string): Promise<Season | null>;

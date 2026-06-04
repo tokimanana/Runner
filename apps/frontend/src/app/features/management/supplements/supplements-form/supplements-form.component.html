@@ -1,0 +1,117 @@
+<div class="form-container">
+  <div class="form-header">
+    <div class="form-header-info">
+      <h3 class="form-title">
+        {{ isEditMode() ? supplement()!.name : 'New Supplement' }}
+      </h3>
+      @if (isEditMode()) {
+        <span class="unit-badge">{{ unitLabel() }}</span>
+      }
+    </div>
+    @if (isEditMode()) {
+      <p-button
+        label="Delete Supplement"
+        icon="pi pi-trash"
+        severity="danger"
+        [outlined]="true"
+        size="small"
+        (onClick)="confirmDelete()"
+      />
+    }
+  </div>
+
+  <div class="form-divider"></div>
+
+  <form [formGroup]="form" class="form-fields">
+    <div class="field">
+      <label for="name">Name <span class="required">*</span></label>
+      <input
+        pInputText
+        id="name"
+        formControlName="name"
+        class="w-full"
+        placeholder="e.g. Airport Transfer, Spa Entrance"
+        autocomplete="off"
+      />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <small class="error">Name is required</small>
+      }
+    </div>
+
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea
+        pTextarea
+        id="description"
+        formControlName="description"
+        class="w-full"
+        rows="3"
+        placeholder="Optional — describe what this supplement includes"
+        style="resize: vertical"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="price">Price <span class="required">*</span></label>
+        <p-inputNumber
+          id="price"
+          formControlName="price"
+          mode="currency"
+          currency="EUR"
+          [minFractionDigits]="2"
+          [min]="0"
+          class="w-full"
+        />
+        @if (form.controls.price.invalid && form.controls.price.touched) {
+          <small class="error">Price is required</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="unit">Unit <span class="required">*</span></label>
+        <p-select
+          id="unit"
+          formControlName="unit"
+          [options]="unitOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a unit"
+          class="w-full"
+        />
+        @if (form.controls.unit.invalid && form.controls.unit.touched) {
+          <small class="error">Unit is required</small>
+        }
+      </div>
+    </div>
+
+    <div class="field-checkbox">
+      <p-checkbox
+        formControlName="canReceiveDiscount"
+        [binary]="true"
+        inputId="canReceiveDiscount"
+      />
+      <label for="canReceiveDiscount">
+        Apply seasonal and volume discounts to this service
+      </label>
+    </div>
+  </form>
+
+  <div class="form-footer">
+    <div class="footer-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancelled.emit()"
+      />
+      <p-button
+        [label]="isEditMode() ? 'Save changes' : 'Create supplement'"
+        [loading]="isSubmitting()"
+        (onClick)="submit()"
+      />
+    </div>
+  </div>
+</div>
+
+<p-confirmdialog />

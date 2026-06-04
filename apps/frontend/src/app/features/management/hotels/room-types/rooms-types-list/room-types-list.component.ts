@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,9 +11,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoomType } from '@runner/shared/types';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -24,7 +24,6 @@ import { HotelsService } from '../../hotels.service';
   selector: 'app-room-types-list',
   imports: [
     ButtonModule,
-    ConfirmDialogModule,
     IconFieldModule,
     InputIconModule,
     FormsModule,
@@ -38,6 +37,7 @@ import { HotelsService } from '../../hotels.service';
 export class RoomTypesListComponent {
   private readonly hotelsService = inject(HotelsService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly messageService = inject(MessageService);
 
   readonly hotelId = input.required<string>();
 
@@ -76,19 +76,14 @@ export class RoomTypesListComponent {
   }
 
   confirmDelete(room: RoomType): void {
-    this.confirmationService.confirm({
-      message: `Delete "${room.name}"?`,
-      header: 'Confirm Delete',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.hotelsService
-          .deleteRoomType(this.hotelId(), room.id)
-          .pipe(take(1))
-          .subscribe({
-            next: () => this.loadRooms(this.hotelId()),
-            error: () => {},
-          });
-      },
+    confirmDelete({
+      header: 'Delete Room Type',
+      entityName: room.name,
+      delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
+      onSuccess: () => this.loadRooms(this.hotelId()),
+      conflictMessage: `"${room.name}" is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }

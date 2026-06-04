@@ -15,9 +15,9 @@
 | ------------ | -------------------- | --------------- | ------- | ----------- |
 | **Sprint 0** | Setup Infrastructure | 1-2j            | 13      | ✅ Terminé  |
 | **Sprint 1** | Auth & Layout        | 2-3j            | 23      | ✅ Terminé  |
-| **Sprint 2** | Hotels + Seasons     | 4-5j            | 38      | 🔄 En cours |
-| **Sprint 3** | Référentiels         | 3j              | 21      | ⏳ À faire  |
-| **Sprint 4** | Contracts            | 6-7j            | 55      | ⏳ À faire  |
+| **Sprint 2** | Hotels + Seasons     | 4-5j            | 38      | ✅ Terminé |
+| **Sprint 3** | Référentiels         | 3j              | 21      | ✅ Terminé |
+| **Sprint 4** | Contracts            | 6-7j            | 55      | 🔄 En cours  |
 | **Sprint 5** | Offers               | 3-4j            | 29      | ⏳ À faire  |
 | **Sprint 6** | Booking UI           | 4-5j            | 34      | ⏳ À faire  |
 | **Sprint 7** | Pricing Engine       | 5-7j            | 47      | ⏳ À faire  |

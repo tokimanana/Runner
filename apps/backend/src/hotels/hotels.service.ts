@@ -7,6 +7,10 @@ import {
 } from '@nestjs/common';
 import { AgeCategory, RoomType, RoomTypeCapacity } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
+import {
+  DEFAULT_PAGINATION_LIMIT,
+  MAX_PAGINATION_LIMIT,
+} from '../common/pagination.constants';
 import { CreateAgeCategoryDto } from './dto/create-age-category.dto';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { CreateRoomTypeCapacityDto } from './dto/create-room-type-capacity.dto';
@@ -21,8 +25,6 @@ import { HotelRepository } from './repositories/hotel.repository';
 
 @Injectable()
 export class HotelsService implements IHotelsService {
-  private readonly MAX_LIMIT = 100;
-
   constructor(private readonly hotelRepository: HotelRepository) {}
 
   async create(
@@ -36,7 +38,10 @@ export class HotelsService implements IHotelsService {
     tourOperatorId: string,
     query: HotelQuery,
   ): Promise<PaginatedResult<HotelDetail>> {
-    const sanitizedLimit = Math.min(query.limit ?? 50, this.MAX_LIMIT);
+    const sanitizedLimit = Math.min(
+      query.limit ?? DEFAULT_PAGINATION_LIMIT,
+      MAX_PAGINATION_LIMIT,
+    );
 
     return this.hotelRepository.findAll(tourOperatorId, {
       ...query,
@@ -45,9 +50,9 @@ export class HotelsService implements IHotelsService {
   }
 
   async findOne(id: string, tourOperatorId: string): Promise<HotelDetail> {
-    const hotel = await this.hotelRepository.findById(id);
+    const hotel = await this.hotelRepository.findById(id, tourOperatorId);
 
-    if (!hotel || hotel.tourOperatorId !== tourOperatorId) {
+    if (!hotel) {
       throw new NotFoundException(`Hotel ${id} not found`);
     }
 

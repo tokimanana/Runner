@@ -25,6 +25,7 @@ import { AgeCategoriesFormComponent } from '../age-categories/age-catergories-fo
 import { HotelsService } from '../hotels.service';
 import { RoomTypesFormComponent } from '../room-types/room-types-form/room-types-form.component';
 import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-types-list.component';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-hotels-form',
@@ -33,7 +34,9 @@ import { RoomTypesListComponent } from '../room-types/rooms-types-list/room-type
     ReactiveFormsModule,
     Button,
     TabsModule,
+    ConfirmDialogModule,
     AgeCategoriesListComponent,
+    AgeCategoriesFormComponent,
     RoomTypesListComponent,
     RoomTypesFormComponent,
   ],

@@ -1,12 +1,12 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Hotel } from '@runner/shared/types';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { TableModule } from 'primeng/table';
-import { take } from 'rxjs';
 import { HotelsService } from '../hotels.service';
 @Component({
   selector: 'app-hotels-list',
@@ -18,6 +18,7 @@ import { HotelsService } from '../hotels.service';
 export class HotelsListComponent {
   private readonly hotelsService = inject(HotelsService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly messageService = inject(MessageService);
 
   readonly hotels$ = this.hotelsService.getHotels();
   readonly loading$ = this.hotelsService.loading$;
@@ -27,24 +28,18 @@ export class HotelsListComponent {
       (hotel.ageCategories?.length ?? 0) > 0 ||
       (hotel.roomTypes?.length ?? 0) > 0;
 
-    this.confirmationService.confirm({
+    confirmDelete({
       header: 'Delete Hotel',
+      entityName: hotel.name,
+      // Message custom uniquement si l'hôtel a des données liées
       message: hasData
         ? `"${hotel.name}" has configured age categories or room types. Deleting it will remove all associated data. Continue?`
-        : `Are you sure you want to delete "${hotel.name}"?`,
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.hotelsService
-          .deleteHotel(hotel.id)
-          .pipe(take(1))
-          .subscribe({
-            error: (err) => {
-              if (err.status === 409) {
-                // HAS_CONTRACTS — backend bloque
-              }
-            },
-          });
-      },
+        : undefined,
+      delete$: this.hotelsService.deleteHotel(hotel.id),
+      onSuccess: () => this.hotelsService.reload(),
+      conflictMessage: `"${hotel.name}" cannot be deleted because it is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
     });
   }
 }

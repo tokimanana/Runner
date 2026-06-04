@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -21,6 +23,7 @@ import {
   RoomTypeCapacityDto,
   RoomTypeDto,
 } from '@runner/shared/types';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -28,12 +31,18 @@ import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
+export enum CapacityRowState {
+  Idle = 'idle',
+  Editing = 'editing',
+  Saving = 'saving',
+  Saved = 'saved',
+}
+
 interface CapacityRow {
   ageCategory: AgeCategory;
   capacity: RoomTypeCapacity | null;
   maxPax: FormControl<number>;
-  saving: boolean;
-  editing: boolean;
+  state: ReturnType<typeof signal<CapacityRowState>>;
 }
 
 @Component({
@@ -51,6 +60,8 @@ interface CapacityRow {
 })
 export class RoomTypesFormComponent {
   private readonly hotelsService = inject(HotelsService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly messageService = inject(MessageService);
 
   readonly hotelId = input.required<string>();
   readonly ageCategories = input<AgeCategory[]>([]);
@@ -59,21 +70,20 @@ export class RoomTypesFormComponent {
 
   protected readonly _roomType = signal<RoomType | undefined>(undefined);
   readonly isEditMode = computed(() => !!this._roomType());
-  readonly isSubmitting = signal(false);
-  readonly recentlySaved = signal(new Set<string>());
-  visible = false;
 
+  readonly isSubmitting = signal(false);
   readonly capacityRows = signal<CapacityRow[]>([]);
+
+  readonly visible = model(false);
 
   readonly configuredRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity !== null)
   );
-
   readonly availableRows = computed(() =>
     this.capacityRows().filter((r) => r.capacity === null)
   );
 
-  private _suppressCancelledOnHide = false;
+  readonly CapacityRowState = CapacityRowState;
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -101,21 +111,16 @@ export class RoomTypesFormComponent {
 
   open(room?: RoomType): void {
     this._roomType.set(room);
-    this.visible = true;
+    this.visible.set(true);
   }
 
   close(): void {
-    this._suppressCancelledOnHide = true;
-    this.visible = false;
+    this.visible.set(false);
     this._reset();
   }
 
   onDialogHide(): void {
     this._reset();
-    if (!this._suppressCancelledOnHide) {
-      this.cancelled.emit();
-    }
-    this._suppressCancelledOnHide = false;
   }
 
   submit(): void {
@@ -156,16 +161,19 @@ export class RoomTypesFormComponent {
   }
 
   enableEditing(row: CapacityRow): void {
-    row.editing = true;
-    this.capacityRows.set([...this.capacityRows()]);
+    row.state.set(CapacityRowState.Editing);
+  }
+
+  cancelEdit(row: CapacityRow): void {
+    row.maxPax.setValue(row.capacity?.maxPax ?? 1);
+    row.state.set(CapacityRowState.Idle);
   }
 
   saveCapacity(row: CapacityRow): void {
     const room = this._roomType();
     if (!room || row.maxPax.invalid) return;
 
-    row.saving = true;
-    this.capacityRows.set([...this.capacityRows()]);
+    row.state.set(CapacityRowState.Saving);
     const maxPax = row.maxPax.value;
 
     if (row.capacity) {
@@ -177,24 +185,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (updated) => {
             row.capacity = updated;
-            row.saving = false;
-            row.editing = false;
-            this.capacityRows.set([...this.capacityRows()]);
-
-            const id = row.ageCategory.id;
-            this.recentlySaved.update((s) => new Set(s).add(id));
-            setTimeout(() => {
-              this.recentlySaved.update((s) => {
-                const n = new Set(s);
-                n.delete(id);
-                return n;
-              });
-            }, 2000);
+            row.state.set(CapacityRowState.Saved);
+            setTimeout(() => row.state.set(CapacityRowState.Idle), 2000);
           },
-          error: () => {
-            row.saving = false;
-            this.capacityRows.set([...this.capacityRows()]);
-          },
+          error: () => row.state.set(CapacityRowState.Editing),
         });
     } else {
       const dto: RoomTypeCapacityDto = {
@@ -207,14 +201,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (created) => {
             row.capacity = created;
-            row.saving = false;
-            row.editing = false;
+            row.state.set(CapacityRowState.Idle);
             this.capacityRows.set([...this.capacityRows()]);
           },
-          error: () => {
-            row.saving = false;
-            this.capacityRows.set([...this.capacityRows()]);
-          },
+          error: () => row.state.set(CapacityRowState.Idle),
         });
     }
   }
@@ -223,38 +213,42 @@ export class RoomTypesFormComponent {
     const room = this._roomType();
     if (!room || !row.capacity) return;
 
-    this.hotelsService
-      .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity.id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          row.capacity = null;
-          row.maxPax.setValue(1);
-          row.editing = false;
-          this.capacityRows.set([...this.capacityRows()]);
-        },
-      });
+    this.confirmationService.confirm({
+      header: 'Remove Capacity',
+      message: `Remove the capacity for "${row.ageCategory.name}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.hotelsService
+          .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity!.id)
+          .pipe(take(1))
+          .subscribe({
+            next: () => {
+              row.capacity = null;
+              row.maxPax.setValue(1);
+              row.state.set(CapacityRowState.Idle);
+              this.capacityRows.set([...this.capacityRows()]);
+            },
+          });
+      },
+    });
   }
 
   deleteRoomType(): void {
     const room = this._roomType();
     if (!room) return;
 
-    this.hotelsService
-      .deleteRoomType(this.hotelId(), room.id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.close();
-          this.saved.emit();
-        },
-      });
-  }
-
-  cancelEdit(row: CapacityRow): void {
-    row.maxPax.setValue(row.capacity?.maxPax ?? 1);
-    row.editing = false;
-    this.capacityRows.set([...this.capacityRows()]);
+    confirmDelete({
+      header: 'Delete Room Type',
+      entityName: room.name,
+      delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
+      onSuccess: () => {
+        this.close();
+        this.saved.emit();
+      },
+      conflictMessage: `"${room.name}" cannot be deleted because it is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
+    });
   }
 
   private _buildCapacityRows(room: RoomType): void {
@@ -268,8 +262,7 @@ export class RoomTypesFormComponent {
           validators: [Validators.required, Validators.min(1)],
           nonNullable: true,
         }),
-        saving: false,
-        editing: false,
+        state: signal(CapacityRowState.Idle),
       };
     });
     this.capacityRows.set(rows);

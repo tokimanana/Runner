@@ -1,0 +1,85 @@
+<div class="supplements-layout">
+  <div class="supplements-panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Supplements</h2>
+      <span class="panel-subtitle">
+        {{ (supplements$ | async)?.length ?? 0 }} supplements configured
+      </span>
+    </div>
+
+    <div class="panel-search">
+      <span class="search-wrapper">
+        <i class="pi pi-search search-icon"></i>
+        <input
+          pInputText
+          class="search-input w-full"
+          placeholder="Search supplements..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </span>
+    </div>
+
+    <div class="supplements-items">
+      @if (loading$ | async) {
+        <div class="loading-state">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+      }
+
+      @for (
+        supplement of filterSupplements((supplements$ | async) ?? []);
+        track supplement.id
+      ) {
+        <div
+          class="supplement-item"
+          [class.selected]="selectedSupplement()?.id === supplement.id"
+          (click)="selectSupplement(supplement)"
+        >
+          <div class="supplement-info">
+            <div class="supplement-name-row">
+              <span class="supplement-name">{{ supplement.name }}</span>
+              @if (supplement.canReceiveDiscount) {
+                <span class="discount-badge">Discount</span>
+              }
+            </div>
+            <span class="supplement-meta">
+              €{{ supplement.price }} / {{ supplement.unit | supplementUnit }}
+            </span>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <i class="pi pi-tag"></i>
+          <p>No supplements configured yet.</p>
+        </div>
+      }
+    </div>
+
+    <div class="panel-footer">
+      <p-button
+        label="Add Supplement"
+        icon="pi pi-plus"
+        styleClass="w-full"
+        (onClick)="startCreate()"
+      />
+    </div>
+  </div>
+
+  @if (isPanelOpen()) {
+    <div class="form-panel">
+      <app-supplements-form
+        [supplement]="selectedSupplement()"
+        (saved)="onSaved()"
+        (cancelled)="onCancelled()"
+      />
+    </div>
+  } @else {
+    <div class="form-panel idle-state">
+      <i class="pi pi-tag"></i>
+      <p>Select a supplement to edit, or add a new one.</p>
+    </div>
+  }
+</div>
+
+<p-toast />
