@@ -5,7 +5,7 @@
   },
   "nxCloudId": "69a1bfaadc1ae06c2368a034",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": ["{projectRoot}/**/*"],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
