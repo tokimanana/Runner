@@ -54,22 +54,22 @@ export class MarketsService {
   create(dto: MarketDto): Observable<Market> {
     return this.http
       .post<Market>(this.apiUrl, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   update(id: string, dto: Partial<MarketDto>): Observable<Market> {
     return this.http
       .patch<Market>(`${this.apiUrl}/${id}`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   remove(id: string): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
-  private refresh(): void {
+  reload(): void {
     this.loaded = false;
     this.load();
   }

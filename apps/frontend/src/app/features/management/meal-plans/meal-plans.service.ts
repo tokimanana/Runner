@@ -52,22 +52,22 @@ export class MealPlansService {
   create(dto: MealPlanDto): Observable<MealPlan> {
     return this.http
       .post<MealPlan>(this.apiUrl, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   update(id: string, dto: Partial<MealPlanDto>): Observable<MealPlan> {
     return this.http
       .patch<MealPlan>(`${this.apiUrl}/${id}`, dto)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
   remove(id: string): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`)
-      .pipe(tap(() => this.refresh()));
+      .pipe(tap(() => this.reload()));
   }
 
-  private refresh(): void {
+  reload(): void {
     this.loaded = false;
     this.load();
   }
