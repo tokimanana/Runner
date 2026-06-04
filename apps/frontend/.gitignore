@@ -13,7 +13,3 @@ typings
 
 # System files
 Thumbs.db
-
-# Environments (gitignored — contiennent des valeurs locales)
-src/environments/environment.ts
-src/environments/environment.dev.ts
