@@ -1,9 +1,7 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "installation": {
-    "version": "22.3.3"
-  },
-  "nxCloudId": "69a1bfaadc1ae06c2368a034",
+  "installation": { "version": "22.3.3" },
+  "nxCloudId": "6a21c9d9a82130d1c07dc5c3",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -19,18 +17,8 @@
     "sharedGlobals": []
   },
   "plugins": [
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
-    {
-      "plugin": "@nx/jest/plugin",
-      "options": {
-        "targetName": "test"
-      }
-    }
+    { "plugin": "@nx/eslint/plugin", "options": { "targetName": "lint" } },
+    { "plugin": "@nx/jest/plugin", "options": { "targetName": "test" } }
   ],
   "targetDefaults": {
     "@angular-devkit/build-angular:application": {
@@ -45,8 +33,6 @@
       "style": "scss",
       "unitTestRunner": "jest"
     },
-    "@nx/angular:component": {
-      "style": "scss"
-    }
+    "@nx/angular:component": { "style": "scss" }
   }
 }
