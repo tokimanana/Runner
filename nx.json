@@ -3,7 +3,7 @@
   "installation": { "version": "22.3.3" },
   "nxCloudId": "6a21c9d9a82130d1c07dc5c3",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": ["{projectRoot}/**/*"],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
