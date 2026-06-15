@@ -84,12 +84,29 @@ model Season {
   startDate      DateTime
   endDate        DateTime
   tourOperatorId String
+  seasonPeriods  SeasonPeriod[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([tourOperatorId, name])
 
   @@index([tourOperatorId])
+  @@index([startDate, endDate])
+}
+
+model SeasonPeriod {
+  id             String   @id @default(cuid())
+  season         Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  seasonId       String    
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([seasonId, name]) 
+
+  @@index([seasonId])
   @@index([startDate, endDate])
 }
 
