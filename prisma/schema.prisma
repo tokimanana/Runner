@@ -81,8 +81,6 @@ model RoomTypeCapacity {
 model Season {
   id             String   @id @default(cuid())
   name           String
-  startDate      DateTime
-  endDate        DateTime
   tourOperatorId String
   seasonPeriods  SeasonPeriod[]
   createdAt      DateTime @default(now())
@@ -91,7 +89,6 @@ model Season {
   @@unique([tourOperatorId, name])
 
   @@index([tourOperatorId])
-  @@index([startDate, endDate])
 }
 
 model SeasonPeriod {
