@@ -1,3 +1,4 @@
+import { PaginationQuery } from '@backend/common/pagination.types';
 import { RepositoryResult } from '@backend/common/repository.types';
 import { MealPlan } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
@@ -7,10 +8,7 @@ import { UpdateMealPlanDto } from '../dto/update-meal-plan.dto';
 export abstract class MealPlanRepository {
   abstract findAll(
     tourOperatorId: string,
-    query?: {
-      limit?: number;
-      offset?: number;
-    },
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<MealPlan>>;
 
   abstract findOne(
