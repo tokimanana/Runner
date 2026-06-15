@@ -1,3 +1,4 @@
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -9,7 +10,6 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateMarketDto } from '../dto/create-market.dto';
 import { UpdateMarketDto } from '../dto/update-market.dto';
-import { MarketQuery } from '../market.types';
 import { MarketRepository } from './market.repository';
 
 @Injectable()
@@ -20,7 +20,7 @@ export class PrismaMarketRepository extends MarketRepository {
 
   async findAll(
     tourOperatorId: string,
-    query?: MarketQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<Market>> {
     const { limit, offset } = query ?? {};
 

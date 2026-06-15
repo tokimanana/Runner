@@ -1,14 +1,14 @@
+import { PaginationQuery } from '@backend/common/pagination.types';
 import { RepositoryResult } from '@backend/common/repository.types';
 import { Market } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateMarketDto } from '../dto/create-market.dto';
 import { UpdateMarketDto } from '../dto/update-market.dto';
-import { MarketQuery } from '../market.types';
 
 export abstract class MarketRepository {
   abstract findAll(
     tourOperatorId: string,
-    query?: MarketQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<Market>>;
 
   abstract findOne(id: string, tourOperatorId: string): Promise<Market | null>;
