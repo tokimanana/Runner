@@ -1,11 +1,11 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Season } from '@prisma/client';
 
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -18,7 +18,6 @@ import {
 import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
 import { SeasonRepository } from './repositories/season.repository';
-import { SeasonQuery } from './seasons.type';
 
 @Injectable()
 export class SeasonsService {
@@ -26,7 +25,7 @@ export class SeasonsService {
 
   async findAll(
     tourOperatorId: string,
-    query?: SeasonQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<Season>> {
     const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
     const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);
@@ -47,7 +46,6 @@ export class SeasonsService {
   }
 
   async create(dto: CreateSeasonDto, tourOperatorId: string): Promise<Season> {
-    this.validateDates(dto.startDate, dto.endDate);
     try {
       return await this.seasonRepository.create(dto, tourOperatorId);
     } catch (error) {
@@ -65,12 +63,6 @@ export class SeasonsService {
     dto: UpdateSeasonDto,
     tourOperatorId: string,
   ): Promise<Season> {
-    const existing = await this.findOne(id, tourOperatorId);
-    const startDate = dto.startDate ?? existing.startDate;
-    const endDate = dto.endDate ?? existing.endDate;
-
-    this.validateDates(startDate, endDate);
-
     try {
       return await this.seasonRepository.update(id, dto, tourOperatorId);
     } catch (error) {
@@ -93,11 +85,5 @@ export class SeasonsService {
       throw new ConflictException(
         `Season ${id} cannot be deleted — it is linked to existing contract periods`,
       );
-  }
-
-  private validateDates(startDate: Date, endDate: Date): void {
-    if (endDate <= startDate) {
-      throw new BadRequestException('endDate must be after startDate');
-    }
   }
 }
