@@ -1,5 +1,6 @@
 export * from './lib/age-category.types';
 export * from './lib/common.types';
+export * from './lib/contract.types';
 export * from './lib/currency.types';
 export * from './lib/hotel.types';
 export * from './lib/market.types';
