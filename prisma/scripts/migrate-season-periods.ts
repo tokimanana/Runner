@@ -10,8 +10,8 @@ async function main() {
       data: {
         seasonId: season.id,
         name: 'Période principale',
-        startDate: season.startDate,
-        endDate: season.endDate,
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
       },
     });
   }
