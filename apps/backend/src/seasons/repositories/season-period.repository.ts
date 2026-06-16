@@ -25,4 +25,11 @@ export abstract class SeasonPeriodRepository {
   ): Promise<SeasonPeriod>;
 
   abstract remove(id: string, seasonId: string): Promise<RepositoryResult>;
+
+  abstract findOverlappingPeriod(
+    seasonId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string,
+  ): Promise<SeasonPeriod | null>;
 }

@@ -94,4 +94,20 @@ export class PrismaSeasonPeriodRepository extends SeasonPeriodRepository {
       throw error;
     }
   }
+
+  async findOverlappingPeriod(
+    seasonId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string,
+  ): Promise<SeasonPeriod | null> {
+    return this.prisma.seasonPeriod.findFirst({
+      where: {
+        seasonId,
+        id: excludeId ? { not: excludeId } : undefined,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+    });
+  }
 }
