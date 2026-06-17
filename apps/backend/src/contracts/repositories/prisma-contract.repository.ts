@@ -1,4 +1,3 @@
-import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -8,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { Contract, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
+import { ContractQuery } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 import { ContractRepository } from './contract.repository';
@@ -20,11 +20,15 @@ export class PrismaContractRepository extends ContractRepository {
 
   async findAll(
     tourOperatorId: string,
-    query?: PaginationQuery,
+    query?: ContractQuery,
   ): Promise<PaginatedResult<Contract>> {
-    const { limit, offset } = query ?? {};
+    const { limit, offset, hotelId, marketId } = query ?? {};
 
-    const where: Prisma.ContractWhereInput = { tourOperatorId };
+    const where: Prisma.ContractWhereInput = {
+      tourOperatorId,
+      hotelId,
+      marketId,
+    };
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.contract.findMany({ where, take: limit, skip: offset }),
@@ -37,6 +41,21 @@ export class PrismaContractRepository extends ContractRepository {
   async findOne(id: string, tourOperatorId: string): Promise<Contract | null> {
     return this.prisma.contract.findUnique({
       where: { id, tourOperatorId },
+      include: {
+        periods: {
+          include: {
+            seasonPeriod: true,
+            baseMealPlan: true,
+            roomPrices: {
+              include: {
+                occupancyRates: true,
+              },
+            },
+            mealPlanSupplements: true,
+            stopSalesDates: true,
+          },
+        },
+      },
     });
   }
 
