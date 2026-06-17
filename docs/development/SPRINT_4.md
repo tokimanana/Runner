@@ -581,8 +581,6 @@ apps/backend/src/contracts/
 └── contracts.module.ts
 ```
 
----
-
 ### S4-BE-004 : DTOs avec validation complète
 
 - **Type :** Task
@@ -591,47 +589,47 @@ apps/backend/src/contracts/
 - **Branch :** `chore/S4-BE-004-contracts-dto`
 - **Commit :** `chore(contracts): add all DTOs with class-validator`
 
-**CreateContractPeriodDto :**
+**Décisions architecturales (session 17 juin) :**
 
-```typescript
-export class CreateContractPeriodDto {
-  // Optionnel — pour classification/reporting uniquement
-  @IsOptional() @IsString() seasonPeriodId?: string;
+- `totalRate` retiré de `OccupancyRateDto` — calculé par le backend dans S4-BE-008
+- `order` supprimé de `ratesPerAge` — l'ordre vient des `AgeCategory` de l'hôtel
+- `ratesPerAge` devient `Record<string, number>` (plus `{ rate, order }`)
+- `@ValidateIf` ajouté sur `pricePerNight` (requis si PER_ROOM)
 
-  @IsString() @IsNotEmpty() name: string;
-
-  // Source de vérité contractuelle — toujours requis
-  @IsDateString() startDate: string;
-  @IsDateString() endDate: string;
-
-  @IsString() @IsNotEmpty() baseMealPlanId: string;
-  @IsOptional() @IsInt() @Min(1) minStay?: number;
-}
-
-export class UpdateContractPeriodDto extends PartialType(
-  CreateContractPeriodDto
-) {}
-```
-
-**CreateRoomPriceDto :**
+**OccupancyRateDto :**
 
 ```typescript
 export class OccupancyRateDto {
   @IsInt() @Min(1) numAdults: number;
   @IsInt() @Min(0) numChildren: number;
-  @IsObject() ratesPerAge: Record<string, { rate: number; order: number }>;
-  @IsNumber() @Min(0) totalRate: number;
+  @IsObject() ratesPerAge: Record<string, number>;
 }
+```
 
+**CreateRoomPriceDto :**
+
+```typescript
 export class CreateRoomPriceDto {
   @IsString() @IsNotEmpty() roomTypeId: string;
   @IsEnum(PricingMode) pricingMode: PricingMode;
-  @IsOptional() @IsNumber() @Min(0) pricePerNight?: number | null;
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
+  @IsNumber()
+  @Min(0)
+  pricePerNight?: number | null;
   @IsOptional()
-  @ValidateIf((o) => o.pricingMode === 'PER_OCCUPANCY')
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_OCCUPANCY')
   @ValidateNested({ each: true })
   @Type(() => OccupancyRateDto)
   occupancyRates?: OccupancyRateDto[];
+}
+```
+
+**CreateMealPlanSupplementDto :**
+
+```typescript
+export class CreateMealPlanSupplementDto {
+  @IsString() @IsNotEmpty() mealPlanId: string;
+  @IsObject() occupancyRates: Record<string, number>;
 }
 ```
 
@@ -639,6 +637,8 @@ export class CreateRoomPriceDto {
 
 - ✅ `seasonPeriodId` optionnel dans `CreateContractPeriodDto`
 - ✅ `startDate`/`endDate` obligatoires sur `ContractPeriod`
+- ✅ `totalRate` retiré du DTO — calculé backend
+- ✅ `ratesPerAge` simplifié en `Record<string, number>`
 - ✅ Validation HTTP 400 si payload invalide
 
 ---
@@ -764,6 +764,15 @@ DELETE /room-prices/:id
 - **Branch :** `feature/S4-BE-008-room-price-per-occupancy`
 - **Commit :** `feat(contracts): implement PER_OCCUPANCY pricing with capacity validation`
 
+**Calcul totalRate (décision 17 juin) :**
+totalRate n'est plus fourni par le client — le backend le calcule :
+
+```typescript
+const totalRate = Object.values(dto.ratesPerAge).reduce((sum, r) => sum + r, 0);
+```
+
+Stocker `totalRate` calculé dans `OccupancyRate` en base.
+
 **Validation capacité via `RoomTypeCapacity` :**
 
 ```typescript
@@ -846,9 +855,9 @@ if (date < contractPeriod.startDate || date > contractPeriod.endDate) {
 - Chevauchement de ContractPeriods dans un même contrat
 - Auto-fill dates depuis SeasonPeriod
 - Dates éditables indépendamment de la SeasonPeriod
-- RoomPrice PER_ROOM (pricePerNight requis)
+- RoomPrice PER_ROOM (pricePerNight requis si PER_ROOM)
 - RoomPrice PER_OCCUPANCY + validation via `capacities[]`
-- `totalRate` calculé et vérifié
+- ~~`totalRate` calculé et vérifié~~ → backend calcule totalRate depuis ratesPerAge
 - StopSalesDate hors ContractPeriod → erreur
 
 **Acceptance Criteria :**
@@ -1273,10 +1282,14 @@ isOccupancyValid = computed(() => {
   return total > 0 && total <= this.maxPax();
 });
 
-totalRate = computed(() =>
-  Object.values(this.ratesPerAge()).reduce((sum, r) => sum + r.rate, 0)
+// totalRate affiché localement pour l'UI — pas envoyé dans le payload
+totalRate = computed(
+  () => Object.values(this.ratesPerAge()).reduce((sum, r) => sum + r, 0)
+  // ratesPerAge est Record<string, number> — plus { rate, order }
 );
 ```
+
+**Note :** `totalRate` n'est plus dans le payload envoyé au backend.
 
 ---
 
