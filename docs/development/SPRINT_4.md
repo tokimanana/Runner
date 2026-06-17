@@ -1,179 +1,240 @@
 # Sprint 4 — Contracts (Tarification Complexe)
 
-> **Document de référence révisé** — toutes les corrections issues des décisions prises en
-> Sprint 2 (RoomTypeCapacity) et Sprint 3 (Repository Pattern, PATCH, shared types) sont
-> intégrées. Les points modifiés portent le tag ``.
+> **Document final** — modèle architectural validé après session de design.
+>
+> **Décision centrale :**
+>
+> - `Season` = conteneur organisationnel pur (nom uniquement)
+> - `SeasonPeriod` = template de référence (dates suggérées)
+> - `ContractPeriod` = source de vérité contractuelle (dates propres éditables + `seasonPeriodId` pour classification/reporting)
+>
+> Ce modèle est flexible : l'agent sélectionne une `SeasonPeriod` qui pré-remplit
+> les dates, puis les ajuste librement selon la négociation avec l'hôtel.
+> `seasonPeriodId` reste pour le reporting et la classification — pas comme contrainte.
+
+---
+
+## ⚡ Décision architecturale — modèle final
+
+### Les trois niveaux
+
+```
+Season { id, name, tourOperatorId }
+  └── SeasonPeriod { id, seasonId, name, startDate, endDate }
+                         ↓ pré-remplit (suggestion)
+ContractPeriod { id, contractId, seasonPeriodId, startDate, endDate, baseMealPlanId, minStay }
+                                  ↑ classification     ↑ source de vérité contractuelle
+```
+
+### Pourquoi ce modèle
+
+| Besoin                         | Réponse du modèle                          |
+| ------------------------------ | ------------------------------------------ |
+| Dates partagées entre hôtels   | SeasonPeriod comme template                |
+| Dates négociées par hôtel      | ContractPeriod avec dates propres          |
+| Reporting par saison           | `seasonPeriodId` sur ContractPeriod        |
+| Flexibilité future             | `seasonPeriodId` optionnel                 |
+| Pricing nuit par nuit Sprint 7 | `ContractPeriod.startDate/endDate` directs |
+
+### Ce qui change vs Sprint 4 original
+
+| Élément                            | Original         | Final                                   |
+| ---------------------------------- | ---------------- | --------------------------------------- |
+| `Season.startDate/endDate`         | ✅ présents      | ❌ supprimés                            |
+| `SeasonPeriod`                     | ❌ inexistant    | ✅ nouveau modèle                       |
+| `ContractPeriod.startDate/endDate` | ✅ présents      | ✅ conservés                            |
+| `ContractPeriod.seasonId`          | référence Season | `seasonPeriodId` référence SeasonPeriod |
+| Immutabilité SeasonPeriod          | —                | ❌ pas nécessaire (dates indépendantes) |
+| Auto-fill dates                    | depuis Season    | depuis SeasonPeriod                     |
 
 ---
 
 ## 🎯 Objectif Sprint
 
-Créer le système de contrats avec périodes, tarification PER_OCCUPANCY, et meal plan
-supplements.
+Créer le système de contrats avec périodes tarifaires flexibles,
+tarification PER_OCCUPANCY, et meal plan supplements.
 
 **Durée estimée :** 6-7 jours
-**Story Points :** 55 points
+**Story Points :** 60 points
 
 ---
 
-## ⚡ Décisions d'architecture — Sprint 4
+## ⚡ Décisions d'architecture
 
-> À lire **avant** d'écrire la moindre ligne de code. Ces règles remplacent ou complètent
-> le document original.
-
-### 1. Repository Pattern — abstract class (pas interface + string token)
-
-Sprint 3 a migré vers le pattern **abstract class as DI token**. Sprint 4 suit la même
-convention — aucun fichier `contracts.constants.ts` séparé.
+### 1. Repository Pattern — abstract class
 
 ```typescript
-// ✅ Pattern Sprint 3/4 — abstract class = type ET token DI
+// ✅ Pattern Sprint 3/4
 export abstract class ContractRepository {
   abstract findAll(query: ContractQuery): Promise<PaginatedResult<Contract>>;
-  // ...
 }
-
-// Dans contracts.module.ts
 providers: [
   { provide: ContractRepository, useClass: PrismaContractRepository },
   ContractsService,
 ];
 ```
 
-```typescript
-// ❌ Pattern Sprint 2 — NE PAS reproduire
-export const CONTRACT_REPOSITORY = 'CONTRACT_REPOSITORY';
-export interface IContractRepository { ... }
-```
-
 ### 2. PATCH sur tous les endpoints de mise à jour
 
-Sprint 3 utilise `PATCH` partout (mise à jour partielle, `PartialType`).
-Le document original du Sprint 4 mentionnait `PUT` sur plusieurs endpoints — **aligné sur PATCH**.
-
 ```typescript
-// ✅
 @Patch(':id')
-update(@Param('id') id: string, @Body() dto: UpdateContractDto) {}
-
-// ❌ à éviter
-@Put(':id')
 update(@Param('id') id: string, @Body() dto: UpdateContractDto) {}
 ```
 
 ### 3. RoomTypeCapacity remplace maxAdults / maxChildren
 
-En Sprint 2 (S2-BE-007), `maxAdults` et `maxChildren` ont été supprimés du modèle
-`RoomType` et remplacés par `RoomTypeCapacity`. Toute validation de capacité doit utiliser
-`capacities` (tableau de `{ ageCategoryId, maxPax }`).
-
 ```typescript
-// ✅ Validation capacité — Sprint 4
-const roomType = await this.prisma.roomType.findUnique({
-  where: { id: roomTypeId },
-  include: { capacities: { include: { ageCategory: true } } },
-});
-// Sommer maxPax par catégorie pour valider numAdults + numChildren
-
-// ❌ NE PLUS UTILISER
-if (numAdults > roomType.maxAdults) { ... }
-```
-
-### 4. Filtres contrats — `buildContractParams` dans shared/utils
-
-Les contrats ne sont pas paginés comme les hôtels (`HotelsService` utilise
-`buildPaginationParams`). Les contrats ont des filtres spécifiques : `hotelId`, `marketId`.
-Créer un helper dédié plutôt que de forcer `buildPaginationParams`.
-
-```typescript
-// apps/frontend/src/app/shared/utils/contract-params.util.ts
-export function buildContractParams(
-  filters: ContractFilters,
-  pagination: PaginationParams
-): HttpParams {
-  let params = new HttpParams()
-    .set('limit', pagination.limit)
-    .set('offset', pagination.offset);
-  if (filters.hotelId) params = params.set('hotelId', filters.hotelId);
-  if (filters.marketId) params = params.set('marketId', filters.marketId);
-  return params;
+const totalMaxPax = roomType.capacities.reduce((sum, c) => sum + c.maxPax, 0);
+if (numAdults + numChildren > totalMaxPax) {
+  throw new BadRequestException(`Occupancy exceeds room capacity`);
 }
 ```
 
-### 5. Routing — `app.routes.ts` directement (pas `management.routes.ts`)
+### 4. `seasonPeriodId` est optionnel sur ContractPeriod
 
-Les contrats sont une **feature métier**, pas un référentiel. Ils ne vont pas dans
-`management.routes.ts`. Ils sont routés directement depuis `app.routes.ts` avec leur propre
-fichier `contracts.routes.ts`, au même niveau que booking/offers.
-
-```typescript
-// app.routes.ts
-{
-  path: 'contracts',
-  canActivate: [AuthGuard, RoleGuard],
-  data: { roles: ['ADMIN', 'MANAGER'] },
-  loadChildren: () =>
-    import('./features/contracts/contracts.routes').then(m => m.CONTRACTS_ROUTES),
-}
-```
-
-### 6. Sidebar — entrée Contracts
+Un contrat peut exister sans référence à une SeasonPeriod —
+notamment pour des périodes spéciales non planifiées.
 
 ```typescript
-// core/shell/sidebar/sidebar.component.ts — ajouter dans navItems
-{
-  label: 'Contracts',
-  icon: 'pi pi-file-edit',
-  route: '/contracts',
-  roles: ['ADMIN', 'MANAGER'],
-}
+// ✅ seasonPeriodId optionnel
+seasonPeriodId String?
 ```
 
-### 7. Dialog visible — fix `model()` ⚠️ RAPPEL
+### 5. Standards Angular — règles non-négociables
 
-Tous les `p-dialog` de ce sprint (period-form-dialog, room-price-form-dialog,
-meal-supplement-form-dialog, occupancy-config-form) utilisent le fix `model()` établi en
-Sprint 2/3 pour éviter le conflit entre `[(visible)]` et `input()`.
-
-```typescript
-// ✅ Dans chaque dialog component
-visible = model<boolean>(false);
-// Le parent passe : [(visible)]="showDialog"
-```
-
-### 8. Standards Angular — rappel des règles non-négociables
-
-| Règle            | Valeur                                                                    |
-| ---------------- | ------------------------------------------------------------------------- |
-| Components       | Standalone (ne pas écrire `standalone: true`, c'est le défaut Angular 19) |
-| DI               | `inject()` uniquement — pas de `constructor`                              |
-| Change detection | `OnPush` systématique                                                     |
-| Inputs/Outputs   | `input()` / `output()` / `model()`                                        |
-| State local      | `signal()` / `computed()`                                                 |
-| Subscribe        | `take(1)` obligatoire sur tous les subscribe()                            |
-| Template         | `@if` / `@for` / `@switch` — pas `*ngIf` / `*ngFor`                       |
-| Classes CSS      | Tailwind utilitaires — pas `ngClass` / `ngStyle`                          |
-| Types            | Strict TypeScript — pas de `any`                                          |
+| Règle            | Valeur                             |
+| ---------------- | ---------------------------------- |
+| Components       | Standalone (défaut Angular 19)     |
+| DI               | `inject()` uniquement              |
+| Change detection | `OnPush` systématique              |
+| Inputs/Outputs   | `input()` / `output()` / `model()` |
+| State local      | `signal()` / `computed()`          |
+| Subscribe        | `take(1)` obligatoire              |
+| Template         | `@if` / `@for` / `@switch`         |
+| Classes CSS      | Tailwind utilitaires               |
+| Types            | Strict TypeScript — pas de `any`   |
 
 ---
 
-## Shared Types — à créer avant tout ⚠️ NOUVEAU TICKET
+## Migration Season — avant tout le reste ⚠️ P0
 
-> Le pattern Sprint 3 impose de créer les shared types **en premier** (avant DTOs et
-> services frontend).
+### S4-MIGRATE-001 : Migrer Season → Season + SeasonPeriod
+
+- **Type :** Migration
+- **Priority :** P0
+- **Story Points :** 3
+- **Branch :** `chore/S4-MIGRATE-001-season-period-migration`
+- **Commit :** `chore(prisma): migrate Season to Season+SeasonPeriod, keep dates on ContractPeriod`
+
+**Ordre strict des opérations :**
+
+```
+Étape 1 — Créer SeasonPeriod (nouvelle table)
+Étape 2 — Migrer les données Season → SeasonPeriod
+Étape 3 — Ajouter seasonPeriodId sur ContractPeriod (nullable)
+Étape 4 — Supprimer startDate/endDate de Season
+```
+
+Ne jamais fusionner étape 2 et étape 4 dans la même migration.
+
+**Script de migration des données :**
+
+```typescript
+// prisma/scripts/migrate-season-periods.ts
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+async function main() {
+  const seasons = await prisma.season.findMany();
+
+  for (const season of seasons) {
+    await prisma.seasonPeriod.create({
+      data: {
+        seasonId: season.id,
+        name: 'Période principale', // renommer manuellement après
+        startDate: (season as any).startDate,
+        endDate: (season as any).endDate,
+      },
+    });
+  }
+  console.log(`Migrated ${seasons.length} seasons → season periods`);
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
+```
+
+**Tester en local avant Neon :**
+
+```bash
+# 1. Copie locale
+npx prisma migrate reset --skip-seed
+npx ts-node prisma/scripts/migrate-season-periods.ts
+npx prisma studio  # vérifier visuellement
+
+# 2. Seulement si OK → appliquer sur Neon
+DATABASE_URL=$NEON_DIRECT_URL npx prisma migrate deploy
+npx ts-node prisma/scripts/migrate-season-periods.ts
+```
+
+**Acceptance Criteria :**
+
+- ✅ Table `season_periods` créée
+- ✅ Chaque Season existante a au moins une SeasonPeriod
+- ✅ `startDate`/`endDate` supprimés de `Season`
+- ✅ `ContractPeriod.seasonPeriodId` nullable ajouté
+- ✅ Données de production intactes
+
+---
+
+## Shared Types — à créer avant tout ⚠️ P0
 
 ### S4-SHARED-001 : Types contrats dans `@runner/shared/types`
 
 - **Type :** Task
 - **Priority :** P0
-- **Story Points :** 2
+- **Story Points :** 3
 - **Branch :** `chore/S4-SHARED-001-contract-types`
-- **Commit :** `chore(types): add Contract, ContractPeriod, RoomPrice, MealPlanSupplement shared types`
-- **Description :**
-  Créer `libs/shared/types/src/lib/contract.types.ts` et exporter depuis `index.ts`.
+- **Commit :** `chore(types): revise Season, add SeasonPeriod, add Contract types`
 
 ```typescript
-// libs/shared/types/src/lib/contract.types.ts
+// libs/shared/types/src/lib/season.types.ts — RÉVISÉ
+
+export interface Season {
+  id: string;
+  name: string;
+  tourOperatorId: string;
+  periods?: SeasonPeriod[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SeasonDto {
+  name: string;
+}
+
+// NOUVEAU
+export interface SeasonPeriod {
+  id: string;
+  seasonId: string;
+  name: string;
+  startDate: string; // template — dates suggérées
+  endDate: string;
+  season?: { id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SeasonPeriodDto {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+```
+
+```typescript
+// libs/shared/types/src/lib/contract.types.ts — NOUVEAU
 
 export type PricingMode = 'PER_ROOM' | 'PER_OCCUPANCY';
 
@@ -202,13 +263,13 @@ export interface ContractDto {
 export interface ContractPeriod {
   id: string;
   contractId: string;
-  seasonId: string;
+  seasonPeriodId?: string | null; // optionnel — classification/reporting
   name: string;
-  startDate: string;
+  startDate: string; // source de vérité contractuelle
   endDate: string;
   baseMealPlanId: string;
   minStay?: number;
-  season?: { id: string; name: string; startDate: string; endDate: string };
+  seasonPeriod?: SeasonPeriod; // pour affichage du nom de saison
   baseMealPlan?: { id: string; code: string; name: string };
   roomPrices?: RoomPrice[];
   mealPlanSupplements?: MealPlanSupplement[];
@@ -216,7 +277,7 @@ export interface ContractPeriod {
 }
 
 export interface ContractPeriodDto {
-  seasonId: string;
+  seasonPeriodId?: string | null;
   name: string;
   startDate: string;
   endDate: string;
@@ -229,7 +290,6 @@ export interface OccupancyRate {
   roomPriceId: string;
   numAdults: number;
   numChildren: number;
-  /** { ageCategoryId: { rate: number; order: number } } */
   ratesPerAge: Record<string, { rate: number; order: number }>;
   totalRate: number;
 }
@@ -262,7 +322,6 @@ export interface MealPlanSupplement {
   id: string;
   contractPeriodId: string;
   mealPlanId: string;
-  /** { "numAdults-numChildren": price } — ex: { "1-0": 15, "2-1": 40 } */
   occupancyRates: Record<string, number>;
   mealPlan?: { id: string; code: string; name: string };
 }
@@ -284,25 +343,56 @@ export interface ContractFilters {
 }
 ```
 
-- **Acceptance Criteria :**
-  - ✅ Tous les types exportés depuis `@runner/shared/types`
-  - ✅ Importables sans erreur côté backend et frontend
-  - ✅ `PricingMode` union type (pas d'enum — cohérence avec Sprint 3)
+**Acceptance Criteria :**
+
+- ✅ `Season` sans `startDate`/`endDate`
+- ✅ `SeasonPeriod` exporté avec dates de référence
+- ✅ `ContractPeriod` avec ses propres `startDate`/`endDate` + `seasonPeriodId?` optionnel
+- ✅ `PricingMode` union type (pas d'enum)
 
 ---
 
 ## Backend Tasks
 
-### S4-BE-001 : Prisma — modèles Contracts + migration
+### S4-BE-001 : Prisma — schéma révisé + migration
 
 - **Type :** Task
 - **Priority :** P0
-- **Story Points :** 3
+- **Story Points :** 4
 - **Branch :** `chore/S4-BE-001-prisma-contracts-migration`
-- **Commit :** `chore(prisma): add Contract, ContractPeriod, RoomPrice, OccupancyRate, MealPlanSupplement, StopSalesDate models`
-- **Description :** Ajouter tous les modèles au schéma Prisma et lancer la migration.
+- **Commit :** `chore(prisma): revise Season, add SeasonPeriod and Contract models`
 
 ```prisma
+// Season — conteneur pur, plus de dates
+model Season {
+  id             String         @id @default(cuid())
+  name           String
+  tourOperatorId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  periods        SeasonPeriod[]
+
+  @@unique([tourOperatorId, name])
+  @@index([tourOperatorId])
+}
+
+// SeasonPeriod — template de référence
+model SeasonPeriod {
+  id              String           @id @default(cuid())
+  seasonId        String
+  name            String
+  startDate       DateTime         // dates suggérées
+  endDate         DateTime
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  season          Season           @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  contractPeriods ContractPeriod[]
+
+  @@unique([seasonId, name])       // pas deux périodes avec le même nom dans une saison
+  @@index([seasonId])
+  @@index([startDate, endDate])
+}
+
 model Contract {
   id             String           @id @default(cuid())
   name           String
@@ -322,33 +412,35 @@ model Contract {
   @@index([marketId])
 }
 
+// ContractPeriod — source de vérité contractuelle
 model ContractPeriod {
   id                  String               @id @default(cuid())
   contractId          String
-  seasonId            String
+  seasonPeriodId      String?              // optionnel — classification/reporting
   name                String
-  startDate           DateTime
+  startDate           DateTime             // dates réelles négociées
   endDate             DateTime
   baseMealPlanId      String
   minStay             Int?
   contract            Contract             @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  season              Season               @relation(fields: [seasonId], references: [id])
+  seasonPeriod        SeasonPeriod?        @relation(fields: [seasonPeriodId], references: [id])
   baseMealPlan        MealPlan             @relation(fields: [baseMealPlanId], references: [id])
   roomPrices          RoomPrice[]
   mealPlanSupplements MealPlanSupplement[]
   stopSalesDates      StopSalesDate[]
 
   @@index([contractId])
+  @@index([seasonPeriodId])
 }
 
 model RoomPrice {
-  id               String         @id @default(cuid())
+  id               String          @id @default(cuid())
   contractPeriodId String
   roomTypeId       String
   pricingMode      PricingMode
   pricePerNight    Decimal?
-  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
-  roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
+  contractPeriod   ContractPeriod  @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType         RoomType        @relation(fields: [roomTypeId], references: [id])
   occupancyRates   OccupancyRate[]
 
   @@unique([contractPeriodId, roomTypeId])
@@ -356,13 +448,13 @@ model RoomPrice {
 }
 
 model OccupancyRate {
-  id           String    @id @default(cuid())
-  roomPriceId  String
-  numAdults    Int
-  numChildren  Int
-  ratesPerAge  Json      // { ageCategoryId: { rate: number, order: number } }
-  totalRate    Decimal
-  roomPrice    RoomPrice @relation(fields: [roomPriceId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  roomPriceId String
+  numAdults   Int
+  numChildren Int
+  ratesPerAge Json
+  totalRate   Decimal
+  roomPrice   RoomPrice @relation(fields: [roomPriceId], references: [id], onDelete: Cascade)
 
   @@unique([roomPriceId, numAdults, numChildren])
   @@index([roomPriceId])
@@ -372,7 +464,7 @@ model MealPlanSupplement {
   id               String         @id @default(cuid())
   contractPeriodId String
   mealPlanId       String
-  occupancyRates   Json           // { "numAdults-numChildren": price }
+  occupancyRates   Json
   contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
   mealPlan         MealPlan       @relation(fields: [mealPlanId], references: [id])
 
@@ -396,28 +488,77 @@ enum PricingMode {
 }
 ```
 
-> **Note :** Vérifier que les modèles `Hotel`, `Market`, `MealPlan`, `Season`, `RoomType`
-> référencent bien `ContractPeriod` / `RoomPrice` / `MealPlanSupplement` dans leurs
-> relations inverses — ceci active les erreurs Prisma `P2003 → HAS_CONTRACTS` sur les
-> suppressions côté référentiels (cf. note Sprint 3).
+**Acceptance Criteria :**
 
-- **Acceptance Criteria :**
-  - ✅ Migration appliquée sans erreur
-  - ✅ Toutes les tables créées dans PostgreSQL
-  - ✅ `@@unique` et `@@index` en place
-  - ✅ Client Prisma régénéré
+- ✅ `Season` sans `startDate`/`endDate`
+- ✅ `SeasonPeriod` avec `startDate`/`endDate` + `@@unique([seasonId, name])`
+- ✅ `ContractPeriod` avec ses propres `startDate`/`endDate` + `seasonPeriodId?` nullable
+- ✅ Migration appliquée sans erreur
+- ✅ Client Prisma régénéré
 
 ---
 
-### S4-BE-002 : ContractsModule — structure + Repository Pattern
+### S4-BE-002 : SeasonPeriods CRUD — ajout au module Seasons
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 4
+- **Branch :** `feature/S4-BE-002-season-periods`
+- **Commit :** `feat(seasons): add SeasonPeriod CRUD nested under seasons`
+
+**Endpoints :**
+
+```
+GET    /seasons/:id/periods
+POST   /seasons/:id/periods
+PATCH  /seasons/:id/periods/:periodId
+DELETE /seasons/:id/periods/:periodId   ← 204, pas de blocage (dates indépendantes)
+```
+
+**Validation chevauchement dans une même Season :**
+
+```typescript
+async validateNoOverlap(
+  seasonId: string,
+  startDate: Date,
+  endDate: Date,
+  excludeId?: string,
+): Promise<void> {
+  const overlapping = await this.prisma.seasonPeriod.findFirst({
+    where: {
+      seasonId,
+      id: excludeId ? { not: excludeId } : undefined,
+      startDate: { lte: endDate },
+      endDate:   { gte: startDate },
+    },
+  });
+  if (overlapping) {
+    throw new ConflictException(
+      `SeasonPeriod overlaps with existing period "${overlapping.name}"`
+    );
+  }
+}
+```
+
+**Note :** pas d'immutabilité — une SeasonPeriod peut être modifiée même si
+des ContractPeriods y font référence (les ContractPeriods ont leurs propres dates).
+
+**Acceptance Criteria :**
+
+- ✅ CRUD SeasonPeriod fonctionnel sous `/seasons/:id/periods`
+- ✅ Chevauchement dans une même Season bloqué
+- ✅ Suppression libre (pas de blocage sur ContractPeriod liées)
+- ✅ Abstract class repository pattern
+
+---
+
+### S4-BE-003 : ContractsModule — structure + Repository Pattern
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `feature/S4-BE-002-contracts-module`
+- **Branch :** `feature/S4-BE-003-contracts-module`
 - **Commit :** `feat(contracts): create contracts module with abstract repository pattern`
-- **Description :**
-  Générer le module et adopter le pattern **abstract class** de Sprint 3.
 
 ```
 apps/backend/src/contracts/
@@ -432,59 +573,47 @@ apps/backend/src/contracts/
 │   ├── create-meal-supplement.dto.ts
 │   └── update-meal-supplement.dto.ts
 ├── repositories/
-│   ├── contract.repository.ts          ← abstract class
-│   └── prisma-contract.repository.ts   ← PrismaContractRepository
-├── contracts.types.ts                  ← ContractQuery, ContractDetail
+│   ├── contract.repository.ts
+│   └── prisma-contract.repository.ts
+├── contracts.types.ts
 ├── contracts.controller.ts
 ├── contracts.service.ts
 └── contracts.module.ts
 ```
 
-- **Acceptance Criteria :**
-  - ✅ Module importé dans AppModule
-  - ✅ Abstract class comme DI token (pas de fichier constants)
-  - ✅ Repository : data access only, pas d'exceptions HTTP
-  - ✅ Service : logique métier, exceptions HTTP, tourOperatorId depuis JWT uniquement
-
 ---
 
-### S4-BE-003 : DTOs avec validation complète
+### S4-BE-004 : DTOs avec validation complète
 
 - **Type :** Task
 - **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `chore/S4-BE-003-contracts-dto`
+- **Branch :** `chore/S4-BE-004-contracts-dto`
 - **Commit :** `chore(contracts): add all DTOs with class-validator`
 
-**CreateContractDto**
-
-```typescript
-export class CreateContractDto {
-  @IsString() @IsNotEmpty() name: string;
-  @IsString() @IsNotEmpty() hotelId: string;
-  @IsString() @IsNotEmpty() marketId: string;
-  @IsString() @IsNotEmpty() currencyId: string;
-}
-export class UpdateContractDto extends PartialType(CreateContractDto) {}
-```
-
-**CreateContractPeriodDto**
+**CreateContractPeriodDto :**
 
 ```typescript
 export class CreateContractPeriodDto {
-  @IsString() @IsNotEmpty() seasonId: string;
+  // Optionnel — pour classification/reporting uniquement
+  @IsOptional() @IsString() seasonPeriodId?: string;
+
   @IsString() @IsNotEmpty() name: string;
+
+  // Source de vérité contractuelle — toujours requis
   @IsDateString() startDate: string;
   @IsDateString() endDate: string;
+
   @IsString() @IsNotEmpty() baseMealPlanId: string;
   @IsOptional() @IsInt() @Min(1) minStay?: number;
 }
+
 export class UpdateContractPeriodDto extends PartialType(
   CreateContractPeriodDto
 ) {}
 ```
 
-**CreateRoomPriceDto — union PER_ROOM | PER_OCCUPANCY (PER_OCCUPANCY utilise `capacities`)**
+**CreateRoomPriceDto :**
 
 ```typescript
 export class OccupancyRateDto {
@@ -496,13 +625,8 @@ export class OccupancyRateDto {
 
 export class CreateRoomPriceDto {
   @IsString() @IsNotEmpty() roomTypeId: string;
-
   @IsEnum(PricingMode) pricingMode: PricingMode;
-
-  // Requis si PER_ROOM, null si PER_OCCUPANCY
   @IsOptional() @IsNumber() @Min(0) pricePerNight?: number | null;
-
-  // Requis si PER_OCCUPANCY
   @IsOptional()
   @ValidateIf((o) => o.pricingMode === 'PER_OCCUPANCY')
   @ValidateNested({ each: true })
@@ -511,104 +635,138 @@ export class CreateRoomPriceDto {
 }
 ```
 
-**CreateMealSupplementDto**
+**Acceptance Criteria :**
 
-```typescript
-export class CreateMealSupplementDto {
-  @IsString() @IsNotEmpty() mealPlanId: string;
-  // { "1-0": 15, "2-0": 30 } — clé = "numAdults-numChildren"
-  @IsObject() occupancyRates: Record<string, number>;
-}
-export class UpdateMealSupplementDto extends PartialType(
-  CreateMealSupplementDto
-) {}
-```
-
-- **Acceptance Criteria :**
-  - ✅ Tous les DTOs créés et validés via class-validator
-  - ✅ `PATCH` utilise `PartialType` sur tous les update DTOs
-  - ✅ Validation DTO retourne HTTP 400 si payload invalide
+- ✅ `seasonPeriodId` optionnel dans `CreateContractPeriodDto`
+- ✅ `startDate`/`endDate` obligatoires sur `ContractPeriod`
+- ✅ Validation HTTP 400 si payload invalide
 
 ---
 
-### S4-BE-004 : Endpoints Contracts CRUD
+### S4-BE-005 : Endpoints Contracts CRUD
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `feature/S4-BE-004-contracts-crud`
+- **Branch :** `feature/S4-BE-005-contracts-crud`
 - **Commit :** `feat(contracts): implement contracts CRUD endpoints`
-- **Endpoints :**
 
 ```
-GET    /contracts              — liste paginée + filtres hotelId, marketId
-GET    /contracts/:id          — détail complet (hotel, market, currency, periods)
-POST   /contracts              — création (201)
-PATCH  /contracts/:id          — mise à jour partielle  ⚠️ PATCH, pas PUT
-DELETE /contracts/:id          — (204) — bloqué si bookings liés
+GET    /contracts
+GET    /contracts/:id
+POST   /contracts
+PATCH  /contracts/:id
+DELETE /contracts/:id   ← bloqué si bookings liés
 ```
 
-- **Multi-tenancy :** `tourOperatorId` depuis JWT, jamais du body
-- **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ HTTP 401/403/404 retournés correctement
-  - ✅ Suppression bloquée si bookings liés (`ConflictException`)
+**Include pour GET /:id :**
+
+```typescript
+include: {
+  periods: {
+    include: {
+      seasonPeriod: true,          // nom de saison pour affichage
+      baseMealPlan: true,
+      roomPrices: { include: { occupancyRates: true } },
+      mealPlanSupplements: true,
+      stopSalesDates: true,
+    }
+  }
+}
+```
 
 ---
 
-### S4-BE-005 : Endpoints ContractPeriod
+### S4-BE-006 : Endpoints ContractPeriod
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 4
-- **Branch :** `feature/S4-BE-005-contract-periods`
-- **Commit :** `feat(contracts): implement contract periods CRUD with season link`
-- **Endpoints :**
+- **Branch :** `feature/S4-BE-006-contract-periods`
+- **Commit :** `feat(contracts): implement contract periods CRUD`
 
 ```
 POST   /contracts/:id/periods
-PATCH  /contracts/:id/periods/:periodId    ⚠️ PATCH
-DELETE /contracts/:id/periods/:periodId    (204)
+PATCH  /contracts/:id/periods/:periodId
+DELETE /contracts/:id/periods/:periodId
 ```
 
-- **Logique Season :** si `seasonId` fourni, pré-remplir `startDate`/`endDate` depuis la
-  Season (le frontend peut écraser si besoin)
-- **Validation chevauchement :** vérifier que les dates ne chevauchent pas les autres
-  périodes du même contrat
+**Validation chevauchement dans un même contrat :**
+
+```typescript
+async validateNoOverlap(
+  contractId: string,
+  startDate: Date,
+  endDate: Date,
+  excludeId?: string,
+): Promise<void> {
+  const overlapping = await this.prisma.contractPeriod.findFirst({
+    where: {
+      contractId,
+      id: excludeId ? { not: excludeId } : undefined,
+      startDate: { lte: endDate },
+      endDate:   { gte: startDate },
+    },
+  });
+  if (overlapping) {
+    throw new ConflictException(
+      `Period overlaps with existing period "${overlapping.name}"`
+    );
+  }
+}
+```
+
+**Auto-fill depuis SeasonPeriod (si fourni) :**
+
+```typescript
+// Dans ContractsService.createPeriod()
+if (dto.seasonPeriodId) {
+  const seasonPeriod = await this.prisma.seasonPeriod.findUnique({
+    where: { id: dto.seasonPeriodId },
+  });
+  if (!seasonPeriod) throw new NotFoundException('SeasonPeriod not found');
+
+  // Pré-remplir les dates si non fournies explicitement
+  dto.startDate = dto.startDate ?? seasonPeriod.startDate.toISOString();
+  dto.endDate = dto.endDate ?? seasonPeriod.endDate.toISOString();
+}
+```
+
+**Acceptance Criteria :**
+
+- ✅ Chevauchement de périodes dans un même contrat bloqué
+- ✅ Auto-fill depuis SeasonPeriod si `seasonPeriodId` fourni
+- ✅ Dates restent éditables indépendamment de la SeasonPeriod
 
 ---
 
-### S4-BE-006 : Endpoints RoomPrice — PER_ROOM
+### S4-BE-007 : Endpoints RoomPrice — PER_ROOM
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `feature/S4-BE-006-room-price-per-room`
+- **Branch :** `feature/S4-BE-007-room-price-per-room`
 - **Commit :** `feat(contracts): implement room prices PER_ROOM mode`
-- **Endpoints :**
 
 ```
 POST   /contracts/:id/periods/:periodId/room-prices
-PATCH  /room-prices/:id                              ⚠️ PATCH
-DELETE /room-prices/:id                              (204)
+PATCH  /room-prices/:id
+DELETE /room-prices/:id
 ```
-
-- **Validation PER_ROOM :** `pricePerNight` requis et `> 0`, `occupancyRates` vide
 
 ---
 
-### S4-BE-007 : Endpoints RoomPrice — PER_OCCUPANCY
+### S4-BE-008 : Endpoints RoomPrice — PER_OCCUPANCY
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 5
-- **Branch :** `feature/S4-BE-007-room-price-per-occupancy`
+- **Branch :** `feature/S4-BE-008-room-price-per-occupancy`
 - **Commit :** `feat(contracts): implement PER_OCCUPANCY pricing with capacity validation`
 
-**Validation capacité — utiliser `RoomTypeCapacity` (pas maxAdults/maxChildren)**
+**Validation capacité via `RoomTypeCapacity` :**
 
 ```typescript
-// contracts.service.ts — validation PER_OCCUPANCY
 async validateOccupancyAgainstCapacity(
   roomTypeId: string,
   numAdults: number,
@@ -616,18 +774,11 @@ async validateOccupancyAgainstCapacity(
 ): Promise<void> {
   const roomType = await this.prisma.roomType.findUnique({
     where: { id: roomTypeId },
-    include: {
-      capacities: { include: { ageCategory: true } },
-    },
+    include: { capacities: { include: { ageCategory: true } } },
   });
   if (!roomType) throw new NotFoundException('RoomType not found');
 
-  // Calculer la capacité max par type d'âge
-  // (chaque RoomTypeCapacity.maxPax = nb max de pax pour cette ageCategory)
-  // Logique métier : la somme numAdults + numChildren ≤ somme des maxPax
-  const totalMaxPax = roomType.capacities.reduce(
-    (sum, c) => sum + c.maxPax, 0
-  );
+  const totalMaxPax = roomType.capacities.reduce((sum, c) => sum + c.maxPax, 0);
   if (numAdults + numChildren > totalMaxPax) {
     throw new BadRequestException(
       `Occupancy (${numAdults}A + ${numChildren}C) exceeds room capacity (${totalMaxPax} pax)`
@@ -636,110 +787,190 @@ async validateOccupancyAgainstCapacity(
 }
 ```
 
-- **Payload exemple :**
-
-```json
-{
-  "roomTypeId": "cuid...",
-  "pricingMode": "PER_OCCUPANCY",
-  "occupancyRates": [
-    {
-      "numAdults": 2,
-      "numChildren": 0,
-      "ratesPerAge": {
-        "adult_cat_id_1": { "rate": 90, "order": 1 },
-        "adult_cat_id_2": { "rate": 90, "order": 2 }
-      },
-      "totalRate": 180
-    }
-  ]
-}
-```
-
-- **Acceptance Criteria :**
-  - ✅ `OccupancyRate` créés avec `RoomPrice`
-  - ✅ `totalRate` calculé et vérifié (somme des `rates`)
-  - ✅ Validation capacité via `capacities[]` (pas `maxAdults`/`maxChildren`)
-  - ✅ `@@unique([roomPriceId, numAdults, numChildren])` respectée
-
 ---
 
-### S4-BE-008 : Endpoints MealPlanSupplement
+### S4-BE-009 : Endpoints MealPlanSupplement
 
 - **Type :** Feature
 - **Priority :** P1
 - **Story Points :** 3
-- **Branch :** `feature/S4-BE-008-meal-supplements`
+- **Branch :** `feature/S4-BE-009-meal-supplements`
 - **Commit :** `feat(contracts): implement meal plan supplements`
-- **Endpoints :**
 
 ```
 POST   /contracts/:id/periods/:periodId/meal-supplements
-PATCH  /meal-supplements/:id                              ⚠️ PATCH
-DELETE /meal-supplements/:id                              (204)
+PATCH  /meal-supplements/:id
+DELETE /meal-supplements/:id
 ```
-
-- **Structure `occupancyRates` :** clé `"numAdults-numChildren"`, valeur = prix positif
 
 ---
 
-### S4-BE-009 : Endpoints StopSalesDate
+### S4-BE-010 : Endpoints StopSalesDate
 
 - **Type :** Feature
 - **Priority :** P2
 - **Story Points :** 2
-- **Branch :** `feature/S4-BE-009-stop-sales`
+- **Branch :** `feature/S4-BE-010-stop-sales`
 - **Commit :** `feat(contracts): implement stop sales dates management`
-- **Endpoints :**
 
 ```
 POST   /contracts/:id/periods/:periodId/stop-sales
-DELETE /stop-sales/:id    (204)
+DELETE /stop-sales/:id
 ```
 
-- **Validation :** la date doit être comprise entre `startDate` et `endDate` de la période
+**Validation contre les dates réelles du ContractPeriod :**
+
+```typescript
+// Validation contre ContractPeriod.startDate/endDate (pas SeasonPeriod)
+const contractPeriod = await this.prisma.contractPeriod.findUnique({
+  where: { id: periodId },
+});
+if (date < contractPeriod.startDate || date > contractPeriod.endDate) {
+  throw new BadRequestException('Date is outside the contract period range');
+}
+```
 
 ---
 
-### S4-BE-010 : Tests unitaires ContractsService
+### S4-BE-011 : Tests unitaires ContractsService
 
 - **Type :** Test
 - **Priority :** P1
 - **Story Points :** 4
-- **Branch :** `test/S4-BE-010-contracts-tests`
+- **Branch :** `test/S4-BE-011-contracts-tests`
 - **Commit :** `test(contracts): add unit tests for contracts service`
-- **Scénarios à couvrir :**
-  - Création contrat avec vérification hotelId/marketId/currencyId
-  - Validation chevauchement de périodes
-  - Création RoomPrice PER_ROOM (prix requis)
-  - Création RoomPrice PER_OCCUPANCY avec validation capacité via `capacities[]`
-  - Calcul et vérification de `totalRate`
-  - StopSalesDate hors période → erreur attendue
-  - Mock `PrismaService`
-- **Note :** Premier sprint avec tests — les Sprints 0–3 n'en ont pas. Ne pas backfiller,
-  appliquer la règle **Sprint 4 onwards**.
-- **Acceptance Criteria :**
-  - ✅ Coverage > 80% sur `contracts.service.ts`
-  - ✅ Tous les tests passent : `nx test backend`
+
+**Scénarios :**
+
+- Création contrat avec vérification hotelId/marketId/currencyId
+- Chevauchement de ContractPeriods dans un même contrat
+- Auto-fill dates depuis SeasonPeriod
+- Dates éditables indépendamment de la SeasonPeriod
+- RoomPrice PER_ROOM (pricePerNight requis)
+- RoomPrice PER_OCCUPANCY + validation via `capacities[]`
+- `totalRate` calculé et vérifié
+- StopSalesDate hors ContractPeriod → erreur
+
+**Acceptance Criteria :**
+
+- ✅ Coverage > 80% sur `contracts.service.ts`
 
 ---
 
 ## Frontend Tasks
 
-### S4-FE-001 : Créer ContractsService
+### S4-FE-001 : Mettre à jour SeasonsService + UI Seasons
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 3
+- **Branch :** `feature/S4-FE-001-seasons-with-periods`
+- **Commit :** `feat(seasons): add SeasonPeriod management in seasons UI`
+
+**`SeasonsService` — nouvelles méthodes :**
+
+```typescript
+getWithPeriods(): void {
+  // Charger seasons avec leurs periods incluses
+  // Réutiliser le BehaviorSubject existant
+}
+
+createPeriod(seasonId: string, dto: SeasonPeriodDto): Observable<SeasonPeriod> {
+  return this.http.post<SeasonPeriod>(`/api/seasons/${seasonId}/periods`, dto);
+}
+
+updatePeriod(
+  seasonId: string,
+  periodId: string,
+  dto: Partial<SeasonPeriodDto>
+): Observable<SeasonPeriod> {
+  return this.http.patch<SeasonPeriod>(
+    `/api/seasons/${seasonId}/periods/${periodId}`, dto
+  );
+}
+
+deletePeriod(seasonId: string, periodId: string): Observable<void> {
+  return this.http.delete<void>(`/api/seasons/${seasonId}/periods/${periodId}`);
+}
+```
+
+**`SeasonPeriodFormDialogComponent`** (nouveau) :
+
+```typescript
+@Component({ ..., changeDetection: ChangeDetectionStrategy.OnPush })
+export class SeasonPeriodFormDialogComponent {
+  visible    = model<boolean>(false);
+  seasonId   = input.required<string>();
+  period     = input<SeasonPeriod | null>(null);   // null = create mode
+  saved      = output<void>();
+
+  private readonly fb             = inject(FormBuilder);
+  private readonly seasonsService = inject(SeasonsService);
+  private readonly messageService = inject(MessageService);
+
+  isEdit = computed(() => !!this.period());
+
+  form = this.fb.group({
+    name:      ['', Validators.required],
+    startDate: [null as Date | null, Validators.required],
+    endDate:   [null as Date | null, Validators.required],
+  });
+
+  // Pré-remplir en mode édition
+  constructor() {
+    effect(() => {
+      const p = this.period();
+      if (p) {
+        this.form.patchValue({
+          name:      p.name,
+          startDate: new Date(p.startDate),
+          endDate:   new Date(p.endDate),
+        });
+      }
+    });
+  }
+
+  submit(): void {
+    if (this.form.invalid) return;
+    const dto: SeasonPeriodDto = {
+      name:      this.form.value.name!,
+      startDate: this.form.value.startDate!.toISOString(),
+      endDate:   this.form.value.endDate!.toISOString(),
+    };
+    const action$ = this.isEdit()
+      ? this.seasonsService.updatePeriod(this.seasonId(), this.period()!.id, dto)
+      : this.seasonsService.createPeriod(this.seasonId(), dto);
+
+    action$.pipe(take(1)).subscribe({
+      next: () => {
+        this.saved.emit();
+        this.visible.set(false);
+      },
+      error: (err) => {
+        const msg = err.status === 409
+          ? 'Cette période chevauche une période existante'
+          : 'Une erreur est survenue';
+        this.messageService.add({ severity: 'error', summary: msg });
+      },
+    });
+  }
+}
+```
+
+---
+
+### S4-FE-002 : Créer ContractsService
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 2
-- **Branch :** `feature/S4-FE-001-contracts-service`
+- **Branch :** `feature/S4-FE-002-contracts-service`
 - **Commit :** `feat(contracts): create contracts service with BehaviorSubject`
 
 ```typescript
-// features/contracts/services/contracts.service.ts
 @Injectable({ providedIn: 'root' })
 export class ContractsService {
   private readonly http = inject(HttpClient);
-
   private readonly _contracts$ = new BehaviorSubject<Contract[]>([]);
   private readonly _loading$ = new BehaviorSubject<boolean>(false);
   private _loaded = false;
@@ -747,10 +978,9 @@ export class ContractsService {
   readonly contracts$ = this._contracts$.asObservable();
   readonly loading$ = this._loading$.asObservable();
 
-  // Filtres courants — signals locaux dans le composant list, pas ici
   load(
     filters: ContractFilters = {},
-    pagination: PaginationParams = { limit: 20, offset: 0 }
+    pagination = { limit: 20, offset: 0 }
   ): void {
     if (this._loaded) return;
     this._loading$.next(true);
@@ -768,7 +998,6 @@ export class ContractsService {
       });
   }
 
-  // Force reload (après create/update/delete)
   reload(filters?: ContractFilters): void {
     this._loaded = false;
     this.load(filters);
@@ -783,14 +1012,13 @@ export class ContractsService {
   }
 
   update(id: string, dto: Partial<ContractDto>): Observable<Contract> {
-    return this.http.patch<Contract>(`/api/contracts/${id}`, dto); // ⚠️ PATCH
+    return this.http.patch<Contract>(`/api/contracts/${id}`, dto);
   }
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`/api/contracts/${id}`);
   }
 
-  // --- Periods ---
   createPeriod(
     contractId: string,
     dto: ContractPeriodDto
@@ -818,7 +1046,6 @@ export class ContractsService {
     );
   }
 
-  // --- RoomPrices ---
   createRoomPrice(
     contractId: string,
     periodId: string,
@@ -841,7 +1068,6 @@ export class ContractsService {
     return this.http.delete<void>(`/api/room-prices/${id}`);
   }
 
-  // --- MealSupplements ---
   createMealSupplement(
     contractId: string,
     periodId: string,
@@ -867,7 +1093,6 @@ export class ContractsService {
     return this.http.delete<void>(`/api/meal-supplements/${id}`);
   }
 
-  // --- StopSales ---
   createStopSale(
     contractId: string,
     periodId: string,
@@ -885,186 +1110,160 @@ export class ContractsService {
 }
 ```
 
-- **Acceptance Criteria :**
-  - ✅ BehaviorSubject + `loaded` flag (pattern HotelsService de Sprint 3)
-  - ✅ `buildContractParams` utilisé (pas `buildPaginationParams`)
-  - ✅ `PATCH` sur `update`, `updatePeriod`, `updateRoomPrice`, `updateMealSupplement`
-  - ✅ `take(1)` sur le `subscribe()` interne à `load()`
-  - ✅ Méthodes période/room-price/meal-supplement retournent des `Observable` (pas de subscribe interne — c'est le composant qui subscribes avec `take(1)`)
-
 ---
 
-### S4-FE-002 : ContractsList Component
+### S4-FE-003 : ContractsList Component
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 2
-- **Branch :** `feature/S4-FE-002-contracts-list`
+- **Branch :** `feature/S4-FE-003-contracts-list`
 - **Commit :** `feat(contracts): create contracts list with filters`
-- **Description :**
-  - `p-table` : colonnes Name, Hotel, Market, Currency, Nb périodes, Actions
-  - Filtres Hotel + Market via `p-select` — signaux locaux `hotelFilter`, `marketFilter`
-  - Au changement de filtre : `contractsService.reload({ hotelId, marketId })`
-  - Boutons : Créer (→ `/contracts/new`), Éditer (→ `/contracts/:id/edit`), Supprimer
-  - Supprimer avec `p-confirmdialog` (pattern Sprint 3)
-  - `p-toast` succès/erreur
+
+- `p-table` : Name, Hotel, Market, Currency, Nb périodes, Actions
+- Filtres Hotel + Market via `p-select`
+- Boutons : Créer, Éditer, Supprimer (`confirmDelete` helper Sprint 3)
+
+---
+
+### S4-FE-004 : ContractForm — Étape 1 (infos de base)
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 3
+- **Branch :** `feature/S4-FE-004-contract-form-step1`
+- **Commit :** `feat(contracts): create contract form wizard step 1`
+
+- Wizard `p-stepper` — 5 étapes
+- Étape 1 : Name, Hotel, Market, Currency
+- Reactive Form, `Validators.required` sur les 4 champs
+
+---
+
+### S4-FE-005 : ContractForm — Étape 2 (Periods)
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 4
+- **Branch :** `feature/S4-FE-005-contract-form-step2`
+- **Commit :** `feat(contracts): add periods management with SeasonPeriod auto-fill`
+
+**`PeriodFormDialogComponent` — sélection SeasonPeriod + dates éditables :**
 
 ```typescript
 @Component({ ..., changeDetection: ChangeDetectionStrategy.OnPush })
-export class ContractsListComponent {
-  private readonly contractsService = inject(ContractsService);
-  private readonly hotelsService    = inject(HotelsService);
-  private readonly marketsService   = inject(MarketsService);
-  private readonly router           = inject(Router);
+export class PeriodFormDialogComponent {
+  visible = model<boolean>(false);
 
-  contracts = toSignal(this.contractsService.contracts$, { initialValue: [] });
-  loading   = toSignal(this.contractsService.loading$,   { initialValue: false });
+  private readonly seasonsService = inject(SeasonsService);
+  private readonly fb             = inject(FormBuilder);
 
-  hotelFilter  = signal<string | null>(null);
-  marketFilter = signal<string | null>(null);
+  // Toutes les SeasonPeriods groupées par Season
+  seasons = toSignal(this.seasonsService.seasons$, { initialValue: [] });
 
-  ngOnInit(): void {
-    this.contractsService.load();
-  }
+  form = this.fb.group({
+    seasonPeriodId: [null as string | null],  // optionnel
+    name:           ['', Validators.required],
+    startDate:      [null as Date | null, Validators.required],
+    endDate:        [null as Date | null, Validators.required],
+    baseMealPlanId: ['', Validators.required],
+    minStay:        [null as number | null],
+  });
 
-  onFilterChange(): void {
-    this.contractsService.reload({
-      hotelId:  this.hotelFilter()  ?? undefined,
-      marketId: this.marketFilter() ?? undefined,
+  // Auto-fill quand l'agent sélectionne une SeasonPeriod
+  constructor() {
+    effect(() => {
+      const seasonPeriodId = this.form.get('seasonPeriodId')?.value;
+      if (!seasonPeriodId) return;
+
+      const period = this.seasons()
+        .flatMap(s => s.periods ?? [])
+        .find(p => p.id === seasonPeriodId);
+
+      if (period) {
+        // Pré-remplir — l'agent peut ensuite ajuster
+        this.form.patchValue({
+          name:      period.name,
+          startDate: new Date(period.startDate),
+          endDate:   new Date(period.endDate),
+        });
+      }
     });
   }
 }
 ```
 
----
+**UI du dialog :**
 
-### S4-FE-003 : ContractForm — Étape 1 (infos de base)
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S4-FE-003-contract-form-step1`
-- **Commit :** `feat(contracts): create contract form wizard with step 1`
-- **Description :**
-  - Wizard `p-stepper` — 5 étapes numérotées (pas de labels confus)
-  - Étape 1 : Name (`p-inputtext`), Hotel (`p-select`), Market (`p-select`), Currency (`p-select`)
-  - Reactive Form avec `Validators.required` sur les 4 champs
-  - Bouton **Next** désactivé si étape invalide
-
-```typescript
-// Structure du wizard — signal pour l'étape active
-activeStep = signal<number>(0);
-
-// Chaque étape est un FormGroup indépendant
-step1Form = this.fb.group({
-  name: ['', Validators.required],
-  hotelId: ['', Validators.required],
-  marketId: ['', Validators.required],
-  currencyId: ['', Validators.required],
-});
+```
+┌────────────────────────────────────────────────────────┐
+│ Saison (optionnel)                                     │
+│ [p-select groupé par Season — "Haute Saison / Été"]    │
+│                                                        │
+│ Nom de la période *                                    │
+│ [p-inputtext — pré-rempli si SeasonPeriod sélectionnée]│
+│                                                        │
+│ Dates *                          ← éditables toujours  │
+│ Du [p-datepicker]  Au [p-datepicker]                   │
+│ (pré-remplies depuis SeasonPeriod si sélectionnée)     │
+│                                                        │
+│ Meal plan de base *                                    │
+│ [p-select]                                             │
+│                                                        │
+│ Séjour minimum (optionnel)                             │
+│ [p-inputnumber]  nuits                                 │
+└────────────────────────────────────────────────────────┘
 ```
 
----
-
-### S4-FE-004 : ContractForm — Étape 2 (Periods)
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 4
-- **Branch :** `feature/S4-FE-004-contract-form-step2`
-- **Commit :** `feat(contracts): add periods management in contract form`
-- **Description :**
-  - `p-table` : liste des périodes configurées
-  - `p-dialog` (fix `model()`) pour ajouter/éditer une période :
-    - Name (`p-inputtext`)
-    - Season (`p-select`) → auto-fill `startDate`/`endDate` via `effect()` ou `valueChanges`
-    - Base Meal Plan (`p-select`)
-    - minStay (`p-inputnumber`, optionnel)
-  - Validation chevauchement côté frontend (date-fns) avant d'ajouter à la liste locale
-  - Les périodes sont stockées dans un `signal<ContractPeriod[]>` — elles ne sont **pas**
-    envoyées au backend à cette étape (tout est soumis en step 5)
-
-**Auto-fill depuis Season :**
-
-```typescript
-// Dans PeriodFormDialogComponent
-seasonId = signal<string | null>(null);
-seasons  = toSignal(this.seasonsService.seasons$, { initialValue: [] });
-
-selectedSeason = computed(() =>
-  this.seasons().find(s => s.id === this.seasonId())
-);
-
-// Utiliser effect() pour mettre à jour le formulaire quand la season change
-constructor() {
-  effect(() => {
-    const season = this.selectedSeason();
-    if (season) {
-      this.periodForm.patchValue({
-        startDate: season.startDate,
-        endDate:   season.endDate,
-      });
-    }
-  });
-}
-```
-
-**Validation chevauchement (date-fns) :**
+**Validation chevauchement côté frontend :**
 
 ```typescript
 import { areIntervalsOverlapping, parseISO } from 'date-fns';
 
 function hasOverlap(
-  periods: ContractPeriod[],
-  newPeriod: { startDate: string; endDate: string }
+  periods: ContractPeriodDto[],
+  newPeriod: { startDate: string; endDate: string },
+  excludeIndex?: number
 ): boolean {
-  return periods.some((p) =>
-    areIntervalsOverlapping(
-      { start: parseISO(p.startDate), end: parseISO(p.endDate) },
-      {
-        start: parseISO(newPeriod.startDate),
-        end: parseISO(newPeriod.endDate),
-      },
-      { inclusive: false }
-    )
-  );
+  return periods
+    .filter((_, i) => i !== excludeIndex)
+    .some((p) =>
+      areIntervalsOverlapping(
+        { start: parseISO(p.startDate), end: parseISO(p.endDate) },
+        {
+          start: parseISO(newPeriod.startDate),
+          end: parseISO(newPeriod.endDate),
+        },
+        { inclusive: false }
+      )
+    );
 }
 ```
 
----
+**Acceptance Criteria :**
 
-### S4-FE-005 : ContractForm — Étape 3 (Room Prices PER_ROOM)
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S4-FE-005-contract-form-step3-per-room`
-- **Commit :** `feat(contracts): add room prices PER_ROOM mode in contract form`
-- **Description :**
-  - Sélectionner Room Type (`p-select`) et la période associée
-  - Pricing Mode : `p-radiobutton` → `PER_ROOM` / `PER_OCCUPANCY`
-  - Si `PER_ROOM` : afficher `pricePerNight` (`p-inputnumber`, min=0)
-  - `p-table` des prix configurés pour la période sélectionnée
-  - `p-dialog` (fix `model()`) pour ajout/édition
+- ✅ Sélection SeasonPeriod pré-remplit nom + dates
+- ✅ Dates restent éditables après pré-remplissage
+- ✅ `seasonPeriodId` optionnel — peut créer une période sans SeasonPeriod
+- ✅ Validation chevauchement côté frontend
+- ✅ `p-dialog` avec fix `model()`
 
 ---
 
-### S4-FE-006 : ContractForm — Étape 3 (Room Prices PER_OCCUPANCY)
+### S4-FE-006 : ContractForm — Étape 3 (Room Prices)
 
 - **Type :** Feature
 - **Priority :** P0
-- **Story Points :** 5
-- **Branch :** `feature/S4-FE-006-contract-form-step3-per-occupancy`
-- **Commit :** `feat(contracts): add room prices PER_OCCUPANCY mode with capacity validation`
+- **Story Points :** 8
+- **Branch :** `feature/S4-FE-006-contract-form-step3`
+- **Commit :** `feat(contracts): add room prices PER_ROOM and PER_OCCUPANCY`
 
-**Validation capacité — utiliser `capacities[]` du RoomType (pas maxAdults/maxChildren)**
+**Sélecteur de période :** affiche `period.name + period.startDate + period.endDate`
+(dates réelles du ContractPeriod, pas de la SeasonPeriod).
+
+**PER_OCCUPANCY — validation via `roomType.capacities[]` :**
 
 ```typescript
-// OccupancyConfigFormComponent
-selectedRoomType = input.required<RoomType>();
-
-// RoomType.capacities = RoomTypeCapacity[] = [{ ageCategoryId, maxPax, ageCategory }]
-// Calculer le total max pax depuis les capacités
 maxPax = computed(() =>
   this.selectedRoomType().capacities.reduce((sum, c) => sum + c.maxPax, 0)
 );
@@ -1073,40 +1272,11 @@ isOccupancyValid = computed(() => {
   const total = this.numAdults() + this.numChildren();
   return total > 0 && total <= this.maxPax();
 });
-```
 
-**Calcul auto du `totalRate` :**
-
-```typescript
 totalRate = computed(() =>
   Object.values(this.ratesPerAge()).reduce((sum, r) => sum + r.rate, 0)
 );
 ```
-
-**Affichage (ASCII → UI) :**
-
-```
-┌─────────────────────────────────────────────────┐
-│ Mode : ○ PER_ROOM  ● PER_OCCUPANCY              │
-│                                                 │
-│ [+ Add Configuration]                           │
-│                                                 │
-│ Single (1 adulte, 0 enfant)                     │
-│   1er adulte (agecat "Adulte") : [120] €         │
-│   TOTAL : 120 €/nuit                            │
-├─────────────────────────────────────────────────┤
-│ Double (2 adultes, 0 enfant)                    │
-│   1er adulte : [90] €                           │
-│   2ème adulte : [90] €                          │
-│   TOTAL : 180 €/nuit                            │
-└─────────────────────────────────────────────────┘
-```
-
-- **Acceptance Criteria :**
-  - ✅ Validation capacité via `roomType.capacities[]`
-  - ✅ `totalRate` calculé automatiquement depuis `ratesPerAge`
-  - ✅ `p-dialog` avec fix `model()`
-  - ✅ Chaque ligne affiche le nom de l'`AgeCategory` (pas juste l'id)
 
 ---
 
@@ -1116,19 +1286,7 @@ totalRate = computed(() =>
 - **Priority :** P1
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-007-contract-form-step4`
-- **Commit :** `feat(contracts): add meal plan supplements in contract form`
-- **Description :**
-  - Liste des meal plans **hors base** pour la période sélectionnée
-  - `p-dialog` (fix `model()`) : Meal Plan (`p-select`) + tableau Occupancy Rates
-  - Tableau : colonne "Config" (ex: `2 adultes, 1 enfant`) + colonne Prix (`p-inputnumber`)
-  - Clé JSON générée automatiquement : `"${numAdults}-${numChildren}"`
-
-```typescript
-// Générer la clé pour occupancyRates
-buildOccupancyKey(numAdults: number, numChildren: number): string {
-  return `${numAdults}-${numChildren}`;
-}
-```
+- **Commit :** `feat(contracts): add meal plan supplements`
 
 ---
 
@@ -1139,15 +1297,10 @@ buildOccupancyKey(numAdults: number, numChildren: number): string {
 - **Story Points :** 2
 - **Branch :** `feature/S4-FE-008-contract-form-step5`
 - **Commit :** `feat(contracts): add stop sales dates management`
-- **Description :**
-  - `p-datepicker` avec `selectionMode="multiple"`
-  - Désactiver les dates hors période via `minDate`/`maxDate`
-  - Liste des dates sélectionnées affichée sous le calendrier
+
+**Limites depuis `ContractPeriod.startDate/endDate` (pas SeasonPeriod) :**
 
 ```typescript
-stopSalesDates = signal<Date[]>([]);
-
-// Calcul des limites depuis la période courante
 periodRange = computed(() => ({
   minDate: new Date(this.currentPeriod()?.startDate ?? ''),
   maxDate: new Date(this.currentPeriod()?.endDate ?? ''),
@@ -1163,45 +1316,38 @@ periodRange = computed(() => ({
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-009-contract-submit`
 - **Commit :** `feat(contracts): add contract recap and submit logic`
-- **Description :**
-  - Dernière vue du wizard : récapitulatif de toutes les étapes
-  - Bouton **Create Contract** → séquence de création backend
-  - `p-progressbar` durant la création
-  - `p-toast` succès → redirection `/contracts`
-  - `p-toast` erreur → rester sur le wizard
-
-**Séquence de soumission :**
 
 ```typescript
 async submit(): Promise<void> {
   this.submitting.set(true);
   try {
-    // 1. Créer le contract
     const contract = await firstValueFrom(
       this.contractsService.create(this.step1Form.value as ContractDto)
     );
 
-    // 2. Créer chaque période
     for (const period of this.periods()) {
+      const dto: ContractPeriodDto = {
+        seasonPeriodId: period.seasonPeriodId ?? null,  // optionnel
+        name:           period.name,
+        startDate:      period.startDate,               // dates réelles
+        endDate:        period.endDate,
+        baseMealPlanId: period.baseMealPlanId,
+        minStay:        period.minStay,
+      };
       const createdPeriod = await firstValueFrom(
-        this.contractsService.createPeriod(contract.id, period)
+        this.contractsService.createPeriod(contract.id, dto)
       );
 
-      // 3. Créer les room prices de la période
       for (const rp of this.roomPricesByPeriod()[period.tempId]) {
         await firstValueFrom(
           this.contractsService.createRoomPrice(contract.id, createdPeriod.id, rp)
         );
       }
-
-      // 4. Créer les meal supplements
       for (const ms of this.mealSupplementsByPeriod()[period.tempId]) {
         await firstValueFrom(
           this.contractsService.createMealSupplement(contract.id, createdPeriod.id, ms)
         );
       }
-
-      // 5. Créer les stop sales
       for (const date of this.stopSalesByPeriod()[period.tempId]) {
         await firstValueFrom(
           this.contractsService.createStopSale(contract.id, createdPeriod.id, date)
@@ -1220,10 +1366,6 @@ async submit(): Promise<void> {
 }
 ```
 
-> **Note architecture :** La séquence est intentionnellement séquentielle (`await` dans
-> `for...of`) pour garder le code lisible et débuggable. Une optimisation avec `forkJoin`
-> est possible en Sprint 8 si les performances l'exigent.
-
 ---
 
 ### S4-FE-010 : Routes Contracts + Sidebar
@@ -1234,101 +1376,106 @@ async submit(): Promise<void> {
 - **Branch :** `chore/S4-FE-010-contracts-routes`
 - **Commit :** `chore(routing): add contracts routes and sidebar entry`
 
-**`features/contracts/contracts.routes.ts` (nouveau fichier)**
-
 ```typescript
-// apps/frontend/src/app/features/contracts/contracts.routes.ts
-import { Routes } from '@angular/router';
-import { AuthGuard } from '../../core/guards/auth.guard';
-import { RoleGuard } from '../../core/guards/role.guard';
-
+// contracts.routes.ts
 export const CONTRACTS_ROUTES: Routes = [
   {
     path: '',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['ADMIN', 'MANAGER'] },
     loadComponent: () =>
-      import('./components/contracts-list/contracts-list.component').then(
-        (m) => m.ContractsListComponent
-      ),
+      import('./components/contracts-list/contracts-list.component')
+        .then(m => m.ContractsListComponent),
   },
   {
     path: 'new',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['ADMIN', 'MANAGER'] },
     loadComponent: () =>
-      import('./components/contract-form/contract-form.component').then(
-        (m) => m.ContractFormComponent
-      ),
+      import('./components/contract-form/contract-form.component')
+        .then(m => m.ContractFormComponent),
   },
   {
     path: ':id/edit',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['ADMIN', 'MANAGER'] },
     loadComponent: () =>
-      import('./components/contract-form/contract-form.component').then(
-        (m) => m.ContractFormComponent
-      ),
+      import('./components/contract-form/contract-form.component')
+        .then(m => m.ContractFormComponent),
   },
 ];
-```
 
-**`app.routes.ts` — ajouter (dans la zone protégée, pas dans management)**
-
-```typescript
-// apps/frontend/src/app/app.routes.ts
+// app.routes.ts — hors management.routes.ts
 {
   path: 'contracts',
   loadChildren: () =>
     import('./features/contracts/contracts.routes').then(m => m.CONTRACTS_ROUTES),
-},
-// NE PAS mettre dans management.routes.ts
+}
+
+// sidebar
+{ label: 'Contracts', icon: 'pi pi-file-edit', route: '/contracts', roles: ['ADMIN', 'MANAGER'] }
 ```
-
-**`sidebar.component.ts` — ajouter dans `navItems`**
-
-```typescript
-{
-  label: 'Contracts',
-  icon: 'pi pi-file-edit',
-  route: '/contracts',
-  roles: ['ADMIN', 'MANAGER'],
-},
-```
-
-- **Acceptance Criteria :**
-  - ✅ `/contracts` accessible avec rôles ADMIN et MANAGER
-  - ✅ Redirect vers `/login` si non authentifié (AuthGuard)
-  - ✅ HTTP 403 si rôle AGENT (RoleGuard)
-  - ✅ Contracts **n'est pas** sous `management.routes.ts`
-  - ✅ Sidebar affiche "Contracts" pour ADMIN et MANAGER, pas pour AGENT
 
 ---
 
-## Structure des fichiers — Sprint 4
+## Impact sur Sprint 7 — Pricing Engine
+
+**Aucun changement** — `ContractPeriod` a toujours ses propres `startDate`/`endDate`.
+La requête Sprint 7 reste identique au Sprint 4 original :
+
+```typescript
+// S7-BE-002 — inchangé
+periods: {
+  where: {
+    startDate: { lte: checkOut },
+    endDate:   { gte: checkIn },
+  },
+  include: {
+    seasonPeriod: true,   // optionnel — pour affichage nom saison dans breakdown
+    roomPrices: { include: { roomType: true, occupancyRates: true } },
+    mealPlanSupplements: true,
+    stopSalesDates: true,
+  }
+}
+
+// findPeriodForNight — inchangé
+function findPeriodForNight(night: Date, periods: ContractPeriod[]) {
+  return periods.find(p =>
+    night >= p.startDate && night <= p.endDate
+  );
+}
+```
+
+---
+
+## Structure des fichiers
 
 ### Backend
 
 ```
-apps/backend/src/contracts/
-├── dto/
-│   ├── create-contract.dto.ts
-│   ├── update-contract.dto.ts
-│   ├── create-contract-period.dto.ts
-│   ├── update-contract-period.dto.ts
-│   ├── create-room-price.dto.ts
-│   ├── update-room-price.dto.ts
-│   ├── create-occupancy-rate.dto.ts
-│   ├── create-meal-supplement.dto.ts
-│   └── update-meal-supplement.dto.ts
-├── repositories/
-│   ├── contract.repository.ts            ← abstract class (DI token)
-│   └── prisma-contract.repository.ts
-├── contracts.types.ts                    ← ContractQuery, ContractDetail
-├── contracts.controller.ts
-├── contracts.service.ts
-├── contracts.service.spec.ts             ← tests unitaires (nouveau)
-└── contracts.module.ts
+apps/backend/src/
+├── seasons/
+│   ├── repositories/
+│   │   ├── season.repository.ts
+│   │   ├── prisma-season.repository.ts
+│   │   ├── season-period.repository.ts        ← nouveau
+│   │   └── prisma-season-period.repository.ts ← nouveau
+│   ├── dto/
+│   │   ├── create-season.dto.ts
+│   │   ├── update-season.dto.ts
+│   │   ├── create-season-period.dto.ts        ← nouveau
+│   │   └── update-season-period.dto.ts        ← nouveau
+│   ├── seasons.service.ts                     ← mise à jour
+│   ├── seasons.controller.ts                  ← mise à jour
+│   └── seasons.module.ts
+└── contracts/
+    ├── dto/
+    ├── repositories/
+    ├── contracts.types.ts
+    ├── contracts.controller.ts
+    ├── contracts.service.ts
+    ├── contracts.service.spec.ts
+    └── contracts.module.ts
 ```
 
 ### Frontend
@@ -1336,46 +1483,40 @@ apps/backend/src/contracts/
 ```
 apps/frontend/src/app/
 ├── features/
-│   └── contracts/                        ← feature indépendante (pas sous management/)
+│   ├── management/
+│   │   └── seasons/
+│   │       ├── components/
+│   │       │   ├── seasons-list/
+│   │       │   ├── season-form/
+│   │       │   └── season-period-form-dialog/ ← nouveau
+│   │       └── seasons.service.ts             ← mise à jour
+│   └── contracts/                             ← hors management/
 │       ├── components/
 │       │   ├── contracts-list/
-│       │   │   ├── contracts-list.component.ts
-│       │   │   ├── contracts-list.component.html
-│       │   │   └── contracts-list.component.scss
-│       │   ├── contract-form/            ← wizard p-stepper
-│       │   │   ├── contract-form.component.ts
-│       │   │   ├── contract-form.component.html
-│       │   │   └── contract-form.component.scss
-│       │   ├── period-form-dialog/
-│       │   │   ├── period-form-dialog.component.ts
-│       │   │   └── period-form-dialog.component.html
+│       │   ├── contract-form/
+│       │   ├── period-form-dialog/            ← sélection SeasonPeriod + dates éditables
 │       │   ├── room-price-form-dialog/
-│       │   │   ├── room-price-form-dialog.component.ts
-│       │   │   └── room-price-form-dialog.component.html
 │       │   ├── occupancy-config-form/
-│       │   │   ├── occupancy-config-form.component.ts
-│       │   │   └── occupancy-config-form.component.html
 │       │   └── meal-supplement-form-dialog/
-│       │       ├── meal-supplement-form-dialog.component.ts
-│       │       └── meal-supplement-form-dialog.component.html
 │       ├── services/
 │       │   └── contracts.service.ts
 │       └── contracts.routes.ts
 └── shared/
     └── utils/
-        └── contract-params.util.ts       ← buildContractParams() (nouveau)
+        └── contract-params.util.ts
 ```
 
 ### Shared Types
 
 ```
 libs/shared/types/src/lib/
-├── types.ts                 — Hotel, AgeCategory, RoomType + RoomTypeCapacity, Season (Sprint 2)
-├── meal-plan.types.ts       — MealPlan (Sprint 3)
-├── market.types.ts          — Market (Sprint 3)
-├── currency.types.ts        — Currency (Sprint 3)
-├── supplement.types.ts      — Supplement (Sprint 3)
-└── contract.types.ts        — Contract, ContractPeriod, RoomPrice, ... (Sprint 4 ← nouveau)
+├── types.ts            — Hotel, AgeCategory, RoomType + RoomTypeCapacity
+├── season.types.ts     — Season (révisé), SeasonPeriod (nouveau)
+├── meal-plan.types.ts
+├── market.types.ts
+├── currency.types.ts
+├── supplement.types.ts
+└── contract.types.ts   ← nouveau
 ```
 
 ---
@@ -1384,87 +1525,84 @@ libs/shared/types/src/lib/
 
 ### Backend
 
-- ✅ Migration Prisma appliquée (Contract, ContractPeriod, RoomPrice, OccupancyRate, MealPlanSupplement, StopSalesDate)
-- ✅ Repository Pattern **abstract class** (aligné Sprint 3)
+- ✅ `Season` sans `startDate`/`endDate`
+- ✅ `SeasonPeriod` CRUD complet sous `/seasons/:id/periods`
+- ✅ Chevauchement SeasonPeriod dans une même Season bloqué
+- ✅ Migration Prisma + données migrées sur Neon
+- ✅ `ContractPeriod` avec `startDate`/`endDate` propres + `seasonPeriodId?`
+- ✅ Auto-fill depuis SeasonPeriod si `seasonPeriodId` fourni
+- ✅ Chevauchement ContractPeriod dans un même contrat bloqué
+- ✅ Repository Pattern abstract class
 - ✅ `tourOperatorId` depuis JWT uniquement
-- ✅ `PATCH` sur tous les endpoints update (aligné Sprint 3)
-- ✅ CRUD Contracts complet
-- ✅ ContractPeriod avec lien Season obligatoire + auto-fill dates
-- ✅ RoomPrice PER_ROOM fonctionnel
-- ✅ RoomPrice PER_OCCUPANCY avec validation capacité via `capacities[]` (pas `maxAdults`/`maxChildren`)
+- ✅ PATCH sur tous les endpoints update
+- ✅ RoomPrice PER_ROOM + PER_OCCUPANCY
+- ✅ Validation capacité via `capacities[]`
 - ✅ `totalRate` calculé et vérifié
-- ✅ MealPlanSupplement avec `occupancyRates` JSON
-- ✅ StopSalesDate avec validation date dans période
-- ✅ DTOs complets avec class-validator
-- ✅ Tests unitaires > 80% coverage
+- ✅ MealPlanSupplement + StopSalesDate
+- ✅ StopSalesDate validée contre `ContractPeriod.startDate/endDate`
+- ✅ Tests unitaires > 80%
 
 ### Frontend
 
-- ✅ Shared types `contract.types.ts` créés et exportés
-- ✅ `buildContractParams()` dans `shared/utils`
-- ✅ `ContractsService` BehaviorSubject + `loaded` flag (pattern HotelsService Sprint 3)
-- ✅ Liste contrats avec filtres hotelId/marketId
-- ✅ Wizard 5 étapes `p-stepper`
-- ✅ PER_ROOM implémenté
-- ✅ PER_OCCUPANCY avec validation via `roomType.capacities[]`
-- ✅ Meal supplements avec occupancy rates
-- ✅ Stop sales avec `p-datepicker` + validation dates dans période
-- ✅ Récapitulatif + submit séquentiel avec gestion d'erreur
-- ✅ Routes dans `contracts.routes.ts` + référencé dans `app.routes.ts` (pas `management.routes.ts`)
+- ✅ `Season` UI mise à jour — CRUD `SeasonPeriod` intégré
+- ✅ Shared types `season.types.ts` révisé + `contract.types.ts` créé
+- ✅ `ContractsService` BehaviorSubject + `loaded` flag
+- ✅ Wizard contrat — `PeriodFormDialog` avec sélection SeasonPeriod + dates éditables
+- ✅ Auto-fill dates depuis SeasonPeriod, modifiables librement
+- ✅ `seasonPeriodId` optionnel — création de période sans SeasonPeriod possible
+- ✅ PER_ROOM + PER_OCCUPANCY implémentés
+- ✅ Validation capacité via `roomType.capacities[]`
+- ✅ Stop sales validées contre `ContractPeriod` dates
+- ✅ Routes dans `contracts.routes.ts` (hors `management.routes.ts`)
 - ✅ Sidebar mise à jour
 - ✅ `take(1)` sur tous les subscribe()
 - ✅ `OnPush` sur tous les composants
-- ✅ Pas de `any`
-
-### Intégration
-
-- ✅ Création contrat end-to-end depuis le wizard
-- ✅ Toutes les relations créées côté backend dans la bonne séquence
-- ✅ Validation frontend + backend cohérentes
 
 ---
 
 ## Ordre d'exécution recommandé
 
 ```
-S4-SHARED-001  (shared types)              ← débloquer backend ET frontend
-S4-BE-001      (migration Prisma)          ← débloquer tous les endpoints
+S4-MIGRATE-001   (migration Season → SeasonPeriod)     ← en premier absolu
+
+S4-SHARED-001    (shared types révisés)
 
 Backend :
-  S4-BE-002  (module + repository)
-  S4-BE-003  (DTOs)
-  S4-BE-004  (contracts CRUD)
-  S4-BE-005  (periods)
-  S4-BE-006  (room prices PER_ROOM)
-  S4-BE-007  (room prices PER_OCCUPANCY)
-  S4-BE-008  (meal supplements)
-  S4-BE-009  (stop sales)
-  S4-BE-010  (tests)
+  S4-BE-001    (schéma Prisma)
+  S4-BE-002    (SeasonPeriod CRUD)
+  S4-BE-003    (ContractsModule)
+  S4-BE-004    (DTOs)
+  S4-BE-005    (Contracts CRUD)
+  S4-BE-006    (ContractPeriod — auto-fill + chevauchement)
+  S4-BE-007    (RoomPrice PER_ROOM)
+  S4-BE-008    (RoomPrice PER_OCCUPANCY)
+  S4-BE-009    (MealPlanSupplement)
+  S4-BE-010    (StopSalesDate)
+  S4-BE-011    (Tests)
 
 Frontend :
-  S4-FE-010  (routes + sidebar)            ← navigation dispo dès le début
-  S4-FE-001  (ContractsService)
-  S4-FE-002  (ContractsList)
-  S4-FE-003  (step 1 — base info)
-  S4-FE-004  (step 2 — periods)
-  S4-FE-005  (step 3 — PER_ROOM)
-  S4-FE-006  (step 3 — PER_OCCUPANCY)     ← le plus risqué, à prendre tôt
-  S4-FE-007  (step 4 — meal supplements)
-  S4-FE-008  (step 5 — stop sales)
-  S4-FE-009  (recap + submit)
+  S4-FE-010    (routes + sidebar)
+  S4-FE-001    (SeasonsService + SeasonPeriod UI)       ← débloque le wizard
+  S4-FE-002    (ContractsService)
+  S4-FE-003    (ContractsList)
+  S4-FE-004    (step 1)
+  S4-FE-005    (step 2 — periods avec auto-fill)
+  S4-FE-006    (step 3 — Room Prices)
+  S4-FE-007    (step 4 — Meal Supplements)
+  S4-FE-008    (step 5 — Stop Sales)
+  S4-FE-009    (recap + submit)
 ```
 
 ---
 
 ## Risques
 
-| Risque                                 | Mitigation                                                                              |
-| -------------------------------------- | --------------------------------------------------------------------------------------- |
-| PER_OCCUPANCY UI complexe              | Maquetter le tableau avant de coder. Faire S4-FE-006 avant S4-FE-007.                   |
-| Validation capacité via `capacities[]` | Charger `roomType.capacities` avec l'include complet dès S4-BE-007                      |
-| Submit séquentiel long                 | `p-progressbar` + message clair. Optimisation `forkJoin` en Sprint 8 si besoin          |
-| Chevauchement périodes                 | date-fns `areIntervalsOverlapping` — tester avec des cas limites (dates adjacentes)     |
-| Contrats sans bookings → delete ok     | Vérifier relation `Contract → Booking` dès S4-BE-001 pour que `P2003` fire correctement |
+| Risque                                                | Mitigation                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| Migration données Neon                                | Tester en local, deux migrations séparées, backup avant                 |
+| SeasonPeriod pas encore créées au démarrage du sprint | S4-BE-002 et S4-FE-001 en P0                                            |
+| Auto-fill non déclenchée si effet non réactif         | Utiliser `effect()` sur le signal `seasonPeriodId`                      |
+| Chevauchement inter-Seasons dans un contrat           | Validation dans `ContractsService.createPeriod()` sur les dates réelles |
 
 ---
 
@@ -1475,8 +1613,8 @@ Frontend :
 
 ---
 
-## Notes pour Sprint 5 (Offers)
+## Notes pour Sprint 7
 
-- `ContractPeriod` et `RoomPrice` seront lus par le moteur de pricing (Sprint 7)
-- Sprint 5 utilisera `ContractPeriod.id` pour lier les offres
-- Maintenir l'abstract class repository pattern introduit en Sprint 3
+- `findPeriodForNight()` lit `period.startDate/endDate` directement — **inchangé**
+- `seasonPeriod` inclus optionnellement pour afficher le nom de saison dans le breakdown
+- Aucune modification de logique dans le PricingService
