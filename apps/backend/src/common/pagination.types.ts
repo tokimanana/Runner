@@ -1,4 +1,4 @@
-export interface MarketQuery {
+export interface PaginationQuery {
   limit?: number;
   offset?: number;
 }

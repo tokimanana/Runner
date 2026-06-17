@@ -1,6 +1,7 @@
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -11,7 +12,6 @@ import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
 import { SeasonRepository } from './season.repository';
-import { SeasonQuery } from '../seasons.type';
 
 @Injectable()
 export class PrismaSeasonRepository extends SeasonRepository {
@@ -21,14 +21,12 @@ export class PrismaSeasonRepository extends SeasonRepository {
 
   async findAll(
     tourOperatorId: string,
-    query?: SeasonQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<Season>> {
     const { limit, offset } = query ?? {};
 
     const where: Prisma.SeasonWhereInput = {
       tourOperatorId,
-      ...(query?.startDate && { startDate: { gte: query.startDate } }),
-      ...(query?.endDate && { endDate: { lte: query?.endDate } }),
     };
 
     const [data, total] = await this.prisma.$transaction([

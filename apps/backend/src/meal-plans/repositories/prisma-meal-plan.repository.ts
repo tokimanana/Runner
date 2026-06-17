@@ -1,3 +1,4 @@
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -19,10 +20,7 @@ export class PrismaMealPlanRepository extends MealPlanRepository {
 
   async findAll(
     tourOperatorId: string,
-    query?: {
-      limit?: number;
-      offset?: number;
-    },
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<MealPlan>> {
     const { limit, offset } = query ?? {};
 
