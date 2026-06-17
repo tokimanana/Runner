@@ -41,6 +41,7 @@ model Hotel {
   tourOperatorId String
   ageCategories  AgeCategory[]
   roomTypes      RoomType[]
+  contracts Contract[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -65,6 +66,7 @@ model RoomType {
   hotel      Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   hotelId    String
   capacities RoomTypeCapacity[]
+  roomPrices RoomPrice[]
 }
 
 model RoomTypeCapacity {
@@ -92,19 +94,99 @@ model Season {
 }
 
 model SeasonPeriod {
-  id             String   @id @default(cuid())
-  season         Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  seasonId       String    
-  name           String
-  startDate      DateTime
-  endDate        DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([seasonId, name]) 
-
+  id              String           @id @default(cuid())
+  seasonId        String
+  name            String
+  startDate       DateTime         // dates suggérées
+  endDate         DateTime
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  season          Season           @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  contractPeriods ContractPeriod[]
+  @@unique([seasonId, name])       // pas deux périodes avec le même nom dans une saison
   @@index([seasonId])
   @@index([startDate, endDate])
+}
+model Contract {
+  id             String           @id @default(cuid())
+  name           String
+  hotelId        String
+  marketId       String
+  currencyId     String
+  tourOperatorId String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  hotel          Hotel            @relation(fields: [hotelId], references: [id])
+  market         Market           @relation(fields: [marketId], references: [id])
+  currency       Currency         @relation(fields: [currencyId], references: [id])
+  periods        ContractPeriod[]
+  @@index([tourOperatorId])
+  @@index([hotelId])
+  @@index([marketId])
+}
+// ContractPeriod — source de vérité contractuelle
+model ContractPeriod {
+  id                  String               @id @default(cuid())
+  contractId          String
+  seasonPeriodId      String?              // optionnel — classification/reporting
+  name                String
+  startDate           DateTime             // dates réelles négociées
+  endDate             DateTime
+  baseMealPlanId      String
+  minStay             Int?
+  contract            Contract             @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  seasonPeriod        SeasonPeriod?        @relation(fields: [seasonPeriodId], references: [id])
+  baseMealPlan        MealPlan             @relation(fields: [baseMealPlanId], references: [id])
+  roomPrices          RoomPrice[]
+  mealPlanSupplements MealPlanSupplement[]
+  stopSalesDates      StopSalesDate[]
+  @@index([contractId])
+  @@index([seasonPeriodId])
+}
+model RoomPrice {
+  id               String          @id @default(cuid())
+  contractPeriodId String
+  roomTypeId       String
+  pricingMode      PricingMode
+  pricePerNight    Decimal?
+  contractPeriod   ContractPeriod  @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType         RoomType        @relation(fields: [roomTypeId], references: [id])
+  occupancyRates   OccupancyRate[]
+  @@unique([contractPeriodId, roomTypeId])
+  @@index([contractPeriodId])
+}
+model OccupancyRate {
+  id          String    @id @default(cuid())
+  roomPriceId String
+  numAdults   Int
+  numChildren Int
+  ratesPerAge Json
+  totalRate   Decimal
+  roomPrice   RoomPrice @relation(fields: [roomPriceId], references: [id], onDelete: Cascade)
+  @@unique([roomPriceId, numAdults, numChildren])
+  @@index([roomPriceId])
+}
+model MealPlanSupplement {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  mealPlanId       String
+  occupancyRates   Json
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  mealPlan         MealPlan       @relation(fields: [mealPlanId], references: [id])
+  @@unique([contractPeriodId, mealPlanId])
+  @@index([contractPeriodId])
+}
+model StopSalesDate {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  date             DateTime
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  @@unique([contractPeriodId, date])
+  @@index([contractPeriodId])
+}
+enum PricingMode {
+  PER_ROOM
+  PER_OCCUPANCY
 }
 
 model RefreshToken {
@@ -122,6 +204,8 @@ model MealPlan {
   name           String
   description    String?
   tourOperatorId String
+  contractPeriods     ContractPeriod[]
+  mealPlanSupplements MealPlanSupplement[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -134,6 +218,7 @@ model Market {
   code           String
   name           String
   tourOperatorId String
+  contracts Contract[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -146,6 +231,7 @@ model Currency {
   code   String @unique
   name   String
   symbol String
+  contracts Contract[]
 }
 
 enum SupplementUnit {
