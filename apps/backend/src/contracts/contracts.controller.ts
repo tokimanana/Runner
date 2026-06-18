@@ -19,7 +19,9 @@ import {
 import { UserRole } from '@prisma/client';
 import { ContractsService } from './contracts.service';
 import { ContractQuery } from './contracts.types';
+import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 
 @Controller('contracts')
@@ -73,5 +75,32 @@ export class ContractsController {
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.contractsService.remove(id, tourOperatorId);
+  }
+
+  @Post(':id/periods')
+  @HttpCode(HttpStatus.CREATED)
+  createPeriod(
+    @Param('id') contractId: string,
+    @Body() dto: CreateContractPeriodDto,
+  ) {
+    return this.contractsService.createPeriod(dto, contractId);
+  }
+
+  @Patch(':id/periods/:periodId')
+  updatePeriod(
+    @Param('id') contractId: string,
+    @Body() dto: UpdateContractPeriodDto,
+    @Param('periodId') periodId: string,
+  ) {
+    return this.contractsService.updatePeriod(periodId, dto, contractId);
+  }
+
+  @Delete(':id/periods/:periodId')
+  @HttpCode(204)
+  deletePeriod(
+    @Param('id') contractId: string,
+    @Param('periodId') periodId: string,
+  ) {
+    return this.contractsService.removePeriod(periodId, contractId);
   }
 }

@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
@@ -19,10 +20,12 @@ export class CreateContractPeriodDto {
 
   // Source de vérité contractuelle
   @IsDateString()
-  startDate: string;
+  @Type(() => Date)
+  startDate: Date;
 
   @IsDateString()
-  endDate: string;
+  @Type(() => Date)
+  endDate: Date;
 
   @IsString()
   @IsNotEmpty()
