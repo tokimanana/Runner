@@ -4,10 +4,21 @@ import {
 } from '@backend/common/repository.types';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Contract, ContractPeriod, Prisma, SeasonPeriod } from '@prisma/client';
+import {
+  Contract,
+  ContractPeriod,
+  Prisma,
+  RoomPrice,
+  SeasonPeriod,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
-import { ContractPeriodCreateData, ContractQuery } from '../contracts.types';
+import {
+  ContractPeriodCreateData,
+  ContractQuery,
+  RoomPriceCreateData,
+  RoomPriceUpdateData,
+} from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
@@ -198,5 +209,57 @@ export class PrismaContractRepository extends ContractRepository {
         endDate: { gte: startDate },
       },
     });
+  }
+
+  async createRoomPrice(
+    dto: RoomPriceCreateData,
+    contractPeriodId: string,
+  ): Promise<RoomPrice> {
+    try {
+      return await this.prisma.roomPrice.create({
+        data: { ...dto, contractPeriodId },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async updateRoomPrice(
+    id: string,
+    dto: RoomPriceUpdateData,
+  ): Promise<RoomPrice> {
+    try {
+      return await this.prisma.roomPrice.update({
+        where: { id },
+        data: dto,
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
+  }
+
+  async removeRoomPrice(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.roomPrice.delete({ where: { id } });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
+      throw error;
+    }
   }
 }

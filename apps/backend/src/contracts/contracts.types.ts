@@ -1,4 +1,5 @@
 import { PaginationQuery } from '@backend/common/pagination.types';
+import { PricingMode } from '@prisma/client';
 
 export interface ContractQuery extends PaginationQuery {
   hotelId?: string;
@@ -12,4 +13,16 @@ export interface ContractPeriodCreateData {
   endDate: Date;
   baseMealPlanId: string;
   minStay?: number;
+}
+
+export interface RoomPriceCreateData {
+  roomTypeId: string;
+  pricingMode: PricingMode;
+  pricePerNight?: number | null;
+}
+
+export interface RoomPriceUpdateData {
+  roomTypeId?: string;
+  pricingMode?: PricingMode;
+  pricePerNight?: number | null;
 }
