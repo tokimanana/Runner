@@ -7,6 +7,7 @@ import {
   RepositoryResult,
 } from '@backend/common/repository.types';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -83,15 +84,37 @@ export class ContractsService {
       );
       if (!seasonPeriod) throw new NotFoundException('SeasonPeriod not found');
 
-      // Pré-remplir les dates si non fournies explicitement
-      dto.startDate = dto.startDate ?? seasonPeriod.startDate;
-      dto.endDate = dto.endDate ?? seasonPeriod.endDate;
+      dto.startDate = dto.startDate ?? seasonPeriod.startDate.toISOString();
+      dto.endDate = dto.endDate ?? seasonPeriod.endDate.toISOString();
     }
 
-    await this.validateNoOverlap(contractId, dto.startDate, dto.endDate);
+    if (!dto.startDate || !dto.endDate) {
+      throw new BadRequestException(
+        'startDate and endDate are required when seasonPeriodId is not provided',
+      );
+    }
+
+    await this.validateNoOverlap(
+      contractId,
+      new Date(dto.startDate),
+      new Date(dto.endDate),
+    );
+
+    const startDate = new Date(dto.startDate);
+    const endDate = new Date(dto.endDate);
 
     try {
-      return await this.contractRepository.createPeriod(dto, contractId);
+      return await this.contractRepository.createPeriod(
+        {
+          seasonPeriodId: dto.seasonPeriodId,
+          name: dto.name,
+          startDate,
+          endDate,
+          baseMealPlanId: dto.baseMealPlanId,
+          minStay: dto.minStay,
+        },
+        contractId,
+      );
     } catch (error) {
       if (
         error instanceof RepositoryException &&
@@ -107,12 +130,22 @@ export class ContractsService {
     dto: UpdateContractPeriodDto,
     contractId: string,
   ): Promise<ContractPeriod> {
-    await this.validateNoOverlap(
-      contractId,
-      dto.startDate,
-      dto.endDate,
-      periodId,
-    );
+    if (dto.startDate || dto.endDate) {
+      const current = await this.contractRepository.findContractPeriod(
+        periodId,
+        contractId,
+      );
+      if (!current) {
+        throw new NotFoundException(`Contract Period ${periodId} not found`);
+      }
+
+      const startDate = dto.startDate
+        ? new Date(dto.startDate)
+        : current.startDate;
+      const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
+
+      await this.validateNoOverlap(contractId, startDate, endDate, periodId);
+    }
 
     try {
       return await this.contractRepository.updatePeriod(

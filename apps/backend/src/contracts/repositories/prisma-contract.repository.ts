@@ -7,8 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { Contract, ContractPeriod, Prisma, SeasonPeriod } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
-import { ContractQuery } from '../contracts.types';
-import { CreateContractPeriodDto } from '../dto/create-contract-period.dto';
+import { ContractPeriodCreateData, ContractQuery } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
@@ -115,12 +114,12 @@ export class PrismaContractRepository extends ContractRepository {
   }
 
   async createPeriod(
-    dto: CreateContractPeriodDto,
+    data: ContractPeriodCreateData,
     contractId: string,
   ): Promise<ContractPeriod> {
     try {
       return await this.prisma.contractPeriod.create({
-        data: { ...dto, contractId },
+        data: { ...data, contractId },
       });
     } catch (error) {
       if (
@@ -135,6 +134,15 @@ export class PrismaContractRepository extends ContractRepository {
   async findSeasonPeriod(seasonPeriodId: string): Promise<SeasonPeriod | null> {
     return this.prisma.seasonPeriod.findUnique({
       where: { id: seasonPeriodId },
+    });
+  }
+
+  async findContractPeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<ContractPeriod | null> {
+    return this.prisma.contractPeriod.findUnique({
+      where: { id: periodId, contractId },
     });
   }
 

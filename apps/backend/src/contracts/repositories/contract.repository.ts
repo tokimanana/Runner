@@ -1,8 +1,7 @@
 import { RepositoryResult } from '@backend/common/repository.types';
 import { Contract, ContractPeriod, SeasonPeriod } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
-import { ContractQuery } from '../contracts.types';
-import { CreateContractPeriodDto } from '../dto/create-contract-period.dto';
+import { ContractPeriodCreateData, ContractQuery } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
@@ -34,8 +33,17 @@ export abstract class ContractRepository {
     tourOperatorId: string,
   ): Promise<RepositoryResult>;
 
+  abstract findContractPeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<ContractPeriod | null>;
+
+  abstract findSeasonPeriod(
+    seasonPeriodId: string,
+  ): Promise<SeasonPeriod | null>;
+
   abstract createPeriod(
-    dto: CreateContractPeriodDto,
+    data: ContractPeriodCreateData,
     contractId: string,
   ): Promise<ContractPeriod>;
 
@@ -56,8 +64,4 @@ export abstract class ContractRepository {
     endDate: Date,
     excludeId?: string,
   ): Promise<ContractPeriod | null>;
-
-  abstract findSeasonPeriod(
-    seasonPeriodId: string,
-  ): Promise<SeasonPeriod | null>;
 }
