@@ -21,6 +21,7 @@ import { ContractsService } from './contracts.service';
 import { ContractQuery } from './contracts.types';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { CreateRoomPriceDto } from './dto/create-room-price.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 
@@ -102,5 +103,15 @@ export class ContractsController {
     @Param('periodId') periodId: string,
   ) {
     return this.contractsService.removePeriod(periodId, contractId);
+  }
+
+  @Post(':id/periods/:periodId/room-prices')
+  @HttpCode(HttpStatus.CREATED)
+  createRoomPrice(
+    @Param('id') contractId: string,
+    @Param('periodId') periodId: string,
+    @Body() dto: CreateRoomPriceDto,
+  ) {
+    return this.contractsService.createRoomPrice(dto, periodId, contractId);
   }
 }
