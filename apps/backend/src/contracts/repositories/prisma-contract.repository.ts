@@ -15,12 +15,12 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
+  ContractPeriodUpdateData,
   ContractQuery,
   RoomPriceCreateData,
   RoomPriceUpdateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
-import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 import { ContractRepository } from './contract.repository';
 
@@ -159,13 +159,13 @@ export class PrismaContractRepository extends ContractRepository {
 
   async updatePeriod(
     periodId: string,
-    dto: UpdateContractPeriodDto,
+    data: ContractPeriodUpdateData,
     contractId: string,
   ): Promise<ContractPeriod> {
     try {
       return await this.prisma.contractPeriod.update({
         where: { id: periodId, contractId },
-        data: dto,
+        data,
       });
     } catch (error) {
       if (

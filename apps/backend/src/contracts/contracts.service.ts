@@ -96,14 +96,10 @@ export class ContractsService {
       );
     }
 
-    await this.validateNoOverlap(
-      contractId,
-      new Date(dto.startDate),
-      new Date(dto.endDate),
-    );
-
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
+
+    await this.validateNoOverlap(contractId, startDate, endDate);
 
     try {
       return await this.contractRepository.createPeriod(
@@ -132,27 +128,32 @@ export class ContractsService {
     dto: UpdateContractPeriodDto,
     contractId: string,
   ): Promise<ContractPeriod> {
-    if (dto.startDate || dto.endDate) {
-      const current = await this.contractRepository.findContractPeriod(
-        periodId,
-        contractId,
-      );
-      if (!current) {
-        throw new NotFoundException(`Contract Period ${periodId} not found`);
-      }
-
-      const startDate = dto.startDate
-        ? new Date(dto.startDate)
-        : current.startDate;
-      const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
-
-      await this.validateNoOverlap(contractId, startDate, endDate, periodId);
+    const current = await this.contractRepository.findContractPeriod(
+      periodId,
+      contractId,
+    );
+    if (!current) {
+      throw new NotFoundException(`Contract Period ${periodId} not found`);
     }
+
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : current.startDate;
+    const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
+
+    await this.validateNoOverlap(contractId, startDate, endDate, periodId);
 
     try {
       return await this.contractRepository.updatePeriod(
         periodId,
-        dto,
+        {
+          seasonPeriodId: dto.seasonPeriodId,
+          name: dto.name,
+          startDate,
+          endDate,
+          baseMealPlanId: dto.baseMealPlanId,
+          minStay: dto.minStay,
+        },
         contractId,
       );
     } catch (error) {

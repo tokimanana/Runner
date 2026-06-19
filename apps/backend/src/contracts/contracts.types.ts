@@ -15,6 +15,15 @@ export interface ContractPeriodCreateData {
   minStay?: number;
 }
 
+export interface ContractPeriodUpdateData {
+  seasonPeriodId?: string | null;
+  name?: string;
+  startDate?: Date;
+  endDate?: Date;
+  baseMealPlanId?: string;
+  minStay?: number | null;
+}
+
 export interface RoomPriceCreateData {
   roomTypeId: string;
   pricingMode: PricingMode;

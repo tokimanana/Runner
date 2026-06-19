@@ -8,12 +8,12 @@ import {
 import { PaginatedResult } from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
+  ContractPeriodUpdateData,
   ContractQuery,
   RoomPriceCreateData,
   RoomPriceUpdateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
-import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 
 export abstract class ContractRepository {
@@ -59,7 +59,7 @@ export abstract class ContractRepository {
 
   abstract updatePeriod(
     periodId: string,
-    dto: UpdateContractPeriodDto,
+    data: ContractPeriodUpdateData,
     contractId: string,
   ): Promise<ContractPeriod>;
 
