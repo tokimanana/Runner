@@ -2,6 +2,7 @@ import { RepositoryResult } from '@backend/common/repository.types';
 import {
   Contract,
   ContractPeriod,
+  Prisma,
   RoomPrice,
   SeasonPeriod,
 } from '@prisma/client';
@@ -10,11 +11,16 @@ import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
+  OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
+
+export type RoomTypeWithCapacities = Prisma.RoomTypeGetPayload<{
+  include: { capacities: true };
+}>;
 
 export abstract class ContractRepository {
   abstract findAll(
@@ -78,6 +84,7 @@ export abstract class ContractRepository {
   abstract createRoomPrice(
     dto: RoomPriceCreateData,
     contractPeriodId: string,
+    occupancyRates?: OccupancyRateCreateData[],
   ): Promise<RoomPrice>;
 
   abstract updateRoomPrice(
@@ -86,4 +93,8 @@ export abstract class ContractRepository {
   ): Promise<RoomPrice>;
 
   abstract removeRoomPrice(id: string): Promise<RepositoryResult>;
+
+  abstract findRoomTypeWithCapacities(
+    roomTypeId: string,
+  ): Promise<RoomTypeWithCapacities | null>;
 }

@@ -6,7 +6,6 @@ import {
   IsNotEmpty,
   IsNumber,
   IsObject,
-  IsOptional,
   IsString,
   Min,
   ValidateIf,
@@ -39,7 +38,6 @@ export class CreateRoomPriceDto {
   @Min(0)
   pricePerNight?: number | null;
 
-  @IsOptional()
   @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_OCCUPANCY')
   @ValidateNested({ each: true })
   @Type(() => OccupancyRateDto)
