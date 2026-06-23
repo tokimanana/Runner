@@ -891,8 +891,6 @@ DELETE /meal-supplements/:id
 
 ---
 
----
-
 ### S4-BE-010 : Endpoints StopSalesDate
 
 - **Type :** Feature
