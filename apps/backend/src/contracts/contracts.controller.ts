@@ -21,6 +21,7 @@ import { ContractsService } from './contracts.service';
 import { ContractQuery } from './contracts.types';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
@@ -113,5 +114,19 @@ export class ContractsController {
     @Body() dto: CreateRoomPriceDto,
   ) {
     return this.contractsService.createRoomPrice(dto, periodId, contractId);
+  }
+
+  @Post(':id/periods/:periodId/meal-supplements')
+  @HttpCode(HttpStatus.CREATED)
+  createMealPlanSupplement(
+    @Param('id') contractId: string,
+    @Param('periodId') periodId: string,
+    @Body() dto: CreateMealPlanSupplementDto,
+  ) {
+    return this.contractsService.createMealPlanSupplement(
+      dto,
+      periodId,
+      contractId,
+    );
   }
 }
