@@ -1508,6 +1508,55 @@ export const CONTRACTS_ROUTES: Routes = [
 
 ---
 
+### S4-REFACTOR-001 : Harmoniser la gestion des erreurs Prisma sur les foreign keys
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 2
+- **Branch :** `refactor/S4-REFACTOR-001-prisma-error-handling`
+- **Commit :** `refactor(contracts): handle P2003 consistently across create/update methods`
+
+**Contexte :** Identifié pendant S4-BE-009. Certaines méthodes du repository
+gèrent déjà P2003 (foreign key invalide) en plus de P2002 (conflit unique),
+mais pas toutes — alors que la même logique s'applique partout où un champ
+`*Id` référence une autre entité.
+
+**Incohérences relevées dans `prisma-contract.repository.ts` :**
+
+| Méthode           | P2002 géré | P2003 géré | Devrait gérer P2003 ?                               |
+| ----------------- | ---------- | ---------- | --------------------------------------------------- |
+| `createRoomPrice` | ✅         | ✅         | — (déjà correct)                                    |
+| `updateRoomPrice` | ✅         | ❌         | ✅ (`roomTypeId` modifiable)                        |
+| `createPeriod`    | ✅         | ❌         | ✅ (`seasonPeriodId`, `baseMealPlanId`)             |
+| `updatePeriod`    | ✅         | ❌         | ✅ (`seasonPeriodId`, `baseMealPlanId` modifiables) |
+
+**Règle à appliquer :** dès qu'une méthode `create`/`update` accepte un champ
+qui est une foreign key vers une autre entité, elle doit traduire P2003 en
+`RepositoryException(RepositoryResult.NOT_FOUND)` — pas seulement P2002.
+
+**Modifications nécessaires :**
+
+- `updateRoomPrice` — ajouter le bloc `if (error.code === 'P2003')` (message :
+  room type introuvable)
+- `createPeriod` — idem (message : season period ou meal plan introuvable)
+- `updatePeriod` — idem
+
+**Hors scope (vérifier mais a priori déjà corrects) :**
+
+- `create`/`update` sur `Contract` (`hotelId`, `marketId`, `currencyId`) — à
+  auditer avec la même grille, possiblement même trou
+- Méthodes `MealPlanSupplement` (créées en S4-BE-009) — vérifier qu'elles
+  suivent bien la règle dès leur création, pour ne pas reproduire le problème
+
+**Acceptance Criteria :**
+
+- ✅ Toutes les méthodes `create`/`update` du repository gèrent P2002 ET P2003
+  si elles acceptent au moins une foreign key
+- ✅ Messages d'erreur clairs identifiant quelle entité référencée est introuvable
+- ✅ Aucune régression sur les tests existants (S4-BE-011)
+
+---
+
 ## Impact sur Sprint 7 — Pricing Engine
 
 **Aucun changement** — `ContractPeriod` a toujours ses propres `startDate`/`endDate`.
