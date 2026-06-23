@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import {
   Contract,
   ContractPeriod,
+  MealPlanSupplement,
   Prisma,
   RoomPrice,
   SeasonPeriod,
@@ -17,6 +18,8 @@ import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
+  MealPlanSupplementCreateData,
+  MealPlanSupplementUpdateData,
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
@@ -286,6 +289,58 @@ export class PrismaContractRepository extends ContractRepository {
         error.code === 'P2025'
       )
         return RepositoryResult.NOT_FOUND;
+      throw error;
+    }
+  }
+
+  async createMealPlanSupplement(
+    data: MealPlanSupplementCreateData,
+    contractPeriodId: string,
+  ): Promise<MealPlanSupplement> {
+    try {
+      return await this.prisma.mealPlanSupplement.create({
+        data: { ...data, contractPeriodId },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async updateMealPlanSupplement(
+    id: string,
+    data: MealPlanSupplementUpdateData,
+  ): Promise<MealPlanSupplement> {
+    try {
+      return await this.prisma.mealPlanSupplement.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
+  }
+
+  async removeMealPlanSupplement(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.mealPlanSupplement.delete({
+        where: { id },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+      }
       throw error;
     }
   }
