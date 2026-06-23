@@ -2,6 +2,7 @@ import { RepositoryResult } from '@backend/common/repository.types';
 import {
   Contract,
   ContractPeriod,
+  MealPlanSupplement,
   Prisma,
   RoomPrice,
   SeasonPeriod,
@@ -11,6 +12,8 @@ import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
+  MealPlanSupplementCreateData,
+  MealPlanSupplementUpdateData,
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
@@ -97,4 +100,16 @@ export abstract class ContractRepository {
   abstract findRoomTypeWithCapacities(
     roomTypeId: string,
   ): Promise<RoomTypeWithCapacities | null>;
+
+  abstract createMealPlanSupplement(
+    data: MealPlanSupplementCreateData,
+    contractPeriodId: string,
+  ): Promise<MealPlanSupplement>;
+
+  abstract updateMealPlanSupplement(
+    id: string,
+    data: MealPlanSupplementUpdateData,
+  ): Promise<MealPlanSupplement>;
+
+  abstract removeMealPlanSupplement(id: string): Promise<RepositoryResult>;
 }
