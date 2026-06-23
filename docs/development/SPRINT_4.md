@@ -1512,48 +1512,51 @@ export const CONTRACTS_ROUTES: Routes = [
 
 - **Type :** Refactor
 - **Priority :** P2
-- **Story Points :** 2
+- **Story Points :** 3
 - **Branch :** `refactor/S4-REFACTOR-001-prisma-error-handling`
-- **Commit :** `refactor(contracts): handle P2003 consistently across create/update methods`
+- **Commit :** `refactor(contracts): align Prisma error handling with actual schema relations`
 
-**Contexte :** Identifié pendant S4-BE-009. Certaines méthodes du repository
-gèrent déjà P2003 (foreign key invalide) en plus de P2002 (conflit unique),
-mais pas toutes — alors que la même logique s'applique partout où un champ
-`*Id` référence une autre entité.
+**Contexte :** Identifié pendant S4-BE-009 et S4-BE-010. La gestion des codes
+d'erreur Prisma (P2002/P2003/P2025) doit refléter exactement les relations
+réelles du schéma — ni en manquer (trou de robustesse), ni en gérer qui ne
+peuvent jamais survenir (code mort, fausse impression de sécurité).
 
-**Incohérences relevées dans `prisma-contract.repository.ts` :**
+**Catégorie A — P2003 manquant sur une vraie foreign key modifiable :**
 
-| Méthode           | P2002 géré | P2003 géré | Devrait gérer P2003 ?                               |
-| ----------------- | ---------- | ---------- | --------------------------------------------------- |
-| `createRoomPrice` | ✅         | ✅         | — (déjà correct)                                    |
-| `updateRoomPrice` | ✅         | ❌         | ✅ (`roomTypeId` modifiable)                        |
-| `createPeriod`    | ✅         | ❌         | ✅ (`seasonPeriodId`, `baseMealPlanId`)             |
-| `updatePeriod`    | ✅         | ❌         | ✅ (`seasonPeriodId`, `baseMealPlanId` modifiables) |
+| Méthode           | Foreign key concernée              | Statut            |
+| ----------------- | ---------------------------------- | ----------------- |
+| `updateRoomPrice` | `roomTypeId`                       | ❌ P2003 non géré |
+| `createPeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
+| `updatePeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
 
-**Règle à appliquer :** dès qu'une méthode `create`/`update` accepte un champ
-qui est une foreign key vers une autre entité, elle doit traduire P2003 en
-`RepositoryException(RepositoryResult.NOT_FOUND)` — pas seulement P2002.
+**Catégorie B — code mort, gère un cas structurellement impossible :**
+
+| Méthode                    | Code géré à tort        | Pourquoi impossible                                                                                  |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `removeMealPlanSupplement` | P2003 → `HAS_RELATIONS` | Aucune table ne référence `MealPlanSupplement` par foreign key — rien ne peut bloquer sa suppression |
+
+**Méthode de vérification à appliquer à CHAQUE méthode create/update/delete :**
+
+1. Lister les champs `*Id` envoyés dans `data` → ce sont les P2003 potentiels (create/update)
+2. Lister les tables qui ont une `@relation` pointant vers l'entité qu'on supprime
+   → seulement celles-là justifient un P2003/HAS_RELATIONS sur delete
+3. Si aucune table enfant n'existe → ne pas gérer HAS_RELATIONS, point.
 
 **Modifications nécessaires :**
 
-- `updateRoomPrice` — ajouter le bloc `if (error.code === 'P2003')` (message :
-  room type introuvable)
-- `createPeriod` — idem (message : season period ou meal plan introuvable)
-- `updatePeriod` — idem
-
-**Hors scope (vérifier mais a priori déjà corrects) :**
-
-- `create`/`update` sur `Contract` (`hotelId`, `marketId`, `currencyId`) — à
-  auditer avec la même grille, possiblement même trou
-- Méthodes `MealPlanSupplement` (créées en S4-BE-009) — vérifier qu'elles
-  suivent bien la règle dès leur création, pour ne pas reproduire le problème
+- `updateRoomPrice`, `createPeriod`, `updatePeriod` — ajouter P2003 (Catégorie A)
+- `removeMealPlanSupplement` — retirer le bloc P2003/HAS_RELATIONS (Catégorie B)
+- Auditer `create`/`update`/`remove` sur `Contract` avec la même grille
+- Auditer les futures méthodes `StopSalesDate` (S4-BE-010) dès leur création,
+  pour éviter de reproduire l'un ou l'autre problème dès le départ
 
 **Acceptance Criteria :**
 
-- ✅ Toutes les méthodes `create`/`update` du repository gèrent P2002 ET P2003
-  si elles acceptent au moins une foreign key
-- ✅ Messages d'erreur clairs identifiant quelle entité référencée est introuvable
-- ✅ Aucune régression sur les tests existants (S4-BE-011)
+- ✅ Chaque méthode gère exactement les codes d'erreur que sa relation au
+  schéma justifie — ni plus, ni moins
+- ✅ Aucun bloc `if (error.code === ...)` ne correspond à une relation
+  inexistante dans `schema.prisma`
+- ✅ Messages d'erreur identifiant précisément l'entité concernée
 
 ---
 
