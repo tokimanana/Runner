@@ -835,11 +835,61 @@ const totalRate = Object.values(dto.ratesPerAge).reduce((sum, r) => sum + r, 0);
 - **Branch :** `feature/S4-BE-009-meal-supplements`
 - **Commit :** `feat(contracts): implement meal plan supplements`
 
+**Contexte :** Un `MealPlanSupplement` représente un coût additionnel pour passer du
+meal plan de base de la période (`ContractPeriod.baseMealPlanId`) à un autre meal plan,
+selon la composition du groupe. Contrairement à `RoomPrice`/`OccupancyRate`, il n'y a
+**pas de table séparée** — `occupancyRates` est stocké en JSON brut sur une seule ligne,
+car aucune contrainte d'unicité ni requête individuelle ne porte sur les clés
+adultes/enfants à l'intérieur (cf. `ratesPerAge` sur `OccupancyRate`, même logique).
+
 ```
 POST   /contracts/:id/periods/:periodId/meal-supplements
 PATCH  /meal-supplements/:id
 DELETE /meal-supplements/:id
 ```
+
+**Flow de création :**
+
+1. Vérifier que la `ContractPeriod` (`periodId` + `contractId`) existe → 404 sinon
+2. Créer le `MealPlanSupplement` directement (pas de transformation, pas de
+   validation de capacité — `occupancyRates` est accepté tel quel tant que c'est
+   un objet JSON valide ; cf. validation `@IsObject()` déjà présente dans le DTO)
+3. Si conflit DB (`@@unique([contractPeriodId, mealPlanId])`) → 409
+
+**Flow de mise à jour (PATCH) :**
+
+- Mêmes champs que la création, tous optionnels (`PartialType`)
+- Pas de vérification de `ContractPeriod` nécessaire — l'update cible directement
+  l'`id` du `MealPlanSupplement`, comme `updateRoomPrice`
+
+**Flow de suppression (DELETE) :**
+
+- Suppression directe par `id`, 204 si succès, 404 si non trouvé
+- Pas de blocage sur relations (`MealPlanSupplement` n'a pas d'enfants)
+
+**Modifications nécessaires :**
+
+- `contracts.types.ts` — ajouter `MealPlanSupplementCreateData`, `MealPlanSupplementUpdateData`
+- `contract.repository.ts` (abstract) — ajouter `createMealPlanSupplement`,
+  `updateMealPlanSupplement`, `removeMealPlanSupplement`
+- `prisma-contract.repository.ts` — implémenter les 3 méthodes ci-dessus
+- `contracts.service.ts` — `createMealPlanSupplement`, `updateMealPlanSupplement`,
+  `removeMealPlanSupplement` (suivre exactement le pattern de `createRoomPrice`/
+  `updateRoomPrice`/`removeRoomPrice`, sans la partie occupancyRates/transaction)
+- `contracts.controller.ts` — route nichée `POST /contracts/:id/periods/:periodId/meal-supplements`
+- Nouveau contrôleur `meal-plan-supplements.controller.ts` — routes plates
+  `PATCH /meal-supplements/:id` et `DELETE /meal-supplements/:id`
+  (même pattern que `room-prices.controller.ts`)
+
+**Acceptance Criteria :**
+
+- ✅ `MealPlanSupplement` créé en une seule écriture (pas de transaction multi-tables)
+- ✅ 404 si `ContractPeriod` introuvable à la création
+- ✅ 409 si `mealPlanId` déjà utilisé dans cette `ContractPeriod`
+- ✅ `occupancyRates` accepté tel quel (objet JSON, pas de validation de structure interne)
+- ✅ PATCH et DELETE fonctionnent indépendamment de la `ContractPeriod`
+
+---
 
 ---
 
