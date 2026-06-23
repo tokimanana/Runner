@@ -12,14 +12,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Contract, ContractPeriod, RoomPrice } from '@prisma/client';
+import {
+  Contract,
+  ContractPeriod,
+  MealPlanSupplement,
+  RoomPrice,
+} from '@prisma/client';
 import { OccupancyRateDto, PaginatedResult } from '@runner/shared/types';
 import { ContractQuery, OccupancyRateCreateData } from './contracts.types';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { UpdateMealPlanSupplementDto } from './dto/update-meal-plan-supplement.dto';
 import { UpdateRoomPriceDto } from './dto/update-room-price.dto';
 import { ContractRepository } from './repositories/contract.repository';
 
@@ -314,5 +321,66 @@ export class ContractsService {
     const result = await this.contractRepository.removeRoomPrice(id);
     if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Room price ${id} not found`);
+  }
+
+  async createMealPlanSupplement(
+    dto: CreateMealPlanSupplementDto,
+    periodId: string,
+    contractId: string,
+  ): Promise<MealPlanSupplement> {
+    const period = await this.contractRepository.findContractPeriod(
+      periodId,
+      contractId,
+    );
+    if (!period) {
+      throw new NotFoundException(`Contract Period ${periodId} not found`);
+    }
+
+    try {
+      return await this.contractRepository.createMealPlanSupplement(
+        {
+          mealPlanId: dto.mealPlanId,
+          occupancyRates: dto.occupancyRates,
+        },
+        period.id,
+      );
+    } catch (error) {
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(
+            `A meal plan already already exists for this meal plan in this period`,
+          );
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(`Meal plan ${period.id} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async updateMealPlanSupplement(
+    id: string,
+    dto: UpdateMealPlanSupplementDto,
+  ): Promise<MealPlanSupplement> {
+    try {
+      return await this.contractRepository.updateMealPlanSupplement(id, {
+        mealPlanId: dto.mealPlanId,
+        occupancyRates: dto.occupancyRates,
+      });
+    } catch (error) {
+      if (
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
+        throw new ConflictException(
+          `A meal plan already exists for this meal plan in this period`,
+        );
+      throw error;
+    }
+  }
+
+  async removeMealPlanSupplement(id: string): Promise<void> {
+    const result = await this.contractRepository.removeMealPlanSupplement(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Meal plan supplement ${id} not found`);
   }
 }
