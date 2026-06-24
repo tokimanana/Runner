@@ -5,12 +5,14 @@ import { MealPlanSupplementsController } from './meal-plan-supplements.controlle
 import { ContractRepository } from './repositories/contract.repository';
 import { PrismaContractRepository } from './repositories/prisma-contract.repository';
 import { RoomPricesController } from './room-prices.controller';
+import { StopSalesDatesController } from './stop-sales-dates.controller';
 
 @Module({
   controllers: [
     ContractsController,
     RoomPricesController,
     MealPlanSupplementsController,
+    StopSalesDatesController,
   ],
   providers: [
     ContractsService,
