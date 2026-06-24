@@ -1560,6 +1560,188 @@ peuvent jamais survenir (code mort, fausse impression de sécurité).
 
 ---
 
+# S4-REFACTOR-002 : Factoriser les patterns répétés dans ContractsService
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 3
+- **Branch :** `refactor/S4-REFACTOR-002-service-deduplication`
+- **Commit :** `refactor(contracts): extract repeated guard and error-handling patterns`
+
+## Contexte
+
+`contracts.service.ts` dépasse 400 lignes, avec une longueur diffuse
+(méthodes proportionnelles, pas de "monstre" isolé). L'audit a identifié
+deux patterns répétés verbatim à travers plusieurs méthodes — pas un
+problème de répartition des responsabilités (chaque endpoint a
+légitimement besoin du contexte `Contract`), mais une vraie duplication
+structurelle à extraire.
+
+> ⚠️ À traiter **après** `S4-REFACTOR-001`. On ne factorise pas une gestion
+> d'erreurs qu'on sait incomplète — sinon le nouveau helper hérite des
+> mêmes trous (P2003 manquants) et les généralise par erreur à plus
+> d'endroits encore.
+
+## Pattern 1 — `getPeriodOrThrow`
+
+Répété **3 fois** verbatim (`createRoomPrice`, `createMealPlanSupplement`,
+`createStopSalesDate`) :
+
+```typescript
+const period = await this.contractRepository.findContractPeriod(
+  periodId,
+  contractId
+);
+if (!period) {
+  throw new NotFoundException(`Contract Period ${periodId} not found`);
+}
+```
+
+**Extraction proposée :**
+
+```typescript
+private async getPeriodOrThrow(
+  periodId: string,
+  contractId: string,
+): Promise<ContractPeriod> {
+  const period = await this.contractRepository.findContractPeriod(periodId, contractId);
+  if (!period) {
+    throw new NotFoundException(`Contract Period ${periodId} not found`);
+  }
+  return period;
+}
+```
+
+Chaque appelant remplace son bloc par :
+
+```typescript
+const period = await this.getPeriodOrThrow(periodId, contractId);
+```
+
+## Pattern 2 — `handleRepositoryError`
+
+Le bloc `catch (error) { if (error instanceof RepositoryException) { ... } throw error; }`
+revient dans presque toutes les méthodes `create*`/`update*`. Dans chaque
+occurrence, le **`RepositoryResult` mappe toujours vers la même classe
+d'exception NestJS** (`CONFLICT → ConflictException`, `NOT_FOUND →
+NotFoundException`, `HAS_RELATIONS → ConflictException`) — seul le
+**message** varie selon l'entité/le contexte métier. Vérifié sur 4+
+occurrences existantes avant extraction (`createPeriod`, `updatePeriod`,
+`createRoomPrice`, `createMealPlanSupplement`).
+
+**Extraction proposée :**
+
+```typescript
+private static readonly EXCEPTION_MAP: Partial<
+  Record<RepositoryResult, new (message: string) => HttpException>
+> = {
+  [RepositoryResult.CONFLICT]: ConflictException,
+  [RepositoryResult.NOT_FOUND]: NotFoundException,
+  [RepositoryResult.HAS_RELATIONS]: ConflictException,
+};
+
+private handleRepositoryError(
+  error: unknown,
+  messages: Partial<Record<RepositoryResult, string>>,
+): never {
+  if (error instanceof RepositoryException) {
+    const message = messages[error.result];
+    const ExceptionClass = ContractsService.EXCEPTION_MAP[error.result];
+    if (message && ExceptionClass) {
+      throw new ExceptionClass(message);
+    }
+  }
+  throw error; // pas une RepositoryException, OU result non mappé → fail loud
+}
+```
+
+**Usage côté appelant :**
+
+```typescript
+try {
+  return await this.contractRepository.createRoomPrice(...);
+} catch (error) {
+  this.handleRepositoryError(error, {
+    [RepositoryResult.CONFLICT]: `A room price already exists for this room type in this period`,
+    [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+  });
+}
+```
+
+**Comportement de garde explicitement validé :**
+
+- Si `error` n'est pas une `RepositoryException` → relancée telle quelle (`throw error`), jamais avalée.
+- Si `error.result` n'a pas d'entrée dans `messages` fourni par l'appelant → relancée telle quelle aussi (pas de message silencieusement absent, pas de réponse HTTP 200 sur un échec réel).
+- Le mapping `RepositoryResult → classe d'exception` est fixe et unique, écrit une seule fois — il ne varie jamais selon la méthode appelante.
+
+## Hors scope (ne pas mélanger avec ce ticket)
+
+- La correction des codes d'erreur manquants/morts → `S4-REFACTOR-001`.
+- Tout découpage en plusieurs fichiers/services → à réévaluer **après**
+  ce ticket, seulement si la longueur du fichier reste un problème une
+  fois la duplication éliminée.
+
+## Acceptance Criteria
+
+- ✅ `getPeriodOrThrow` introduite et utilisée dans les 3 occurrences identifiées
+- ✅ `handleRepositoryError` introduite et utilisée dans toutes les méthodes `create*`/`update*` concernées
+- ✅ Aucun message d'erreur perdu ou modifié par rapport au comportement actuel (sauf corrections déjà actées dans `S4-REFACTOR-001`)
+- ✅ Une erreur non mappée ou non-`RepositoryException` continue de se propager (`throw error`), jamais avalée silencieusement
+- ✅ `nx build backend` → 0 erreur
+- ✅ Coverage des tests (`S4-BE-011`) inchangé ou amélioré après refactor
+
+---
+
+# S4-BE-011 : Tests unitaires ContractsService
+
+- **Type :** Test
+- **Priority :** P1
+- **Story Points :** 4
+- **Branch :** `test/S4-BE-011-contracts-tests`
+- **Commit :** `test(contracts): add unit tests for contracts service`
+
+## Contexte
+
+Premiers tests unitaires NestJS du sprint. On mocke `ContractRepository`
+(l'abstract class), **pas** `PrismaService` directement — le `ContractsService`
+ne connaît que le Repository, jamais Prisma. Mocker `PrismaService` testerait
+une couche que le Service n'appelle pas directement, et casserait l'isolation
+Service/Repository construite tout le sprint.
+
+> ⚠️ À traiter **après** `S4-REFACTOR-001`. On ne fige pas par des tests un
+> comportement qu'on sait incomplet (P2003 manquants, P2003 mort sur
+> `removeMealPlanSupplement`) et qu'on va modifier dans le même sprint.
+
+## Scénarios minimum
+
+1. Chevauchement de `ContractPeriod` dans un même contrat → `ConflictException`
+2. Auto-fill des dates depuis `SeasonPeriod` quand `seasonPeriodId` est fourni
+3. `PER_OCCUPANCY` dépasse la capacité de la room → `BadRequestException`
+4. `totalRate` recalculé et vérifié à partir de `ratesPerAge`
+5. `StopSalesDate` hors plage `ContractPeriod.startDate/endDate` → `BadRequestException`
+
+## Acceptance Criteria
+
+- ✅ Coverage > 80% sur `contracts.service.ts`
+- ✅ Aucun test ne touche Prisma réellement (mock de `ContractRepository`)
+- ✅ Chaque test isole un seul comportement métier
+
+---
+
+## Révision (45 min) — bilan semaine BE
+
+1. Qu'est-ce qu'un bon test unitaire vs un test qui teste Prisma ?
+2. Quels scénarios t'ont surpris en les écrivant ?
+
+**Bilan semaine BE :**
+
+- Migration safe en production : maîtrisé
+- Nested resources avec validation métier : maîtrisé
+- PER_OCCUPANCY + capacités : maîtrisé
+- Tests unitaires NestJS : à valider à l'issue de ce ticket
+
+---
+
 ## Impact sur Sprint 7 — Pricing Engine
 
 **Aucun changement** — `ContractPeriod` a toujours ses propres `startDate`/`endDate`.
@@ -1587,6 +1769,88 @@ function findPeriodForNight(night: Date, periods: ContractPeriod[]) {
   );
 }
 ```
+
+---
+
+# S4-FIX-001 : `createRoomPrice` ne retourne pas les `occupancyRates` créées
+
+- **Type :** Fix
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `fix/S4-FIX-001-room-price-response`
+- **Commit :** `fix(contracts): include occupancyRates in createRoomPrice response`
+
+## Contexte
+
+Découvert en testant `S4-BE-008` manuellement via Postman le 25 juin.
+`POST /contracts/:id/periods/:periodId/room-prices` en mode `PER_OCCUPANCY`
+renvoie un `201` avec le `RoomPrice` créé, mais **sans ses `occupancyRates`**
+— alors qu'elles sont bien créées en DB (vérifié via `GET /contracts/:id`).
+
+Ce n'est pas un bug de calcul ni un code d'erreur manquant — le
+`totalRate` est correctement calculé et persisté. C'est un manque de
+complétude dans la réponse HTTP : le client (le futur wizard frontend,
+`S4-FE-006`) a besoin de voir immédiatement le `totalRate` calculé par
+chaque ligne d'occupancy après la création, sans devoir refaire un
+`GET /contracts/:id` complet juste pour ça.
+
+## Cause
+
+```typescript
+// prisma-contract.repository.ts — createRoomPrice
+async createRoomPrice(...): Promise<RoomPrice> {
+  return await this.prisma.$transaction(async (tx) => {
+    const roomPrice = await tx.roomPrice.create({
+      data: { ...dto, contractPeriodId },
+    });
+
+    if (occupancyRates?.length) {
+      await tx.occupancyRate.createMany({ ... });
+    }
+
+    return roomPrice; // ← pas d'include, occupancyRates absent de la réponse
+  });
+}
+```
+
+## Correction
+
+Recharger le `RoomPrice` avec son `include` après la création des
+`OccupancyRate`, à l'intérieur de la même transaction (pour rester
+atomique) :
+
+```typescript
+return await this.prisma.$transaction(async (tx) => {
+  const roomPrice = await tx.roomPrice.create({
+    data: { ...dto, contractPeriodId },
+  });
+
+  if (occupancyRates?.length) {
+    await tx.occupancyRate.createMany({
+      data: occupancyRates.map((rate) => ({
+        ...rate,
+        roomPriceId: roomPrice.id,
+      })),
+    });
+  }
+
+  return tx.roomPrice.findUniqueOrThrow({
+    where: { id: roomPrice.id },
+    include: { occupancyRates: true },
+  });
+});
+```
+
+## Acceptance Criteria
+
+- ✅ `POST .../room-prices` en `PER_OCCUPANCY` renvoie `occupancyRates: [...]`
+  peuplé avec `totalRate` dans la réponse, sans round-trip supplémentaire
+- ✅ Le type de retour de `createRoomPrice` reflète la présence de
+  `occupancyRates` (vérifier `RoomPrice` vs un type étendu si nécessaire
+  côté `ContractRepository`)
+- ✅ `PER_ROOM` (sans `occupancyRates`) continue de fonctionner sans
+  régression — `occupancyRates: []` toujours présent dans la réponse
+- ✅ `nx build backend` → 0 erreur
 
 ---
 
