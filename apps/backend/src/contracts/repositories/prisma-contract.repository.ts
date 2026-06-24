@@ -11,6 +11,7 @@ import {
   Prisma,
   RoomPrice,
   SeasonPeriod,
+  StopSalesDate,
 } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
@@ -23,6 +24,7 @@ import {
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
+  StopSalesDateCreateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
@@ -334,6 +336,42 @@ export class PrismaContractRepository extends ContractRepository {
   async removeMealPlanSupplement(id: string): Promise<RepositoryResult> {
     try {
       await this.prisma.mealPlanSupplement.delete({
+        where: { id },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+      }
+      throw error;
+    }
+  }
+
+  async createStopSalesDate(
+    data: StopSalesDateCreateData,
+    contractPeriodId: string,
+  ): Promise<StopSalesDate> {
+    try {
+      return await this.prisma.stopSalesDate.create({
+        data: {
+          date: data.date,
+          contractPeriodId,
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async removeStopSalesDate(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.stopSalesDate.delete({
         where: { id },
       });
       return RepositoryResult.DELETED;
