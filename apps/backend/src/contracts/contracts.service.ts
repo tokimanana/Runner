@@ -353,7 +353,7 @@ export class ContractsService {
             `A meal plan already already exists for this meal plan in this period`,
           );
         if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Meal plan ${period.id} not found`);
+          throw new NotFoundException(`Meal plan ${dto.mealPlanId} not found`);
       }
       throw error;
     }
