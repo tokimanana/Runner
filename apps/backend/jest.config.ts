@@ -1,8 +1,14 @@
 import type { Config } from 'jest';
+import { createDefaultEsmPreset } from 'ts-jest';
+
+const presetConfig = createDefaultEsmPreset({
+  tsconfig: '<rootDir>/tsconfig.json',
+  isolatedModules: true,
+});
 
 const config: Config = {
   displayName: 'backend',
-  preset: 'ts-jest/presets/default-esm',
+  ...presetConfig,
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js', 'json'],
   rootDir: '.',
@@ -10,19 +16,9 @@ const config: Config = {
   testMatch: ['**/?(*.)+(spec|test).ts'],
   coverageDirectory: '../../coverage/apps/backend',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@backend/(.*)$': '<rootDir>/src/$1',
+    '^@runner/shared/types$': '<rootDir>/../libs/shared/types/src/index.ts',
   },
-  transform: {
-    '^.+\\.(t|j)s$': [
-      'ts-jest',
-      {
-        tsconfig: '<rootDir>/tsconfig.json',
-        useESM: true,
-        isolatedModules: true,
-      },
-    ],
-  },
-  extensionsToTreatAsEsm: ['.ts'],
 };
 
 export default config;
