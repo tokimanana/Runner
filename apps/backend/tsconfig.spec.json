@@ -2,8 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/backend",
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "composite": true,
   },
+  "exclude": [],
   "include": [
     "jest.config.ts",
     "src/**/*.test.ts",

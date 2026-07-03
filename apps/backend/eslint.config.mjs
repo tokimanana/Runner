@@ -19,9 +19,10 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['src/hotels/*.spec.ts'],
-        },
+        project: [
+          'tsconfig.json',
+          'tsconfig.spec.json',
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
     },
