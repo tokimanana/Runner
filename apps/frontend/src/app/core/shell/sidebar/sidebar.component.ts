@@ -64,6 +64,12 @@ export class SidebarComponent {
       roles: ['ADMIN', 'MANAGER'],
     },
     {
+      label: 'Contracts',
+      icon: 'pi pi-sitemap',
+      route: '/management/contracts',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
       label: 'Supplements',
       icon: 'pi pi-tag',
       route: '/management/supplements',
