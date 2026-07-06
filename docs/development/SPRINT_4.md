@@ -1506,6 +1506,9 @@ export const CONTRACTS_ROUTES: Routes = [
 { label: 'Contracts', icon: 'pi pi-file-edit', route: '/contracts', roles: ['ADMIN', 'MANAGER'] }
 ```
 
+Contracts nesté dans `management.routes.ts` (option A),
+pas en top-level. Guards hérités du parent — pas de duplication.
+
 ---
 
 ### S4-REFACTOR-001 : Harmoniser la gestion des erreurs Prisma sur les foreign keys
