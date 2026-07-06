@@ -95,4 +95,35 @@ export const MANAGEMENT_ROUTES: Routes = [
         (m) => m.SupplementsListComponent
       ),
   },
+  {
+    path: 'contracts',
+    children: [
+      {
+        path: '',
+        redirectTo: 'contracts-list',
+        pathMatch: 'full',
+      },
+      {
+        path: 'contracts-list',
+        loadComponent: () =>
+          import('./contracts/contracts-list/contracts-list.component').then(
+            (m) => m.ContractsListComponent
+          ),
+      },
+      {
+        path: 'create',
+        loadComponent: () =>
+          import('./contracts/contract-form/contract-form.component').then(
+            (m) => m.ContractFormComponent
+          ),
+      },
+      {
+        path: ':contractId/edit',
+        loadComponent: () =>
+          import('./contracts/contract-form/contract-form.component').then(
+            (m) => m.ContractFormComponent
+          ),
+      },
+    ],
+  },
 ];
