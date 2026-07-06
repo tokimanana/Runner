@@ -1464,50 +1464,75 @@ async submit(): Promise<void> {
 - **Priority :** P0
 - **Story Points :** 1
 - **Branch :** `chore/S4-FE-010-contracts-routes`
-- **Commit :** `chore(routing): add contracts routes and sidebar entry`
+- **Commits :**
+  - `chore(contracts): scaffold ContractsListComponent and ContractFormComponent`
+  - `chore(routing): add contracts routes to management.routes.ts`
+  - `chore(sidebar): add contracts nav entry`
+  - `docs(sprint4): update S4-FE-010 ticket with final routing decisions`
+
+**Décision finale — divergence avec le plan initial :**
+
+Le snippet original proposait Contracts en top-level (`app.routes.ts`, `loadChildren` séparé,
+guards dupliqués sur chaque route enfant). **Rejeté** : Contracts est fonctionnellement au même
+niveau d'autorisation que Hotels/Seasons/MealPlans (confirmé par `@Roles(UserRole.ADMIN, UserRole.MANAGER)`
+sur `ContractsController` backend) — dupliquer les guards aurait décorrélé une règle métier de sa
+représentation dans l'arbre de routes.
 
 ```typescript
-// contracts.routes.ts
-export const CONTRACTS_ROUTES: Routes = [
-  {
-    path: '',
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-    loadComponent: () =>
-      import('./components/contracts-list/contracts-list.component')
-        .then(m => m.ContractsListComponent),
-  },
-  {
-    path: 'new',
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-    loadComponent: () =>
-      import('./components/contract-form/contract-form.component')
-        .then(m => m.ContractFormComponent),
-  },
-  {
-    path: ':id/edit',
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MANAGER'] },
-    loadComponent: () =>
-      import('./components/contract-form/contract-form.component')
-        .then(m => m.ContractFormComponent),
-  },
-];
-
-// app.routes.ts — hors management.routes.ts
+// management.routes.ts — entrée inline, pas de fichier séparé (cohérent avec hotels/seasons)
+// Route componentless : pas de shell wrapper, <router-outlet /> parent suffit
 {
   path: 'contracts',
-  loadChildren: () =>
-    import('./features/contracts/contracts.routes').then(m => m.CONTRACTS_ROUTES),
-}
-
-// sidebar
-{ label: 'Contracts', icon: 'pi pi-file-edit', route: '/contracts', roles: ['ADMIN', 'MANAGER'] }
+  children: [
+    { path: '', redirectTo: 'contracts-list', pathMatch: 'full' },
+    {
+      path: 'contracts-list',
+      loadComponent: () =>
+        import('./contracts/contracts-list/contracts-list.component')
+          .then(m => m.ContractsListComponent),
+    },
+    {
+      path: 'create',
+      loadComponent: () =>
+        import('./contracts/contract-form/contract-form.component')
+          .then(m => m.ContractFormComponent),
+    },
+    {
+      path: ':contractId/edit',
+      loadComponent: () =>
+        import('./contracts/contract-form/contract-form.component')
+          .then(m => m.ContractFormComponent),
+    },
+  ],
+},
 ```
 
-Contracts nesté dans `management.routes.ts` (option A),
-pas en top-level. Guards hérités du parent — pas de duplication.
+**Convention actée :** dossier/classe pluriel pour les listes (`contracts-list` → `ContractsListComponent`),
+singulier pour les formulaires traitant une seule entité (`contract-form` → `ContractFormComponent`).
+Exception consciente à la stricte cohérence avec `hotels-form`/`seasons-form` (pluriel) — motivée par la
+sémantique (un form ne traite jamais plusieurs contrats à la fois), pas par un pattern général.
+
+```typescript
+// sidebar.component.ts — inséré après Currencies, avant Supplements
+// (Contracts agrège Hotel/Market/Currency/SeasonPeriod → dépend de tout ce qui précède)
+{
+  label: 'Contracts',
+  icon: 'pi pi-sitemap',
+  route: '/management/contracts',
+  roles: ['ADMIN', 'MANAGER'],
+},
+```
+
+**Guards :** hérités du parent `management` (`RoleGuard`, `roles: ['ADMIN', 'MANAGER']`) posé dans
+`app.routes.ts`. Pas de duplication sur les routes enfants — le router Angular propage les guards
+de haut en bas dans l'arbre avant de résoudre les `children`/`loadChildren`.
+
+**Acceptance Criteria :**
+
+- ✅ `ContractsListComponent` et `ContractFormComponent` scaffoldés (standalone, OnPush)
+- ✅ Routes nichées dans `MANAGEMENT_ROUTES`, componentless
+- ✅ `/management/contracts/contracts-list` compile et navigue sans erreur
+- ✅ Entrée sidebar avec icône unique, `roles` filtrant l'affichage (indépendant du guard qui filtre la navigation)
 
 ---
 
