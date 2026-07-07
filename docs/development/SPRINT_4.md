@@ -997,156 +997,45 @@ Pas de route `create` (inline) ni `:seasonId/edit` (renommé `:seasonId`, sert �
 
 ---
 
-### S4-FE-002 : Créer ContractsService
+### S4-FE-002 : ContractsService
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 2
 - **Branch :** `feature/S4-FE-002-contracts-service`
-- **Commit :** `feat(contracts): create contracts service with BehaviorSubject`
+- **Status :** ✅ Done
+- **Commits :**
+  - `feat(contracts): create ContractsService with BehaviorSubject pattern`
+  - `feat(contracts): add period CRUD methods to ContractsService`
+  - `fix(contracts): normalize method naming and parameter order across ContractsService`
+  - `fix(contracts): reset loading state on findAll error`
 
-```typescript
-@Injectable({ providedIn: 'root' })
-export class ContractsService {
-  private readonly http = inject(HttpClient);
-  private readonly _contracts$ = new BehaviorSubject<Contract[]>([]);
-  private readonly _loading$ = new BehaviorSubject<boolean>(false);
-  private _loaded = false;
+**Décisions actées, divergentes du plan original :**
 
-  readonly contracts$ = this._contracts$.asObservable();
-  readonly loading$ = this._loading$.asObservable();
+1. **Pas de `reload()` global sur les sous-ressources.** `createPeriod`, `updatePeriod`, `removePeriod`, `createRoomPrice`, `updateRoomPrice`, `removeRoomPrice`, `createMealPlanSupplement`, `updateMealPlanSupplement`, `removeMealPlanSupplement`, `createStopSalesDate`, `removeStopSalesDate` retournent l'`Observable` HTTP direct, sans `tap()`. Contrairement à `SeasonsService`, un `reload()` de `_contracts$` après chaque mutation de sous-ressource serait disproportionné (volume de contrats + relations profondément imbriquées). C'est au composant appelant (futur wizard, S4-FE-005+) de mettre à jour son état local avec la valeur retournée.
 
-  load(
-    filters: ContractFilters = {},
-    pagination = { limit: 20, offset: 0 }
-  ): void {
-    if (this._loaded) return;
-    this._loading$.next(true);
-    const params = buildContractParams(filters, pagination);
-    this.http
-      .get<PaginatedResult<Contract>>('/api/contracts', { params })
-      .pipe(take(1))
-      .subscribe({
-        next: (result) => {
-          this._contracts$.next(result.data);
-          this._loaded = true;
-          this._loading$.next(false);
-        },
-        error: () => this._loading$.next(false),
-      });
-  }
+2. **`create`/`update`/`remove` sur `Contract` synchronisent `_contracts$` localement, sans round-trip HTTP.** Immutabilité respectée (`getValue()` + `.map()`/`.filter()` + `next()`), pas de `reload()`.
 
-  reload(filters?: ContractFilters): void {
-    this._loaded = false;
-    this.load(filters);
-  }
+3. **Pas de cache bloquant sur `findAll()`.** Contrairement à `SeasonsService.getSeasons()` (flag `loaded` simple), `findAll(filters, pagination)` refait systématiquement l'appel HTTP à chaque invocation — les filtres (`hotelId`, `marketId`) et la pagination changent le résultat attendu, donc un cache basé sur un seul booléen `loaded` casserait dès qu'un filtre change. C'est au composant appelant de décider quand rappeler `findAll()`.
 
-  getById(id: string): Observable<Contract> {
-    return this.http.get<Contract>(`/api/contracts/${id}`);
-  }
+4. **`findOne(id)` toujours en HTTP direct, jamais de lecture depuis `_contracts$`.** L'objet `Contract` dans la liste paginée (`findAll`) peut être une version allégée sans les relations profondément imbriquées (`periods.roomPrices.occupancyRates`, etc.) pour des raisons de perf backend — donc pas fiable pour un écran de détail/édition.
 
-  create(dto: ContractDto): Observable<Contract> {
-    return this.http.post<Contract>('/api/contracts', dto);
-  }
+5. **`_loading$` réinitialisé sur erreur.** `findAll()` utilise `catchError` pour remettre `_loading$.next(false)` avant de relancer l'erreur intacte via `throwError(() => error)` (syntaxe factory, pas la forme dépréciée), pour que le composant appelant puisse à la fois afficher un message d'erreur et sortir de l'état loading.
 
-  update(id: string, dto: Partial<ContractDto>): Observable<Contract> {
-    return this.http.patch<Contract>(`/api/contracts/${id}`, dto);
-  }
+6. **Naming normalisé :** `remove*` partout (jamais `delete*`), noms complets alignés sur les types partagés et les méthodes backend (`createMealPlanSupplement`, pas `createMealSupplement`).
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/contracts/${id}`);
-  }
+7. **Ordre de paramètres normalisé sur toutes les méthodes `create*`/`update*` :** identifiants parents dans l'ordre de l'URL (`contractId` avant `periodId`), `dto` toujours en dernier.
 
-  createPeriod(
-    contractId: string,
-    dto: ContractPeriodDto
-  ): Observable<ContractPeriod> {
-    return this.http.post<ContractPeriod>(
-      `/api/contracts/${contractId}/periods`,
-      dto
-    );
-  }
+**Pas de `.subscribe()` interne dans ce service** — toutes les méthodes retournent des `Observable` non souscrits ; la règle `take(1)` s'appliquera dans les composants consommateurs (S4-FE-003+), pas ici.
 
-  updatePeriod(
-    contractId: string,
-    periodId: string,
-    dto: Partial<ContractPeriodDto>
-  ): Observable<ContractPeriod> {
-    return this.http.patch<ContractPeriod>(
-      `/api/contracts/${contractId}/periods/${periodId}`,
-      dto
-    );
-  }
+**Acceptance Criteria :**
 
-  deletePeriod(contractId: string, periodId: string): Observable<void> {
-    return this.http.delete<void>(
-      `/api/contracts/${contractId}/periods/${periodId}`
-    );
-  }
-
-  createRoomPrice(
-    contractId: string,
-    periodId: string,
-    dto: RoomPriceDto
-  ): Observable<RoomPrice> {
-    return this.http.post<RoomPrice>(
-      `/api/contracts/${contractId}/periods/${periodId}/room-prices`,
-      dto
-    );
-  }
-
-  updateRoomPrice(
-    id: string,
-    dto: Partial<RoomPriceDto>
-  ): Observable<RoomPrice> {
-    return this.http.patch<RoomPrice>(`/api/room-prices/${id}`, dto);
-  }
-
-  deleteRoomPrice(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/room-prices/${id}`);
-  }
-
-  createMealSupplement(
-    contractId: string,
-    periodId: string,
-    dto: MealPlanSupplementDto
-  ): Observable<MealPlanSupplement> {
-    return this.http.post<MealPlanSupplement>(
-      `/api/contracts/${contractId}/periods/${periodId}/meal-supplements`,
-      dto
-    );
-  }
-
-  updateMealSupplement(
-    id: string,
-    dto: Partial<MealPlanSupplementDto>
-  ): Observable<MealPlanSupplement> {
-    return this.http.patch<MealPlanSupplement>(
-      `/api/meal-supplements/${id}`,
-      dto
-    );
-  }
-
-  deleteMealSupplement(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/meal-supplements/${id}`);
-  }
-
-  createStopSale(
-    contractId: string,
-    periodId: string,
-    date: string
-  ): Observable<StopSalesDate> {
-    return this.http.post<StopSalesDate>(
-      `/api/contracts/${contractId}/periods/${periodId}/stop-sales`,
-      { date }
-    );
-  }
-
-  deleteStopSale(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/stop-sales/${id}`);
-  }
-}
-```
+- ✅ 15 méthodes couvrant les 4 controllers (`ContractsController`, `RoomPricesController`, `MealPlanSupplementsController`, `StopSalesDatesController`)
+- ✅ `_contracts$`/`_loading$` comme unique source de vérité pour la liste de contrats
+- ✅ Aucun `reload()` coûteux sur les sous-ressources
+- ✅ Gestion d'erreur complète sur `findAll` (loading + erreur propagée)
+- ✅ Naming et ordre de paramètres cohérents dans tout le fichier
+- ✅ `nx build frontend` → 0 erreur
 
 ---
 
