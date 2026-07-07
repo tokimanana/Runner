@@ -8,8 +8,13 @@ import {
   ContractFilters,
   ContractPeriod,
   ContractPeriodDto,
+  MealPlanSupplement,
+  MealPlanSupplementDto,
   PaginatedResult,
   PaginationParams,
+  RoomPrice,
+  RoomPriceDto,
+  StopSalesDate,
 } from '@runner/shared/types';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 
@@ -110,5 +115,72 @@ export class ContractsService {
     return this.http.delete<void>(
       `${this.apiUrl}/${contractId}/periods/${periodId}`
     );
+  }
+
+  createRoomPrice(
+    contractId: string,
+    periodId: string,
+    dto: RoomPriceDto
+  ): Observable<RoomPrice> {
+    return this.http.post<RoomPrice>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}/room-prices`,
+      dto
+    );
+  }
+
+  updateRoomPrice(
+    id: string,
+    dto: Partial<RoomPriceDto>
+  ): Observable<RoomPrice> {
+    return this.http.patch<RoomPrice>(
+      `${environment.apiUrl}/room-prices/${id}`,
+      dto
+    );
+  }
+
+  removeRoomPrice(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/room-prices/${id}`);
+  }
+
+  createMealPlanSupplement(
+    contractId: string,
+    periodId: string,
+    dto: MealPlanSupplementDto
+  ): Observable<MealPlanSupplement> {
+    return this.http.post<MealPlanSupplement>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}/meal-supplements`,
+      dto
+    );
+  }
+
+  updateMealPlanSupplement(
+    id: string,
+    dto: Partial<MealPlanSupplementDto>
+  ): Observable<MealPlanSupplement> {
+    return this.http.patch<MealPlanSupplement>(
+      `${environment.apiUrl}/meal-supplements/${id}`,
+      dto
+    );
+  }
+
+  removeMealPlanSupplement(id: string): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/meal-supplements/${id}`
+    );
+  }
+
+  createStopSalesDate(
+    contractId: string,
+    periodId: string,
+    date: string
+  ): Observable<StopSalesDate> {
+    return this.http.post<StopSalesDate>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}/stop-sales`,
+      { date }
+    );
+  }
+
+  removeStopSalesDate(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/stop-sales/${id}`);
   }
 }
