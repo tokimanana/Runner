@@ -1,11 +1,13 @@
+import { buildPaginationParams } from '@/app/shared/utils/http-params.util';
 import { environment } from '@/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
   Contract,
   ContractDto,
-  ContractPeriod,
-  ContractPeriodDto,
+  ContractFilters,
+  PaginatedResult,
+  PaginationParams,
 } from '@runner/shared/types';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 
@@ -18,7 +20,6 @@ export class ContractsService {
 
   private readonly _contracts$ = new BehaviorSubject<Contract[]>([]);
   private readonly _loading$ = new BehaviorSubject<boolean>(false);
-  private _loaded = false;
 
   readonly contracts$ = this._contracts$.asObservable();
   readonly loading$ = this._loading$.asObservable();
@@ -58,13 +59,27 @@ export class ContractsService {
     );
   }
 
-  createPeriod(
-    contractId: string,
-    dto: ContractPeriodDto
-  ): Observable<ContractPeriod> {
-    return this.http.post<ContractPeriod>(
-      `${this.apiUrl}/${contractId}/periods`,
-      dto
-    );
+  findAll(
+    filters: ContractFilters = {},
+    pagination: PaginationParams = {}
+  ): Observable<PaginatedResult<Contract>> {
+    this._loading$.next(true);
+
+    let params = buildPaginationParams(pagination);
+    if (filters.hotelId) params = params.set('hotelId', filters.hotelId);
+    if (filters.marketId) params = params.set('marketId', filters.marketId);
+
+    return this.http
+      .get<PaginatedResult<Contract>>(this.apiUrl, { params })
+      .pipe(
+        tap((result) => {
+          this._contracts$.next(result.data);
+          this._loading$.next(false);
+        })
+      );
+  }
+
+  findOne(id: string): Observable<Contract> {
+    return this.http.get<Contract>(`${this.apiUrl}/${id}`);
   }
 }
