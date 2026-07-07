@@ -16,7 +16,7 @@ import {
   RoomPriceDto,
   StopSalesDate,
 } from '@runner/shared/types';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -82,6 +82,10 @@ export class ContractsService {
         tap((result) => {
           this._contracts$.next(result.data);
           this._loading$.next(false);
+        }),
+        catchError((error) => {
+          this._loading$.next(false);
+          return throwError(() => error);
         })
       );
   }
