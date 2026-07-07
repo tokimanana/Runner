@@ -8,7 +8,7 @@ import {
   SeasonPeriod,
   StopSalesDate,
 } from '@prisma/client';
-import { PaginatedResult, StopSalesDateCreateData } from '@runner/shared/types';
+import { PaginatedResult } from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
@@ -18,6 +18,7 @@ import {
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
+  StopSalesDateCreateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';

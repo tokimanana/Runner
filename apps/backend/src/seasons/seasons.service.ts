@@ -3,14 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Season, SeasonPeriod } from '@prisma/client';
+import { Season as PrismaSeason, SeasonPeriod } from '@prisma/client';
 
 import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
 } from '@backend/common/repository.types';
-import { PaginatedResult } from '@runner/shared/types';
+import { PaginatedResult, Season } from '@runner/shared/types';
 import {
   DEFAULT_PAGINATION_LIMIT,
   MAX_PAGINATION_LIMIT,
@@ -20,7 +20,10 @@ import { CreateSeasonDto } from './dto/create-season.dto';
 import { UpdateSeasonPeriodDto } from './dto/update-season-period.dto';
 import { UpdateSeasonDto } from './dto/update-season.dto';
 import { SeasonPeriodRepository } from './repositories/season-period.repository';
-import { SeasonRepository } from './repositories/season.repository';
+import {
+  SeasonRepository,
+  SeasonWithPeriods,
+} from './repositories/season.repository';
 
 @Injectable()
 export class SeasonsService {
@@ -36,11 +39,18 @@ export class SeasonsService {
     const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
     const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);
 
-    return this.seasonRepository.findAll(tourOperatorId, {
+    const seasons = await this.seasonRepository.findAll(tourOperatorId, {
       ...query,
       limit: sanitizedLimit,
       offset,
     });
+
+    return {
+      data: seasons.data.map((s) => this.mapToSeason(s)),
+      total: seasons.total,
+      limit: seasons.limit,
+      offset: seasons.offset,
+    };
   }
 
   async findOne(id: string, tourOperatorId: string): Promise<Season> {
@@ -48,10 +58,13 @@ export class SeasonsService {
     if (!season) {
       throw new NotFoundException(`Season ${id} not found`);
     }
-    return season;
+    return this.mapToSeason(season);
   }
 
-  async create(dto: CreateSeasonDto, tourOperatorId: string): Promise<Season> {
+  async create(
+    dto: CreateSeasonDto,
+    tourOperatorId: string,
+  ): Promise<PrismaSeason> {
     try {
       return await this.seasonRepository.create(dto, tourOperatorId);
     } catch (error) {
@@ -68,7 +81,7 @@ export class SeasonsService {
     id: string,
     dto: UpdateSeasonDto,
     tourOperatorId: string,
-  ): Promise<Season> {
+  ): Promise<PrismaSeason> {
     try {
       return await this.seasonRepository.update(id, dto, tourOperatorId);
     } catch (error) {
@@ -173,5 +186,24 @@ export class SeasonsService {
         `SeasonPeriod overlaps with existing period "${overlapping.name}"`,
       );
     }
+  }
+
+  private mapToSeason(season: SeasonWithPeriods): Season {
+    return {
+      id: season.id,
+      name: season.name,
+      tourOperatorId: season.tourOperatorId,
+      seasonPeriods: season.seasonPeriods.map((p) => ({
+        id: p.id,
+        seasonId: p.seasonId,
+        name: p.name,
+        startDate: p.startDate.toISOString(),
+        endDate: p.endDate.toISOString(),
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      })),
+      createdAt: season.createdAt.toISOString(),
+      updatedAt: season.updatedAt.toISOString(),
+    };
   }
 }

@@ -11,7 +11,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateSeasonDto } from '../dto/create-season.dto';
 import { UpdateSeasonDto } from '../dto/update-season.dto';
-import { SeasonRepository } from './season.repository';
+import { SeasonRepository, SeasonWithPeriods } from './season.repository';
 
 @Injectable()
 export class PrismaSeasonRepository extends SeasonRepository {
@@ -22,7 +22,7 @@ export class PrismaSeasonRepository extends SeasonRepository {
   async findAll(
     tourOperatorId: string,
     query?: PaginationQuery,
-  ): Promise<PaginatedResult<Season>> {
+  ): Promise<PaginatedResult<SeasonWithPeriods>> {
     const { limit, offset } = query ?? {};
 
     const where: Prisma.SeasonWhereInput = {
@@ -30,16 +30,25 @@ export class PrismaSeasonRepository extends SeasonRepository {
     };
 
     const [data, total] = await this.prisma.$transaction([
-      this.prisma.season.findMany({ where, take: limit, skip: offset }),
+      this.prisma.season.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        include: { seasonPeriods: true },
+      }),
       this.prisma.season.count({ where }),
     ]);
 
     return { data, total, limit, offset };
   }
 
-  async findOne(id: string, tourOperatorId: string): Promise<Season | null> {
+  async findOne(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<SeasonWithPeriods | null> {
     return this.prisma.season.findUnique({
       where: { id, tourOperatorId },
+      include: { seasonPeriods: true },
     });
   }
 
