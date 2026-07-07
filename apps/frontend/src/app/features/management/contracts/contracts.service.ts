@@ -6,6 +6,8 @@ import {
   Contract,
   ContractDto,
   ContractFilters,
+  ContractPeriod,
+  ContractPeriodDto,
   PaginatedResult,
   PaginationParams,
 } from '@runner/shared/types';
@@ -81,5 +83,32 @@ export class ContractsService {
 
   findOne(id: string): Observable<Contract> {
     return this.http.get<Contract>(`${this.apiUrl}/${id}`);
+  }
+
+  createPeriod(
+    contractId: string,
+    dto: ContractPeriodDto
+  ): Observable<ContractPeriod> {
+    return this.http.post<ContractPeriod>(
+      `${this.apiUrl}/${contractId}/periods`,
+      dto
+    );
+  }
+
+  updatePeriod(
+    periodId: string,
+    dto: Partial<ContractPeriodDto>,
+    contractId: string
+  ): Observable<ContractPeriod> {
+    return this.http.patch<ContractPeriod>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}`,
+      dto
+    );
+  }
+
+  removePeriod(contractId: string, periodId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}`
+    );
   }
 }
