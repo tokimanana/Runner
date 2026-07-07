@@ -199,13 +199,11 @@ npx ts-node prisma/scripts/migrate-season-periods.ts
 - **Commit :** `chore(types): revise Season, add SeasonPeriod, add Contract types`
 
 ```typescript
-// libs/shared/types/src/lib/season.types.ts — RÉVISÉ
-
 export interface Season {
   id: string;
   name: string;
   tourOperatorId: string;
-  periods?: SeasonPeriod[];
+  seasonPeriods?: SeasonPeriod[];
   createdAt: string;
   updatedAt: string;
 }
@@ -219,7 +217,7 @@ export interface SeasonPeriod {
   id: string;
   seasonId: string;
   name: string;
-  startDate: string; // template — dates suggérées
+  startDate: string;
   endDate: string;
   season?: { id: string; name: string };
   createdAt: string;
