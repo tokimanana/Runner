@@ -1,6 +1,5 @@
 import { RepositoryResult } from '@backend/common/repository.types';
 import {
-  Contract,
   ContractPeriod,
   MealPlanSupplement,
   Prisma,
@@ -8,7 +7,10 @@ import {
   SeasonPeriod,
   StopSalesDate,
 } from '@prisma/client';
-import { PaginatedResult } from '@runner/shared/types';
+import {
+  PaginatedResult,
+  Contract as SharedContract,
+} from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
@@ -31,23 +33,23 @@ export abstract class ContractRepository {
   abstract findAll(
     tourOperatorId: string,
     query?: ContractQuery,
-  ): Promise<PaginatedResult<Contract>>;
+  ): Promise<PaginatedResult<SharedContract>>;
 
   abstract findOne(
     id: string,
     tourOperatorId: string,
-  ): Promise<Contract | null>;
+  ): Promise<SharedContract | null>;
 
   abstract create(
     dto: CreateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract>;
+  ): Promise<SharedContract>;
 
   abstract update(
     id: string,
     dto: UpdateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract>;
+  ): Promise<SharedContract>;
 
   abstract remove(
     id: string,
