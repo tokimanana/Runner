@@ -1723,6 +1723,62 @@ return await this.prisma.$transaction(async (tx) => {
 
 ---
 
+### S4-FIX-002 : Exposer `periodsCount` + relations sur `Contract` — cohérence complète
+
+- **Type :** Fix / Enhancement
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `fix/S4-FIX-002-contract-periods-count`
+- **Status :** ✅ Done
+
+## Contexte (complément)
+
+`findAll` a été corrigé en premier (voir décisions ci-dessous), révélant un
+bug de typage plus large : `create`, `update`, `findOne` retournent
+actuellement `Contract` (modèle Prisma brut, `@prisma/client`) — sans
+`hotel`, `market`, `currency` peuplés, ni `periodsCount`.
+
+**Impact concret identifié :** `ContractsService` (frontend) pousse
+directement la réponse de `create()`/`update()` dans `_contracts$`
+(pattern local sans `reload()`, voir S4-FE-002) pour éviter un refetch
+coûteux. Si ces réponses n'ont pas la même forme que celles de `findAll()`,
+la liste affiche des colonnes vides pour tout contrat fraîchement créé/modifié
+jusqu'au prochain rechargement complet — bug silencieux, pas juste
+une question de "cohérence de typage".
+
+## Scope élargi — méthode par méthode
+
+| Méthode | Besoin réel | Justification |
+| --- | --- | --- |
+| `findAll` | `hotel`, `market`, `currency`, `periodsCount` | ✅ déjà fait |
+| `findOne` | `hotel`, `market`, `currency` | écran détail/édition — `periods` chargé en entier séparément, `periodsCount` non nécessaire ici (redondant avec `periods.length`) |
+| `create` | `hotel`, `market`, `currency`, `periodsCount` (= 0 à la création) | réponse poussée directement dans `_contracts$` frontend, doit matcher la forme de `findAll` |
+| `update` | `hotel`, `market`, `currency`, `periodsCount` | même raison que `create` |
+
+## Modifications nécessaires
+
+- `prisma-contract.repository.ts` : ajouter le même `include` (`hotel`,
+  `market`, `currency`) à `findOne`, `create`, `update`. `_count` uniquement
+  nécessaire pour `findAll`/`create`/`update` (pas `findOne`, sauf si on
+  décide de rester cohérent partout par simplicité — à trancher).
+- Réutiliser `mapToContract()` (déjà extrait pour `findAll`) sur les résultats
+  de `findOne`, `create`, `update`.
+- `contracts.service.ts` (backend) : changer les types de retour de `findOne`,
+  `create`, `update` de `Contract` (Prisma) vers `SharedContract`.
+
+## Acceptance Criteria
+
+- ✅ `findAll`, `findOne`, `create`, `update` retournent tous `SharedContract`
+  avec `hotel`/`market`/`currency` peuplés
+- ✅ `create`/`update` incluent `periodsCount` (0 pour un `create`, valeur
+  réelle pour `update`)
+- ✅ `ContractsService` frontend (`_contracts$`) reste visuellement cohérent
+  après un `create`/`update` local, sans `reload()`
+- ✅ `tsc --noEmit -p apps/backend/tsconfig.build.json` → 0 erreur
+- ✅ `tsc --noEmit -p apps/frontend/tsconfig.app.json` → 0 erreur
+
+---
+
 ## Structure des fichiers
 
 ### Backend
