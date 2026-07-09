@@ -18,7 +18,7 @@ export class SeasonsService {
   private readonly http = inject(HttpClient);
 
   private readonly seasonsSubject = new BehaviorSubject<Season[]>([]);
-  private readonly loadingSubject = new BehaviorSubject<boolean>(false);
+  private readonly loadingSubject = new BehaviorSubject<boolean>(true);
   private loaded = false;
 
   readonly seasons$ = this.seasonsSubject.asObservable();
