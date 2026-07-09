@@ -7,6 +7,8 @@ import {
   PaginationParams,
   Season,
   SeasonDto,
+  SeasonPeriod,
+  SeasonPeriodDto,
 } from '@runner/shared/types';
 import { BehaviorSubject, Observable, take, tap } from 'rxjs';
 
@@ -77,5 +79,33 @@ export class SeasonsService {
   reload(): void {
     this.loaded = false;
     this.loadSeasons();
+  }
+
+  createPeriod(
+    seasonId: string,
+    dto: SeasonPeriodDto
+  ): Observable<SeasonPeriod> {
+    return this.http
+      .post<SeasonPeriod>(`${this.apiUrl}/${seasonId}/periods/`, dto)
+      .pipe(tap(() => this.reload()));
+  }
+
+  updatePeriod(
+    seasonId: string,
+    periodId: string,
+    dto: Partial<SeasonPeriodDto>
+  ): Observable<SeasonPeriod> {
+    return this.http
+      .patch<SeasonPeriod>(
+        `${this.apiUrl}/${seasonId}/periods/${periodId}`,
+        dto
+      )
+      .pipe(tap(() => this.reload()));
+  }
+
+  deletePeriod(seasonId: string, periodId: string): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/${seasonId}/periods/${periodId}`)
+      .pipe(tap(() => this.reload()));
   }
 }
