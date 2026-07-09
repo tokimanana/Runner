@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,15 +9,21 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { SeasonPeriod } from '@runner/shared/types';
 import { MessageService } from 'primeng/api';
+import { Button } from 'primeng/button';
 import { take } from 'rxjs';
 import { SeasonsService } from '../seasons.service';
-import { Button } from 'primeng/button';
-import { DatePipe } from '@angular/common';
+import { SeasonPeriodFormDialogComponent } from './season-period-form-dialog/season-period-form-dialog.component';
 
 @Component({
   selector: 'app-season-detail',
-  imports: [Button, DatePipe, ReactiveFormsModule],
+  imports: [
+    Button,
+    DatePipe,
+    ReactiveFormsModule,
+    SeasonPeriodFormDialogComponent,
+  ],
   templateUrl: './season-detail.component.html',
   styleUrl: './season-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +36,13 @@ export class SeasonDetailComponent {
 
   readonly isEditingName = signal(false);
   readonly isSubmitting = signal(false);
+  readonly periodBeingEdited = signal<SeasonPeriod | null | undefined>(
+    undefined
+  );
+  readonly isDialogVisible = computed(
+    () => this.periodBeingEdited() !== undefined
+  );
+
   readonly nameControl = new FormControl('', {
     validators: [Validators.required],
     nonNullable: true,
@@ -88,5 +102,17 @@ export class SeasonDetailComponent {
   cancelEdit(): void {
     this.nameControl.reset(this.season()?.name);
     this.isEditingName.set(false);
+  }
+
+  editPeriod(period: SeasonPeriod) {
+    console.log('Edit period : ', period);
+  }
+
+  deletePeriod(period: SeasonPeriod) {
+    console.log('Delete period : ', period);
+  }
+
+  openCreatePeriod() {
+    console.log('Open Create Period clicked');
   }
 }
