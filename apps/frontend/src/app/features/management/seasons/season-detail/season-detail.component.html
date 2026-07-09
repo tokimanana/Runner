@@ -1,6 +1,4 @@
-@if (loading()) {
-  <p class="loading-state">Loading season...</p>
-} @else if (season(); as s) {
+@if (season(); as s) {
   <div class="season-detail-page">
     <div class="detail-header">
       <div class="name-row">
@@ -86,6 +84,15 @@
       (onClick)="openCreatePeriod()"
     />
   </div>
+} @else if (loading()) {
+  <p class="loading-state">Loading season...</p>
 } @else {
   <p class="empty-state">Season not found.</p>
 }
+
+<app-season-period-form-dialog
+  [visible]="isDialogVisible()"
+  (visibleChange)="periodBeingEdited.set(undefined)"
+  [seasonId]="seasonId()"
+  [period]="periodBeingEdited() ?? null"
+/>
