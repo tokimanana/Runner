@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -10,8 +11,10 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SeasonPeriod } from '@runner/shared/types';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { InputText } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { SeasonsService } from '../seasons.service';
 import { SeasonPeriodFormDialogComponent } from './season-period-form-dialog/season-period-form-dialog.component';
@@ -20,7 +23,9 @@ import { SeasonPeriodFormDialogComponent } from './season-period-form-dialog/sea
   selector: 'app-season-detail',
   imports: [
     Button,
+    ConfirmDialogModule,
     DatePipe,
+    InputText,
     ReactiveFormsModule,
     SeasonPeriodFormDialogComponent,
   ],
@@ -30,18 +35,13 @@ import { SeasonPeriodFormDialogComponent } from './season-period-form-dialog/sea
 })
 export class SeasonDetailComponent {
   private readonly seasonsService = inject(SeasonsService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
   readonly seasonId = input.required<string>();
 
   readonly isEditingName = signal(false);
   readonly isSubmitting = signal(false);
-  readonly periodBeingEdited = signal<SeasonPeriod | null | undefined>(
-    undefined
-  );
-  readonly isDialogVisible = computed(
-    () => this.periodBeingEdited() !== undefined
-  );
 
   readonly nameControl = new FormControl('', {
     validators: [Validators.required],
@@ -59,6 +59,13 @@ export class SeasonDetailComponent {
     this.seasons().find((s) => s.id === this.seasonId())
   );
 
+  readonly _periodBeingEdited = signal<SeasonPeriod | null | undefined>(
+    undefined
+  );
+  readonly isDialogVisible = computed(
+    () => this._periodBeingEdited() !== undefined
+  );
+
   constructor() {
     this.seasonsService.getSeasons().pipe(take(1)).subscribe();
   }
@@ -70,12 +77,10 @@ export class SeasonDetailComponent {
 
   saveName(): void {
     if (this.nameControl.invalid) return;
-
     const currentSeason = this.season();
     if (!currentSeason) return;
 
     this.isSubmitting.set(true);
-
     this.seasonsService
       .updateSeason(currentSeason.id, { name: this.nameControl.value })
       .pipe(take(1))
@@ -104,15 +109,22 @@ export class SeasonDetailComponent {
     this.isEditingName.set(false);
   }
 
-  editPeriod(period: SeasonPeriod) {
-    console.log('Edit period : ', period);
+  deletePeriod(period: SeasonPeriod): void {
+    confirmDelete({
+      header: 'Delete Period',
+      entityName: period.name,
+      delete$: this.seasonsService.deletePeriod(this.seasonId(), period.id),
+      conflictMessage: `"${period.name}" is used in existing contracts.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
+    });
   }
 
-  deletePeriod(period: SeasonPeriod) {
-    console.log('Delete period : ', period);
+  openCreatePeriod(): void {
+    this._periodBeingEdited.set(null);
   }
 
-  openCreatePeriod() {
-    console.log('Open Create Period clicked');
+  editPeriod(period: SeasonPeriod): void {
+    this._periodBeingEdited.set(period);
   }
 }

@@ -92,7 +92,9 @@
 
 <app-season-period-form-dialog
   [visible]="isDialogVisible()"
-  (visibleChange)="periodBeingEdited.set(undefined)"
+  (visibleChange)="_periodBeingEdited.set(undefined)"
   [seasonId]="seasonId()"
-  [period]="periodBeingEdited() ?? null"
+  [period]="_periodBeingEdited() ?? null"
 />
+
+<p-confirmDialog />
