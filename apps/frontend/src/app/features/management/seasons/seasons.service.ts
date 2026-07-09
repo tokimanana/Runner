@@ -86,7 +86,7 @@ export class SeasonsService {
     dto: SeasonPeriodDto
   ): Observable<SeasonPeriod> {
     return this.http
-      .post<SeasonPeriod>(`${this.apiUrl}/${seasonId}/periods/`, dto)
+      .post<SeasonPeriod>(`${this.apiUrl}/${seasonId}/periods`, dto)
       .pipe(tap(() => this.reload()));
   }
 
