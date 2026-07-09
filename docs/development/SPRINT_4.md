@@ -1043,13 +1043,73 @@ Pas de route `create` (inline) ni `:seasonId/edit` (renommé `:seasonId`, sert �
 
 - **Type :** Feature
 - **Priority :** P0
-- **Story Points :** 2
+- **Story Points :** 3
 - **Branch :** `feature/S4-FE-003-contracts-list`
-- **Commit :** `feat(contracts): create contracts list with filters`
+- **Commit :** `feat(contracts): create contracts list with filters and pagination`
 
-- `p-table` : Name, Hotel, Market, Currency, Nb périodes, Actions
-- Filtres Hotel + Market via `p-select`
-- Boutons : Créer, Éditer, Supprimer (`confirmDelete` helper Sprint 3)
+## Contexte
+
+Premier composant consommateur de `ContractsService` (S4-FE-002). Contrairement
+à `SeasonsService.getSeasons()` (pas de filtres, cache simple), `ContractsService.findAll()`
+n'a pas de cache — chaque changement de filtre ou de page redéclenche un appel HTTP.
+C'est ce composant qui pilote quand rappeler `findAll()`.
+
+## Colonnes de la table (`p-table`)
+
+| Colonne     | Source                    | Affichage                            |
+| ----------- | ------------------------- | ------------------------------------ |
+| Name        | `contract.name`           | texte                                |
+| Hotel       | `contract.hotel?.name`    | texte, fallback si `undefined`       |
+| Market      | `contract.market?.name`   | texte, fallback si `undefined`       |
+| Currency    | `contract.currency?.code` | ex: "EUR" (trancher code vs symbole) |
+| Nb périodes | `contract.periodsCount`   | badge/nombre, `?? 0` si absent       |
+| Actions     | —                         | Éditer (icône), Supprimer (icône)    |
+
+## États à gérer
+
+- **Loading** : `ContractsService.loading$` → spinner/skeleton pendant chargement initial et à chaque changement de filtre
+- **Liste vide** : aucun résultat pour les filtres actuels → message + CTA "Créer un contrat"
+- **Erreur** : `findAll()` propage l'erreur (`catchError` + `throwError` déjà en place côté service) → `subscribe({ next, error })` avec `MessageService` en cas d'échec
+- **Filtres actifs** : `hotelId` / `marketId` via `p-select`, état dans des `signal()` locaux
+
+## Comportement filtres → rechargement
+
+Chaque changement de `hotelId`/`marketId` doit redéclencher `findAll(filters, pagination)` —
+pas de flag `loaded` qui bloquerait (rappel : `ContractsService.findAll()` n'a pas de cache
+pour cette raison précise).
+
+## Pagination
+
+`PaginatedResult<Contract>` a `total`, `limit`, `offset`. Décision à trancher pendant
+l'implémentation : `p-paginator` PrimeNG (page par page) — pas de scroll infini mentionné
+dans le sprint, rester cohérent avec le reste du projet (vérifier si `hotels-list`/`seasons-list`
+paginent déjà et comment).
+
+## Actions
+
+- **Créer** : bouton → navigue vers `/management/contracts/create` (route déjà en place, S4-FE-010)
+- **Éditer** : icône par ligne → navigue vers `/management/contracts/:contractId/edit`
+- **Supprimer** : icône par ligne → `confirmDelete()` (`shared/utils/confirm-delete.util.ts`),
+  utilise `ContractsService.remove(id)` qui met déjà à jour `_contracts$` localement (pas de
+  `reload()` nécessaire après)
+
+## Dépendances déjà résolues (pas à refaire)
+
+- `ContractsService` complet (S4-FE-002) ✅
+- `Contract.periodsCount` disponible depuis le backend (S4-FIX-002, S4-FIX-003) ✅
+- `confirmDelete()` gère déjà le cas 409 (contrat avec dépendances)
+
+## Acceptance Criteria
+
+- ✅ `p-table` affiche les 6 colonnes avec les bonnes sources de données
+- ✅ Filtres Hotel + Market fonctionnels, redéclenchent `findAll()` à chaque changement
+- ✅ Loading visible pendant chargement initial et changements de filtre
+- ✅ Message clair si liste vide ou erreur réseau
+- ✅ Pagination fonctionnelle si le nombre de contrats dépasse une page
+- ✅ Suppression via `confirmDelete()`, pas de `reload()` après (sync locale déjà gérée par le service)
+- ✅ Navigation Créer/Éditer fonctionnelle vers les routes existantes
+- ✅ `OnPush`, standalone, `inject()`, `take(1)` sur tout `subscribe()`
+- ✅ `tsc --noEmit -p apps/frontend/tsconfig.app.json` → 0 erreur
 
 ---
 
@@ -1595,8 +1655,6 @@ Service/Repository construite tout le sprint.
 - ✅ Aucun test ne touche Prisma réellement (mock de `ContractRepository`)
 - ✅ Chaque test isole un seul comportement métier
 
----
-
 ## Révision (45 min) — bilan semaine BE
 
 1. Qu'est-ce qu'un bon test unitaire vs un test qui teste Prisma ?
@@ -1608,8 +1666,6 @@ Service/Repository construite tout le sprint.
 - Nested resources avec validation métier : maîtrisé
 - PER_OCCUPANCY + capacités : maîtrisé
 - Tests unitaires NestJS : à valider à l'issue de ce ticket
-
----
 
 ## Impact sur Sprint 7 — Pricing Engine
 
@@ -1638,6 +1694,47 @@ function findPeriodForNight(night: Date, periods: ContractPeriod[]) {
   );
 }
 ```
+
+---
+
+### S4-BE-012 : Tests unitaires serializeDates
+
+- **Type :** Test
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `test/S4-BE-012-serialize-dates-tests`
+- **Commit :** `test(common): add unit tests for serializeDates`
+
+## Contexte
+
+`serializeDates<T>()` (S4-FIX-003) est une fonction pure et récursive,
+testable en isolation — pas de mock nécessaire, pas de dépendance à
+Prisma ou NestJS.
+
+## Fichier
+
+`apps/backend/src/common/serialize-dates.util.spec.ts`
+
+## Scénarios minimum
+
+1. Une `Date` seule → convertie en `string` ISO
+2. Un objet avec une `Date` au premier niveau → clé convertie, reste inchangé
+3. Un objet avec des `Date` imbriquées à plusieurs niveaux → toutes converties
+4. Un tableau de `Date` → chaque élément converti
+5. Un tableau d'objets contenant des `Date` → conversion récursive à travers le tableau
+6. `null` → retourné tel quel, jamais transformé en objet vide
+7. `undefined` → retourné tel quel
+8. Valeurs primitives (`string`, `number`, `boolean`) → traversent sans modification
+9. Un `number` ressemblant à un timestamp → reste un `number`, jamais confondu avec une `Date`
+10. Non-mutation : l'objet source reste inchangé après l'appel
+11. Objet vide `{}` et tableau vide `[]` → retournés tels quels, sans erreur
+
+## Acceptance Criteria
+
+- ✅ Coverage 100% sur `serialize-dates.util.ts`
+- ✅ Chaque scénario isole un seul comportement
+- ✅ Aucun test ne dépend de Prisma ou d'un mock
+- ✅ `nx test backend` → 0 échec
 
 ---
 
