@@ -943,103 +943,57 @@ if (date < contractPeriod.startDate || date > contractPeriod.endDate) {
 
 ## Frontend Tasks
 
-### S4-FE-001 : Mettre à jour SeasonsService + UI Seasons
+### S4-FE-001 : SeasonsService + Season/SeasonPeriod UI
 
 - **Type :** Feature
 - **Priority :** P0
-- **Story Points :** 3
+- **Story Points :** 5
 - **Branch :** `feature/S4-FE-001-seasons-with-periods`
-- **Commit :** `feat(seasons): add SeasonPeriod management in seasons UI`
+- **Status :** ✅ Done
 
-**`SeasonsService` — nouvelles méthodes :**
+**Décisions actées, divergentes du plan original :**
 
-```typescript
-getWithPeriods(): void {
-  // Charger seasons avec leurs periods incluses
-  // Réutiliser le BehaviorSubject existant
-}
+1. **`Season.seasonPeriods` (pas `periods`)** — le doc initial proposait de renommer le champ. Faux : `schema.prisma` et le type Prisma généré utilisent `seasonPeriods`. Aucun renommage frontend nécessaire.
 
-createPeriod(seasonId: string, dto: SeasonPeriodDto): Observable<SeasonPeriod> {
-  return this.http.post<SeasonPeriod>(`/api/seasons/${seasonId}/periods`, dto);
-}
+2. **Pas de `getWithPeriods()`** — `GET /seasons` renvoie désormais toujours `seasonPeriods` (mapping ajouté côté backend, voir `SeasonsService.mapToSeason()`). `getSeasons()` existant suffit, aucune méthode supplémentaire.
 
-updatePeriod(
-  seasonId: string,
-  periodId: string,
-  dto: Partial<SeasonPeriodDto>
-): Observable<SeasonPeriod> {
-  return this.http.patch<SeasonPeriod>(
-    `/api/seasons/${seasonId}/periods/${periodId}`, dto
-  );
-}
+3. **`SeasonsFormComponent` supprimé** — devenu obsolète : `Season` n'a plus de `startDate`/`endDate` (ils vivent sur `SeasonPeriod`). Remplacé par :
+   - Création de Season : inline dans `seasons-list` (un input + check/cancel dans la ligne footer du tableau)
+   - Édition du nom : inline dans `season-detail` (pattern pencil/check/cancel, cohérent avec les capacities de `RoomTypeFormDialog`)
 
-deletePeriod(seasonId: string, periodId: string): Observable<void> {
-  return this.http.delete<void>(`/api/seasons/${seasonId}/periods/${periodId}`);
-}
-```
-
-**`SeasonPeriodFormDialogComponent`** (nouveau) :
+4. **Routing simplifié** — `seasons.component.ts` (wrapper `<router-outlet/>` pur) supprimé, route `'seasons'` componentless. Routes finales :
 
 ```typescript
-@Component({ ..., changeDetection: ChangeDetectionStrategy.OnPush })
-export class SeasonPeriodFormDialogComponent {
-  visible    = model<boolean>(false);
-  seasonId   = input.required<string>();
-  period     = input<SeasonPeriod | null>(null);   // null = create mode
-  saved      = output<void>();
-
-  private readonly fb             = inject(FormBuilder);
-  private readonly seasonsService = inject(SeasonsService);
-  private readonly messageService = inject(MessageService);
-
-  isEdit = computed(() => !!this.period());
-
-  form = this.fb.group({
-    name:      ['', Validators.required],
-    startDate: [null as Date | null, Validators.required],
-    endDate:   [null as Date | null, Validators.required],
-  });
-
-  // Pré-remplir en mode édition
-  constructor() {
-    effect(() => {
-      const p = this.period();
-      if (p) {
-        this.form.patchValue({
-          name:      p.name,
-          startDate: new Date(p.startDate),
-          endDate:   new Date(p.endDate),
-        });
-      }
-    });
-  }
-
-  submit(): void {
-    if (this.form.invalid) return;
-    const dto: SeasonPeriodDto = {
-      name:      this.form.value.name!,
-      startDate: this.form.value.startDate!.toISOString(),
-      endDate:   this.form.value.endDate!.toISOString(),
-    };
-    const action$ = this.isEdit()
-      ? this.seasonsService.updatePeriod(this.seasonId(), this.period()!.id, dto)
-      : this.seasonsService.createPeriod(this.seasonId(), dto);
-
-    action$.pipe(take(1)).subscribe({
-      next: () => {
-        this.saved.emit();
-        this.visible.set(false);
-      },
-      error: (err) => {
-        const msg = err.status === 409
-          ? 'Cette période chevauche une période existante'
-          : 'Une erreur est survenue';
-        this.messageService.add({ severity: 'error', summary: msg });
-      },
-    });
-  }
-}
+   {
+     path: 'seasons',
+     children: [
+       { path: '', redirectTo: 'seasons-list', pathMatch: 'full' },
+       { path: 'seasons-list', loadComponent: () => ... SeasonsListComponent },
+       { path: ':seasonId', loadComponent: () => ... SeasonDetailComponent },
+     ],
+   }
 ```
+
+Pas de route `create` (inline) ni `:seasonId/edit` (renommé `:seasonId`, sert à gérer les periods, pas juste éditer).
+
+**Dette notée séparément (hors scope) :** `hotels.component.ts` a le même problème de wrapper inutile — ticket dédié à créer.
+
+5. **Réactivité — une seule source de vérité.** `SeasonDetailComponent.season` est un `computed()` dérivé de `SeasonsService.seasons$` (le `BehaviorSubject` partagé), **pas** un `getSeasonById()` séparé. Toute mutation (`updateSeason`, `createPeriod`, `updatePeriod`, `deletePeriod`) déclenche `reload()` côté service, qui réémet `seasons$`, qui recalcule `season()` automatiquement — aucun rafraîchissement manuel nécessaire côté composant.
+
+6. **`SeasonPeriodFormDialogComponent`** — pas d'`output` `saved`/`periodSaved` : redondant avec le point 5.
+
+**Nouveaux fichiers partagés :**
+
+- `shared/utils/date-range.util.ts` — `dateRangeValidator` extrait (réutilisable pour `ContractPeriod`, S4-FE-005)
+- `features/management/seasons/seasons-list/period-count.pipe.ts` — `PeriodCountPipe`
+
+**Acceptance Criteria :**
+
+- ✅ `GET /seasons` renvoie `seasonPeriods` peuplé (mappé Prisma → type partagé, dates en ISO string)
+- ✅ Season : création inline dans `seasons-list`, édition du nom inline dans `season-detail`
+- ✅ `SeasonPeriod` : create/edit via dialog, delete via `confirmDelete` (conflit 409 géré : period liée à un `ContractPeriod`)
+- ✅ Aucun flash "not found" au chargement initial (`loadingSubject` démarre à `true`)
+- ✅ Un seul flux de données (`seasons$`), pas de désynchronisation possible entre liste et détail
 
 ---
 
