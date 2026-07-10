@@ -27,9 +27,11 @@ export class ContractsService {
 
   private readonly _contracts$ = new BehaviorSubject<Contract[]>([]);
   private readonly _loading$ = new BehaviorSubject<boolean>(false);
+  private readonly _totalCount$ = new BehaviorSubject<number>(0);
 
   readonly contracts$ = this._contracts$.asObservable();
   readonly loading$ = this._loading$.asObservable();
+  readonly totalCount$ = this._totalCount$.asObservable();
 
   create(dto: ContractDto): Observable<Contract> {
     return this.http.post<Contract>(this.apiUrl, dto).pipe(
@@ -80,11 +82,14 @@ export class ContractsService {
       .get<PaginatedResult<Contract>>(this.apiUrl, { params })
       .pipe(
         tap((result) => {
-          this._contracts$.next(result.data);
           this._loading$.next(false);
+          this._contracts$.next(result.data);
+          this._totalCount$.next(result.total);
         }),
         catchError((error) => {
           this._loading$.next(false);
+          this._contracts$.next([]);
+          this._totalCount$.next(0);
           return throwError(() => error);
         })
       );
