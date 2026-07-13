@@ -27,10 +27,7 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-season>
-      <tr
-        [routerLink]="['/management/seasons', season.id]"
-        style="cursor: pointer"
-      >
+      <tr [routerLink]="['/management/seasons', season.id]" class="clickable-row">
         <td>{{ season.name }}</td>
         <td>{{ season.seasonPeriods | periodCount }}</td>
         <td>

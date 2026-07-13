@@ -1,6 +1,6 @@
 .seasons-list-page {
   padding: 1.5rem;
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -10,6 +10,15 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--p-surface-100);
+  }
 }
 
 .row-actions {
