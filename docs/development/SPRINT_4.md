@@ -1113,127 +1113,66 @@ paginent déjà et comment).
 
 ---
 
-### S4-FE-004 : ContractForm — Étape 1 (infos de base)
+#### S4-FE-004 — ContractForm Wizard — Step 1 (Contract Info)
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S4-FE-004-contract-form-step1`
-- **Commit :** `feat(contracts): create contract form wizard step 1`
+> Create the standalone `ContractFormComponent` and wire up the first step of the multi-step contract creation wizard using PrimeNG Stepper. Step 1 collects the core contract identifiers (name, hotel, market, currency) and stores them in a shared signal consumed by later steps.
 
-- Wizard `p-stepper` — 5 étapes
-- Étape 1 : Name, Hotel, Market, Currency
-- Reactive Form, `Validators.required` sur les 4 champs
+- **Type:** Feature
+- **Priority:** P0
+- **SP:** 3
+- **Branch:** `feat/S4-FE-004-contract-form-step1`
+- **Commit:** `feat(contracts): add ContractForm wizard step 1 (S4-FE-004)`
+- **Tasks:**
+  - `ContractFormComponent`: standalone, `OnPush`, `inject()` only
+  - `step1Form`: typed `FormGroup` (`fb.nonNullable.group`), 4 fields (`name`, `hotelId`, `marketId`, `currencyId`), `Validators.required` on each
+  - `step1Data`: `signal<ContractDto | null>(null)`, shared cross-step state, populated on Next click if form valid
+  - `activeStep`: `signal<number>(1)`, 1-based (aligned with `p-step [value]`)
+  - Dropdown sources: `HotelsService.getHotels()`, `MarketsService.getAll()`, `CurrenciesService.getAll()` — `toSignal` + `initialValue: []`
+  - `goNext(activateCallback)`: validates `step1Form`, `markAllAsTouched()` if invalid (return without navigating), else `step1Data.set(getRawValue())` + `activateCallback(activeStep() + 1)`
+  - `goBack(activateCallback)`: `activateCallback(activeStep() - 1)`, no validation
+  - Template: PrimeNG v19 Stepper (`p-step-list`/`p-step-panels`/`p-step-panel`), `StepperModule`
+  - Back button hidden (`@if activeStep() > 1`), never disabled
+  - Next button always active, visual errors via native `ng-invalid`/`ng-dirty` PrimeNG (no custom CSS)
+  - `step-actions` factored once via `ng-template #stepActions` + `ngTemplateOutlet` (context: `activateCallback`) — DRY across steps
+  - `NgTemplateOutlet` added to component imports
+    > ℹ️ Out of scope (future tickets): Steps 2–5 (`p-step-panel [value]="2".."5"`) → S4-FE-005 to S4-FE-008; sequential `submit()` (`contractsService.create` + `router.navigate`) → S4-FE-009 (`contractsService`/`router` already injected but unused here, expected); edit mode (wizard/detail prefill) — missed in initial planning, deferred to S5-FE-CONTRACT-EDIT-001/002/003
+- **Acceptance Criteria:**
+  - ✅ Submitting Step 1 empty → all 4 fields become visually invalid (`ng-invalid`/`ng-dirty`), no navigation
+  - ✅ Filling all 4 fields → Next advances to `value=2`
+  - ✅ `goBack()` has no visible effect while Step 2 doesn't exist yet (`activeStep() > 1` stays false)
+  - ✅ No compilation errors on `StepperModule` / `NgTemplateOutlet`
 
 ---
 
-### S4-FE-005 : ContractForm — Étape 2 (Periods)
+#### S4-FE-005 — ContractForm Wizard — Step 2 (Periods) + effect() SeasonPeriod
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 4
-- **Branch :** `feature/S4-FE-005-contract-form-step2`
-- **Commit :** `feat(contracts): add periods management with SeasonPeriod auto-fill`
+> Add the periods step to the contract wizard: a local (unsaved) list of contract periods, a dialog for adding/editing a period with `SeasonPeriod`-based date auto-fill via `effect()`, and overlap validation against existing periods.
 
-**`PeriodFormDialogComponent` — sélection SeasonPeriod + dates éditables :**
-
-```typescript
-@Component({ ..., changeDetection: ChangeDetectionStrategy.OnPush })
-export class PeriodFormDialogComponent {
-  visible = model<boolean>(false);
-
-  private readonly seasonsService = inject(SeasonsService);
-  private readonly fb             = inject(FormBuilder);
-
-  // Toutes les SeasonPeriods groupées par Season
-  seasons = toSignal(this.seasonsService.seasons$, { initialValue: [] });
-
-  form = this.fb.group({
-    seasonPeriodId: [null as string | null],  // optionnel
-    name:           ['', Validators.required],
-    startDate:      [null as Date | null, Validators.required],
-    endDate:        [null as Date | null, Validators.required],
-    baseMealPlanId: ['', Validators.required],
-    minStay:        [null as number | null],
-  });
-
-  // Auto-fill quand l'agent sélectionne une SeasonPeriod
-  constructor() {
-    effect(() => {
-      const seasonPeriodId = this.form.get('seasonPeriodId')?.value;
-      if (!seasonPeriodId) return;
-
-      const period = this.seasons()
-        .flatMap(s => s.periods ?? [])
-        .find(p => p.id === seasonPeriodId);
-
-      if (period) {
-        // Pré-remplir — l'agent peut ensuite ajuster
-        this.form.patchValue({
-          name:      period.name,
-          startDate: new Date(period.startDate),
-          endDate:   new Date(period.endDate),
-        });
-      }
-    });
-  }
-}
-```
-
-**UI du dialog :**
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Saison (optionnel)                                     │
-│ [p-select groupé par Season — "Haute Saison / Été"]    │
-│                                                        │
-│ Nom de la période *                                    │
-│ [p-inputtext — pré-rempli si SeasonPeriod sélectionnée]│
-│                                                        │
-│ Dates *                          ← éditables toujours  │
-│ Du [p-datepicker]  Au [p-datepicker]                   │
-│ (pré-remplies depuis SeasonPeriod si sélectionnée)     │
-│                                                        │
-│ Meal plan de base *                                    │
-│ [p-select]                                             │
-│                                                        │
-│ Séjour minimum (optionnel)                             │
-│ [p-inputnumber]  nuits                                 │
-└────────────────────────────────────────────────────────┘
-```
-
-**Validation chevauchement côté frontend :**
-
-```typescript
-import { areIntervalsOverlapping, parseISO } from 'date-fns';
-
-function hasOverlap(
-  periods: ContractPeriodDto[],
-  newPeriod: { startDate: string; endDate: string },
-  excludeIndex?: number
-): boolean {
-  return periods
-    .filter((_, i) => i !== excludeIndex)
-    .some((p) =>
-      areIntervalsOverlapping(
-        { start: parseISO(p.startDate), end: parseISO(p.endDate) },
-        {
-          start: parseISO(newPeriod.startDate),
-          end: parseISO(newPeriod.endDate),
-        },
-        { inclusive: false }
-      )
-    );
-}
-```
-
-**Acceptance Criteria :**
-
-- ✅ Sélection SeasonPeriod pré-remplit nom + dates
-- ✅ Dates restent éditables après pré-remplissage
-- ✅ `seasonPeriodId` optionnel — peut créer une période sans SeasonPeriod
-- ✅ Validation chevauchement côté frontend
-- ✅ `p-dialog` avec fix `model()`
+- **Type:** Feature
+- **Priority:** P0
+- **SP:** 7
+- **Branch:** `feat/S4-FE-005-contract-form-step2-periods`
+- **Commit:** `feat(contracts): add ContractForm wizard step 2 — periods with SeasonPeriod auto-fill`
+- **Tasks:**
+  - `p-step [value]="2"` + `p-step-panel [value]="2"` added to the existing stepper
+  - `periods`: `signal<LocalContractPeriod[]>([])` — local state, each period has a `tempId` (`crypto.randomUUID()`) until submitted to the backend
+  - `PeriodFormDialogComponent`:
+    - `visible = model<boolean>(false)`
+    - `p-select` grouped by Season for `SeasonPeriod` selection (optional)
+    - `effect()`: `patchValue(startDate, endDate)` when `seasonPeriodId` changes (auto-fill), dates remain editable afterward
+    - Overlap validation with `date-fns` against existing `periods()` (excluding the period being edited)
+    - `take(1)` on every `subscribe()`
+  - Step 2 template: `p-table` of configured periods (season name, dates, meal plan), Add/Edit/Delete row actions
+  - `goNext`/`goBack` Step 2: reuse the Step 1 `activateCallback` pattern, no new abstraction
+  - Step 2 Next button: disabled if `periods().length === 0` (at least one period required) — decide disabled vs. active+message, consistent with the Step 1 decision
+    > ℹ️ Out of scope: RoomPrices/MealSupplements/StopSales → S4-FE-006 to 008; actual period persistence (POST) deferred to final `submit()` (S4-FE-009)
+- **Acceptance Criteria:**
+  - ✅ Adding a period without `seasonPeriodId` → dates stay empty/manually editable
+  - ✅ Selecting a `seasonPeriodId` → `startDate`/`endDate` auto-fill via `effect()`
+  - ✅ Editing a date after auto-fill → manual value is preserved (not overwritten)
+  - ✅ Adding a 2nd period with overlapping dates → blocking validation error
+  - ✅ Deleting a local period (`tempId`) → removed from `periods()`, no API call
+  - ✅ `nx test frontend`: unit test on overlap logic (`date-fns`)
 
 ---
 
