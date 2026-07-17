@@ -1,0 +1,34 @@
+.contract-form-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+
+  .step1-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem 0;
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      label {
+        font-weight: 600;
+        color: var(--p-text-color);
+      }
+
+      .error {
+        color: var(--p-red-500);
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .step-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+}

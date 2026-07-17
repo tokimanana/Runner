@@ -1,1 +1,82 @@
-<p>contract-form works!</p>
+<div class="contract-form-page">
+  <ng-template #stepActions let-activateCallback="activateCallback">
+    <div class="step-actions">
+      @if (activeStep() > 1) {
+        <p-button
+          label="Back"
+          [text]="true"
+          (onClick)="goBack(activateCallback)"
+        />
+      }
+      <p-button label="Next" (onClick)="goNext(activateCallback)" />
+    </div>
+  </ng-template>
+
+  <p-stepper [(value)]="activeStep">
+    <p-step-list>
+      <p-step [value]="1">Contract Info</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content let-activateCallback="activateCallback">
+          <form [formGroup]="step1Form" class="step1-form">
+            <div class="field">
+              <label for="name">Name</label>
+              <input pInputText id="name" formControlName="name" />
+              @if (
+                step1Form.controls.name.invalid &&
+                step1Form.controls.name.touched
+              ) {
+                <small class="error">Name is required</small>
+              }
+            </div>
+
+            <div class="field">
+              <label for="hotelId">Hotel</label>
+              <p-select
+                inputId="hotelId"
+                formControlName="hotelId"
+                [options]="hotels()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select a hotel"
+              />
+            </div>
+
+            <div class="field">
+              <label for="marketId">Market</label>
+              <p-select
+                inputId="marketId"
+                formControlName="marketId"
+                [options]="markets()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select a market"
+              />
+            </div>
+
+            <div class="field">
+              <label for="currencyId">Currency</label>
+              <p-select
+                inputId="currencyId"
+                formControlName="currencyId"
+                [options]="currencies()"
+                optionLabel="code"
+                optionValue="id"
+                placeholder="Select a currency"
+              />
+            </div>
+          </form>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
+    </p-step-panels>
+  </p-stepper>
+</div>
