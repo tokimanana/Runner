@@ -14,10 +14,13 @@
 
 .clickable-row {
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
-    background-color: var(--p-surface-100);
+    background-color: var(--p-content-hover-background);
+    color: var(--p-content-hover-color);
   }
 }
 
