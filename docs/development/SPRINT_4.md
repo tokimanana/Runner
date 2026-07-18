@@ -1251,6 +1251,43 @@ If inline table editing is used (as in Step 2) : re-evaluate consistency with Sa
 
 ---
 
+### S4-FE-006-BIS — ContractForm Step 3 — Room Prices PER_OCCUPANCY
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 5
+- **Branch :** `feat/S4-FE-006-BIS-room-prices-per-occupancy`
+- **Status :** Follow-up ticket — S4-FE-006 (PER_ROOM) is ✅ closed and merged
+
+**Context :** S4-FE-006 shipped the period × room type matrix for `PER_ROOM` only. `PER_OCCUPANCY` (variable price per adults/children combo, rate per age bracket) was deferred — no UI yet.
+
+**Scope :**
+
+- Per-row mode toggle (`PER_ROOM` / `PER_OCCUPANCY`) on each `LocalRoomPrice` — `p-radiobutton` or `p-selectButton`, align with existing Runner pattern
+- `PER_OCCUPANCY` sub-panel : dynamic rows (signals + immutable `update()`, no `FormArray`) with `numAdults`, `numChildren`, `ratesPerAge` (one input per `AgeCategory`, via existing `HotelsService.getAgeCategories(hotelId)`)
+- Capacity guard : `numAdults + numChildren` ≤ `maxPax` of the `RoomType` (mirror backend `validateOccupancyAgainstCapacity()`)
+- `totalRate` as `computed()`, sum of `ratesPerAge`, read-only
+- Uniqueness : one row per `(numAdults, numChildren)` combo per `LocalRoomPrice` (mirrors backend `@@unique`)
+- Strict validation : `pricePerNight > 0` (PER_ROOM), `ratesPerAge >= 0` + at least one occupancy row required (PER_OCCUPANCY)
+- `goNextFromStep3` : a `PER_OCCUPANCY` row with zero `occupancyRates` must not count as "covered"
+
+**Out of scope :** Steps 4/5 (S4-FE-007/008), `period-form-dialog/` cleanup (S4-FE-005 debt), final submit payload conversion (S4-FE-009)
+
+**Decisions to make in session :** `p-radiobutton` vs `p-selectButton`; sub-panel placement (inline vs separate component, watch accordion nesting); confirm `AgeCategory` loading is hotel-scoped
+
+**Acceptance Criteria :**
+
+- ✅ Toggling a `LocalRoomPrice` to `PER_OCCUPANCY` clears `pricePerNight` and shows the occupancy sub-panel
+- ✅ Adding an occupancy row → editable `numAdults`/`numChildren`/`ratesPerAge`, `totalRate` updates live
+- ✅ Exceeding `maxPax` for the room type → row flagged invalid, feedback visible, cannot be confirmed
+- ✅ Duplicate `(numAdults, numChildren)` on the same `LocalRoomPrice` → rejected with a clear message
+- ✅ A `PER_OCCUPANCY` row with zero occupancy rows → period counted as **uncovered** by `goNextFromStep3`
+- ✅ Switching a row back to `PER_ROOM` → occupancy rows discarded, `pricePerNight` editable again
+- ✅ No regression on existing `PER_ROOM` flow (S4-FE-006 tests still pass)
+- ✅ `nx build frontend` / `nx test frontend` pass with no errors
+
+---
+
 ### S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
 
 - **Type :** Feature

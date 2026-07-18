@@ -304,26 +304,63 @@
                         <tr>
                           <th>Room Type</th>
                           <th>Price / Night</th>
+                          <th>Pricing Mode</th>
                         </tr>
                       </ng-template>
-                      <ng-template pTemplate="body" let-rp>
-                        <tr>
-                          <td>{{ rp.roomTypeName }}</td>
-                          <td>
-                            <p-inputNumber
-                              [ngModel]="rp.pricePerNight"
-                              (ngModelChange)="
-                                updateRoomPriceField(
-                                  rp.tempId,
-                                  'pricePerNight',
-                                  $event
-                                )
-                              "
-                              [min]="0"
-                            />
-                          </td>
-                        </tr>
-                      </ng-template>
+                      <p-table
+                        [value]="group.roomPrices"
+                        dataKey="tempId"
+                        [rowTrackBy]="trackByTempId"
+                        [expandedRowKeys]="expandedRowKeys()"
+                      >
+                        <ng-template pTemplate="header">
+                          <tr>
+                            <th>Room Type</th>
+                            <th>Price / Night</th>
+                            <th>Pricing Mode</th>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-rp>
+                          <tr>
+                            <td>{{ rp.roomTypeName }}</td>
+                            <td>
+                              @if (rp.pricingMode === 'PER_ROOM') {
+                                <p-inputNumber
+                                  [ngModel]="rp.pricePerNight"
+                                  (ngModelChange)="
+                                    updateRoomPriceField(
+                                      rp.tempId,
+                                      'pricePerNight',
+                                      $event
+                                    )
+                                  "
+                                  [min]="0"
+                                />
+                              } @else {
+                                <span class="price-not-applicable">N/A</span>
+                              }
+                            </td>
+                            <td>
+                              <p-selectButton
+                                [options]="pricingModeOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                [ngModel]="rp.pricingMode"
+                                (ngModelChange)="
+                                  onPricingModeChanged(rp.tempId, $event)
+                                "
+                              />
+                            </td>
+                          </tr>
+                        </ng-template>
+                        <ng-template pTemplate="rowexpansion" let-rp>
+                          <tr>
+                            <td colspan="3">
+                              <!-- OccupancyConfig ira ici -->
+                            </td>
+                          </tr>
+                        </ng-template>
+                      </p-table>
                     </p-table>
                   </p-accordion-content>
                 </p-accordion-panel>

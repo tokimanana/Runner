@@ -1,8 +1,3 @@
-import { confirmAction } from '@/app/shared/utils/confirm-action.util';
-import {
-  isValidDateRange,
-  rangesOverlap,
-} from '@/app/shared/utils/date-range.util';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -20,45 +15,100 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ContractDto, RoomType, Season } from '@runner/shared/types';
-import { AccordionModule } from 'primeng/accordion';
+
+// Types internes
+import {
+  AgeCategory,
+  ContractDto,
+  PricingMode,
+  RoomType,
+  Season,
+} from '@runner/shared/types';
+
+// PrimeNG core & APIs
 import { ConfirmationService } from 'primeng/api';
+
+import { TableModule } from 'primeng/table';
+
+// Composants Standalone PrimeNG v19
+import {
+  Accordion,
+  AccordionContent,
+  AccordionHeader,
+  AccordionPanel,
+} from 'primeng/accordion';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { DatePicker, DatePickerModule } from 'primeng/datepicker';
+import { DatePicker } from 'primeng/datepicker';
 import { InputNumber } from 'primeng/inputnumber';
 import { InputText } from 'primeng/inputtext';
 import { MultiSelect } from 'primeng/multiselect';
 import { Select } from 'primeng/select';
-import { StepperModule } from 'primeng/stepper';
-import { TableModule } from 'primeng/table';
+import { SelectButton } from 'primeng/selectbutton';
+import {
+  Step,
+  StepList,
+  StepPanel,
+  StepPanels,
+  Stepper,
+} from 'primeng/stepper';
+
+// RxJS operators
 import { filter, pairwise, startWith, switchMap } from 'rxjs';
+
+// Services métiers
+import { confirmAction } from '@/app/shared/utils/confirm-action.util';
+import {
+  isValidDateRange,
+  rangesOverlap,
+} from '@/app/shared/utils/date-range.util';
 import { CurrenciesService } from '../../currencies/currencies.service';
 import { HotelsService } from '../../hotels/hotels.service';
 import { MarketsService } from '../../markets/markets.service';
 import { MealPlansService } from '../../meal-plans/meal-plans.service';
 import { SeasonsService } from '../../seasons/seasons.service';
 import { ContractsService } from '../contracts.service';
-import { LocalContractPeriod, LocalRoomPrice } from './contract-form.types';
+import {
+  LocalContractPeriod,
+  LocalOccupancyRate,
+  LocalRoomPrice,
+} from './contract-form.types';
 
 @Component({
   selector: 'app-contract-form',
   imports: [
+    // Modules de formulaires & directives Angular communes
     ReactiveFormsModule,
     FormsModule,
     NgTemplateOutlet,
-    Button,
-    Select,
+    DatePipe,
+
+    // Formulaire de saisie & sélections PrimeNG
     InputText,
     InputNumber,
     DatePicker,
-    StepperModule,
-    TableModule,
-    DatePipe,
-    DatePickerModule,
+    Select,
+    SelectButton,
     MultiSelect,
-    AccordionModule,
+    Button,
+
+    TableModule,
+
+    // Blocs structurels migrés en Standalone v19
     ConfirmDialog,
+
+    // Nouveaux sous-composants Accordion autonomes
+    Accordion,
+    AccordionPanel,
+    AccordionHeader,
+    AccordionContent,
+
+    // Nouveaux sous-composants Stepper autonomes
+    Stepper,
+    StepList,
+    Step,
+    StepPanels,
+    StepPanel,
   ],
   templateUrl: './contract-form.component.html',
   styleUrl: './contract-form.component.scss',
@@ -146,6 +196,15 @@ export class ContractFormComponent {
     { initialValue: [] as RoomType[] }
   );
 
+  readonly ageCategories = toSignal(
+    this.step1Form.controls.hotelId.valueChanges.pipe(
+      startWith(this.step1Form.controls.hotelId.value),
+      filter((hotelId): hotelId is string => !!hotelId),
+      switchMap((hotelId) => this.hotelsService.getAgeCategories(hotelId))
+    ),
+    { initialValue: [] as AgeCategory[] }
+  );
+
   private readonly roomTypesById = computed(() => {
     const map = new Map<string, RoomType>();
     for (const rt of this.roomTypes()) {
@@ -167,6 +226,20 @@ export class ContractFormComponent {
         })),
     }));
   });
+
+  readonly expandedRowKeys = computed<{ [tempId: string]: boolean }>(() =>
+    Object.fromEntries(
+      this.localRoomPrices().map((rp) => [
+        rp.tempId,
+        rp.pricingMode === 'PER_OCCUPANCY',
+      ])
+    )
+  );
+
+  readonly pricingModeOptions: { label: string; value: PricingMode }[] = [
+    { label: 'Per room', value: 'PER_ROOM' },
+    { label: 'Per occupancy', value: 'PER_OCCUPANCY' },
+  ];
 
   constructor() {
     this.step1Form.controls.hotelId.valueChanges
@@ -515,5 +588,105 @@ export class ContractFormComponent {
         rp.tempId === tempId ? { ...rp, [field]: value } : rp
       )
     );
+  }
+
+  onPricingModeChanged(tempId: string, newMode: PricingMode): void {
+    this.localRoomPrices.update((prices) =>
+      prices.map((rp) => {
+        if (rp.tempId !== tempId) return rp;
+        return {
+          ...rp,
+          pricingMode: newMode,
+          pricePerNight: newMode === 'PER_OCCUPANCY' ? null : rp.pricePerNight,
+        };
+      })
+    );
+  }
+
+  addOccupancyRate(roomPriceTempId: string): void {
+    const roomPrice = this.localRoomPrices().find(
+      (rp) => rp.tempId === roomPriceTempId
+    );
+    if (!roomPrice) return;
+
+    const newRate: LocalOccupancyRate = {
+      numAdults: 1,
+      numChildren: 0,
+      ratesPerAge: {},
+    };
+
+    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', [
+      ...roomPrice.occupancyRates,
+      newRate,
+    ]);
+  }
+
+  updateOccupancyRateField<K extends keyof LocalOccupancyRate>(
+    roomPriceTempId: string,
+    rateIndex: number,
+    field: K,
+    value: LocalOccupancyRate[K]
+  ): void {
+    const roomPrice = this.localRoomPrices().find(
+      (rp) => rp.tempId === roomPriceTempId
+    );
+    if (!roomPrice) return;
+
+    const updatedRates = roomPrice.occupancyRates.map((rate, index) =>
+      index === rateIndex ? { ...rate, [field]: value } : rate
+    );
+
+    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', updatedRates);
+  }
+
+  updateOccupancyRateAgeValue(
+    roomPriceTempId: string,
+    rateIndex: number,
+    ageCategoryId: string,
+    value: number
+  ): void {
+    const roomPrice = this.localRoomPrices().find(
+      (rp) => rp.tempId === roomPriceTempId
+    );
+    if (!roomPrice) return;
+
+    const rate = roomPrice.occupancyRates[rateIndex];
+    if (!rate) return;
+
+    const updatedRatesPerAge = { ...rate.ratesPerAge, [ageCategoryId]: value };
+
+    this.updateOccupancyRateField(
+      roomPriceTempId,
+      rateIndex,
+      'ratesPerAge',
+      updatedRatesPerAge
+    );
+  }
+
+  removeOccupancyRate(roomPriceTempId: string, rateIndex: number): void {
+    const roomPrice = this.localRoomPrices().find(
+      (rp) => rp.tempId === roomPriceTempId
+    );
+    if (!roomPrice) return;
+
+    const updatedRates = roomPrice.occupancyRates.filter(
+      (_, index) => index !== rateIndex
+    );
+
+    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', updatedRates);
+  }
+
+  private roomTypeMaxPax(roomTypeId: string): number {
+    const roomType = this.roomTypes().find((rt) => rt.id === roomTypeId);
+    if (!roomType?.capacities) return 0;
+    return roomType.capacities.reduce((sum, c) => sum + c.maxPax, 0);
+  }
+
+  isOccupancyOverCapacity(
+    roomTypeId: string,
+    rate: LocalOccupancyRate
+  ): boolean {
+    const totalPax = rate.numAdults + rate.numChildren;
+    return totalPax > this.roomTypeMaxPax(roomTypeId);
   }
 }
