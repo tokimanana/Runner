@@ -1,21 +1,30 @@
 <div class="contract-form-page">
   <ng-template #stepActions let-activateCallback="activateCallback">
     <div class="step-actions">
-      @if (activeStep() > 1) {
-        <p-button
-          label="Back"
-          [text]="true"
-          (onClick)="goBack(activateCallback)"
-        />
-      }
-      <p-button label="Next" (onClick)="goNext(activateCallback)" />
+      <p-button
+        label="Cancel"
+        [text]="true"
+        severity="danger"
+        (onClick)="cancelWizard()"
+      />
+      <div class="step-actions-nav">
+        @if (activeStep() > 1) {
+          <p-button
+            label="Back"
+            [text]="true"
+            (onClick)="goBack(activateCallback)"
+          />
+        }
+        <p-button label="Next" (onClick)="goNext(activateCallback)" />
+      </div>
     </div>
   </ng-template>
 
-  <p-stepper [(value)]="activeStep">
+  <p-stepper [(value)]="activeStep" [linear]="true">
     <p-step-list>
       <p-step [value]="1">Contract Info</p-step>
       <p-step [value]="2">Periods</p-step>
+      <p-step [value]="3">Room Prices</p-step>
     </p-step-list>
 
     <p-step-panels>
@@ -104,7 +113,11 @@
             </div>
 
             @if (draftPeriods().length > 0) {
-              <p-table [value]="draftPeriods()" dataKey="tempId">
+              <p-table
+                [value]="draftPeriods()"
+                dataKey="tempId"
+                [rowTrackBy]="trackByTempId"
+              >
                 <ng-template pTemplate="header">
                   <tr>
                     <th>Name</th>
@@ -134,6 +147,7 @@
                         "
                         dateFormat="dd/mm/yy"
                         styleClass="period-table-date"
+                        appendTo="body"
                       />
                     </td>
                     <td>
@@ -144,6 +158,7 @@
                         "
                         dateFormat="dd/mm/yy"
                         styleClass="period-table-date"
+                        appendTo="body"
                       />
                     </td>
                     <td>
@@ -161,6 +176,7 @@
                         "
                         placeholder="Meal plan"
                         styleClass="period-table-select"
+                        appendTo="body"
                       />
                     </td>
                     <td>
@@ -195,10 +211,18 @@
               </p-table>
             }
 
+            @if (draftConfirmError()) {
+              <small class="error">{{ draftConfirmError() }}</small>
+            }
+
             @if (localPeriods().length === 0) {
               <p class="empty-state">No periods confirmed yet.</p>
             } @else {
-              <p-table [value]="localPeriods()" dataKey="tempId">
+              <p-table
+                [value]="sortedLocalPeriods()"
+                dataKey="tempId"
+                [rowTrackBy]="trackByTempId"
+              >
                 <ng-template pTemplate="header">
                   <tr>
                     <th>Name</th>
@@ -242,6 +266,88 @@
           />
         </ng-template>
       </p-step-panel>
+
+      <!-- Step 3 -->
+      <p-step-panel [value]="3">
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="room-prices-step">
+            <div class="field">
+              <label for="roomTypesSelect">Room Types</label>
+              <p-multiSelect
+                inputId="roomTypesSelect"
+                [options]="roomTypes()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select room types to price"
+                [ngModel]="selectedRoomTypeIds()"
+                (ngModelChange)="onRoomTypesSelected($event)"
+              />
+            </div>
+
+            <p-accordion>
+              @for (
+                group of periodRoomPriceGroups();
+                track group.period.tempId
+              ) {
+                <p-accordion-panel [value]="group.period.tempId">
+                  <p-accordion-header>
+                    {{ group.period.name }} ({{ group.roomPrices.length }} room
+                    types)
+                  </p-accordion-header>
+                  <p-accordion-content>
+                    <p-table
+                      [value]="group.roomPrices"
+                      dataKey="tempId"
+                      [rowTrackBy]="trackByTempId"
+                    >
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th>Room Type</th>
+                          <th>Price / Night</th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-rp>
+                        <tr>
+                          <td>{{ rp.roomTypeName }}</td>
+                          <td>
+                            <p-inputNumber
+                              [ngModel]="rp.pricePerNight"
+                              (ngModelChange)="
+                                updateRoomPriceField(
+                                  rp.tempId,
+                                  'pricePerNight',
+                                  $event
+                                )
+                              "
+                              [min]="0"
+                            />
+                          </td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </p-accordion-content>
+                </p-accordion-panel>
+              }
+            </p-accordion>
+
+            @if (roomPriceStepError()) {
+              <small class="error">
+                Select room types and set a price for every period before
+                continuing.
+              </small>
+            }
+          </div>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
     </p-step-panels>
   </p-stepper>
 </div>
+
+<p-confirmDialog />
