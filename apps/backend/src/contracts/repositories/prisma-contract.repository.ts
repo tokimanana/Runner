@@ -109,6 +109,14 @@ export class PrismaContractRepository extends ContractRepository {
             },
             mealPlanSupplements: true,
             stopSalesDates: true,
+            baseRates: {
+              include: {
+                roomType: { select: { id: true, name: true, code: true } },
+              },
+            },
+            agePolicies: {
+              include: { ageCategory: true },
+            },
           },
         },
       },

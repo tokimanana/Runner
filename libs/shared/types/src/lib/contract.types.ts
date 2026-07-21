@@ -1,7 +1,7 @@
 import { SeasonPeriod } from './season.types';
 
 export type PricingMode = 'PER_ROOM' | 'PER_OCCUPANCY';
-
+export type SharingType = 'WITH_PARENTS' | 'SEPARATE_ROOM';
 export interface Contract {
   id: string;
   name: string;
@@ -28,17 +28,19 @@ export interface ContractDto {
 export interface ContractPeriod {
   id: string;
   contractId: string;
-  seasonPeriodId?: string | null; // optionnel — classification/reporting
+  seasonPeriodId?: string | null;
   name: string;
-  startDate: string; // source de vérité contractuelle
+  startDate: string;
   endDate: string;
   baseMealPlanId: string;
   minStay?: number;
-  seasonPeriod?: SeasonPeriod; // pour affichage du nom de saison
+  seasonPeriod?: SeasonPeriod;
   baseMealPlan?: { id: string; code: string; name: string };
   roomPrices?: RoomPrice[];
   mealPlanSupplements?: MealPlanSupplement[];
   stopSalesDates?: StopSalesDate[];
+  baseRates?: BaseRate[];
+  agePolicies?: AgePolicy[];
 }
 
 export interface ContractPeriodDto {
@@ -104,4 +106,23 @@ export interface StopSalesDate {
 export interface ContractFilters {
   hotelId?: string;
   marketId?: string;
+}
+
+export interface BaseRate {
+  id: string;
+  contractPeriodId: string;
+  roomTypeId: string;
+  halfDouble: number;
+  single: number;
+  thirdPersonAdult: number | null;
+  roomType?: { id: string; name: string; code: string };
+}
+
+export interface AgePolicy {
+  id: string;
+  contractPeriodId: string;
+  ageCategoryId: string;
+  sharingType: SharingType;
+  value: number;
+  ageCategory?: { id: string; name: string; minAge: number; maxAge: number };
 }
