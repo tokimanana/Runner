@@ -1,7 +1,10 @@
 import { RepositoryResult } from '@backend/common/repository.types';
 import {
+  AgePolicy,
+  BaseRate,
   ContractPeriod,
   MealPlanSupplement,
+  OccupancyGuidance,
   Prisma,
   RoomPrice,
   SeasonPeriod,
@@ -12,11 +15,17 @@ import {
   Contract as SharedContract,
 } from '@runner/shared/types';
 import {
+  AgePolicyCreateData,
+  AgePolicyUpdateData,
+  BaseRateCreateData,
+  BaseRateUpdateData,
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
   MealPlanSupplementCreateData,
   MealPlanSupplementUpdateData,
+  OccupancyGuidanceCreateData,
+  OccupancyGuidanceUpdateData,
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
@@ -123,4 +132,49 @@ export abstract class ContractRepository {
   ): Promise<StopSalesDate>;
 
   abstract removeStopSalesDate(id: string): Promise<RepositoryResult>;
+
+  abstract createBaseRate(
+    data: BaseRateCreateData,
+    contractPeriodId: string,
+  ): Promise<BaseRate>;
+
+  abstract findBaseRatesByPeriod(contractPeriodId: string): Promise<BaseRate[]>;
+
+  abstract updateBaseRate(
+    id: string,
+    data: BaseRateUpdateData,
+  ): Promise<BaseRate>;
+
+  abstract removeBaseRate(id: string): Promise<RepositoryResult>;
+
+  abstract createAgePolicy(
+    data: AgePolicyCreateData,
+    contractPeriodId: string,
+  ): Promise<AgePolicy>;
+
+  abstract findAgePoliciesByPeriod(
+    contractPeriodId: string,
+  ): Promise<AgePolicy[]>;
+
+  abstract updateAgePolicy(
+    id: string,
+    data: AgePolicyUpdateData,
+  ): Promise<AgePolicy>;
+
+  abstract removeAgePolicy(id: string): Promise<RepositoryResult>;
+
+  abstract createOccupancyGuidance(
+    data: OccupancyGuidanceCreateData,
+  ): Promise<OccupancyGuidance>;
+
+  abstract findOccupancyGuidanceByRoomType(
+    roomTypeId: string,
+  ): Promise<OccupancyGuidance[]>;
+
+  abstract updateOccupancyGuidance(
+    id: string,
+    data: OccupancyGuidanceUpdateData,
+  ): Promise<OccupancyGuidance>;
+
+  abstract removeOccupancyGuidance(id: string): Promise<RepositoryResult>;
 }
