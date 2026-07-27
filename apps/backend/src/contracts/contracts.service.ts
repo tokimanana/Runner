@@ -14,8 +14,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AgePolicy,
+  BaseRate,
   ContractPeriod,
   MealPlanSupplement,
+  OccupancyGuidance,
   RoomPrice,
   StopSalesDate,
 } from '@prisma/client';
@@ -25,14 +28,20 @@ import {
   Contract as SharedContract,
 } from '@runner/shared/types';
 import { ContractQuery, OccupancyRateCreateData } from './contracts.types';
+import { CreateAgePolicyDto } from './dto/create-age-policy.dto';
+import { CreateBaseRateDto } from './dto/create-base-rate.dto';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
+import { CreateOccupancyGuidanceDto } from './dto/create-occupancy-guidance.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
 import { CreateStopSalesDateDto } from './dto/create-stop-sales-date.dto';
+import { UpdateAgePolicyDto } from './dto/update-age-policy.dto';
+import { UpdateBaseRateDto } from './dto/update-base-rate.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { UpdateMealPlanSupplementDto } from './dto/update-meal-plan-supplement.dto';
+import { UpdateOccupancyGuidanceDto } from './dto/update-occupancy-guidance.dto';
 import { UpdateRoomPriceDto } from './dto/update-room-price.dto';
 import { ContractRepository } from './repositories/contract.repository';
 
@@ -250,6 +259,7 @@ export class ContractsService {
         {
           mealPlanId: dto.mealPlanId,
           occupancyRates: dto.occupancyRates,
+          billingUnit: dto.billingUnit,
         },
         period.id,
       );
@@ -269,6 +279,7 @@ export class ContractsService {
       return await this.contractRepository.updateMealPlanSupplement(id, {
         mealPlanId: dto.mealPlanId,
         occupancyRates: dto.occupancyRates,
+        billingUnit: dto.billingUnit,
       });
     } catch (error) {
       this.handleRepositoryError(error, {
@@ -413,5 +424,131 @@ export class ContractsService {
       }
     }
     throw error;
+  }
+
+  // ─── BaseRate ────────────────────────────────────────────────
+
+  async createBaseRate(
+    dto: CreateBaseRateDto,
+    periodId: string,
+    contractId: string,
+  ): Promise<BaseRate> {
+    await this.getPeriodOrThrow(periodId, contractId);
+    try {
+      return await this.contractRepository.createBaseRate(dto, periodId);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A base rate already exists for this room type in this period`,
+        [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+      });
+    }
+  }
+
+  async findBaseRatesByPeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<BaseRate[]> {
+    await this.getPeriodOrThrow(periodId, contractId);
+    return this.contractRepository.findBaseRatesByPeriod(periodId);
+  }
+
+  async updateBaseRate(id: string, dto: UpdateBaseRateDto): Promise<BaseRate> {
+    try {
+      return await this.contractRepository.updateBaseRate(id, dto);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.NOT_FOUND]: `Base rate ${id} not found`,
+      });
+    }
+  }
+
+  async removeBaseRate(id: string): Promise<void> {
+    const result = await this.contractRepository.removeBaseRate(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Base rate ${id} not found`);
+  }
+
+  // ─── AgePolicy ───────────────────────────────────────────────
+
+  async createAgePolicy(
+    dto: CreateAgePolicyDto,
+    periodId: string,
+    contractId: string,
+  ): Promise<AgePolicy> {
+    await this.getPeriodOrThrow(periodId, contractId);
+    try {
+      return await this.contractRepository.createAgePolicy(dto, periodId);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `An age policy already exists for this age category and sharing type in this period`,
+        [RepositoryResult.NOT_FOUND]: `Age category ${dto.ageCategoryId} not found`,
+      });
+    }
+  }
+
+  async findAgePoliciesByPeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<AgePolicy[]> {
+    await this.getPeriodOrThrow(periodId, contractId);
+    return this.contractRepository.findAgePoliciesByPeriod(periodId);
+  }
+
+  async updateAgePolicy(
+    id: string,
+    dto: UpdateAgePolicyDto,
+  ): Promise<AgePolicy> {
+    try {
+      return await this.contractRepository.updateAgePolicy(id, dto);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.NOT_FOUND]: `Age policy ${id} not found`,
+      });
+    }
+  }
+
+  async removeAgePolicy(id: string): Promise<void> {
+    const result = await this.contractRepository.removeAgePolicy(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Age policy ${id} not found`);
+  }
+
+  // ─── OccupancyGuidance ───────────────────────────────────────
+
+  async createOccupancyGuidance(
+    dto: CreateOccupancyGuidanceDto,
+  ): Promise<OccupancyGuidance> {
+    try {
+      return await this.contractRepository.createOccupancyGuidance(dto);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+      });
+    }
+  }
+
+  async findOccupancyGuidanceByRoomType(
+    roomTypeId: string,
+  ): Promise<OccupancyGuidance[]> {
+    return this.contractRepository.findOccupancyGuidanceByRoomType(roomTypeId);
+  }
+
+  async updateOccupancyGuidance(
+    id: string,
+    dto: UpdateOccupancyGuidanceDto,
+  ): Promise<OccupancyGuidance> {
+    try {
+      return await this.contractRepository.updateOccupancyGuidance(id, dto);
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.NOT_FOUND]: `Occupancy guidance ${id} not found`,
+      });
+    }
+  }
+
+  async removeOccupancyGuidance(id: string): Promise<void> {
+    const result = await this.contractRepository.removeOccupancyGuidance(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Occupancy guidance ${id} not found`);
   }
 }

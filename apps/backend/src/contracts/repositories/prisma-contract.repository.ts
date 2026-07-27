@@ -6,8 +6,11 @@ import { serializeDates } from '@backend/common/serialize-dates.util';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import {
+  AgePolicy,
+  BaseRate,
   ContractPeriod,
   MealPlanSupplement,
+  OccupancyGuidance,
   Prisma,
   RoomPrice,
   SeasonPeriod,
@@ -19,11 +22,17 @@ import {
   Contract as SharedContract,
 } from '@runner/shared/types';
 import {
+  AgePolicyCreateData,
+  AgePolicyUpdateData,
+  BaseRateCreateData,
+  BaseRateUpdateData,
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
   MealPlanSupplementCreateData,
   MealPlanSupplementUpdateData,
+  OccupancyGuidanceCreateData,
+  OccupancyGuidanceUpdateData,
   OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
@@ -420,6 +429,186 @@ export class PrismaContractRepository extends ContractRepository {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
       }
+      throw error;
+    }
+  }
+
+  // ─── BaseRate ────────────────────────────────────────────────
+
+  async createBaseRate(
+    data: BaseRateCreateData,
+    contractPeriodId: string,
+  ): Promise<BaseRate> {
+    try {
+      return await this.prisma.baseRate.create({
+        data: { ...data, contractPeriodId },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async findBaseRatesByPeriod(contractPeriodId: string): Promise<BaseRate[]> {
+    return this.prisma.baseRate.findMany({
+      where: { contractPeriodId },
+    });
+  }
+
+  async updateBaseRate(
+    id: string,
+    data: BaseRateUpdateData,
+  ): Promise<BaseRate> {
+    try {
+      return await this.prisma.baseRate.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async removeBaseRate(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.baseRate.delete({ where: { id } });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
+      throw error;
+    }
+  }
+
+  // ─── AgePolicy ───────────────────────────────────────────────
+
+  async createAgePolicy(
+    data: AgePolicyCreateData,
+    contractPeriodId: string,
+  ): Promise<AgePolicy> {
+    try {
+      return await this.prisma.agePolicy.create({
+        data: { ...data, contractPeriodId },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async findAgePoliciesByPeriod(
+    contractPeriodId: string,
+  ): Promise<AgePolicy[]> {
+    return this.prisma.agePolicy.findMany({
+      where: { contractPeriodId },
+    });
+  }
+
+  async updateAgePolicy(
+    id: string,
+    data: AgePolicyUpdateData,
+  ): Promise<AgePolicy> {
+    try {
+      return await this.prisma.agePolicy.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async removeAgePolicy(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.agePolicy.delete({ where: { id } });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
+      throw error;
+    }
+  }
+
+  // ─── OccupancyGuidance ───────────────────────────────────────
+
+  async createOccupancyGuidance(
+    data: OccupancyGuidanceCreateData,
+  ): Promise<OccupancyGuidance> {
+    try {
+      return await this.prisma.occupancyGuidance.create({ data });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async findOccupancyGuidanceByRoomType(
+    roomTypeId: string,
+  ): Promise<OccupancyGuidance[]> {
+    return this.prisma.occupancyGuidance.findMany({
+      where: { roomTypeId },
+    });
+  }
+
+  async updateOccupancyGuidance(
+    id: string,
+    data: OccupancyGuidanceUpdateData,
+  ): Promise<OccupancyGuidance> {
+    try {
+      return await this.prisma.occupancyGuidance.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
+      throw error;
+    }
+  }
+
+  async removeOccupancyGuidance(id: string): Promise<RepositoryResult> {
+    try {
+      await this.prisma.occupancyGuidance.delete({ where: { id } });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
       throw error;
     }
   }
