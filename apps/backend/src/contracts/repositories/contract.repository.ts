@@ -1,9 +1,19 @@
 import { RepositoryResult } from '@backend/common/repository.types';
-import { Contract, ContractPeriod, SeasonPeriod } from '@prisma/client';
+import {
+  Contract,
+  ContractPeriod,
+  RoomPrice,
+  SeasonPeriod,
+} from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
-import { ContractPeriodCreateData, ContractQuery } from '../contracts.types';
+import {
+  ContractPeriodCreateData,
+  ContractPeriodUpdateData,
+  ContractQuery,
+  RoomPriceCreateData,
+  RoomPriceUpdateData,
+} from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
-import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 
 export abstract class ContractRepository {
@@ -49,7 +59,7 @@ export abstract class ContractRepository {
 
   abstract updatePeriod(
     periodId: string,
-    dto: UpdateContractPeriodDto,
+    data: ContractPeriodUpdateData,
     contractId: string,
   ): Promise<ContractPeriod>;
 
@@ -64,4 +74,16 @@ export abstract class ContractRepository {
     endDate: Date,
     excludeId?: string,
   ): Promise<ContractPeriod | null>;
+
+  abstract createRoomPrice(
+    dto: RoomPriceCreateData,
+    contractPeriodId: string,
+  ): Promise<RoomPrice>;
+
+  abstract updateRoomPrice(
+    id: string,
+    dto: RoomPriceUpdateData,
+  ): Promise<RoomPrice>;
+
+  abstract removeRoomPrice(id: string): Promise<RepositoryResult>;
 }

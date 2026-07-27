@@ -34,7 +34,6 @@ export class CreateRoomPriceDto {
   @IsEnum(PricingMode)
   pricingMode: PricingMode;
 
-  @IsOptional()
   @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
   @IsNumber()
   @Min(0)

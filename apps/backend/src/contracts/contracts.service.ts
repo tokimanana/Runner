@@ -12,13 +12,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Contract, ContractPeriod } from '@prisma/client';
+import { Contract, ContractPeriod, RoomPrice } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { ContractQuery } from './contracts.types';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { CreateRoomPriceDto } from './dto/create-room-price.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { UpdateRoomPriceDto } from './dto/update-room-price.dto';
 import { ContractRepository } from './repositories/contract.repository';
 
 @Injectable()
@@ -94,14 +96,10 @@ export class ContractsService {
       );
     }
 
-    await this.validateNoOverlap(
-      contractId,
-      new Date(dto.startDate),
-      new Date(dto.endDate),
-    );
-
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
+
+    await this.validateNoOverlap(contractId, startDate, endDate);
 
     try {
       return await this.contractRepository.createPeriod(
@@ -130,27 +128,32 @@ export class ContractsService {
     dto: UpdateContractPeriodDto,
     contractId: string,
   ): Promise<ContractPeriod> {
-    if (dto.startDate || dto.endDate) {
-      const current = await this.contractRepository.findContractPeriod(
-        periodId,
-        contractId,
-      );
-      if (!current) {
-        throw new NotFoundException(`Contract Period ${periodId} not found`);
-      }
-
-      const startDate = dto.startDate
-        ? new Date(dto.startDate)
-        : current.startDate;
-      const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
-
-      await this.validateNoOverlap(contractId, startDate, endDate, periodId);
+    const current = await this.contractRepository.findContractPeriod(
+      periodId,
+      contractId,
+    );
+    if (!current) {
+      throw new NotFoundException(`Contract Period ${periodId} not found`);
     }
+
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : current.startDate;
+    const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
+
+    await this.validateNoOverlap(contractId, startDate, endDate, periodId);
 
     try {
       return await this.contractRepository.updatePeriod(
         periodId,
-        dto,
+        {
+          seasonPeriodId: dto.seasonPeriodId,
+          name: dto.name,
+          startDate,
+          endDate,
+          baseMealPlanId: dto.baseMealPlanId,
+          minStay: dto.minStay,
+        },
         contractId,
       );
     } catch (error) {
@@ -194,5 +197,68 @@ export class ContractsService {
         `Period overlaps with existing period "${overlapping.name}"`,
       );
     }
+  }
+
+  async createRoomPrice(
+    dto: CreateRoomPriceDto,
+    periodId: string,
+    contractId: string,
+  ): Promise<RoomPrice> {
+    const period = await this.contractRepository.findContractPeriod(
+      periodId,
+      contractId,
+    );
+    if (!period) {
+      throw new NotFoundException(`Contract Period ${periodId} not found`);
+    }
+
+    try {
+      return await this.contractRepository.createRoomPrice(
+        {
+          roomTypeId: dto.roomTypeId,
+          pricingMode: dto.pricingMode,
+          pricePerNight: dto.pricePerNight,
+        },
+        periodId,
+      );
+    } catch (error) {
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(
+            `A room price already exists for this room type in this period`,
+          );
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(`Room type ${dto.roomTypeId} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async updateRoomPrice(
+    id: string,
+    dto: UpdateRoomPriceDto,
+  ): Promise<RoomPrice> {
+    try {
+      return await this.contractRepository.updateRoomPrice(id, {
+        roomTypeId: dto.roomTypeId,
+        pricingMode: dto.pricingMode,
+        pricePerNight: dto.pricePerNight,
+      });
+    } catch (error) {
+      if (
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
+        throw new ConflictException(
+          `A room price already exists for this room type in this period`,
+        );
+      throw error;
+    }
+  }
+
+  async removeRoomPrice(id: string): Promise<void> {
+    const result = await this.contractRepository.removeRoomPrice(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Room price ${id} not found`);
   }
 }
