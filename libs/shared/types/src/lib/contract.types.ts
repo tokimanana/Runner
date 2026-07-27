@@ -54,7 +54,7 @@ export interface OccupancyRate {
   roomPriceId: string;
   numAdults: number;
   numChildren: number;
-  ratesPerAge: Record<string, { rate: number; order: number }>;
+  ratesPerAge: Record<string, number>;
   totalRate: number;
 }
 
@@ -78,8 +78,7 @@ export interface RoomPriceDto {
 export interface OccupancyRateDto {
   numAdults: number;
   numChildren: number;
-  ratesPerAge: Record<string, { rate: number; order: number }>;
-  totalRate: number;
+  ratesPerAge: Record<string, number>;
 }
 
 export interface MealPlanSupplement {
