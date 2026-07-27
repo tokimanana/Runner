@@ -1,5 +1,5 @@
 .contract-form-page {
-  max-width: 640px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 1.5rem 0;
 
@@ -26,9 +26,45 @@
     }
   }
 
+  .periods-step {
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .periods-toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+
+      .field {
+        min-width: 260px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        label {
+          font-weight: 600;
+        }
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--p-text-muted-color);
+      padding: 2rem 0;
+    }
+
+    .error {
+      color: var(--p-red-500);
+      font-size: 0.85rem;
+    }
+  }
+
   .step-actions {
     display: flex;
     justify-content: space-between;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
   }
 }

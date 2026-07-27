@@ -15,9 +15,11 @@
   <p-stepper [(value)]="activeStep">
     <p-step-list>
       <p-step [value]="1">Contract Info</p-step>
+      <p-step [value]="2">Periods</p-step>
     </p-step-list>
 
     <p-step-panels>
+      <!-- Step 1 -->
       <p-step-panel [value]="1">
         <ng-template #content let-activateCallback="activateCallback">
           <form [formGroup]="step1Form" class="step1-form">
@@ -31,7 +33,6 @@
                 <small class="error">Name is required</small>
               }
             </div>
-
             <div class="field">
               <label for="hotelId">Hotel</label>
               <p-select
@@ -43,7 +44,6 @@
                 placeholder="Select a hotel"
               />
             </div>
-
             <div class="field">
               <label for="marketId">Market</label>
               <p-select
@@ -55,7 +55,6 @@
                 placeholder="Select a market"
               />
             </div>
-
             <div class="field">
               <label for="currencyId">Currency</label>
               <p-select
@@ -68,6 +67,172 @@
               />
             </div>
           </form>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
+
+      <!-- Step 2 -->
+      <p-step-panel [value]="2">
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="periods-step">
+            <div class="periods-toolbar">
+              <div class="field">
+                <label for="seasonSelect">Season</label>
+                <p-select
+                  inputId="seasonSelect"
+                  [options]="seasons()"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select a season to generate periods"
+                  [showClear]="true"
+                  [ngModel]="selectedSeasonId()"
+                  (ngModelChange)="onSeasonSelected($event)"
+                />
+              </div>
+              <p-button
+                label="Add Period"
+                icon="pi pi-plus"
+                [text]="true"
+                (onClick)="addManualDraftPeriod()"
+              />
+            </div>
+
+            @if (draftPeriods().length > 0) {
+              <p-table [value]="draftPeriods()" dataKey="tempId">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Name</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Base Meal Plan</th>
+                    <th>Min Stay</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-draft>
+                  <tr>
+                    <td>
+                      <input
+                        pInputText
+                        [ngModel]="draft.name"
+                        (ngModelChange)="
+                          updateDraftField(draft.tempId, 'name', $event)
+                        "
+                      />
+                    </td>
+                    <td>
+                      <p-datepicker
+                        [ngModel]="draft.startDate"
+                        (ngModelChange)="
+                          updateDraftField(draft.tempId, 'startDate', $event)
+                        "
+                        dateFormat="dd/mm/yy"
+                        styleClass="period-table-date"
+                      />
+                    </td>
+                    <td>
+                      <p-datepicker
+                        [ngModel]="draft.endDate"
+                        (ngModelChange)="
+                          updateDraftField(draft.tempId, 'endDate', $event)
+                        "
+                        dateFormat="dd/mm/yy"
+                        styleClass="period-table-date"
+                      />
+                    </td>
+                    <td>
+                      <p-select
+                        [options]="mealPlans()"
+                        optionLabel="name"
+                        optionValue="id"
+                        [ngModel]="draft.baseMealPlanId"
+                        (ngModelChange)="
+                          updateDraftField(
+                            draft.tempId,
+                            'baseMealPlanId',
+                            $event
+                          )
+                        "
+                        placeholder="Meal plan"
+                        styleClass="period-table-select"
+                      />
+                    </td>
+                    <td>
+                      <p-inputNumber
+                        [ngModel]="draft.minStay ?? null"
+                        (ngModelChange)="
+                          updateDraftField(draft.tempId, 'minStay', $event)
+                        "
+                        [min]="1"
+                      />
+                    </td>
+                    <td>
+                      <p-button
+                        icon="pi pi-check"
+                        [text]="true"
+                        [rounded]="true"
+                        size="small"
+                        severity="success"
+                        (onClick)="confirmDraftPeriod(draft.tempId)"
+                      />
+                      <p-button
+                        icon="pi pi-times"
+                        [text]="true"
+                        [rounded]="true"
+                        size="small"
+                        severity="danger"
+                        (onClick)="cancelDraftPeriod(draft.tempId)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+
+            @if (localPeriods().length === 0) {
+              <p class="empty-state">No periods confirmed yet.</p>
+            } @else {
+              <p-table [value]="localPeriods()" dataKey="tempId">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Name</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th></th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-period>
+                  <tr>
+                    <td>{{ period.name }}</td>
+                    <td>{{ period.startDate | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ period.endDate | date: 'dd/MM/yyyy' }}</td>
+                    <td>
+                      <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        [rounded]="true"
+                        size="small"
+                        severity="danger"
+                        (onClick)="removeConfirmedPeriod(period.tempId)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+
+            @if (periodStepError()) {
+              <small class="error"
+                >Add at least one confirmed period before continuing.</small
+              >
+            }
+          </div>
 
           <ng-container
             *ngTemplateOutlet="
