@@ -2,6 +2,7 @@ import {
   RepositoryException,
   RepositoryResult,
 } from '@backend/common/repository.types';
+import { serializeDates } from '@backend/common/serialize-dates.util';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import {
@@ -73,7 +74,7 @@ export class PrismaContractRepository extends ContractRepository {
     const mappedData = data.map((contract) => this.mapToContract(contract));
 
     return {
-      data: mappedData,
+      data: serializeDates(mappedData),
       total,
       limit,
       offset,
@@ -108,7 +109,7 @@ export class PrismaContractRepository extends ContractRepository {
       return null;
     }
 
-    return this.mapToContract(contract);
+    return serializeDates(this.mapToContract(contract));
   }
 
   async create(
@@ -120,7 +121,7 @@ export class PrismaContractRepository extends ContractRepository {
         data: { ...dto, tourOperatorId },
         include: CONTRACT_INCLUDE,
       });
-      return this.mapToContract(createdContract);
+      return serializeDates(this.mapToContract(createdContract));
     } catch (error) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -142,7 +143,7 @@ export class PrismaContractRepository extends ContractRepository {
         include: CONTRACT_INCLUDE,
         data: dto,
       });
-      return this.mapToContract(updatedContract);
+      return serializeDates(this.mapToContract(updatedContract));
     } catch (error) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -423,17 +424,18 @@ export class PrismaContractRepository extends ContractRepository {
     }
   }
 
-  private mapToContract(
-    contract: Prisma.ContractGetPayload<{
-      include: typeof CONTRACT_INCLUDE;
-    }>,
-  ): SharedContract {
-    const { _count, createdAt, updatedAt, ...rest } = contract;
+  private mapToContract<
+    T extends Prisma.ContractGetPayload<{ include: typeof CONTRACT_INCLUDE }>,
+  >(
+    contract: T,
+  ): Omit<SharedContract, 'createdAt' | 'updatedAt'> & {
+    createdAt: Date;
+    updatedAt: Date;
+  } {
+    const { _count, ...rest } = contract;
     return {
       ...rest,
       periodsCount: _count.periods,
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
     };
   }
 }

@@ -1748,12 +1748,12 @@ une question de "cohérence de typage".
 
 ## Scope élargi — méthode par méthode
 
-| Méthode | Besoin réel | Justification |
-| --- | --- | --- |
-| `findAll` | `hotel`, `market`, `currency`, `periodsCount` | ✅ déjà fait |
-| `findOne` | `hotel`, `market`, `currency` | écran détail/édition — `periods` chargé en entier séparément, `periodsCount` non nécessaire ici (redondant avec `periods.length`) |
-| `create` | `hotel`, `market`, `currency`, `periodsCount` (= 0 à la création) | réponse poussée directement dans `_contracts$` frontend, doit matcher la forme de `findAll` |
-| `update` | `hotel`, `market`, `currency`, `periodsCount` | même raison que `create` |
+| Méthode   | Besoin réel                                                       | Justification                                                                                                                     |
+| --------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `findAll` | `hotel`, `market`, `currency`, `periodsCount`                     | ✅ déjà fait                                                                                                                      |
+| `findOne` | `hotel`, `market`, `currency`                                     | écran détail/édition — `periods` chargé en entier séparément, `periodsCount` non nécessaire ici (redondant avec `periods.length`) |
+| `create`  | `hotel`, `market`, `currency`, `periodsCount` (= 0 à la création) | réponse poussée directement dans `_contracts$` frontend, doit matcher la forme de `findAll`                                       |
+| `update`  | `hotel`, `market`, `currency`, `periodsCount`                     | même raison que `create`                                                                                                          |
 
 ## Modifications nécessaires
 
@@ -1776,6 +1776,298 @@ une question de "cohérence de typage".
   après un `create`/`update` local, sans `reload()`
 - ✅ `tsc --noEmit -p apps/backend/tsconfig.build.json` → 0 erreur
 - ✅ `tsc --noEmit -p apps/frontend/tsconfig.app.json` → 0 erreur
+
+---
+
+### S4-FIX-003 : Sérialisation récursive des dates dans le `ContractRepository`
+
+- **Type :** Fix
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `fix/S4-FIX-003-serialize-nested-dates`
+- **Commit :** `fix(common): add recursive date serialization utility`
+- **Status :** ✅ Done
+
+## Contexte
+
+Découvert pendant `S4-FIX-002`. `ContractsRepository.findOne()` charge
+`periods` en profondeur (`periods.seasonPeriod`, `periods.roomPrices.occupancyRates`,
+`periods.mealPlanSupplements`, `periods.stopSalesDates`) — contrairement à
+`findAll`/`create`/`update` qui restent au premier niveau via `CONTRACT_INCLUDE`.
+
+`mapToContract()` convertissait à l'origine `createdAt`/`updatedAt` du `Contract`
+lui-même. Les dates imbriquées plus profondément (`ContractPeriod.startDate/endDate`,
+`SeasonPeriod.startDate/endDate/createdAt/updatedAt`, et toute autre date
+présente dans les relations chargées) restaient des objets `Date` Prisma
+au lieu de `string` ISO — non conformes au type partagé `ContractPeriod`,
+`SeasonPeriod`, etc.
+
+**Solution retenue :** pas de mapping manuel niveau par niveau (fragile,
+oubli facile si un nouveau champ `Date` est ajouté plus tard) — une fonction
+utilitaire générique et récursive qui convertit toute instance `Date`
+rencontrée en `string` ISO, à n'importe quelle profondeur.
+
+## Décision révisée pendant l'implémentation — SRP entre `mapToContract` et `serializeDates`
+
+Le découpage initial gardait la conversion de dates _top-level_
+(`createdAt`/`updatedAt`) dans `mapToContract()`, et ne réservait
+`serializeDates()` qu'aux dates imbriquées (`periods.*`) dans `findOne`.
+
+Revu et corrigé : **`mapToContract()` ne doit plus toucher aux dates du tout.**
+
+- `mapToContract()` = mapping **structurel** Prisma → type partagé uniquement
+  (`_count.periods → periodsCount`, choix des champs exposés). Aucune
+  connaissance des dates.
+- `serializeDates()` = **seule** responsable de toute conversion `Date → string`,
+  à n'importe quelle profondeur, sur n'importe quel objet.
+
+Mélanger les deux dans `mapToContract()` aurait dupliqué la logique de
+conversion de dates à deux endroits (une fois pour le top-level dans
+`mapToContract`, une fois en profondeur via `serializeDates`) — violation
+du SRP identifiée et corrigée avant merge.
+
+### Conséquence sur le typage de `mapToContract()`
+
+Comme `mapToContract()` ne convertit plus `createdAt`/`updatedAt`, son type
+de retour ne peut plus être `SharedContract` (qui exige `string`) sans
+mentir sur ce qu'elle renvoie réellement (`Date`). Type de retour corrigé :
+
+```typescript
+private mapToContract<
+  T extends Prisma.ContractGetPayload<{ include: typeof CONTRACT_INCLUDE }>,
+>(
+  contract: T,
+): Omit<SharedContract, 'createdAt' | 'updatedAt'> & {
+  createdAt: Date;
+  updatedAt: Date;
+} {
+  const { _count, ...rest } = contract;
+  return {
+    ...rest,
+    periodsCount: _count.periods,
+  };
+}
+```
+
+Le générique `T extends ...` accepte tout payload Prisma qui a _au moins_
+la forme de `CONTRACT_INCLUDE`, y compris une version enrichie avec
+`periods` en profondeur (cas de `findOne`).
+
+### Conséquence sur le typage de `serializeDates()`
+
+`serializeDates<T>(value: T): T` mentait aussi : elle prétendait renvoyer
+le même type qu'en entrée, alors qu'elle transforme les `Date` en `string`.
+Introduction d'un mapped type récursif pour l'exprimer honnêtement :
+
+```typescript
+type DeepDateToString<T> = T extends Date
+  ? string
+  : T extends (infer U)[]
+    ? DeepDateToString<U>[]
+    : T extends object
+      ? { [K in keyof T]: DeepDateToString<T[K]> }
+      : T;
+
+export function serializeDates<T>(value: T): DeepDateToString<T> {
+  if (value instanceof Date) {
+    return value.toISOString() as DeepDateToString<T>;
+  }
+
+  if (Array.isArray(value)) {
+    return (value as unknown[]).map((item) =>
+      serializeDates(item)
+    ) as DeepDateToString<T>;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = serializeDates(val);
+    }
+    return result as DeepDateToString<T>;
+  }
+
+  return value as DeepDateToString<T>;
+}
+```
+
+Bénéfice concret : plus aucun cast (`as SharedContract` ou pire, un double
+cast `as unknown as SharedContract`) n'est nécessaire aux points d'appel.
+`serializeDates(this.mapToContract(contract))` s'infère naturellement vers
+un type compatible avec `SharedContract`, vérifié par TypeScript.
+
+**Points d'attention validés à l'implémentation :**
+
+- Ordre des `if` : `value instanceof Date` **avant** le test
+  `typeof value === 'object'`, car une `Date` est aussi un `object` en
+  JavaScript — l'inverser romprait la conversion.
+- `value !== null && typeof value === 'object'` protège contre le piège
+  classique `typeof null === 'object'`.
+- Fonction pure, sans mutation de l'objet d'origine — vérifié : `result`
+  est toujours un nouvel objet, jamais une réécriture de `value`.
+- `Array.isArray()` et `Object.entries()` sont typés par TypeScript avec
+  des signatures qui retournent `any`/`any[]` sur un paramètre générique —
+  cast explicite en `unknown[]` / `Record<string, unknown>` pour éviter
+  toute fuite de `any` dans `item`/`val` (règle stricte du projet : jamais
+  de `any`, même implicite).
+
+## Décision révisée — portée de `serializeDates` sur `findAll`/`create`/`update`
+
+Le scope initial excluait `findAll`/`create`/`update` de `serializeDates`,
+au nom d'un coût de parcours récursif jugé inutile sur des objets sans
+dates imbriquées (`mapToContract` seul suffisait, faisait déjà la
+conversion top-level).
+
+**Invalidé après revue :** cette justification perf reposait sur une
+prémisse fausse une fois que `mapToContract` a été dépouillée de toute
+logique de dates (voir décision ci-dessus). Sans cette étape,
+`findAll`/`create`/`update` renverraient des `Date` Prisma brutes sur
+`createdAt`/`updatedAt`, non conformes à `SharedContract`.
+
+Par ailleurs, l'argument de coût ne tenait pas à l'analyse : ces trois
+méthodes n'ont que 2 champs `Date` au premier niveau — un parcours
+récursif dessus est négligeable, pas une optimisation prématurée
+justifiée.
+
+**Décision finale :** `serializeDates` s'applique uniformément aux 4
+méthodes (`findAll`, `findOne`, `create`, `update`) — une seule source de
+vérité pour toute conversion de dates dans le repository, cohérent avec
+l'objectif initial de `serializeDates` (généraliser, pas traiter un cas
+isolé).
+
+## Application dans `prisma-contract.repository.ts`
+
+```typescript
+async findAll(
+  tourOperatorId: string,
+  query?: ContractQuery,
+): Promise<PaginatedResult<SharedContract>> {
+  const { limit, offset, hotelId, marketId } = query ?? {};
+
+  const where: Prisma.ContractWhereInput = {
+    tourOperatorId,
+    hotelId,
+    marketId,
+  };
+
+  const [data, total] = await this.prisma.$transaction([
+    this.prisma.contract.findMany({
+      where,
+      include: CONTRACT_INCLUDE,
+      take: limit,
+      skip: offset,
+    }),
+    this.prisma.contract.count({ where }),
+  ]);
+
+  const mappedData = data.map((contract) => this.mapToContract(contract));
+
+  return {
+    data: serializeDates(mappedData),
+    total,
+    limit,
+    offset,
+  };
+}
+
+async findOne(
+  id: string,
+  tourOperatorId: string,
+): Promise<SharedContract | null> {
+  const contract = await this.prisma.contract.findUnique({
+    where: { id, tourOperatorId },
+    include: {
+      ...CONTRACT_INCLUDE,
+      periods: {
+        include: {
+          seasonPeriod: true,
+          baseMealPlan: true,
+          roomPrices: {
+            include: {
+              occupancyRates: true,
+            },
+          },
+          mealPlanSupplements: true,
+          stopSalesDates: true,
+        },
+      },
+    },
+  });
+
+  if (!contract) {
+    return null;
+  }
+
+  return serializeDates(this.mapToContract(contract));
+}
+
+async create(
+  dto: CreateContractDto,
+  tourOperatorId: string,
+): Promise<SharedContract> {
+  try {
+    const createdContract = await this.prisma.contract.create({
+      data: { ...dto, tourOperatorId },
+      include: CONTRACT_INCLUDE,
+    });
+    return serializeDates(this.mapToContract(createdContract));
+  } catch (error) {
+    if (
+      error instanceof PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    )
+      throw new RepositoryException(RepositoryResult.CONFLICT);
+    throw error;
+  }
+}
+
+async update(
+  id: string,
+  dto: UpdateContractDto,
+  tourOperatorId: string,
+): Promise<SharedContract> {
+  try {
+    const updatedContract = await this.prisma.contract.update({
+      where: { id, tourOperatorId },
+      include: CONTRACT_INCLUDE,
+      data: dto,
+    });
+    return serializeDates(this.mapToContract(updatedContract));
+  } catch (error) {
+    if (
+      error instanceof PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    )
+      throw new RepositoryException(RepositoryResult.CONFLICT);
+    throw error;
+  }
+}
+```
+
+## Hors scope
+
+- Pas de généralisation immédiate de `serializeDates` à `Season`/`Hotel` —
+  écrite de façon générique et réutilisable, mais son application à
+  d'autres modules attend un besoin concret, pas anticipée ici.
+
+## Acceptance Criteria
+
+- ✅ `serializeDates<T>()` créée dans `apps/backend/src/common/`, typée
+  avec `DeepDateToString<T>` (aucun `any`, aucun double cast au point
+  d'appel), testée isolément
+- ✅ `mapToContract()` ne contient plus aucune logique de conversion de
+  dates — mapping structurel uniquement (SRP)
+- ✅ `findAll`, `findOne`, `create`, `update` appliquent tous
+  `serializeDates(this.mapToContract(...))` de façon uniforme
+- ✅ `GET /contracts/:id` renvoie toutes les dates (top-level et
+  imbriquées dans `periods`) en `string` ISO, aucune `Date` Prisma ne fuit
+  dans la réponse JSON
+- ✅ `periodsCount` reste un `number` intact après passage par
+  `serializeDates`
+- ✅ `tsc --noEmit -p apps/backend/tsconfig.build.json` → 0 erreur
+- ✅ Test manuel via Postman/console : `console.log` du résultat de
+  `findOne` côté frontend, vérifier qu'aucun champ n'est un objet `Date`
+  (`typeof field !== 'object'` pour toutes les dates)
 
 ---
 
