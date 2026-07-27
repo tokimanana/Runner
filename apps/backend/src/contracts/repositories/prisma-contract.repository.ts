@@ -240,7 +240,10 @@ export class PrismaContractRepository extends ContractRepository {
           });
         }
 
-        return roomPrice;
+        return tx.roomPrice.findUniqueOrThrow({
+          where: { id: roomPrice.id },
+          include: { occupancyRates: true },
+        });
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
