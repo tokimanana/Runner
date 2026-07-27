@@ -13,7 +13,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Season } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -36,7 +36,7 @@ import { PeriodCountPipe } from './period-count.pipe';
     InputIconModule,
     InputTextModule,
     ReactiveFormsModule,
-    RouterModule,
+    RouterLink,
     TableModule,
     PeriodCountPipe,
   ],

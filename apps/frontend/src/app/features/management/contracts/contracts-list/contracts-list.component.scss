@@ -1,0 +1,88 @@
+.contracts-list-page {
+  padding: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+
+    p-button {
+      margin-left: auto;
+    }
+  }
+
+  .clickable-row {
+    cursor: pointer;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  .empty-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    color: var(--p-text-muted-color);
+
+    i {
+      font-size: 1.75rem;
+    }
+
+    strong {
+      font-size: 0.9375rem;
+      color: var(--p-text-color);
+    }
+  }
+
+  .error-state {
+    i {
+      color: var(--p-red-500);
+    }
+  }
+
+  .pagination-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    border-top: 0.5px solid var(--p-surface-200);
+
+    .rows-per-page {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--p-text-muted-color);
+    }
+
+    .pagination-summary {
+      font-size: 0.8125rem;
+      color: var(--p-text-muted-color);
+    }
+
+    .pagination-controls {
+      display: flex;
+      gap: 0.25rem;
+    }
+  }
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--p-surface-100);
+  }
+}
