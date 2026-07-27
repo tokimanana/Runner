@@ -36,8 +36,6 @@ export const MANAGEMENT_ROUTES: Routes = [
   },
   {
     path: 'seasons',
-    loadComponent: () =>
-      import('./seasons/seasons.component').then((m) => m.SeasonsComponent),
     children: [
       {
         path: '',
@@ -52,17 +50,10 @@ export const MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
-        path: 'create',
+        path: ':seasonId',
         loadComponent: () =>
-          import('./seasons/seasons-form/seasons-form.component').then(
-            (m) => m.SeasonsFormComponent
-          ),
-      },
-      {
-        path: ':seasonId/edit',
-        loadComponent: () =>
-          import('./seasons/seasons-form/seasons-form.component').then(
-            (m) => m.SeasonsFormComponent
+          import('./seasons/season-detail/season-detail.component').then(
+            (m) => m.SeasonDetailComponent
           ),
       },
     ],

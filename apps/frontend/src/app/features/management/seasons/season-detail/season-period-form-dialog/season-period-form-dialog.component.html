@@ -1,34 +1,17 @@
-<div class="form-page">
-  <div class="form-header">
-    <div>
-      <h2 class="form-title">
-        {{ isEditMode() ? 'Edit Season' : 'New Season' }}
-      </h2>
-      <p class="form-subtitle">
-        {{
-          isEditMode()
-            ? 'Update season information'
-            : 'Add a new season to your portfolio'
-        }}
-      </p>
-    </div>
-    <div class="form-actions">
-      <p-button
-        label="Cancel"
-        severity="secondary"
-        [outlined]="true"
-        (onClick)="cancel()"
-      />
-      <p-button
-        (onClick)="submit()"
-        [label]="isEditMode() ? 'Save changes' : 'Create season'"
-        [loading]="isSubmitting()"
-      />
-    </div>
-  </div>
+<p-dialog
+  [(visible)]="visible"
+  [header]="isEditMode() ? 'Edit Season Period' : 'Add Season Period'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '44rem' }"
+>
+  <p class="dialog-description">
+    Define the period dates. The date range must not overlap with an existing
+    period.
+  </p>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
-    <p class="section-label">General</p>
     <div class="field">
       <label for="name">Name <span class="required">*</span></label>
       <input pInputText id="name" formControlName="name" class="w-full" />
@@ -37,7 +20,6 @@
       }
     </div>
 
-    <p class="section-label">Period</p>
     <div class="form-row">
       <div class="field">
         <label for="startDate"
@@ -75,4 +57,18 @@
       <small class="error">End date must be after start date</small>
     }
   </form>
-</div>
+
+  <div class="dialog-footer">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="close()"
+    />
+    <p-button
+      type="submit"
+      [label]="isEditMode() ? 'Save Changes' : 'Create'"
+      [loading]="isSubmitting()"
+    />
+  </div>
+</p-dialog>
