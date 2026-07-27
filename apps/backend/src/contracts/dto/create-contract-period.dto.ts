@@ -18,11 +18,13 @@ export class CreateContractPeriodDto {
   name: string;
 
   // Source de vérité contractuelle
+  @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate?: string;
 
+  @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate?: string;
 
   @IsString()
   @IsNotEmpty()

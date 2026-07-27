@@ -140,6 +140,7 @@ model ContractPeriod {
   roomPrices          RoomPrice[]
   mealPlanSupplements MealPlanSupplement[]
   stopSalesDates      StopSalesDate[]
+  @@unique([contractId, name])
   @@index([contractId])
   @@index([seasonPeriodId])
 }

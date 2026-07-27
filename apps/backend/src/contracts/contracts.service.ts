@@ -2,16 +2,22 @@ import {
   DEFAULT_PAGINATION_LIMIT,
   MAX_PAGINATION_LIMIT,
 } from '@backend/common/pagination.constants';
-import { RepositoryResult } from '@backend/common/repository.types';
 import {
+  RepositoryException,
+  RepositoryResult,
+} from '@backend/common/repository.types';
+import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Contract } from '@prisma/client';
+import { Contract, ContractPeriod } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { ContractQuery } from './contracts.types';
+import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { ContractRepository } from './repositories/contract.repository';
 
@@ -66,5 +72,127 @@ export class ContractsService {
       throw new ConflictException(
         `Contract ${id} cannot be deleted — it has existing relations`,
       );
+  }
+
+  async createPeriod(
+    dto: CreateContractPeriodDto,
+    contractId: string,
+  ): Promise<ContractPeriod> {
+    if (dto.seasonPeriodId) {
+      const seasonPeriod = await this.contractRepository.findSeasonPeriod(
+        dto.seasonPeriodId,
+      );
+      if (!seasonPeriod) throw new NotFoundException('SeasonPeriod not found');
+
+      dto.startDate = dto.startDate ?? seasonPeriod.startDate.toISOString();
+      dto.endDate = dto.endDate ?? seasonPeriod.endDate.toISOString();
+    }
+
+    if (!dto.startDate || !dto.endDate) {
+      throw new BadRequestException(
+        'startDate and endDate are required when seasonPeriodId is not provided',
+      );
+    }
+
+    await this.validateNoOverlap(
+      contractId,
+      new Date(dto.startDate),
+      new Date(dto.endDate),
+    );
+
+    const startDate = new Date(dto.startDate);
+    const endDate = new Date(dto.endDate);
+
+    try {
+      return await this.contractRepository.createPeriod(
+        {
+          seasonPeriodId: dto.seasonPeriodId,
+          name: dto.name,
+          startDate,
+          endDate,
+          baseMealPlanId: dto.baseMealPlanId,
+          minStay: dto.minStay,
+        },
+        contractId,
+      );
+    } catch (error) {
+      if (
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
+        throw new ConflictException(`Period name already exists`);
+      throw error;
+    }
+  }
+
+  async updatePeriod(
+    periodId: string,
+    dto: UpdateContractPeriodDto,
+    contractId: string,
+  ): Promise<ContractPeriod> {
+    if (dto.startDate || dto.endDate) {
+      const current = await this.contractRepository.findContractPeriod(
+        periodId,
+        contractId,
+      );
+      if (!current) {
+        throw new NotFoundException(`Contract Period ${periodId} not found`);
+      }
+
+      const startDate = dto.startDate
+        ? new Date(dto.startDate)
+        : current.startDate;
+      const endDate = dto.endDate ? new Date(dto.endDate) : current.endDate;
+
+      await this.validateNoOverlap(contractId, startDate, endDate, periodId);
+    }
+
+    try {
+      return await this.contractRepository.updatePeriod(
+        periodId,
+        dto,
+        contractId,
+      );
+    } catch (error) {
+      if (
+        error instanceof RepositoryException &&
+        error.result === RepositoryResult.CONFLICT
+      )
+        throw new ConflictException(`Period name already exists`);
+      throw error;
+    }
+  }
+
+  async removePeriod(periodId: string, contractId: string): Promise<void> {
+    const result = await this.contractRepository.removePeriod(
+      periodId,
+      contractId,
+    );
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new ConflictException(`Contract Period ${periodId} not found`);
+
+    if (result === RepositoryResult.HAS_RELATIONS)
+      throw new ConflictException(
+        `Contract ${periodId} cannot be deleted — it has existing relations`,
+      );
+  }
+
+  private async validateNoOverlap(
+    contractId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string,
+  ): Promise<void> {
+    const overlapping = await this.contractRepository.validateNoOverlap(
+      contractId,
+      startDate,
+      endDate,
+      excludeId,
+    );
+    if (overlapping) {
+      throw new ConflictException(
+        `Period overlaps with existing period "${overlapping.name}"`,
+      );
+    }
   }
 }

@@ -4,11 +4,12 @@ import {
 } from '@backend/common/repository.types';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Contract, Prisma } from '@prisma/client';
+import { Contract, ContractPeriod, Prisma, SeasonPeriod } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
-import { ContractQuery } from '../contracts.types';
+import { ContractPeriodCreateData, ContractQuery } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
+import { UpdateContractPeriodDto } from '../dto/update-contract-period.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
 import { ContractRepository } from './contract.repository';
 
@@ -110,5 +111,92 @@ export class PrismaContractRepository extends ContractRepository {
       }
       throw error;
     }
+  }
+
+  async createPeriod(
+    data: ContractPeriodCreateData,
+    contractId: string,
+  ): Promise<ContractPeriod> {
+    try {
+      return await this.prisma.contractPeriod.create({
+        data: { ...data, contractId },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
+  }
+
+  async findSeasonPeriod(seasonPeriodId: string): Promise<SeasonPeriod | null> {
+    return this.prisma.seasonPeriod.findUnique({
+      where: { id: seasonPeriodId },
+    });
+  }
+
+  async findContractPeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<ContractPeriod | null> {
+    return this.prisma.contractPeriod.findUnique({
+      where: { id: periodId, contractId },
+    });
+  }
+
+  async updatePeriod(
+    periodId: string,
+    dto: UpdateContractPeriodDto,
+    contractId: string,
+  ): Promise<ContractPeriod> {
+    try {
+      return await this.prisma.contractPeriod.update({
+        where: { id: periodId, contractId },
+        data: dto,
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      throw error;
+    }
+  }
+
+  async removePeriod(
+    periodId: string,
+    contractId: string,
+  ): Promise<RepositoryResult> {
+    try {
+      await this.prisma.contractPeriod.delete({
+        where: { id: periodId, contractId },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
+        if (error.code === 'P2003') return RepositoryResult.HAS_RELATIONS;
+      }
+      throw error;
+    }
+  }
+
+  async validateNoOverlap(
+    contractId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string,
+  ): Promise<ContractPeriod | null> {
+    return await this.prisma.contractPeriod.findFirst({
+      where: {
+        contractId,
+        id: excludeId ? { not: excludeId } : undefined,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+    });
   }
 }
