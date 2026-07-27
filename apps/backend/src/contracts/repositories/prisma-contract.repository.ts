@@ -5,7 +5,6 @@ import {
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import {
-  Contract,
   ContractPeriod,
   MealPlanSupplement,
   Prisma,
@@ -14,7 +13,10 @@ import {
   StopSalesDate,
 } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { PaginatedResult } from '@runner/shared/types';
+import {
+  PaginatedResult,
+  Contract as SharedContract,
+} from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
@@ -33,6 +35,13 @@ import {
   RoomTypeWithCapacities,
 } from './contract.repository';
 
+const CONTRACT_INCLUDE = {
+  hotel: { select: { id: true, name: true } },
+  market: { select: { id: true, name: true } },
+  currency: { select: { id: true, code: true, symbol: true } },
+  _count: { select: { periods: true } },
+} satisfies Prisma.ContractInclude;
+
 @Injectable()
 export class PrismaContractRepository extends ContractRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -42,7 +51,7 @@ export class PrismaContractRepository extends ContractRepository {
   async findAll(
     tourOperatorId: string,
     query?: ContractQuery,
-  ): Promise<PaginatedResult<Contract>> {
+  ): Promise<PaginatedResult<SharedContract>> {
     const { limit, offset, hotelId, marketId } = query ?? {};
 
     const where: Prisma.ContractWhereInput = {
@@ -52,17 +61,33 @@ export class PrismaContractRepository extends ContractRepository {
     };
 
     const [data, total] = await this.prisma.$transaction([
-      this.prisma.contract.findMany({ where, take: limit, skip: offset }),
+      this.prisma.contract.findMany({
+        where,
+        include: CONTRACT_INCLUDE,
+        take: limit,
+        skip: offset,
+      }),
       this.prisma.contract.count({ where }),
     ]);
 
-    return { data, total, limit, offset };
+    const mappedData = data.map((contract) => this.mapToContract(contract));
+
+    return {
+      data: mappedData,
+      total,
+      limit,
+      offset,
+    };
   }
 
-  async findOne(id: string, tourOperatorId: string): Promise<Contract | null> {
-    return this.prisma.contract.findUnique({
+  async findOne(
+    id: string,
+    tourOperatorId: string,
+  ): Promise<SharedContract | null> {
+    const contract = await this.prisma.contract.findUnique({
       where: { id, tourOperatorId },
       include: {
+        ...CONTRACT_INCLUDE,
         periods: {
           include: {
             seasonPeriod: true,
@@ -78,16 +103,24 @@ export class PrismaContractRepository extends ContractRepository {
         },
       },
     });
+
+    if (!contract) {
+      return null;
+    }
+
+    return this.mapToContract(contract);
   }
 
   async create(
     dto: CreateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract> {
+  ): Promise<SharedContract> {
     try {
-      return await this.prisma.contract.create({
+      const createdContract = await this.prisma.contract.create({
         data: { ...dto, tourOperatorId },
+        include: CONTRACT_INCLUDE,
       });
+      return this.mapToContract(createdContract);
     } catch (error) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -102,12 +135,14 @@ export class PrismaContractRepository extends ContractRepository {
     id: string,
     dto: UpdateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract> {
+  ): Promise<SharedContract> {
     try {
-      return await this.prisma.contract.update({
+      const updatedContract = await this.prisma.contract.update({
         where: { id, tourOperatorId },
+        include: CONTRACT_INCLUDE,
         data: dto,
       });
+      return this.mapToContract(updatedContract);
     } catch (error) {
       if (
         error instanceof PrismaClientKnownRequestError &&
@@ -386,5 +421,19 @@ export class PrismaContractRepository extends ContractRepository {
       }
       throw error;
     }
+  }
+
+  private mapToContract(
+    contract: Prisma.ContractGetPayload<{
+      include: typeof CONTRACT_INCLUDE;
+    }>,
+  ): SharedContract {
+    const { _count, createdAt, updatedAt, ...rest } = contract;
+    return {
+      ...rest,
+      periodsCount: _count.periods,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    };
   }
 }

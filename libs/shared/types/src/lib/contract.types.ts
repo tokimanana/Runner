@@ -13,6 +13,7 @@ export interface Contract {
   market?: { id: string; name: string };
   currency?: { id: string; code: string; symbol: string };
   periods?: ContractPeriod[];
+  periodsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

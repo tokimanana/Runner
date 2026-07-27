@@ -14,13 +14,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Contract,
   ContractPeriod,
   MealPlanSupplement,
   RoomPrice,
   StopSalesDate,
 } from '@prisma/client';
-import { OccupancyRateDto, PaginatedResult } from '@runner/shared/types';
+import {
+  OccupancyRateDto,
+  PaginatedResult,
+  Contract as SharedContract,
+} from '@runner/shared/types';
 import { ContractQuery, OccupancyRateCreateData } from './contracts.types';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -40,14 +43,14 @@ export class ContractsService {
   async create(
     dto: CreateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract> {
+  ): Promise<SharedContract> {
     return this.contractRepository.create(dto, tourOperatorId);
   }
 
   async findAll(
     tourOperatorId: string,
     query?: ContractQuery,
-  ): Promise<PaginatedResult<Contract>> {
+  ): Promise<PaginatedResult<SharedContract>> {
     const sanitizedLimit = Math.min(
       query?.limit ?? DEFAULT_PAGINATION_LIMIT,
       MAX_PAGINATION_LIMIT,
@@ -59,7 +62,7 @@ export class ContractsService {
     });
   }
 
-  async findOne(id: string, tourOperatorId: string): Promise<Contract> {
+  async findOne(id: string, tourOperatorId: string): Promise<SharedContract> {
     const contract = await this.contractRepository.findOne(id, tourOperatorId);
     if (!contract) {
       throw new NotFoundException(`Contract ${id} not found`);
@@ -71,7 +74,7 @@ export class ContractsService {
     id: string,
     dto: UpdateContractDto,
     tourOperatorId: string,
-  ): Promise<Contract> {
+  ): Promise<SharedContract> {
     return await this.contractRepository.update(id, dto, tourOperatorId);
   }
 
