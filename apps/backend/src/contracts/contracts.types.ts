@@ -35,3 +35,10 @@ export interface RoomPriceUpdateData {
   pricingMode?: PricingMode;
   pricePerNight?: number | null;
 }
+
+export interface OccupancyRateCreateData {
+  numAdults: number;
+  numChildren: number;
+  ratesPerAge: Record<string, number>;
+  totalRate: number;
+}

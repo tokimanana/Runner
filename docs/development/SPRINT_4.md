@@ -764,14 +764,18 @@ DELETE /room-prices/:id
 - **Branch :** `feature/S4-BE-008-room-price-per-occupancy`
 - **Commit :** `feat(contracts): implement PER_OCCUPANCY pricing with capacity validation`
 
-**Calcul totalRate (décision 17 juin) :**
-totalRate n'est plus fourni par le client — le backend le calcule :
+**Contexte :**
+En PER_OCCUPANCY, le tarif varie selon la composition du groupe.
+Un RoomPrice PER_OCCUPANCY a des OccupancyRates associés —
+une ligne par combinaison numAdults/numChildren possible.
 
-```typescript
-const totalRate = Object.values(dto.ratesPerAge).reduce((sum, r) => sum + r, 0);
-```
+**Flow de création :**
 
-Stocker `totalRate` calculé dans `OccupancyRate` en base.
+1. Créer le `RoomPrice` (pricingMode = PER_OCCUPANCY, pricePerNight = null)
+2. Pour chaque `OccupancyRateDto` dans le payload :
+   a. Valider que numAdults + numChildren <= capacité max du RoomType
+   b. Calculer totalRate = sum(ratesPerAge values)
+   c. Créer l'`OccupancyRate` en base
 
 **Validation capacité via `RoomTypeCapacity` :**
 
@@ -783,11 +787,13 @@ async validateOccupancyAgainstCapacity(
 ): Promise<void> {
   const roomType = await this.prisma.roomType.findUnique({
     where: { id: roomTypeId },
-    include: { capacities: { include: { ageCategory: true } } },
+    include: { capacities: true },
   });
   if (!roomType) throw new NotFoundException('RoomType not found');
 
-  const totalMaxPax = roomType.capacities.reduce((sum, c) => sum + c.maxPax, 0);
+  const totalMaxPax = roomType.capacities
+    .reduce((sum, c) => sum + c.maxPax, 0);
+
   if (numAdults + numChildren > totalMaxPax) {
     throw new BadRequestException(
       `Occupancy (${numAdults}A + ${numChildren}C) exceeds room capacity (${totalMaxPax} pax)`
@@ -795,6 +801,29 @@ async validateOccupancyAgainstCapacity(
   }
 }
 ```
+
+**Calcul totalRate (décision S4-BE-004) :**
+
+```typescript
+const totalRate = Object.values(dto.ratesPerAge).reduce((sum, r) => sum + r, 0);
+```
+
+**Modifications nécessaires :**
+
+- `contract.repository.ts` — ajouter `createOccupancyRates`, `findRoomType`
+- `prisma-contract.repository.ts` — implémenter
+- `contracts.service.ts` — logique dans `createRoomPrice` :
+  si PER_OCCUPANCY → valider capacité + calculer totalRate + créer OccupancyRates
+- Pas de nouveaux endpoints — la création des OccupancyRates
+  se fait dans le même appel POST /room-prices
+
+**Acceptance Criteria :**
+
+- ✅ OccupancyRates créés avec le RoomPrice en un seul appel
+- ✅ Validation capacité via `RoomTypeCapacity`
+- ✅ totalRate calculé par le backend
+- ✅ @@unique([roomPriceId, numAdults, numChildren]) respectée
+- ✅ BadRequestException si capacité dépassée
 
 ---
 

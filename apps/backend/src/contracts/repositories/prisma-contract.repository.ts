@@ -17,12 +17,16 @@ import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
   ContractQuery,
+  OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
 } from '../contracts.types';
 import { CreateContractDto } from '../dto/create-contract.dto';
 import { UpdateContractDto } from '../dto/update-contract.dto';
-import { ContractRepository } from './contract.repository';
+import {
+  ContractRepository,
+  RoomTypeWithCapacities,
+} from './contract.repository';
 
 @Injectable()
 export class PrismaContractRepository extends ContractRepository {
@@ -214,10 +218,24 @@ export class PrismaContractRepository extends ContractRepository {
   async createRoomPrice(
     dto: RoomPriceCreateData,
     contractPeriodId: string,
+    occupancyRates?: OccupancyRateCreateData[],
   ): Promise<RoomPrice> {
     try {
-      return await this.prisma.roomPrice.create({
-        data: { ...dto, contractPeriodId },
+      return await this.prisma.$transaction(async (tx) => {
+        const roomPrice = await tx.roomPrice.create({
+          data: { ...dto, contractPeriodId },
+        });
+
+        if (occupancyRates?.length) {
+          await tx.occupancyRate.createMany({
+            data: occupancyRates.map((rate) => ({
+              ...rate,
+              roomPriceId: roomPrice.id,
+            })),
+          });
+        }
+
+        return roomPrice;
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -228,6 +246,15 @@ export class PrismaContractRepository extends ContractRepository {
       }
       throw error;
     }
+  }
+
+  async findRoomTypeWithCapacities(
+    roomTypeId: string,
+  ): Promise<RoomTypeWithCapacities | null> {
+    return this.prisma.roomType.findUnique({
+      where: { id: roomTypeId },
+      include: { capacities: true },
+    });
   }
 
   async updateRoomPrice(
