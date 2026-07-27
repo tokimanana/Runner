@@ -42,3 +42,13 @@ export interface OccupancyRateCreateData {
   ratesPerAge: Record<string, number>;
   totalRate: number;
 }
+
+export interface MealPlanSupplementCreateData {
+  mealPlanId: string;
+  occupancyRates: Record<string, number>;
+}
+
+export interface MealPlanSupplementUpdateData {
+  mealPlanId?: string;
+  occupancyRates?: Record<string, number>;
+}

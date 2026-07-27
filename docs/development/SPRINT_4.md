@@ -835,11 +835,59 @@ const totalRate = Object.values(dto.ratesPerAge).reduce((sum, r) => sum + r, 0);
 - **Branch :** `feature/S4-BE-009-meal-supplements`
 - **Commit :** `feat(contracts): implement meal plan supplements`
 
+**Contexte :** Un `MealPlanSupplement` représente un coût additionnel pour passer du
+meal plan de base de la période (`ContractPeriod.baseMealPlanId`) à un autre meal plan,
+selon la composition du groupe. Contrairement à `RoomPrice`/`OccupancyRate`, il n'y a
+**pas de table séparée** — `occupancyRates` est stocké en JSON brut sur une seule ligne,
+car aucune contrainte d'unicité ni requête individuelle ne porte sur les clés
+adultes/enfants à l'intérieur (cf. `ratesPerAge` sur `OccupancyRate`, même logique).
+
 ```
 POST   /contracts/:id/periods/:periodId/meal-supplements
 PATCH  /meal-supplements/:id
 DELETE /meal-supplements/:id
 ```
+
+**Flow de création :**
+
+1. Vérifier que la `ContractPeriod` (`periodId` + `contractId`) existe → 404 sinon
+2. Créer le `MealPlanSupplement` directement (pas de transformation, pas de
+   validation de capacité — `occupancyRates` est accepté tel quel tant que c'est
+   un objet JSON valide ; cf. validation `@IsObject()` déjà présente dans le DTO)
+3. Si conflit DB (`@@unique([contractPeriodId, mealPlanId])`) → 409
+
+**Flow de mise à jour (PATCH) :**
+
+- Mêmes champs que la création, tous optionnels (`PartialType`)
+- Pas de vérification de `ContractPeriod` nécessaire — l'update cible directement
+  l'`id` du `MealPlanSupplement`, comme `updateRoomPrice`
+
+**Flow de suppression (DELETE) :**
+
+- Suppression directe par `id`, 204 si succès, 404 si non trouvé
+- Pas de blocage sur relations (`MealPlanSupplement` n'a pas d'enfants)
+
+**Modifications nécessaires :**
+
+- `contracts.types.ts` — ajouter `MealPlanSupplementCreateData`, `MealPlanSupplementUpdateData`
+- `contract.repository.ts` (abstract) — ajouter `createMealPlanSupplement`,
+  `updateMealPlanSupplement`, `removeMealPlanSupplement`
+- `prisma-contract.repository.ts` — implémenter les 3 méthodes ci-dessus
+- `contracts.service.ts` — `createMealPlanSupplement`, `updateMealPlanSupplement`,
+  `removeMealPlanSupplement` (suivre exactement le pattern de `createRoomPrice`/
+  `updateRoomPrice`/`removeRoomPrice`, sans la partie occupancyRates/transaction)
+- `contracts.controller.ts` — route nichée `POST /contracts/:id/periods/:periodId/meal-supplements`
+- Nouveau contrôleur `meal-plan-supplements.controller.ts` — routes plates
+  `PATCH /meal-supplements/:id` et `DELETE /meal-supplements/:id`
+  (même pattern que `room-prices.controller.ts`)
+
+**Acceptance Criteria :**
+
+- ✅ `MealPlanSupplement` créé en une seule écriture (pas de transaction multi-tables)
+- ✅ 404 si `ContractPeriod` introuvable à la création
+- ✅ 409 si `mealPlanId` déjà utilisé dans cette `ContractPeriod`
+- ✅ `occupancyRates` accepté tel quel (objet JSON, pas de validation de structure interne)
+- ✅ PATCH et DELETE fonctionnent indépendamment de la `ContractPeriod`
 
 ---
 
@@ -1457,6 +1505,58 @@ export const CONTRACTS_ROUTES: Routes = [
 // sidebar
 { label: 'Contracts', icon: 'pi pi-file-edit', route: '/contracts', roles: ['ADMIN', 'MANAGER'] }
 ```
+
+---
+
+### S4-REFACTOR-001 : Harmoniser la gestion des erreurs Prisma sur les foreign keys
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 3
+- **Branch :** `refactor/S4-REFACTOR-001-prisma-error-handling`
+- **Commit :** `refactor(contracts): align Prisma error handling with actual schema relations`
+
+**Contexte :** Identifié pendant S4-BE-009 et S4-BE-010. La gestion des codes
+d'erreur Prisma (P2002/P2003/P2025) doit refléter exactement les relations
+réelles du schéma — ni en manquer (trou de robustesse), ni en gérer qui ne
+peuvent jamais survenir (code mort, fausse impression de sécurité).
+
+**Catégorie A — P2003 manquant sur une vraie foreign key modifiable :**
+
+| Méthode           | Foreign key concernée              | Statut            |
+| ----------------- | ---------------------------------- | ----------------- |
+| `updateRoomPrice` | `roomTypeId`                       | ❌ P2003 non géré |
+| `createPeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
+| `updatePeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
+
+**Catégorie B — code mort, gère un cas structurellement impossible :**
+
+| Méthode                    | Code géré à tort        | Pourquoi impossible                                                                                  |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `removeMealPlanSupplement` | P2003 → `HAS_RELATIONS` | Aucune table ne référence `MealPlanSupplement` par foreign key — rien ne peut bloquer sa suppression |
+
+**Méthode de vérification à appliquer à CHAQUE méthode create/update/delete :**
+
+1. Lister les champs `*Id` envoyés dans `data` → ce sont les P2003 potentiels (create/update)
+2. Lister les tables qui ont une `@relation` pointant vers l'entité qu'on supprime
+   → seulement celles-là justifient un P2003/HAS_RELATIONS sur delete
+3. Si aucune table enfant n'existe → ne pas gérer HAS_RELATIONS, point.
+
+**Modifications nécessaires :**
+
+- `updateRoomPrice`, `createPeriod`, `updatePeriod` — ajouter P2003 (Catégorie A)
+- `removeMealPlanSupplement` — retirer le bloc P2003/HAS_RELATIONS (Catégorie B)
+- Auditer `create`/`update`/`remove` sur `Contract` avec la même grille
+- Auditer les futures méthodes `StopSalesDate` (S4-BE-010) dès leur création,
+  pour éviter de reproduire l'un ou l'autre problème dès le départ
+
+**Acceptance Criteria :**
+
+- ✅ Chaque méthode gère exactement les codes d'erreur que sa relation au
+  schéma justifie — ni plus, ni moins
+- ✅ Aucun bloc `if (error.code === ...)` ne correspond à une relation
+  inexistante dans `schema.prisma`
+- ✅ Messages d'erreur identifiant précisément l'entité concernée
 
 ---
 
