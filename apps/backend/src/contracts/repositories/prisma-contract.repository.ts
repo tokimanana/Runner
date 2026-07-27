@@ -127,7 +127,6 @@ export class PrismaContractRepository extends ContractRepository {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
-        if (error.code === 'P2003') return RepositoryResult.HAS_RELATIONS;
       }
       throw error;
     }
@@ -142,11 +141,13 @@ export class PrismaContractRepository extends ContractRepository {
         data: { ...data, contractId },
       });
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      )
-        throw new RepositoryException(RepositoryResult.CONFLICT);
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
       throw error;
     }
   }
@@ -177,11 +178,13 @@ export class PrismaContractRepository extends ContractRepository {
         data,
       });
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      )
-        throw new RepositoryException(RepositoryResult.CONFLICT);
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
       throw error;
     }
   }
@@ -198,7 +201,6 @@ export class PrismaContractRepository extends ContractRepository {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
-        if (error.code === 'P2003') return RepositoryResult.HAS_RELATIONS;
       }
       throw error;
     }
@@ -275,11 +277,12 @@ export class PrismaContractRepository extends ContractRepository {
         data: dto,
       });
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      )
-        throw new RepositoryException(RepositoryResult.CONFLICT);
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
       throw error;
     }
   }
@@ -327,11 +330,12 @@ export class PrismaContractRepository extends ContractRepository {
         data,
       });
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      )
-        throw new RepositoryException(RepositoryResult.CONFLICT);
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002')
+          throw new RepositoryException(RepositoryResult.CONFLICT);
+        if (error.code === 'P2003')
+          throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      }
       throw error;
     }
   }
@@ -365,8 +369,6 @@ export class PrismaContractRepository extends ContractRepository {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002')
           throw new RepositoryException(RepositoryResult.CONFLICT);
-        if (error.code === 'P2003')
-          throw new RepositoryException(RepositoryResult.NOT_FOUND);
       }
       throw error;
     }

@@ -77,12 +77,7 @@ export class ContractsService {
   async remove(id: string, tourOperatorId: string): Promise<void> {
     const result = await this.contractRepository.remove(id, tourOperatorId);
     if (result === RepositoryResult.NOT_FOUND)
-      throw new ConflictException(`Contract ${id} not found`);
-
-    if (result === RepositoryResult.HAS_RELATIONS)
-      throw new ConflictException(
-        `Contract ${id} cannot be deleted — it has existing relations`,
-      );
+      throw new NotFoundException(`Contract ${id} not found`);
   }
 
   async createPeriod(
@@ -123,11 +118,15 @@ export class ContractsService {
         contractId,
       );
     } catch (error) {
-      if (
-        error instanceof RepositoryException &&
-        error.result === RepositoryResult.CONFLICT
-      )
-        throw new ConflictException(`Period name already exists`);
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(`Period name already exists`);
+
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(
+            `Base Meal Plan  ${dto.baseMealPlanId} not found`,
+          );
+      }
       throw error;
     }
   }
@@ -166,11 +165,15 @@ export class ContractsService {
         contractId,
       );
     } catch (error) {
-      if (
-        error instanceof RepositoryException &&
-        error.result === RepositoryResult.CONFLICT
-      )
-        throw new ConflictException(`Period name already exists`);
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(`Period name already exists`);
+
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(
+            `Base Meal Plan  ${dto.baseMealPlanId} not found`,
+          );
+      }
       throw error;
     }
   }
@@ -181,12 +184,7 @@ export class ContractsService {
       contractId,
     );
     if (result === RepositoryResult.NOT_FOUND)
-      throw new ConflictException(`Contract Period ${periodId} not found`);
-
-    if (result === RepositoryResult.HAS_RELATIONS)
-      throw new ConflictException(
-        `Contract ${periodId} cannot be deleted — it has existing relations`,
-      );
+      throw new NotFoundException(`Contract Period ${periodId} not found`);
   }
 
   private async validateNoOverlap(
@@ -308,13 +306,14 @@ export class ContractsService {
         pricePerNight: dto.pricePerNight,
       });
     } catch (error) {
-      if (
-        error instanceof RepositoryException &&
-        error.result === RepositoryResult.CONFLICT
-      )
-        throw new ConflictException(
-          `A room price already exists for this room type in this period`,
-        );
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(
+            `A room price already exists for this room type in this period`,
+          );
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(`Room type ${dto.roomTypeId} not found`);
+      }
       throw error;
     }
   }
@@ -369,13 +368,14 @@ export class ContractsService {
         occupancyRates: dto.occupancyRates,
       });
     } catch (error) {
-      if (
-        error instanceof RepositoryException &&
-        error.result === RepositoryResult.CONFLICT
-      )
-        throw new ConflictException(
-          `A meal plan already exists for this meal plan in this period`,
-        );
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(
+            `A meal plan already already exists for this meal plan in this period`,
+          );
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(`Meal plan ${dto.mealPlanId} not found`);
+      }
       throw error;
     }
   }
