@@ -57,6 +57,29 @@ model AgeCategory {
   hotel              Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   hotelId            String
   roomTypeCapacities RoomTypeCapacity[]
+  agePolicies         AgePolicy[]
+}
+
+enum SharingType {
+  WITH_PARENTS
+  SEPARATE_ROOM
+}
+
+model AgePolicy {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  ageCategoryId    String
+  sharingType      SharingType
+  value            Decimal        @db.Decimal(10, 4)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  ageCategory      AgeCategory    @relation(fields: [ageCategoryId], references: [id])
+
+  @@unique([contractPeriodId, ageCategoryId, sharingType])
+  @@index([contractPeriodId])
+  @@index([ageCategoryId])
+  @@map("age_policies")
 }
 
 model RoomType {
@@ -67,6 +90,8 @@ model RoomType {
   hotelId    String
   capacities RoomTypeCapacity[]
   roomPrices RoomPrice[]
+  baseRates  BaseRate[]
+  occupancyGuidances  OccupancyGuidance[]
 }
 
 model RoomTypeCapacity {
@@ -140,6 +165,8 @@ model ContractPeriod {
   roomPrices          RoomPrice[]
   mealPlanSupplements MealPlanSupplement[]
   stopSalesDates      StopSalesDate[]
+  baseRates           BaseRate[]
+  agePolicies         AgePolicy[]
   @@unique([contractId, name])
   @@index([contractId])
   @@index([seasonPeriodId])
@@ -156,6 +183,8 @@ model RoomPrice {
   @@unique([contractPeriodId, roomTypeId])
   @@index([contractPeriodId])
 }
+
+// LEGACY
 model OccupancyRate {
   id          String    @id @default(cuid())
   roomPriceId String
@@ -167,6 +196,23 @@ model OccupancyRate {
   @@unique([roomPriceId, numAdults, numChildren])
   @@index([roomPriceId])
 }
+model BaseRate {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  roomTypeId       String
+  halfDouble       Decimal        @db.Decimal(10, 2)
+  single           Decimal        @db.Decimal(10, 2)
+  thirdPersonAdult Decimal?       @db.Decimal(10, 2)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
+
+  @@unique([contractPeriodId, roomTypeId])
+  @@index([contractPeriodId])
+  @@index([roomTypeId])
+  @@map("base_rates")
+}
 model MealPlanSupplement {
   id               String         @id @default(cuid())
   contractPeriodId String
@@ -174,6 +220,7 @@ model MealPlanSupplement {
   occupancyRates   Json
   contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
   mealPlan         MealPlan       @relation(fields: [mealPlanId], references: [id])
+  billingUnit      BillingUnit    @default(PER_NIGHT)
   @@unique([contractPeriodId, mealPlanId])
   @@index([contractPeriodId])
 }
@@ -254,4 +301,29 @@ model Supplement {
   updatedAt          DateTime       @updatedAt
 
   @@index([tourOperatorId])
+}
+
+enum BillingUnit {
+  PER_NIGHT
+  PER_STAY
+}
+
+model OccupancyGuidance {
+  id          String   @id @default(cuid())
+  roomTypeId  String
+
+  description String
+
+  maxAdults   Int      @default(0)
+  maxTeens    Int      @default(0)
+  maxChildren Int      @default(0)
+  maxInfants  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@index([roomTypeId])
+  @@map("occupancy_guidances")
 }

@@ -1144,69 +1144,147 @@ paginent déjà et comment).
 
 ---
 
-#### S4-FE-005 — ContractForm Wizard — Step 2 (Periods) + effect() SeasonPeriod
-
-> Add the periods step to the contract wizard: a local (unsaved) list of contract periods, a dialog for adding/editing a period with `SeasonPeriod`-based date auto-fill via `effect()`, and overlap validation against existing periods.
-
-- **Type:** Feature
-- **Priority:** P0
-- **SP:** 7
-- **Branch:** `feat/S4-FE-005-contract-form-step2-periods`
-- **Commit:** `feat(contracts): add ContractForm wizard step 2 — periods with SeasonPeriod auto-fill`
-- **Tasks:**
-  - `p-step [value]="2"` + `p-step-panel [value]="2"` added to the existing stepper
-  - `periods`: `signal<LocalContractPeriod[]>([])` — local state, each period has a `tempId` (`crypto.randomUUID()`) until submitted to the backend
-  - `PeriodFormDialogComponent`:
-    - `visible = model<boolean>(false)`
-    - `p-select` grouped by Season for `SeasonPeriod` selection (optional)
-    - `effect()`: `patchValue(startDate, endDate)` when `seasonPeriodId` changes (auto-fill), dates remain editable afterward
-    - Overlap validation with `date-fns` against existing `periods()` (excluding the period being edited)
-    - `take(1)` on every `subscribe()`
-  - Step 2 template: `p-table` of configured periods (season name, dates, meal plan), Add/Edit/Delete row actions
-  - `goNext`/`goBack` Step 2: reuse the Step 1 `activateCallback` pattern, no new abstraction
-  - Step 2 Next button: disabled if `periods().length === 0` (at least one period required) — decide disabled vs. active+message, consistent with the Step 1 decision
-    > ℹ️ Out of scope: RoomPrices/MealSupplements/StopSales → S4-FE-006 to 008; actual period persistence (POST) deferred to final `submit()` (S4-FE-009)
-- **Acceptance Criteria:**
-  - ✅ Adding a period without `seasonPeriodId` → dates stay empty/manually editable
-  - ✅ Selecting a `seasonPeriodId` → `startDate`/`endDate` auto-fill via `effect()`
-  - ✅ Editing a date after auto-fill → manual value is preserved (not overwritten)
-  - ✅ Adding a 2nd period with overlapping dates → blocking validation error
-  - ✅ Deleting a local period (`tempId`) → removed from `periods()`, no API call
-  - ✅ `nx test frontend`: unit test on overlap logic (`date-fns`)
-
----
-
-### S4-FE-006 : ContractForm — Étape 3 (Room Prices)
+### S4-FE-005 : ContractForm Wizard — Step 2 (Periods) — inline editing + Season bulk generation
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 8
-- **Branch :** `feature/S4-FE-006-contract-form-step3`
-- **Commit :** `feat(contracts): add room prices PER_ROOM and PER_OCCUPANCY`
+- **Branch :** `feat/S4-FE-005-contract-form-step2-periods`
+- **Commit :** `feat(contracts): add ContractForm wizard step 2 — inline period editing with season bulk generation`
 
-**Sélecteur de période :** affiche `period.name + period.startDate + period.endDate`
-(dates réelles du ContractPeriod, pas de la SeasonPeriod).
+**Scope (final version) :**
 
-**PER_OCCUPANCY — validation via `roomType.capacities[]` :**
+`LocalContractPeriod` : `Omit<ContractPeriodDto, 'startDate' | 'endDate'> & { tempId: string; startDate: Date | null; endDate: Date | null }`, declared in `contract-form.component.ts`. Dates typed `Date | null` (not `string`) for direct binding with `p-datepicker`, without `$any()` coercion in the template.
 
-```typescript
-maxPax = computed(() =>
-  this.selectedRoomType().capacities.reduce((sum, c) => sum + c.maxPax, 0)
-);
+`selectedSeasonId` : `signal<string | null>(null)` — Season selected in the `p-select` at the top of Step 2
 
-isOccupancyValid = computed(() => {
-  const total = this.numAdults() + this.numChildren();
-  return total > 0 && total <= this.maxPax();
-});
+`draftPeriods` : `signal<LocalContractPeriod[]>([])` — rows currently being edited, not yet confirmed
 
-// totalRate affiché localement pour l'UI — pas envoyé dans le payload
-totalRate = computed(
-  () => Object.values(this.ratesPerAge()).reduce((sum, r) => sum + r, 0)
-  // ratesPerAge est Record<string, number> — plus { rate, order }
-);
-```
+`localPeriods` : `signal<LocalContractPeriod[]>([])` — confirmed periods (✓), final state used at submit (S4-FE-009)
 
-**Note :** `totalRate` n'est plus dans le payload envoyé au backend.
+`onSeasonSelected(seasonId)` : regenerates `draftPeriods` from `allSeasonPeriods()` filtered by Season — one row per `SeasonPeriod`, `name` pre-filled, `startDate`/`endDate` converted to `Date` (`new Date(sp.startDate)`), `baseMealPlanId`/`minStay` left empty. Switching Season only regenerates unconfirmed rows; `localPeriods` (already validated) stays intact
+
+`addManualDraftPeriod()` : adds an empty row (`seasonPeriodId: null`, `startDate: null`, `endDate: null`), fully manual entry
+
+`updateDraftField(tempId, field, value)` : immutable mutation of a single field on a draft row
+
+`confirmDraftPeriod(tempId)` : minimal guard (`name`/`startDate`/`endDate`/`baseMealPlanId` must not be empty) → moves the row from `draftPeriods` to `localPeriods`
+
+`cancelDraftPeriod(tempId)` : removes a draft row without confirming it
+
+`removeConfirmedPeriod(tempId)` : removes an already-confirmed row
+
+`allSeasonPeriods` : `computed()`, flattens `seasons().flatMap(s => s.seasonPeriods ?? [])`
+
+Draft table : inline inputs (`pInputText`, `p-datepicker` via `DatePickerModule` bound directly to `Date | null`, `p-select` for meal plan, `p-inputNumber`), ✓/✗ buttons per row
+
+Confirmed table : read-only (`| date: 'dd/MM/yyyy'` via `DatePipe`, which natively accepts a `Date` object), delete button per row
+
+`goNextFromStep2` : blocked if `localPeriods().length === 0`, active state + message (consistent with Step 1)
+
+**Known technical debt, to be addressed in a follow-up ticket :**
+
+- `[ngModel]` on `draftPeriods` mixed with `ReactiveFormsModule` (`FormsModule` added out of necessity) — no strict per-field validation, just a minimal `if` in `confirmDraftPeriod`
+- Check whether `mealPlans()`/`allSeasonPeriods()` need a `tourOperatorId` filter on the frontend, or whether the backend (JWT) already guarantees isolation
+- Physically remove the `contracts/contract-form/period-form-dialog/` folder (dead code — dialog abandoned mid-session, replaced by inline editing)
+
+⚠️ Heads-up for S4-FE-009 (submit) : `LocalContractPeriod.startDate`/`endDate` are internally typed `Date | null`. The backend DTO (`CreateContractPeriodDto`) expects `startDate`/`endDate` as ISO strings (`@IsDateString()`). A `Date → string` conversion (`.toISOString()`) is required when building the `createPeriod()` payload — not before.
+
+**Acceptance Criteria :**
+
+- ✅ Selecting a Season → generates N draft rows (N = number of `SeasonPeriod`s for that Season), dates pre-filled as `Date`
+- ✅ Switching Season → unconfirmed draft rows regenerated, already-confirmed (✓) rows preserved in `localPeriods`
+- ✅ "Add Period" → adds an empty editable row, independent of any Season
+- ✅ Confirming (✓) an incomplete row (e.g. missing meal plan) → no action, row stays in draft
+- ✅ Confirming a valid row → appears in the confirmed periods table, disappears from draft
+- ✅ Cancelling (✗) a draft row → removed without being added to `localPeriods`
+- ✅ Deleting a confirmed row → removed from `localPeriods`
+- ✅ "Next" on Step 2 with zero confirmed periods → error message, no navigation
+
+---
+
+### S4-FE-006 : ContractForm Wizard — Step 3 (Room Prices, PER_ROOM + PER_OCCUPANCY)
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 8
+- **Branch :** `feat/S4-FE-006-contract-form-step3-room-prices`
+- **Commit :** `feat(contracts): add ContractForm wizard step 3 — room prices PER_ROOM/PER_OCCUPANCY`
+
+**Concept of the day (Sprint 4 doc) :** `computed()` for complex derived logic — the most complex FE ticket, best tackled with a fresh mind.
+
+**Planned scope (to be detailed in session, not yet built) :**
+
+Local structure : `roomPricesByPeriod = signal<Record<string, RoomPriceDto[]>>({})`, one entry per `localPeriods` `tempId`
+
+Target period selection (`p-select` showing `period.name` + dates) before configuring a room price
+
+`roomType` selection + `p-radiobutton` for `PER_ROOM` / `PER_OCCUPANCY`
+
+`PER_ROOM` : simple `p-inputnumber` for `pricePerNight`
+
+`PER_OCCUPANCY` : dedicated `OccupancyConfigFormComponent` —
+
+- `selectedRoomType = input.required<RoomType>()`
+- `maxPax = computed(...)` — sum of `capacities[].maxPax` for the room type
+- `numAdults`/`numChildren` : local signals
+- `isOccupancyValid = computed(...)` — total > 0 and ≤ `maxPax()`
+- `ratesPerAge = signal<Record<string, { rate: number; order: number }>>({})`
+- `totalRate = computed(...)` — sum of the rates, displayed in real time
+
+**Decisions inherited from S4-FE-005, to respect :**
+
+Signals + immutable mutation (`update()`) pattern, no `FormArray`
+
+If inline table editing is used (as in Step 2) : re-evaluate consistency with Samuel before proposing a dialog again — the lesson from S4-FE-005 is that inline editing better matches the real bulk-entry workflow
+
+`LocalRoomPrice` (new type to create, modeled on `LocalContractPeriod`) will likely need to follow the same `Date | null` logic if date fields appear — but `RoomPriceDto` has no date field, so probably not applicable here, to confirm when opening the ticket
+
+**Out of scope :** MealSupplements/StopSales (S4-FE-007/008), final submit (S4-FE-009)
+
+**Acceptance Criteria (to be refined in session) :**
+
+- ✅ `PER_ROOM` : configure a simple price, associated with a period + roomType
+- ✅ `PER_OCCUPANCY` : configure 2 adults + 1 child, `totalRate` updates automatically
+- ✅ Exceeding `maxPax()` → invalid configuration, visual feedback
+- ✅ `nx test frontend` : unit test on `totalRate`/`maxPax` `computed()`
+
+---
+
+### S4-FE-006-BIS — ContractForm Step 3 — Room Prices PER_OCCUPANCY
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 5
+- **Branch :** `feat/S4-FE-006-BIS-room-prices-per-occupancy`
+- **Status :** Follow-up ticket — S4-FE-006 (PER_ROOM) is ✅ closed and merged
+
+**Context :** S4-FE-006 shipped the period × room type matrix for `PER_ROOM` only. `PER_OCCUPANCY` (variable price per adults/children combo, rate per age bracket) was deferred — no UI yet.
+
+**Scope :**
+
+- Per-row mode toggle (`PER_ROOM` / `PER_OCCUPANCY`) on each `LocalRoomPrice` — `p-radiobutton` or `p-selectButton`, align with existing Runner pattern
+- `PER_OCCUPANCY` sub-panel : dynamic rows (signals + immutable `update()`, no `FormArray`) with `numAdults`, `numChildren`, `ratesPerAge` (one input per `AgeCategory`, via existing `HotelsService.getAgeCategories(hotelId)`)
+- Capacity guard : `numAdults + numChildren` ≤ `maxPax` of the `RoomType` (mirror backend `validateOccupancyAgainstCapacity()`)
+- `totalRate` as `computed()`, sum of `ratesPerAge`, read-only
+- Uniqueness : one row per `(numAdults, numChildren)` combo per `LocalRoomPrice` (mirrors backend `@@unique`)
+- Strict validation : `pricePerNight > 0` (PER_ROOM), `ratesPerAge >= 0` + at least one occupancy row required (PER_OCCUPANCY)
+- `goNextFromStep3` : a `PER_OCCUPANCY` row with zero `occupancyRates` must not count as "covered"
+
+**Out of scope :** Steps 4/5 (S4-FE-007/008), `period-form-dialog/` cleanup (S4-FE-005 debt), final submit payload conversion (S4-FE-009)
+
+**Decisions to make in session :** `p-radiobutton` vs `p-selectButton`; sub-panel placement (inline vs separate component, watch accordion nesting); confirm `AgeCategory` loading is hotel-scoped
+
+**Acceptance Criteria :**
+
+- ✅ Toggling a `LocalRoomPrice` to `PER_OCCUPANCY` clears `pricePerNight` and shows the occupancy sub-panel
+- ✅ Adding an occupancy row → editable `numAdults`/`numChildren`/`ratesPerAge`, `totalRate` updates live
+- ✅ Exceeding `maxPax` for the room type → row flagged invalid, feedback visible, cannot be confirmed
+- ✅ Duplicate `(numAdults, numChildren)` on the same `LocalRoomPrice` → rejected with a clear message
+- ✅ A `PER_OCCUPANCY` row with zero occupancy rows → period counted as **uncovered** by `goNextFromStep3`
+- ✅ Switching a row back to `PER_ROOM` → occupancy rows discarded, `pricePerNight` editable again
+- ✅ No regression on existing `PER_ROOM` flow (S4-FE-006 tests still pass)
+- ✅ `nx build frontend` / `nx test frontend` pass with no errors
 
 ---
 
