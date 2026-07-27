@@ -17,6 +17,7 @@ import {
   ContractPeriod,
   MealPlanSupplement,
   RoomPrice,
+  StopSalesDate,
 } from '@prisma/client';
 import { OccupancyRateDto, PaginatedResult } from '@runner/shared/types';
 import { ContractQuery, OccupancyRateCreateData } from './contracts.types';
@@ -24,6 +25,7 @@ import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
+import { CreateStopSalesDateDto } from './dto/create-stop-sales-date.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { UpdateMealPlanSupplementDto } from './dto/update-meal-plan-supplement.dto';
@@ -382,5 +384,51 @@ export class ContractsService {
     const result = await this.contractRepository.removeMealPlanSupplement(id);
     if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Meal plan supplement ${id} not found`);
+  }
+
+  async createStopSalesDate(
+    dto: CreateStopSalesDateDto,
+    contractPeriodId: string,
+    contractId: string,
+  ): Promise<StopSalesDate> {
+    const period = await this.contractRepository.findContractPeriod(
+      contractPeriodId,
+      contractId,
+    );
+    if (!period) {
+      throw new NotFoundException(
+        `Contract Period ${contractPeriodId} not found`,
+      );
+    }
+
+    const date = new Date(dto.date);
+
+    if (date > period.endDate || date < period.startDate)
+      throw new BadRequestException(
+        'Date is outside the contract period range',
+      );
+
+    try {
+      return await this.contractRepository.createStopSalesDate(
+        { date },
+        contractPeriodId,
+      );
+    } catch (error) {
+      if (error instanceof RepositoryException) {
+        if (error.result === RepositoryResult.CONFLICT)
+          throw new ConflictException(
+            `A stop sales date already exists for this date`,
+          );
+        if (error.result === RepositoryResult.NOT_FOUND)
+          throw new NotFoundException(`Date ${dto.date} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async removeStopSalesDate(id: string): Promise<void> {
+    const result = await this.contractRepository.removeStopSalesDate(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Stop Sales date ${id} not found`);
   }
 }

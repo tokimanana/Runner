@@ -6,8 +6,9 @@ import {
   Prisma,
   RoomPrice,
   SeasonPeriod,
+  StopSalesDate,
 } from '@prisma/client';
-import { PaginatedResult } from '@runner/shared/types';
+import { PaginatedResult, StopSalesDateCreateData } from '@runner/shared/types';
 import {
   ContractPeriodCreateData,
   ContractPeriodUpdateData,
@@ -112,4 +113,11 @@ export abstract class ContractRepository {
   ): Promise<MealPlanSupplement>;
 
   abstract removeMealPlanSupplement(id: string): Promise<RepositoryResult>;
+
+  abstract createStopSalesDate(
+    data: StopSalesDateCreateData,
+    contractPeriodId: string,
+  ): Promise<StopSalesDate>;
+
+  abstract removeStopSalesDate(id: string): Promise<RepositoryResult>;
 }

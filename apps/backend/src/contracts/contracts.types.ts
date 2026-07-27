@@ -52,3 +52,7 @@ export interface MealPlanSupplementUpdateData {
   mealPlanId?: string;
   occupancyRates?: Record<string, number>;
 }
+
+export interface StopSalesDateCreateData {
+  date: Date;
+}

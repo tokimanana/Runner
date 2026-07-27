@@ -23,6 +23,7 @@ import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
+import { CreateStopSalesDateDto } from './dto/create-stop-sales-date.dto';
 import { UpdateContractPeriodDto } from './dto/update-contract-period.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 
@@ -126,6 +127,20 @@ export class ContractsController {
     return this.contractsService.createMealPlanSupplement(
       dto,
       periodId,
+      contractId,
+    );
+  }
+
+  @Post(':id/periods/:periodId/stop-sales')
+  @HttpCode(HttpStatus.CREATED)
+  createStopSalesDate(
+    @Param('id') contractId: string,
+    @Param('periodId') contractPeriodId: string,
+    @Body() dto: CreateStopSalesDateDto,
+  ) {
+    return this.contractsService.createStopSalesDate(
+      dto,
+      contractPeriodId,
       contractId,
     );
   }
