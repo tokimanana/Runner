@@ -9,6 +9,7 @@ import {
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -118,16 +119,10 @@ export class ContractsService {
         contractId,
       );
     } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(`Period name already exists`);
-
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(
-            `Base Meal Plan  ${dto.baseMealPlanId} not found`,
-          );
-      }
-      throw error;
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `Period name already exists`,
+        [RepositoryResult.NOT_FOUND]: `Base Meal Plan  ${dto.baseMealPlanId} not found`,
+      });
     }
   }
 
@@ -165,16 +160,10 @@ export class ContractsService {
         contractId,
       );
     } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(`Period name already exists`);
-
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(
-            `Base Meal Plan  ${dto.baseMealPlanId} not found`,
-          );
-      }
-      throw error;
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `Period name already exists`,
+        [RepositoryResult.NOT_FOUND]: `Base Meal Plan  ${dto.baseMealPlanId} not found`,
+      });
     }
   }
 
@@ -187,37 +176,12 @@ export class ContractsService {
       throw new NotFoundException(`Contract Period ${periodId} not found`);
   }
 
-  private async validateNoOverlap(
-    contractId: string,
-    startDate: Date,
-    endDate: Date,
-    excludeId?: string,
-  ): Promise<void> {
-    const overlapping = await this.contractRepository.validateNoOverlap(
-      contractId,
-      startDate,
-      endDate,
-      excludeId,
-    );
-    if (overlapping) {
-      throw new ConflictException(
-        `Period overlaps with existing period "${overlapping.name}"`,
-      );
-    }
-  }
-
   async createRoomPrice(
     dto: CreateRoomPriceDto,
     periodId: string,
     contractId: string,
   ): Promise<RoomPrice> {
-    const period = await this.contractRepository.findContractPeriod(
-      periodId,
-      contractId,
-    );
-    if (!period) {
-      throw new NotFoundException(`Contract Period ${periodId} not found`);
-    }
+    await this.getPeriodOrThrow(periodId, contractId);
 
     let occupancyRatesData: OccupancyRateCreateData[] | undefined;
 
@@ -240,16 +204,114 @@ export class ContractsService {
         occupancyRatesData,
       );
     } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(
-            `A room price already exists for this room type in this period`,
-          );
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Room type ${dto.roomTypeId} not found`);
-      }
-      throw error;
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A room price already exists for this room type in this period`,
+        [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+      });
     }
+  }
+
+  async updateRoomPrice(
+    id: string,
+    dto: UpdateRoomPriceDto,
+  ): Promise<RoomPrice> {
+    try {
+      return await this.contractRepository.updateRoomPrice(id, {
+        roomTypeId: dto.roomTypeId,
+        pricingMode: dto.pricingMode,
+        pricePerNight: dto.pricePerNight,
+      });
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A room price already exists for this room type in this period`,
+        [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+      });
+    }
+  }
+
+  async removeRoomPrice(id: string): Promise<void> {
+    const result = await this.contractRepository.removeRoomPrice(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Room price ${id} not found`);
+  }
+
+  async createMealPlanSupplement(
+    dto: CreateMealPlanSupplementDto,
+    periodId: string,
+    contractId: string,
+  ): Promise<MealPlanSupplement> {
+    const period = await this.getPeriodOrThrow(periodId, contractId);
+
+    try {
+      return await this.contractRepository.createMealPlanSupplement(
+        {
+          mealPlanId: dto.mealPlanId,
+          occupancyRates: dto.occupancyRates,
+        },
+        period.id,
+      );
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A meal plan already exists for this meal plan in this period`,
+        [RepositoryResult.NOT_FOUND]: `Meal plan ${dto.mealPlanId} not found`,
+      });
+    }
+  }
+
+  async updateMealPlanSupplement(
+    id: string,
+    dto: UpdateMealPlanSupplementDto,
+  ): Promise<MealPlanSupplement> {
+    try {
+      return await this.contractRepository.updateMealPlanSupplement(id, {
+        mealPlanId: dto.mealPlanId,
+        occupancyRates: dto.occupancyRates,
+      });
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A meal plan already exists for this meal plan in this period`,
+        [RepositoryResult.NOT_FOUND]: `Meal plan ${dto.mealPlanId} not found`,
+      });
+    }
+  }
+
+  async removeMealPlanSupplement(id: string): Promise<void> {
+    const result = await this.contractRepository.removeMealPlanSupplement(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Meal plan supplement ${id} not found`);
+  }
+
+  async createStopSalesDate(
+    dto: CreateStopSalesDateDto,
+    contractPeriodId: string,
+    contractId: string,
+  ): Promise<StopSalesDate> {
+    const period = await this.getPeriodOrThrow(contractPeriodId, contractId);
+
+    const date = new Date(dto.date);
+
+    if (date > period.endDate || date < period.startDate)
+      throw new BadRequestException(
+        'Date is outside the contract period range',
+      );
+
+    try {
+      return await this.contractRepository.createStopSalesDate(
+        { date },
+        contractPeriodId,
+      );
+    } catch (error) {
+      this.handleRepositoryError(error, {
+        [RepositoryResult.CONFLICT]: `A stop sales date already exists for this date`,
+        [RepositoryResult.NOT_FOUND]: `Date ${dto.date} not found`,
+      });
+    }
+  }
+
+  async removeStopSalesDate(id: string): Promise<void> {
+    const result = await this.contractRepository.removeStopSalesDate(id);
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(`Stop Sales date ${id} not found`);
   }
 
   private async buildOccupancyRates(
@@ -295,40 +357,29 @@ export class ContractsService {
     });
   }
 
-  async updateRoomPrice(
-    id: string,
-    dto: UpdateRoomPriceDto,
-  ): Promise<RoomPrice> {
-    try {
-      return await this.contractRepository.updateRoomPrice(id, {
-        roomTypeId: dto.roomTypeId,
-        pricingMode: dto.pricingMode,
-        pricePerNight: dto.pricePerNight,
-      });
-    } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(
-            `A room price already exists for this room type in this period`,
-          );
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Room type ${dto.roomTypeId} not found`);
-      }
-      throw error;
+  private async validateNoOverlap(
+    contractId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeId?: string,
+  ): Promise<void> {
+    const overlapping = await this.contractRepository.validateNoOverlap(
+      contractId,
+      startDate,
+      endDate,
+      excludeId,
+    );
+    if (overlapping) {
+      throw new ConflictException(
+        `Period overlaps with existing period "${overlapping.name}"`,
+      );
     }
   }
 
-  async removeRoomPrice(id: string): Promise<void> {
-    const result = await this.contractRepository.removeRoomPrice(id);
-    if (result === RepositoryResult.NOT_FOUND)
-      throw new NotFoundException(`Room price ${id} not found`);
-  }
-
-  async createMealPlanSupplement(
-    dto: CreateMealPlanSupplementDto,
+  private async getPeriodOrThrow(
     periodId: string,
     contractId: string,
-  ): Promise<MealPlanSupplement> {
+  ): Promise<ContractPeriod> {
     const period = await this.contractRepository.findContractPeriod(
       periodId,
       contractId,
@@ -336,99 +387,28 @@ export class ContractsService {
     if (!period) {
       throw new NotFoundException(`Contract Period ${periodId} not found`);
     }
+    return period;
+  }
 
-    try {
-      return await this.contractRepository.createMealPlanSupplement(
-        {
-          mealPlanId: dto.mealPlanId,
-          occupancyRates: dto.occupancyRates,
-        },
-        period.id,
-      );
-    } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(
-            `A meal plan already already exists for this meal plan in this period`,
-          );
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Meal plan ${dto.mealPlanId} not found`);
+  private static readonly EXCEPTION_MAP: Partial<
+    Record<RepositoryResult, new (message: string) => HttpException>
+  > = {
+    [RepositoryResult.CONFLICT]: ConflictException,
+    [RepositoryResult.NOT_FOUND]: NotFoundException,
+    [RepositoryResult.HAS_RELATIONS]: ConflictException,
+  };
+
+  private handleRepositoryError(
+    error: unknown,
+    messages: Partial<Record<RepositoryResult, string>>,
+  ): never {
+    if (error instanceof RepositoryException) {
+      const message = messages[error.result];
+      const ExceptionClass = ContractsService.EXCEPTION_MAP[error.result];
+      if (message && ExceptionClass) {
+        throw new ExceptionClass(message);
       }
-      throw error;
     }
-  }
-
-  async updateMealPlanSupplement(
-    id: string,
-    dto: UpdateMealPlanSupplementDto,
-  ): Promise<MealPlanSupplement> {
-    try {
-      return await this.contractRepository.updateMealPlanSupplement(id, {
-        mealPlanId: dto.mealPlanId,
-        occupancyRates: dto.occupancyRates,
-      });
-    } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(
-            `A meal plan already already exists for this meal plan in this period`,
-          );
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Meal plan ${dto.mealPlanId} not found`);
-      }
-      throw error;
-    }
-  }
-
-  async removeMealPlanSupplement(id: string): Promise<void> {
-    const result = await this.contractRepository.removeMealPlanSupplement(id);
-    if (result === RepositoryResult.NOT_FOUND)
-      throw new NotFoundException(`Meal plan supplement ${id} not found`);
-  }
-
-  async createStopSalesDate(
-    dto: CreateStopSalesDateDto,
-    contractPeriodId: string,
-    contractId: string,
-  ): Promise<StopSalesDate> {
-    const period = await this.contractRepository.findContractPeriod(
-      contractPeriodId,
-      contractId,
-    );
-    if (!period) {
-      throw new NotFoundException(
-        `Contract Period ${contractPeriodId} not found`,
-      );
-    }
-
-    const date = new Date(dto.date);
-
-    if (date > period.endDate || date < period.startDate)
-      throw new BadRequestException(
-        'Date is outside the contract period range',
-      );
-
-    try {
-      return await this.contractRepository.createStopSalesDate(
-        { date },
-        contractPeriodId,
-      );
-    } catch (error) {
-      if (error instanceof RepositoryException) {
-        if (error.result === RepositoryResult.CONFLICT)
-          throw new ConflictException(
-            `A stop sales date already exists for this date`,
-          );
-        if (error.result === RepositoryResult.NOT_FOUND)
-          throw new NotFoundException(`Date ${dto.date} not found`);
-      }
-      throw error;
-    }
-  }
-
-  async removeStopSalesDate(id: string): Promise<void> {
-    const result = await this.contractRepository.removeStopSalesDate(id);
-    if (result === RepositoryResult.NOT_FOUND)
-      throw new NotFoundException(`Stop Sales date ${id} not found`);
+    throw error;
   }
 }
