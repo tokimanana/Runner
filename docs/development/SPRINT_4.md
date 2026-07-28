@@ -2355,3 +2355,965 @@ Frontend :
 - `findPeriodForNight()` lit `period.startDate/endDate` directement — **inchangé**
 - `seasonPeriod` inclus optionnellement pour afficher le nom de saison dans le breakdown
 - Aucune modification de logique dans le PricingService
+
+---
+
+# Sprint 4 — Refonte PER_OCCUPANCY (Tickets de correction)
+
+> **Session de design du 18/07/2026**
+>
+> Décision centrale : le modèle `OccupancyRate` (saisie de chaque combinaison d'occupation) est remplacé par `BaseRate` + `AgePolicy` + `OccupancyGuidance`.
+>
+> `OccupancyRate` reste en base (soft delete) pour compatibilité mais n'est plus créé par le backend.
+>
+> `AgePolicy` reste en version simplifiée pour cette itération : pas de `ruleType`/`baseRateRef`, juste `sharingType` + `value` brut. La sémantique (montant vs pourcentage) est portée par l'écran, pas par la donnée.
+
+---
+
+## S4-BE-001-BIS : Prisma — ajouter les nouvelles tables PER_OCCUPANCY
+
+- **Type :** Task
+- **Priority :** P0 (bloque tous les autres tickets de la refonte)
+- **Story Points :** 3
+- **Branch :** `chore/S4-BE-001-BIS-prisma-per-occupancy-tables`
+- **Commit :** `chore(prisma): add BaseRate, AgePolicy, OccupancyGuidance and BillingUnit`
+
+**Contexte :** S4-BE-001 a créé le schéma initial (Season, SeasonPeriod, Contract, ContractPeriod, RoomPrice, OccupancyRate, MealPlanSupplement, StopSalesDate). Ce ticket ajoute les tables nécessaires à la refonte du modèle PER_OCCUPANCY.
+
+**Scope :**
+
+### 1. Nouvelles énumérations
+
+```prisma
+enum SharingType {
+  WITH_PARENTS
+  SEPARATE_ROOM
+}
+
+enum BillingUnit {
+  PER_NIGHT
+  PER_STAY
+}
+```
+
+### 2. Nouvelles tables
+
+**BaseRate** — tarifs de base saisis manuellement, par (contractPeriod, roomType) :
+
+```prisma
+model BaseRate {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  roomTypeId       String
+
+  halfDouble       Decimal        @db.Decimal(10, 2)
+  single           Decimal        @db.Decimal(10, 2)
+  thirdPersonAdult Decimal?       @db.Decimal(10, 2)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
+
+  @@unique([contractPeriodId, roomTypeId])
+  @@index([contractPeriodId])
+  @@index([roomTypeId])
+  @@map("base_rates")
+}
+```
+
+**AgePolicy** — règles par tranche d'âge, par (contractPeriod, ageCategory, sharingType) :
+
+```prisma
+model AgePolicy {
+  id               String         @id @default(cuid())
+  contractPeriodId String
+  ageCategoryId    String
+
+  sharingType      SharingType
+  value            Decimal        @db.Decimal(10, 4)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  ageCategory      AgeCategory    @relation(fields: [ageCategoryId], references: [id])
+
+  @@unique([contractPeriodId, ageCategoryId, sharingType])
+  @@index([contractPeriodId])
+  @@index([ageCategoryId])
+  @@map("age_policies")
+}
+```
+
+**OccupancyGuidance** — combinaisons autorisées par roomType (garde-fou mou) :
+
+```prisma
+model OccupancyGuidance {
+  id          String   @id @default(cuid())
+  roomTypeId  String
+
+  description String
+
+  maxAdults   Int      @default(0)
+  maxTeens    Int      @default(0)
+  maxChildren Int      @default(0)
+  maxInfants  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@index([roomTypeId])
+  @@map("occupancy_guidances")
+}
+```
+
+### 3. Modifications de tables existantes
+
+**ContractPeriod** — ajouter les relations :
+
+```prisma
+model ContractPeriod {
+  // ... champs existants ...
+  baseRates           BaseRate[]
+  agePolicies         AgePolicy[]
+  // ... relations existantes ...
+}
+```
+
+**RoomType** — ajouter la relation :
+
+```prisma
+model RoomType {
+  // ... champs existants ...
+  occupancyGuidances  OccupancyGuidance[]
+  // ... relations existantes ...
+}
+```
+
+**AgeCategory** — ajouter la relation :
+
+```prisma
+model AgeCategory {
+  // ... champs existants ...
+  agePolicies         AgePolicy[]
+  // ... relations existantes ...
+}
+```
+
+**MealPlanSupplement** — ajouter `billingUnit` :
+
+```prisma
+model MealPlanSupplement {
+  // ... champs existants ...
+  billingUnit      BillingUnit    @default(PER_NIGHT)
+  // ... relations existantes ...
+}
+```
+
+**OccupancyRate** — marquer comme legacy (commentaire dans le schéma) :
+
+```prisma
+// LEGACY — conservé pour compatibilité ascendante
+// Les nouvelles données ne créent plus d'OccupancyRate
+model OccupancyRate {
+  // ... champs existants inchangés ...
+}
+```
+
+### Hors scope
+
+- Suppression de `OccupancyRate` (soft delete uniquement)
+- Modification de `RoomPrice` (structure inchangée)
+- `ruleType`/`baseRateRef` sur `AgePolicy` (itération future)
+
+### Acceptance Criteria
+
+- ✅ `npx prisma migrate dev` génère une migration sans erreur
+- ✅ `npx prisma generate` produit un client TypeScript avec les nouveaux modèles
+- ✅ `BaseRate`, `AgePolicy`, `OccupancyGuidance` apparaissent dans le Prisma Client
+- ✅ Aucune donnée existante n'est perdue (`OccupancyRate` conservé, `MealPlanSupplement` reçoit `PER_NIGHT` par défaut)
+
+---
+
+## S4-BE-004-BIS : DTOs — refonte PER_OCCUPANCY
+
+- **Type :** Task
+- **Priority :** P0 (bloque S4-BE-008-BIS et S4-BE-009-BIS)
+- **Story Points :** 3
+- **Branch :** `chore/S4-BE-004-BIS-dtos-per-occupancy`
+- **Commit :** `chore(contracts): add BaseRate, AgePolicy, OccupancyGuidance DTOs and update existing ones`
+
+**Contexte :** S4-BE-004 a créé les DTOs initiaux. Ce ticket remplace les DTOs legacy et ajoute les nouveaux.
+
+### Nouveaux DTOs à créer
+
+**CreateBaseRateDto :**
+
+```typescript
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+
+export class CreateBaseRateDto {
+  @IsString()
+  @IsNotEmpty()
+  roomTypeId: string;
+
+  @IsNumber()
+  @Min(0)
+  halfDouble: number;
+
+  @IsNumber()
+  @Min(0)
+  single: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  thirdPersonAdult?: number | null;
+}
+```
+
+**UpdateBaseRateDto :** `PartialType(CreateBaseRateDto)`
+
+**CreateAgePolicyDto :**
+
+```typescript
+import { IsEnum, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { SharingType } from '@prisma/client';
+
+export class CreateAgePolicyDto {
+  @IsString()
+  @IsNotEmpty()
+  ageCategoryId: string;
+
+  @IsEnum(SharingType)
+  sharingType: SharingType;
+
+  @IsNumber()
+  @Min(0)
+  value: number;
+}
+```
+
+**UpdateAgePolicyDto :** `PartialType(CreateAgePolicyDto)`
+
+**CreateOccupancyGuidanceDto :**
+
+```typescript
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+
+export class CreateOccupancyGuidanceDto {
+  @IsString()
+  @IsNotEmpty()
+  roomTypeId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsOptional() @IsInt() @Min(0) maxAdults?: number;
+  @IsOptional() @IsInt() @Min(0) maxTeens?: number;
+  @IsOptional() @IsInt() @Min(0) maxChildren?: number;
+  @IsOptional() @IsInt() @Min(0) maxInfants?: number;
+}
+```
+
+**UpdateOccupancyGuidanceDto :** `PartialType(CreateOccupancyGuidanceDto)`
+
+### DTOs à modifier
+
+**CreateRoomPriceDto** (modifié) :
+
+```typescript
+export class CreateRoomPriceDto {
+  @IsString()
+  @IsNotEmpty()
+  roomTypeId: string;
+
+  @IsEnum(PricingMode)
+  pricingMode: PricingMode;
+
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
+  @IsNumber()
+  @Min(0)
+  pricePerNight?: number | null;
+  // occupancyRates retiré — plus de saisie inline des combinaisons
+}
+```
+
+**CreateMealPlanSupplementDto** (modifié) :
+
+```typescript
+export class CreateMealPlanSupplementDto {
+  @IsString()
+  @IsNotEmpty()
+  mealPlanId: string;
+
+  @IsEnum(BillingUnit)
+  billingUnit: BillingUnit;
+
+  @IsObject()
+  occupancyRates: Record<string, number>;
+}
+```
+
+### DTOs inchangés
+
+- `CreateContractDto`, `UpdateContractDto`
+- `CreateContractPeriodDto`, `UpdateContractPeriodDto`
+- `CreateStopSalesDateDto`
+
+### Hors scope
+
+- `OccupancyRateDto` — retiré de `CreateRoomPriceDto` mais le type existe encore pour compatibilité legacy
+
+### Acceptance Criteria
+
+- ✅ Tous les nouveaux DTOs compilent sans erreur (`nx build backend`)
+- ✅ `class-validator` rejette les payloads invalides
+- ✅ `CreateRoomPriceDto` en `PER_OCCUPANCY` sans `pricePerNight` passe la validation
+- ✅ `CreateMealPlanSupplementDto` sans `billingUnit` est rejeté
+
+---
+
+## S4-BE-003-BIS : ContractsModule — ajouter les nouveaux controllers
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `chore/S4-BE-003-BIS-module-per-occupancy`
+- **Commit :** `chore(contracts): add BaseRates, AgePolicies, OccupancyGuidances controllers to module`
+
+**Contexte :** S4-BE-003 a créé le module avec 4 controllers. Ce ticket ajoute les 3 nouveaux.
+
+**Dépend de :** S4-BE-004-BIS (DTOs), S4-BE-008-BIS (méthodes de service appelées par ces controllers)
+
+### Nouveaux controllers
+
+**BaseRatesController :**
+
+```typescript
+@Controller('contracts/:contractId/periods/:periodId/base-rates')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.MANAGER)
+export class BaseRatesController {
+  constructor(private readonly contractsService: ContractsService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  create(
+    @Body() dto: CreateBaseRateDto,
+    @Param('contractId') contractId: string,
+    @Param('periodId') periodId: string
+  ) {
+    return this.contractsService.createBaseRate(dto, periodId, contractId);
+  }
+
+  @Get()
+  findByPeriod(
+    @Param('contractId') contractId: string,
+    @Param('periodId') periodId: string
+  ) {
+    return this.contractsService.findBaseRatesByPeriod(periodId, contractId);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateBaseRateDto) {
+    return this.contractsService.updateBaseRate(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@Param('id') id: string) {
+    return this.contractsService.removeBaseRate(id);
+  }
+}
+```
+
+**AgePoliciesController** (même pattern, nichée sous `contracts/:contractId/periods/:periodId/age-policies`, avec `CreateAgePolicyDto`/`UpdateAgePolicyDto`, appelant `createAgePolicy` / `findAgePoliciesByPeriod` / `updateAgePolicy` / `removeAgePolicy`)
+
+**OccupancyGuidancesController** (routes indépendantes du contrat, scopées par room type) :
+
+```typescript
+@Controller('occupancy-guidances')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.MANAGER)
+export class OccupancyGuidancesController {
+  constructor(private readonly contractsService: ContractsService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() dto: CreateOccupancyGuidanceDto) {
+    return this.contractsService.createOccupancyGuidance(dto);
+  }
+
+  @Get('room-types/:roomTypeId')
+  findByRoomType(@Param('roomTypeId') roomTypeId: string) {
+    return this.contractsService.findOccupancyGuidanceByRoomType(roomTypeId);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateOccupancyGuidanceDto) {
+    return this.contractsService.updateOccupancyGuidance(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@Param('id') id: string) {
+    return this.contractsService.removeOccupancyGuidance(id);
+  }
+}
+```
+
+### Modifications de ContractsModule
+
+```typescript
+@Module({
+  controllers: [
+    ContractsController,
+    RoomPricesController,
+    MealPlanSupplementsController,
+    StopSalesDatesController,
+    BaseRatesController, // NOUVEAU
+    AgePoliciesController, // NOUVEAU
+    OccupancyGuidancesController, // NOUVEAU
+  ],
+  providers: [
+    ContractsService,
+    { provide: ContractRepository, useClass: PrismaContractRepository },
+  ],
+})
+export class ContractsModule {}
+```
+
+### Pourquoi `OccupancyGuidancesController` est un controller à part
+
+Contrairement à `BaseRatesController` et `AgePoliciesController`, `OccupancyGuidancesController` n'est pas nichée sous `contracts/:contractId/periods/:periodId/...` — elle est scopée par `roomTypeId` uniquement, parce que la donnée `OccupancyGuidance` ne dépend d'aucun contrat ni période : c'est une propriété de la chambre elle-même (cf. section 4.4 du document de conception), réutilisable à travers plusieurs contrats.
+
+### Hors scope
+
+- Guards/rôles spécifiques différents des controllers existants (on reprend exactement `JwtAuthGuard` + `RolesGuard` + `ADMIN`/`MANAGER`)
+
+### Acceptance Criteria
+
+- ✅ `nx build backend` compile sans erreur
+- ✅ Les 3 nouveaux controllers sont déclarés dans `ContractsModule`
+- ✅ Un appel Postman/curl sur chaque route retourne un statut cohérent (401 sans token, 403 avec un rôle AGENT, 201/200 avec ADMIN)
+- ✅ Swagger/OpenAPI (si généré) liste les nouvelles routes
+
+---
+
+## S4-BE-008-BIS : Cœur métier — BaseRate, AgePolicy, OccupancyGuidance (repository + service)
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 8
+- **Branch :** `feat/S4-BE-008-BIS-per-occupancy-core`
+- **Commit :** `feat(contracts): implement BaseRate, AgePolicy, OccupancyGuidance CRUD`
+
+**Contexte :** c'est le ticket central de la refonte. Il regroupe repository + service pour les 3 nouvelles entités, parce qu'elles partagent le même flux métier (un agent qui saisit un `RoomPrice` en mode `PER_OCCUPANCY` a besoin des trois en même temps) et le même risque de régression (toucher au repository sans le service dans le même ticket laisserait une interface incomplète).
+
+**Dépend de :** S4-BE-001-BIS (schéma), S4-BE-004-BIS (DTOs)
+
+### 1. `contracts.types.ts` — nouvelles interfaces, retrait de `OccupancyRateCreateData`
+
+```typescript
+export interface BaseRateCreateData {
+  roomTypeId: string;
+  halfDouble: number;
+  single: number;
+  thirdPersonAdult?: number | null;
+}
+
+export type BaseRateUpdateData = Partial<BaseRateCreateData>;
+
+export interface AgePolicyCreateData {
+  ageCategoryId: string;
+  sharingType: SharingType;
+  value: number;
+}
+
+export type AgePolicyUpdateData = Partial<AgePolicyCreateData>;
+
+export interface OccupancyGuidanceCreateData {
+  roomTypeId: string;
+  description: string;
+  maxAdults?: number;
+  maxTeens?: number;
+  maxChildren?: number;
+  maxInfants?: number;
+}
+
+export type OccupancyGuidanceUpdateData = Partial<OccupancyGuidanceCreateData>;
+```
+
+`OccupancyRateCreateData` reste dans le fichier (legacy, plus utilisé par le service mais potentiellement encore référencé par du code de migration/archivage).
+
+### 2. `contract.repository.ts` (classe abstraite) — 12 nouvelles méthodes
+
+```typescript
+abstract createBaseRate(data: BaseRateCreateData, contractPeriodId: string): Promise<BaseRate>;
+abstract findBaseRatesByPeriod(contractPeriodId: string): Promise<BaseRate[]>;
+abstract updateBaseRate(id: string, data: BaseRateUpdateData): Promise<BaseRate>;
+abstract removeBaseRate(id: string): Promise<RepositoryResult>;
+
+abstract createAgePolicy(data: AgePolicyCreateData, contractPeriodId: string): Promise<AgePolicy>;
+abstract findAgePoliciesByPeriod(contractPeriodId: string): Promise<AgePolicy[]>;
+abstract updateAgePolicy(id: string, data: AgePolicyUpdateData): Promise<AgePolicy>;
+abstract removeAgePolicy(id: string): Promise<RepositoryResult>;
+
+abstract createOccupancyGuidance(data: OccupancyGuidanceCreateData): Promise<OccupancyGuidance>;
+abstract findOccupancyGuidanceByRoomType(roomTypeId: string): Promise<OccupancyGuidance[]>;
+abstract updateOccupancyGuidance(id: string, data: OccupancyGuidanceUpdateData): Promise<OccupancyGuidance>;
+abstract removeOccupancyGuidance(id: string): Promise<RepositoryResult>;
+```
+
+### 3. `prisma-contract.repository.ts` — implémentation des 12 méthodes
+
+Suit exactement le pattern déjà en place pour `createMealPlanSupplement`/`updateMealPlanSupplement`/`removeMealPlanSupplement` (try/catch avec mapping `P2002` → `CONFLICT`, `P2003` → `NOT_FOUND`). Exemple pour `BaseRate` :
+
+```typescript
+async createBaseRate(
+  data: BaseRateCreateData,
+  contractPeriodId: string,
+): Promise<BaseRate> {
+  try {
+    return await this.prisma.baseRate.create({
+      data: { ...data, contractPeriodId },
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002')
+        throw new RepositoryException(RepositoryResult.CONFLICT);
+      if (error.code === 'P2003')
+        throw new RepositoryException(RepositoryResult.NOT_FOUND);
+    }
+    throw error;
+  }
+}
+```
+
+Les 11 autres méthodes suivent le même squelette (`findMany` pour les listes, `update`/`delete` avec le même mapping d'erreurs que `updateRoomPrice`/`removeRoomPrice`).
+
+### 4. `contracts.service.ts` — 9 nouvelles méthodes, retrait de `buildOccupancyRates`
+
+```typescript
+async createBaseRate(
+  dto: CreateBaseRateDto,
+  periodId: string,
+  contractId: string,
+): Promise<BaseRate> {
+  await this.getPeriodOrThrow(periodId, contractId);
+  try {
+    return await this.contractRepository.createBaseRate(dto, periodId);
+  } catch (error) {
+    this.handleRepositoryError(error, {
+      [RepositoryResult.CONFLICT]: `A base rate already exists for this room type in this period`,
+      [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} not found`,
+    });
+  }
+}
+
+async findBaseRatesByPeriod(periodId: string, contractId: string): Promise<BaseRate[]> {
+  await this.getPeriodOrThrow(periodId, contractId);
+  return this.contractRepository.findBaseRatesByPeriod(periodId);
+}
+
+async updateBaseRate(id: string, dto: UpdateBaseRateDto): Promise<BaseRate> {
+  try {
+    return await this.contractRepository.updateBaseRate(id, dto);
+  } catch (error) {
+    this.handleRepositoryError(error, {
+      [RepositoryResult.NOT_FOUND]: `Base rate ${id} not found`,
+    });
+  }
+}
+
+async removeBaseRate(id: string): Promise<void> {
+  const result = await this.contractRepository.removeBaseRate(id);
+  if (result === RepositoryResult.NOT_FOUND)
+    throw new NotFoundException(`Base rate ${id} not found`);
+}
+```
+
+Même triplet `create`/`update`/`remove` + `findByPeriod` pour `AgePolicy`, et `create`/`update`/`remove` + `findByRoomType` pour `OccupancyGuidance` (pas de `getPeriodOrThrow` pour cette dernière puisqu'elle n'est pas rattachée à une période).
+
+**Retrait :**
+
+- `buildOccupancyRates()` (méthode privée entière)
+- L'appel à `buildOccupancyRates()` dans `createRoomPrice()` — remplacé par : si `pricingMode === 'PER_OCCUPANCY'`, `RoomPrice` est créé sans `occupancyRates`, la saisie des tarifs se fait ensuite séparément via `BaseRatesController`/`AgePoliciesController`.
+
+### Hors scope
+
+- `findOne` du contrat n'inclut pas encore `baseRates`/`agePolicies` (ticket S4-BE-005-BIS)
+- Tests unitaires (ticket S4-BE-011-BIS)
+- Nettoyage complet des imports/types legacy `OccupancyRateDto` (ticket S4-REFACTOR-003)
+
+### Acceptance Criteria
+
+- ✅ `nx build backend` compile sans erreur
+- ✅ Créer un `RoomPrice` en `PER_OCCUPANCY` ne nécessite plus `occupancyRates` dans le payload
+- ✅ `POST .../base-rates` avec un `roomTypeId` inexistant retourne 404
+- ✅ `POST .../base-rates` en double sur le même (period, roomType) retourne 409
+- ✅ `POST .../age-policies` avec le même (ageCategory, sharingType) sur la même période retourne 409
+- ✅ Aucune validation de capacité (`totalMaxPax`) n'est appliquée sur ces nouvelles routes
+
+---
+
+## S4-BE-009-BIS : MealPlanSupplement — câbler `billingUnit` dans repository/service
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `chore/S4-BE-009-BIS-billing-unit`
+- **Commit :** `feat(contracts): wire billingUnit through MealPlanSupplement flow`
+
+**Contexte :** le champ `billingUnit` a été ajouté au schéma (S4-BE-001-BIS) et au DTO (S4-BE-004-BIS). Ce ticket est isolé du reste de la refonte PER_OCCUPANCY parce que `MealPlanSupplement` n'a aucun lien structurel avec `BaseRate`/`AgePolicy`/`OccupancyGuidance` — c'est un ajout de champ sur une table déjà existante et déjà câblée de bout en bout.
+
+**Dépend de :** S4-BE-001-BIS (schéma), S4-BE-004-BIS (DTO)
+
+### `contracts.types.ts`
+
+```typescript
+export interface MealPlanSupplementCreateData {
+  mealPlanId: string;
+  occupancyRates: Record<string, number>;
+  billingUnit: BillingUnit; // NOUVEAU
+}
+
+export type MealPlanSupplementUpdateData =
+  Partial<MealPlanSupplementCreateData>;
+```
+
+### `prisma-contract.repository.ts`
+
+Aucun changement de logique nécessaire — `createMealPlanSupplement`/`updateMealPlanSupplement` passent déjà `data` tel quel à Prisma (`data: { ...data, contractPeriodId }`). Le champ `billingUnit` est propagé automatiquement dès que `MealPlanSupplementCreateData` le contient.
+
+### `contracts.service.ts`
+
+```typescript
+async createMealPlanSupplement(
+  dto: CreateMealPlanSupplementDto,
+  periodId: string,
+  contractId: string,
+): Promise<MealPlanSupplement> {
+  const period = await this.getPeriodOrThrow(periodId, contractId);
+
+  try {
+    return await this.contractRepository.createMealPlanSupplement(
+      {
+        mealPlanId: dto.mealPlanId,
+        occupancyRates: dto.occupancyRates,
+        billingUnit: dto.billingUnit, // NOUVEAU
+      },
+      period.id,
+    );
+  } catch (error) {
+    this.handleRepositoryError(error, {
+      [RepositoryResult.CONFLICT]: `A meal plan already exists for this meal plan in this period`,
+      [RepositoryResult.NOT_FOUND]: `Meal plan ${dto.mealPlanId} not found`,
+    });
+  }
+}
+```
+
+Même ajout dans `updateMealPlanSupplement` (`billingUnit: dto.billingUnit`).
+
+### Hors scope
+
+- Modélisation structurée des suppléments repas (remplacer `occupancyRates: Json` par un modèle dédié — hors périmètre immédiat, cf. document de conception section 8)
+
+### Acceptance Criteria
+
+- ✅ `POST .../meal-plan-supplements` sans `billingUnit` est rejeté (validation DTO déjà couverte par S4-BE-004-BIS, vérifiée ici de bout en bout)
+- ✅ `billingUnit` est bien persisté et retourné par `GET` sur le contrat
+- ✅ `PATCH .../meal-plan-supplements/:id` permet de changer `billingUnit` seul, sans toucher `occupancyRates`
+
+---
+
+## S4-BE-005-BIS : `findOne` — inclure `baseRates` et `agePolicies` dans la réponse contrat
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `chore/S4-BE-005-BIS-findone-include`
+- **Commit :** `feat(contracts): include baseRates and agePolicies in findOne`
+
+**Contexte :** `findOne` (dans `PrismaContractRepository`) inclut déjà `roomPrices.occupancyRates`, `mealPlanSupplements`, `stopSalesDates` par période. Ce ticket ajoute les deux nouvelles relations pour que le frontend reçoive tout en un seul appel `GET /contracts/:id`.
+
+**Dépend de :** S4-BE-008-BIS (les relations doivent exister côté repository)
+
+### `prisma-contract.repository.ts`
+
+```typescript
+async findOne(
+  id: string,
+  tourOperatorId: string,
+): Promise<SharedContract | null> {
+  const contract = await this.prisma.contract.findUnique({
+    where: { id, tourOperatorId },
+    include: {
+      ...CONTRACT_INCLUDE,
+      periods: {
+        include: {
+          seasonPeriod: true,
+          baseMealPlan: true,
+          roomPrices: {
+            include: {
+              occupancyRates: true, // legacy, conservé
+            },
+          },
+          mealPlanSupplements: true,
+          stopSalesDates: true,
+          baseRates: {
+            include: { roomType: { select: { id: true, name: true, code: true } } },
+          }, // NOUVEAU
+          agePolicies: {
+            include: { ageCategory: true },
+          }, // NOUVEAU
+        },
+      },
+    },
+  });
+
+  if (!contract) {
+    return null;
+  }
+
+  return serializeDates(this.mapToContract(contract));
+}
+```
+
+### `contract.types.ts` (shared)
+
+```typescript
+export interface ContractPeriod {
+  // ... champs existants ...
+  baseRates?: BaseRate[]; // NOUVEAU
+  agePolicies?: AgePolicy[]; // NOUVEAU
+}
+
+export interface BaseRate {
+  id: string;
+  contractPeriodId: string;
+  roomTypeId: string;
+  halfDouble: number;
+  single: number;
+  thirdPersonAdult: number | null;
+  roomType?: { id: string; name: string; code: string };
+}
+
+export interface AgePolicy {
+  id: string;
+  contractPeriodId: string;
+  ageCategoryId: string;
+  sharingType: SharingType;
+  value: number;
+  ageCategory?: { id: string; name: string; minAge: number; maxAge: number };
+}
+```
+
+### Hors scope
+
+- Pagination/filtrage des `baseRates`/`agePolicies` (volumes trop faibles pour le justifier — 3-5 room types × 5-8 règles d'âge par contrat)
+
+### Acceptance Criteria
+
+- ✅ `GET /contracts/:id` retourne `periods[].baseRates` et `periods[].agePolicies` peuplés
+- ✅ Le `roomType` de chaque `BaseRate` et l'`ageCategory` de chaque `AgePolicy` sont inclus (évite un aller-retour frontend supplémentaire)
+- ✅ Un contrat sans `BaseRate`/`AgePolicy` renvoie des tableaux vides, pas `null`/`undefined`
+
+---
+
+## S4-BE-011-BIS : Tests unitaires — BaseRate, AgePolicy, OccupancyGuidance
+
+- **Type :** Test
+- **Priority :** P1
+- **Story Points :** 4
+- **Branch :** `test/S4-BE-011-BIS-per-occupancy-unit-tests`
+- **Commit :** `test(contracts): add unit tests for BaseRate, AgePolicy, OccupancyGuidance`
+
+**Contexte :** couverture des 9 nouvelles méthodes de service (S4-BE-008-BIS) et 2 méthodes modifiées (S4-BE-009-BIS). Suit le pattern de test déjà en place pour `createRoomPrice`/`createMealPlanSupplement` (mock du `ContractRepository`, assertions sur les exceptions NestJS).
+
+**Dépend de :** S4-BE-008-BIS, S4-BE-009-BIS (le code testé doit exister avant de l'écrire)
+
+### Scope — `contracts.service.spec.ts`
+
+**`createBaseRate` :**
+
+- ✅ Crée un `BaseRate` valide quand la période existe
+- ✅ Lève `NotFoundException` si la période n'existe pas (`getPeriodOrThrow`)
+- ✅ Lève `NotFoundException` si `roomTypeId` n'existe pas (mapping `RepositoryResult.NOT_FOUND`)
+- ✅ Lève `ConflictException` si un `BaseRate` existe déjà pour ce (period, roomType)
+
+**`updateBaseRate` / `removeBaseRate` :**
+
+- ✅ Update réussi
+- ✅ `NotFoundException` si l'id n'existe pas
+
+**`createAgePolicy` :**
+
+- ✅ Crée une `AgePolicy` valide
+- ✅ Lève `ConflictException` si (period, ageCategory, sharingType) existe déjà
+- ✅ Accepte `value = 0` (cas du "gratuit" pour Infant/Child WITH_PARENTS)
+
+**`createOccupancyGuidance` :**
+
+- ✅ Crée une guidance sans vérification de période (pas de `getPeriodOrThrow`, contrairement à BaseRate/AgePolicy)
+- ✅ Les champs `maxAdults`/`maxTeens`/`maxChildren`/`maxInfants` par défaut à 0 si omis
+
+**`createRoomPrice` (régression) :**
+
+- ✅ Un `RoomPrice` en `PER_OCCUPANCY` se crée **sans** `occupancyRates` dans le payload (confirme le retrait de `buildOccupancyRates`)
+- ✅ Aucune exception liée à la capacité n'est levée, quelle que soit la donnée envoyée
+
+**`createMealPlanSupplement` / `updateMealPlanSupplement` :**
+
+- ✅ `billingUnit` est bien transmis au repository dans le payload de création/update
+
+### Hors scope
+
+- Tests d'intégration (base de données réelle) — hors scope de ce ticket, uniquement des mocks
+- Tests du repository Prisma lui-même (`prisma-contract.repository.spec.ts`) — à évaluer séparément si le pattern existant du projet en a besoin
+
+### Acceptance Criteria
+
+- ✅ `nx test backend --testPathPattern=contracts.service` passe à 100%
+- ✅ Couverture des nouvelles méthodes de service ≥ 90%
+- ✅ Aucun test existant ne casse (notamment ceux de `createRoomPrice` déjà en place avant la refonte)
+
+---
+
+## S4-REFACTOR-003 : Nettoyage — retrait définitif du legacy `OccupancyRate`/validation de capacité
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 2
+- **Branch :** `refactor/S4-REFACTOR-003-cleanup-legacy-occupancy`
+- **Commit :** `refactor(contracts): remove dead code and legacy references`
+
+**Contexte :** dernier ticket de la série. Une fois S4-BE-008-BIS, S4-BE-009-BIS, S4-BE-005-BIS et S4-BE-011-BIS validés en usage réel (au moins un contrat créé de bout en bout avec le nouveau modèle), on nettoie ce qui a été volontairement laissé de côté pendant la refonte pour ne pas bloquer le reste de l'équipe.
+
+**Dépend de :** tous les tickets précédents, validés en usage réel — ce ticket n'est **pas** à traiter en parallèle, c'est le dernier de la série.
+
+### Scope
+
+**1. `contracts.service.ts`**
+
+- Supprimer le commentaire mort / imports inutilisés liés à `buildOccupancyRates` s'il en reste (constantes, types `OccupancyRateDto` importés mais plus utilisés)
+
+**2. `contracts.types.ts`**
+
+- Marquer `OccupancyRateCreateData` avec un commentaire `@deprecated` explicite si le type est encore référencé ailleurs (scripts de migration/archivage), ou le supprimer s'il n'a plus aucune référence
+
+**3. `contract.types.ts` (shared)**
+
+- Marquer `OccupancyRate`, `OccupancyRateDto` comme `@deprecated` dans le JSDoc, pour signaler au frontend de ne plus les utiliser dans les nouveaux écrans
+
+**4. `schema.prisma`**
+
+- Décision à prendre **avec Samuel avant d'exécuter ce ticket** : le modèle `OccupancyRate` reste-t-il indéfiniment en base (archivage), ou planifie-t-on sa suppression physique dans une migration ultérieure une fois qu'on est sûr qu'aucun contrat en production ne s'appuie encore dessus ? Ce ticket ne fait **pas** cette suppression — il documente juste la décision dans un commentaire au-dessus du modèle.
+
+### Hors scope
+
+- Suppression physique de la table `OccupancyRate` en base (nécessite une décision produit séparée, cf. point 4 ci-dessus)
+- Nettoyage frontend (`ContractForm` Step 3) — c'est un chantier frontend distinct, hors périmètre backend
+
+### Acceptance Criteria
+
+- ✅ `nx build backend` compile toujours sans erreur après nettoyage
+- ✅ Aucune méthode de service n'appelle plus de logique liée à la validation de capacité (`totalMaxPax`)
+- ✅ Une recherche globale de `buildOccupancyRates` dans le repo ne retourne aucun résultat
+- ✅ Les tests de S4-BE-011-BIS passent toujours après le nettoyage
+
+---
+
+## S4-BE-012-BIS : BaseRate — ajout des paliers Triple et Quadruple
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `chore/S4-BE-012-BIS-base-rate-triple-quadruple`
+- **Commit :** `feat(contracts): add triple and quadruple fields to BaseRate`
+
+**Contexte :** S4-BE-001-BIS, S4-BE-004-BIS et S4-BE-005-BIS sont déjà mergés. Les .xlsx que les agents remplissent montrent que les contrats PER_OCCUPANCY utilisent jusqu'à 5 colonnes de tarif — Half Double, Single, Third Adult, Triple, Quadruple. `thirdPersonAdult` (supplément ajouté à une chambre pensée pour 2) et Triple/Quadruple (tarifs autonomes par personne pour une chambre pensée pour 3 ou 4 dès le départ) sont deux concepts distincts, pas des synonymes. Ce ticket ajoute les deux champs manquants sans toucher à l'existant.
+
+**Dépend de :** S4-BE-001-BIS, S4-BE-004-BIS, S4-BE-005-BIS (déjà mergés)
+
+### 1. Schéma Prisma
+
+```prisma
+model BaseRate {
+  // ... champs existants inchangés (halfDouble, single, thirdPersonAdult) ...
+  triple           Decimal?       @db.Decimal(10, 2)
+  quadruple        Decimal?       @db.Decimal(10, 2)
+  // ... relations inchangées ...
+}
+```
+
+Migration : `npx prisma migrate dev --name add_triple_quadruple_to_base_rate` — additive, deux colonnes nullable, aucun risque sur les données existantes.
+
+### 2. DTOs (`create-base-rate.dto.ts` / `update-base-rate.dto.ts`)
+
+```typescript
+export class CreateBaseRateDto {
+  // ... champs existants inchangés ...
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  triple?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  quadruple?: number | null;
+}
+```
+
+`UpdateBaseRateDto` suit automatiquement via `PartialType(CreateBaseRateDto)`.
+
+### 3. Types partagés (`contract.types.ts`)
+
+```typescript
+export interface BaseRate {
+  // ... champs existants inchangés ...
+  triple: number | null;
+  quadruple: number | null;
+}
+```
+
+### 4. Types internes (`contracts.types.ts`)
+
+```typescript
+export interface BaseRateCreateData {
+  // ... champs existants inchangés ...
+  triple?: number | null;
+  quadruple?: number | null;
+}
+```
+
+> Ajout identifié en cours de ticket (non listé dans la version initiale) : sans lui, `contracts.service.ts` ne peut pas relayer `triple`/`quadruple` vers le repository (même échec de compilation que rencontré pour `billingUnit` sur `MealPlanSupplementUpdateData`).
+
+### Hors scope
+
+- Toute logique de calcul automatique utilisant ces deux champs
+- Validation d'exclusivité côté backend/DTO — volontairement absente, pour ne pas complexifier le DX. Contrainte à respecter côté frontend (formulaire Angular du contrat) : un seul des deux champs, `thirdPersonAdult` ou `triple`, doit être renseigné à la fois pour un même room type/période. Hors périmètre de ce ticket backend — à cadrer dans le ticket frontend correspondant.
+
+### Acceptance Criteria
+
+- ✅ `npx prisma migrate dev` génère une migration sans erreur, aucune donnée existante perdue
+- ✅ `npx prisma generate` expose `triple`/`quadruple` sur le client TypeScript
+- ✅ `POST .../base-rates` accepte un payload avec ou sans `triple`/`quadruple`
+- ✅ `GET /contracts/:id` retourne `triple`/`quadruple` sans changement côté `findOne` — Prisma inclut les nouveaux champs scalaires automatiquement dès qu'ils sont dans le modèle, la requête `include` de S4-BE-005-BIS n'a rien à faire de plus
+
+---
