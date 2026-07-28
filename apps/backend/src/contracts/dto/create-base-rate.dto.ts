@@ -23,4 +23,14 @@ export class CreateBaseRateDto {
   @IsNumber()
   @Min(0)
   thirdPersonAdult?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  triple?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  quadruple?: number | null;
 }
