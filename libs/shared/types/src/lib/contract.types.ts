@@ -115,6 +115,8 @@ export interface BaseRate {
   halfDouble: number;
   single: number;
   thirdPersonAdult: number | null;
+  triple: number | null;
+  quadruple: number | null;
   roomType?: { id: string; name: string; code: string };
 }
 
