@@ -1251,6 +1251,103 @@ If inline table editing is used (as in Step 2) : re-evaluate consistency with Sa
 
 ---
 
+## S4-FE-006-BIS : Step 3 — PER_OCCUPANCY (BaseRate + AgePolicy)
+
+**Contexte :** S4-FE-006 a livré la matrice période × room type pour PER_ROOM
+uniquement. PER_OCCUPANCY était différé — pas d'UI encore. Cette version du
+ticket cible le backend réel issu de la refonte PER_OCCUPANCY (Sprint 4 BE) :
+`BaseRate` (tarifs fixes par room type/période) + `AgePolicy` (règles par
+tranche d'âge × sharingType), **pas** l'ancien `OccupancyRate` (matrice de
+combinaisons adultes/enfants).
+
+### Scope
+
+- **Toggle de mode par ligne** (PER_ROOM / PER_OCCUPANCY) sur chaque
+  `LocalRoomPrice` — inchangé par rapport à la version originale.
+
+- **Sous-panneau PER_OCCUPANCY** — remplace la "liste dynamique de
+  combinaisons" par **deux blocs distincts** :
+  - Un formulaire `BaseRate` **unique** (pas une liste) : `halfDouble`,
+    `single`, `thirdPersonAdult?`, `triple?`, `quadruple?` — un seul par
+    (période, room type), reflète `@@unique([contractPeriodId, roomTypeId])`.
+  - Une liste `AgePolicy` **dérivée des `AgeCategory` de l'hôtel**
+    (`HotelsService.getAgeCategories(hotelId)`) : pour chaque tranche d'âge,
+    deux valeurs possibles (`WITH_PARENTS`, `SEPARATE_ROOM`), reflète
+    `@@unique([contractPeriodId, ageCategoryId, sharingType])`. Pas de
+    "ligne dynamique ajoutable" — la liste est fixe, dérivée des tranches
+    d'âge existantes de l'hôtel.
+
+- **Capacity guard : retiré du scope.** La validation de capacité
+  (`totalPax > totalMaxPax`) a été explicitement supprimée côté backend
+  (décision actée : "les agents décident eux-mêmes des combinaisons
+  pertinentes"). Il n'y a plus de fonction équivalente à
+  `validateOccupancyAgainstCapacity()` à mirrorer.
+
+- **`totalRate` calculé : retiré du scope.** Il n'y a plus de somme
+  `ratesPerAge` à calculer — `BaseRate` a des champs fixes saisis
+  directement par l'agent, pas de moteur de calcul (décision 7 du backend :
+  hors périmètre immédiat).
+
+- **Unicité** — deux règles distinctes désormais, pas une seule :
+  - Un seul `BaseRate` par `LocalRoomPrice` (naturellement garanti si le
+    formulaire n'est pas une liste).
+  - Une seule `AgePolicy` par (tranche d'âge, sharingType) — naturellement
+    garanti si la liste est dérivée des `AgeCategory` plutôt que saisie
+    librement.
+
+- **Validation stricte :**
+  - PER_ROOM : `pricePerNight > 0` — inchangé.
+  - PER_OCCUPANCY : `halfDouble > 0` et `single > 0` requis ;
+    `thirdPersonAdult`/`triple`/`quadruple` optionnels si renseignés, `≥ 0` ;
+    `AgePolicy.value ≥ 0` pour chaque tranche renseignée.
+
+- **`goNextFromStep3`** : une ligne PER_OCCUPANCY sans `BaseRate` valide
+  (`halfDouble`/`single` manquants ou nuls) doit compter comme non
+  couverte — remplace la condition "zero occupancyRates" de la version
+  originale.
+
+### Hors scope
+
+- Steps 4/5 (S4-FE-007/008), nettoyage `period-form-dialog` (dette S4-FE-005),
+  conversion du payload final de soumission (S4-FE-009)
+- **`OccupancyGuidance` : à confirmer avec toi (voir ci-dessous)** — n'était
+  pas dans le ticket original, et sa place naturelle est ambiguë.
+
+### Décisions à prendre en session (mises à jour)
+
+- `p-radiobutton` vs `p-selectButton` pour le toggle — inchangé, à trancher.
+- Placement du sous-panneau (inline vs composant séparé, attention à
+  l'imbrication d'accordéons) — inchangé, à trancher.
+- Confirmer que `AgeCategory` est bien chargé par hôtel (déjà validé côté
+  backend : `AgeCategory` reste scopée par hôtel, décision 6) — la question
+  originale portait sur le chargement frontend, toujours valable à vérifier.
+- **Nouveau point à trancher :** `OccupancyGuidance` (les combinaisons
+  indicatives) n'est **pas** scopée par période mais par `roomTypeId` seul —
+  ça veut dire qu'elle ne fait probablement **pas partie de ce Step 3**
+  (qui est structuré par période de contrat), mais plutôt d'un écran de
+  gestion du room type lui-même (indépendant du contrat). Je ne l'ai donc
+  pas incluse dans le scope ci-dessus. Confirme si c'est bien hors
+  périmètre de ce ticket, ou si tu veux l'y intégrer quand même.
+
+### Acceptance Criteria (mis à jour)
+
+- ✅ Basculer un `LocalRoomPrice` en PER_OCCUPANCY vide `pricePerNight` et
+  affiche le sous-panneau `BaseRate` + `AgePolicy`
+- ✅ Le formulaire `BaseRate` est éditable, un seul par ligne
+- ✅ La liste `AgePolicy` est dérivée des `AgeCategory` de l'hôtel, deux
+  valeurs (`WITH_PARENTS`/`SEPARATE_ROOM`) par tranche
+- ✅ `BaseRate` incomplet (`halfDouble`/`single` manquants) → ligne
+  invalide, ne peut pas être confirmée
+- ✅ Une ligne PER_OCCUPANCY sans `BaseRate` valide → période comptée comme
+  non couverte par `goNextFromStep3`
+- ✅ Rebasculer une ligne en PER_ROOM → `BaseRate`/`AgePolicy` de la ligne
+  abandonnés, `pricePerNight` redevient éditable
+- ✅ Aucune régression sur le flux PER_ROOM existant (tests S4-FE-006
+  toujours valides)
+- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
+
+---
+
 ### S4-FE-006-BIS — ContractForm Step 3 — Room Prices PER_OCCUPANCY
 
 - **Type :** Feature
