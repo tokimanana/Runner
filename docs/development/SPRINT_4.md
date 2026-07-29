@@ -1152,7 +1152,7 @@ paginent déjà et comment).
 - **Branch :** `feat/S4-FE-005-contract-form-step2-periods`
 - **Commit :** `feat(contracts): add ContractForm wizard step 2 — inline period editing with season bulk generation`
 
-**Scope (final version) :**
+**Scope :**
 
 `LocalContractPeriod` : `Omit<ContractPeriodDto, 'startDate' | 'endDate'> & { tempId: string; startDate: Date | null; endDate: Date | null }`, declared in `contract-form.component.ts`. Dates typed `Date | null` (not `string`) for direct binding with `p-datepicker`, without `$any()` coercion in the template.
 
@@ -1251,7 +1251,7 @@ If inline table editing is used (as in Step 2) : re-evaluate consistency with Sa
 
 ---
 
-## S4-FE-006-BIS : Step 3 — PER_OCCUPANCY (BaseRate + AgePolicy)
+### S4-FE-006-BIS : Step 3 — PER_OCCUPANCY (BaseRate + AgePolicy)
 
 - **Type :** Task
 - **Priority :** P1
@@ -1266,7 +1266,7 @@ ticket cible le backend réel issu de la refonte PER_OCCUPANCY (Sprint 4 BE) :
 tranche d'âge × sharingType), **pas** l'ancien `OccupancyRate` (matrice de
 combinaisons adultes/enfants).
 
-### Scope
+**Scope :**
 
 - **Toggle de mode par ligne** (PER_ROOM / PER_OCCUPANCY) sur chaque
   `LocalRoomPrice` — inchangé par rapport à la version originale.
@@ -3509,5 +3509,45 @@ Ajouter `roomTypeId` à `AgePolicy`, **requis**, en miroir exact du pattern déj
 - Migration des données existantes (aucune donnée de contrat réelle en prod à ce stade, à confirmer avant d'écrire un script de migration de données).
 - Validation backend de l'éligibilité par room type (l'absence d'entrée suffit, pas de champ "applicable"/"non applicable" à créer).
 - Modification du frontend (Step 3, relocalisation de la grille AgePolicy dans le row/card par room type) — ticket frontend séparé, à créer après celui-ci.
+
+---
+
+# S4-FE-015-BIS — Relocate AgePolicy grid from per-period to per-room-type
+
+## Contexte
+
+Suite à S4-BE-013-BIS (`AgePolicy.roomTypeId`), la grille AgePolicy du Step 3 du wizard de contrat doit passer d'un affichage "une fois par période" à un affichage "une fois par room type", en miroir de la section BaseRate.
+
+Preuve : deux contrats réels (LUX* Belle Mare, LUX* Tamassa) montrent des tarifs AgePolicy différents selon le room type, et certains room types ne sont pas éligibles à une règle donnée.
+
+## Dépendance
+
+Bloqué par S4-BE-013-BIS (schema + migration + DTOs + shared types `roomTypeId` sur `AgePolicy`). Ne pas démarrer avant que ce ticket soit mergé.
+
+## Décision déjà validée (rappel, pas à rediscuter)
+
+- Absence d'entrée `AgePolicy` pour un room type = règle non applicable à ce room type. Pas de champ "éligibilité" séparé à créer.
+- Pas de dimension "nombre de parents" à gérer (montant identique 1 ou 2 parents).
+- Ordinaux "1st Child"/"2nd Child" : une seule `AgeCategory` "Child", rien à changer ici.
+
+## Travail à faire (frontend uniquement)
+
+1. Dans `contract-form.component.ts` : adapter `agePolicyRowsByPeriod` (ou le remplacer) pour grouper par `(period, roomType)` au lieu de `(period)` seul — probablement un nouveau computed du style `agePolicyRowsByPeriodAndRoomType`.
+2. Dans `contract-form.component.html` : déplacer le bloc `<h4>Age policy...</h4>` + `<p-table>` actuellement au niveau `@if (group.hasPerOccupancy)` (une fois par période) vers l'intérieur de chaque `room-price-card`, uniquement quand `rp.pricingMode === 'PER_OCCUPANCY'` — juste après la section BaseRate de la card.
+3. `updateAgePolicyValue()` : ajouter `roomTypeId` en paramètre et dans la logique de recherche/mise à jour de l'entrée locale.
+4. `LocalAgePolicyEntry` (`contract-form.types.ts`) : ajouter `roomTypeId`.
+5. Vérifier que la synchronisation de la matrice de prix (`syncRoomPriceMatrix`) gère bien la création/suppression des entrées `AgePolicy` locales quand un room type est ajouté/retiré, comme elle le fait déjà pour `localRoomPrices`.
+
+**Hors scope :**
+
+- Toute logique d'éligibilité automatique par capacité (contrairement à BaseRate, il n'y a pas de règle "masquer si capacité insuffisante" identifiée pour AgePolicy à ce stade — l'agent choisit librement).
+- `OccupancyGuidance` — ticket séparé S4-FE-014-BIS.
+
+## Fichiers concernés
+
+- `contract-form.component.ts`
+- `contract-form.component.html`
+- `contract-form.component.scss` (si le layout de card nécessite un ajustement)
+- `contract-form.types.ts`
 
 ---
