@@ -4,6 +4,10 @@ import { IsEnum, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 export class CreateAgePolicyDto {
   @IsString()
   @IsNotEmpty()
+  roomTypeId: string;
+
+  @IsString()
+  @IsNotEmpty()
   ageCategoryId: string;
 
   @IsEnum(SharingType)

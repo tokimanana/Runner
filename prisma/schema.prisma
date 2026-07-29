@@ -68,16 +68,19 @@ enum SharingType {
 model AgePolicy {
   id               String         @id @default(cuid())
   contractPeriodId String
+  roomTypeId       String
   ageCategoryId    String
   sharingType      SharingType
   value            Decimal        @db.Decimal(10, 4)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
   ageCategory      AgeCategory    @relation(fields: [ageCategoryId], references: [id])
 
-  @@unique([contractPeriodId, ageCategoryId, sharingType])
+  @@unique([contractPeriodId, roomTypeId, ageCategoryId, sharingType])
   @@index([contractPeriodId])
+  @@index([roomTypeId])
   @@index([ageCategoryId])
   @@map("age_policies")
 }
@@ -91,6 +94,7 @@ model RoomType {
   capacities RoomTypeCapacity[]
   roomPrices RoomPrice[]
   baseRates  BaseRate[]
+  agePolicies AgePolicy[]
   occupancyGuidances  OccupancyGuidance[]
 }
 

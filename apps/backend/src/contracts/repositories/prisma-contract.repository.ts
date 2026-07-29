@@ -104,7 +104,7 @@ export class PrismaContractRepository extends ContractRepository {
             baseMealPlan: true,
             roomPrices: {
               include: {
-                occupancyRates: true,
+                occupancyRates: true, // legacy
               },
             },
             mealPlanSupplements: true,
@@ -115,7 +115,10 @@ export class PrismaContractRepository extends ContractRepository {
               },
             },
             agePolicies: {
-              include: { ageCategory: true },
+              include: {
+                roomType: { select: { id: true, name: true, code: true } },
+                ageCategory: true,
+              },
             },
           },
         },
