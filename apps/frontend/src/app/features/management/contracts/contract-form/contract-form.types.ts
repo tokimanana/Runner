@@ -1,4 +1,8 @@
-import { ContractPeriodDto, RoomPriceDto } from '@runner/shared/types';
+import {
+  ContractPeriodDto,
+  RoomPriceDto,
+  SharingType,
+} from '@runner/shared/types';
 
 export interface LocalContractPeriod
   extends Omit<ContractPeriodDto, 'startDate' | 'endDate'> {
@@ -7,14 +11,34 @@ export interface LocalContractPeriod
   endDate: Date | null;
 }
 
-export interface LocalOccupancyRate {
-  numAdults: number;
-  numChildren: number;
-  ratesPerAge: Record<string, number>;
+export interface LocalBaseRate {
+  halfDouble: number | null;
+  single: number | null;
+  thirdPersonAdult: number | null;
+  triple: number | null;
+  quadruple: number | null;
+}
+
+export function emptyBaseRate(): LocalBaseRate {
+  return {
+    halfDouble: null,
+    single: null,
+    thirdPersonAdult: null,
+    triple: null,
+    quadruple: null,
+  };
 }
 
 export interface LocalRoomPrice extends Omit<RoomPriceDto, 'occupancyRates'> {
   tempId: string;
   periodTempId: string;
-  occupancyRates: LocalOccupancyRate[];
+  baseRate: LocalBaseRate | null;
+}
+
+export interface LocalAgePolicyEntry {
+  tempId: string;
+  periodTempId: string;
+  ageCategoryId: string;
+  sharingType: SharingType;
+  value: number | null;
 }

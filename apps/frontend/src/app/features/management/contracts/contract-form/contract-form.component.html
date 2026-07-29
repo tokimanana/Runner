@@ -271,8 +271,11 @@
       <p-step-panel [value]="3">
         <ng-template #content let-activateCallback="activateCallback">
           <div class="room-prices-step">
-            <div class="field">
-              <label for="roomTypesSelect">Room Types</label>
+            <!-- Sélection des Room Types -->
+            <div class="field mb-4">
+              <label for="roomTypesSelect" class="font-bold block mb-2"
+                >Room Types</label
+              >
               <p-multiSelect
                 inputId="roomTypesSelect"
                 [options]="roomTypes()"
@@ -281,9 +284,11 @@
                 placeholder="Select room types to price"
                 [ngModel]="selectedRoomTypeIds()"
                 (ngModelChange)="onRoomTypesSelected($event)"
+                styleClass="w-full"
               />
             </div>
 
+            <!-- Accordéon des Périodes -->
             <p-accordion>
               @for (
                 group of periodRoomPriceGroups();
@@ -291,40 +296,43 @@
               ) {
                 <p-accordion-panel [value]="group.period.tempId">
                   <p-accordion-header>
-                    {{ group.period.name }} ({{ group.roomPrices.length }} room
-                    types)
+                    <span class="font-bold">{{ group.period.name }}</span>
+                    <span class="ml-2 text-sm text-gray-500">
+                      ({{ group.roomPrices.length }} room types)
+                    </span>
                   </p-accordion-header>
+
                   <p-accordion-content>
-                    <p-table
-                      [value]="group.roomPrices"
-                      dataKey="tempId"
-                      [rowTrackBy]="trackByTempId"
-                    >
-                      <ng-template pTemplate="header">
-                        <tr>
-                          <th>Room Type</th>
-                          <th>Price / Night</th>
-                          <th>Pricing Mode</th>
-                        </tr>
-                      </ng-template>
-                      <p-table
-                        [value]="group.roomPrices"
-                        dataKey="tempId"
-                        [rowTrackBy]="trackByTempId"
-                        [expandedRowKeys]="expandedRowKeys()"
-                      >
-                        <ng-template pTemplate="header">
-                          <tr>
-                            <th>Room Type</th>
-                            <th>Price / Night</th>
-                            <th>Pricing Mode</th>
-                          </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-rp>
-                          <tr>
-                            <td>{{ rp.roomTypeName }}</td>
-                            <td>
-                              @if (rp.pricingMode === 'PER_ROOM') {
+                    <!-- Grille de Cartes pour chaque Room Type -->
+                    <div class="room-price-grid">
+                      @for (rp of group.roomPrices; track rp.tempId) {
+                        <div class="room-price-card">
+                          <div class="card-header">
+                            <div>
+                              <h4 class="room-title">{{ rp.roomTypeName }}</h4>
+                              <span class="p-badge p-badge-info">
+                                Max Pax:
+                                {{ getRoomTypeMaxCapacity(rp.roomTypeId) }}
+                              </span>
+                            </div>
+
+                            <!-- Selector Mode de Tarification -->
+                            <p-selectButton
+                              [options]="pricingModeOptions"
+                              optionLabel="label"
+                              optionValue="value"
+                              [ngModel]="rp.pricingMode"
+                              (ngModelChange)="
+                                onPricingModeChanged(rp.tempId, $event)
+                              "
+                            />
+                          </div>
+
+                          <div class="card-body">
+                            <!-- Mode: PER_ROOM -->
+                            @if (rp.pricingMode === 'PER_ROOM') {
+                              <div class="field">
+                                <label>Price per Night</label>
                                 <p-inputNumber
                                   [ngModel]="rp.pricePerNight"
                                   (ngModelChange)="
@@ -335,42 +343,207 @@
                                     )
                                   "
                                   [min]="0"
+                                  mode="decimal"
+                                  styleClass="w-full"
                                 />
-                              } @else {
-                                <span class="price-not-applicable">N/A</span>
+                              </div>
+                            }
+
+                            <!-- Mode: PER_OCCUPANCY -->
+                            @if (
+                              rp.pricingMode === 'PER_OCCUPANCY' && rp.baseRate
+                            ) {
+                              <div class="base-rate-grid">
+                                @if (
+                                  isBaseRateFieldVisible(
+                                    rp.roomTypeId,
+                                    'single'
+                                  )
+                                ) {
+                                  <div class="field">
+                                    <label>Single</label>
+                                    <p-inputNumber
+                                      [ngModel]="rp.baseRate.single"
+                                      (ngModelChange)="
+                                        updateBaseRateField(
+                                          rp.tempId,
+                                          'single',
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                    />
+                                  </div>
+                                }
+
+                                @if (
+                                  isBaseRateFieldVisible(
+                                    rp.roomTypeId,
+                                    'halfDouble'
+                                  )
+                                ) {
+                                  <div class="field">
+                                    <label>Half Double</label>
+                                    <p-inputNumber
+                                      [ngModel]="rp.baseRate.halfDouble"
+                                      (ngModelChange)="
+                                        updateBaseRateField(
+                                          rp.tempId,
+                                          'halfDouble',
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                    />
+                                  </div>
+                                }
+
+                                @if (
+                                  isBaseRateFieldVisible(
+                                    rp.roomTypeId,
+                                    'thirdPersonAdult'
+                                  )
+                                ) {
+                                  <div class="field">
+                                    <label>3rd Person Adult</label>
+                                    <p-inputNumber
+                                      [ngModel]="rp.baseRate.thirdPersonAdult"
+                                      (ngModelChange)="
+                                        updateBaseRateField(
+                                          rp.tempId,
+                                          'thirdPersonAdult',
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                    />
+                                  </div>
+                                }
+
+                                @if (
+                                  isBaseRateFieldVisible(
+                                    rp.roomTypeId,
+                                    'triple'
+                                  )
+                                ) {
+                                  <div class="field">
+                                    <label>Triple</label>
+                                    <p-inputNumber
+                                      [ngModel]="rp.baseRate.triple"
+                                      (ngModelChange)="
+                                        updateBaseRateField(
+                                          rp.tempId,
+                                          'triple',
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                    />
+                                  </div>
+                                }
+
+                                @if (
+                                  isBaseRateFieldVisible(
+                                    rp.roomTypeId,
+                                    'quadruple'
+                                  )
+                                ) {
+                                  <div class="field">
+                                    <label>Quadruple</label>
+                                    <p-inputNumber
+                                      [ngModel]="rp.baseRate.quadruple"
+                                      (ngModelChange)="
+                                        updateBaseRateField(
+                                          rp.tempId,
+                                          'quadruple',
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                    />
+                                  </div>
+                                }
+                              </div>
+
+                              @if (
+                                rp.baseRate.thirdPersonAdult != null &&
+                                rp.baseRate.triple != null
+                              ) {
+                                <small class="error block mt-2">
+                                  Fill either "3rd Person Adult" or "Triple",
+                                  not both.
+                                </small>
                               }
-                            </td>
-                            <td>
-                              <p-selectButton
-                                [options]="pricingModeOptions"
-                                optionLabel="label"
-                                optionValue="value"
-                                [ngModel]="rp.pricingMode"
-                                (ngModelChange)="
-                                  onPricingModeChanged(rp.tempId, $event)
-                                "
-                              />
-                            </td>
-                          </tr>
-                        </ng-template>
-                        <ng-template pTemplate="rowexpansion" let-rp>
-                          <tr>
-                            <td colspan="3">
-                              <!-- OccupancyConfig ira ici -->
-                            </td>
-                          </tr>
-                        </ng-template>
-                      </p-table>
-                    </p-table>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Section Age Policy (Niveau Période) -->
+                    @if (group.hasPerOccupancy) {
+                      <div class="age-policy-section mt-6">
+                        <h4 class="font-bold mb-3">
+                          Age policy (applies to all rooms in this period)
+                        </h4>
+                        <p-table
+                          [value]="
+                            agePolicyRowsByPeriod().get(group.period.tempId) ??
+                            []
+                          "
+                        >
+                          <ng-template pTemplate="header">
+                            <tr>
+                              <th>Age Category</th>
+                              <th>Sharing</th>
+                              <th>Value</th>
+                            </tr>
+                          </ng-template>
+                          <ng-template pTemplate="body" let-row>
+                            <tr>
+                              <td>{{ row.ageCategory.name }}</td>
+                              <td>
+                                {{
+                                  row.sharingType === 'WITH_PARENTS'
+                                    ? 'With parents'
+                                    : 'Separate room'
+                                }}
+                              </td>
+                              <td>
+                                <p-inputNumber
+                                  [ngModel]="row.value"
+                                  (ngModelChange)="
+                                    updateAgePolicyValue(
+                                      group.period.tempId,
+                                      row.ageCategory.id,
+                                      row.sharingType,
+                                      $event
+                                    )
+                                  "
+                                  [min]="0"
+                                />
+                              </td>
+                            </tr>
+                          </ng-template>
+                        </p-table>
+                      </div>
+                    }
                   </p-accordion-content>
                 </p-accordion-panel>
               }
             </p-accordion>
 
+            <!-- Messages d'erreur d'étape -->
             @if (roomPriceStepError()) {
-              <small class="error">
+              <small class="error block mt-3">
                 Select room types and set a price for every period before
                 continuing.
+              </small>
+            }
+            @if (baseRateExclusivityError()) {
+              <small class="error block mt-3">
+                Some rooms have both "3rd Person Adult" and "Triple" filled —
+                fill only one of the two per room, per period.
               </small>
             }
           </div>
