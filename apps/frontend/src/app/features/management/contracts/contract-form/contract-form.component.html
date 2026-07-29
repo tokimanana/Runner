@@ -228,6 +228,8 @@
                     <th>Name</th>
                     <th>Start Date</th>
                     <th>End Date</th>
+                    <th>Meal Plan</th>
+                    <th>Min Stay</th>
                     <th></th>
                   </tr>
                 </ng-template>
@@ -236,6 +238,10 @@
                     <td>{{ period.name }}</td>
                     <td>{{ period.startDate | date: 'dd/MM/yyyy' }}</td>
                     <td>{{ period.endDate | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ getMealPlanCode(period.baseMealPlanId) }}</td>
+                    <td>
+                      {{ period.minStay ? period.minStay + ' night(s)' : '-' }}
+                    </td>
                     <td>
                       <p-button
                         icon="pi pi-trash"
@@ -267,14 +273,36 @@
         </ng-template>
       </p-step-panel>
 
-      <!-- Step 3 -->
+      <!-- Step 3 : NOUVELLE UX/UI POUR SAISIE DIRECTE DE CONTRATS -->
       <p-step-panel [value]="3">
         <ng-template #content let-activateCallback="activateCallback">
           <div class="room-prices-step">
-            <!-- Sélection des Room Types -->
-            <div class="field mb-4">
+            <!-- 1. Bandeau Recapitulatif Contexte du Contrat -->
+            <div class="contract-context-bar">
+              <div class="context-item">
+                <span class="context-label">Hotel:</span>
+                <span class="context-value">{{ selectedHotelName() }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Market:</span>
+                <span class="context-value">{{ selectedMarketName() }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Currency:</span>
+                <span class="context-value badge-currency">{{
+                  selectedCurrencyCode()
+                }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Total Periods:</span>
+                <span class="context-value">{{ localPeriods().length }}</span>
+              </div>
+            </div>
+
+            <!-- 2. Sélection des Room Types -->
+            <div class="field mb-3">
               <label for="roomTypesSelect" class="font-bold block mb-2"
-                >Room Types</label
+                >Room Types to Price</label
               >
               <p-multiSelect
                 inputId="roomTypesSelect"
@@ -288,7 +316,7 @@
               />
             </div>
 
-            <!-- Accordéon des Périodes -->
+            <!-- 3. Accordéons par Période avec Dates en Evidence -->
             <p-accordion>
               @for (
                 group of periodRoomPriceGroups();
@@ -296,27 +324,47 @@
               ) {
                 <p-accordion-panel [value]="group.period.tempId">
                   <p-accordion-header>
-                    <span class="font-bold">{{ group.period.name }}</span>
-                    <span class="ml-2 text-sm text-gray-500">
-                      ({{ group.roomPrices.length }} room types)
-                    </span>
+                    <div class="period-header-content">
+                      <div class="period-title-group">
+                        <span class="period-name">{{ group.period.name }}</span>
+                        <span class="period-dates-pill">
+                          <i class="pi pi-calendar"></i>
+                          {{ group.period.startDate | date: 'dd/MM/yyyy' }} —
+                          {{ group.period.endDate | date: 'dd/MM/yyyy' }}
+                        </span>
+                      </div>
+                      <div class="period-meta-group">
+                        <span class="meta-tag">
+                          <i class="pi pi-utensils"></i>
+                          {{ getMealPlanCode(group.period.baseMealPlanId) }}
+                        </span>
+                        @if (group.period.minStay) {
+                          <span class="meta-tag">
+                            <i class="pi pi-moon"></i>
+                            Min stay: {{ group.period.minStay }}d
+                          </span>
+                        }
+                        <span class="rooms-badge">
+                          {{ group.roomPrices.length }} room(s)
+                        </span>
+                      </div>
+                    </div>
                   </p-accordion-header>
 
                   <p-accordion-content>
-                    <!-- Grille de Cartes pour chaque Room Type -->
                     <div class="room-price-grid">
                       @for (rp of group.roomPrices; track rp.tempId) {
                         <div class="room-price-card">
+                          <!-- En-tête de la Carte Room Type -->
                           <div class="card-header">
-                            <div>
+                            <div class="room-info">
                               <h4 class="room-title">{{ rp.roomTypeName }}</h4>
-                              <span class="p-badge p-badge-info">
-                                Max Pax:
-                                {{ getRoomTypeMaxCapacity(rp.roomTypeId) }}
+                              <span class="capacity-pill">
+                                Capacity: Max
+                                {{ getRoomTypeMaxCapacity(rp.roomTypeId) }} Pax
                               </span>
                             </div>
 
-                            <!-- Selector Mode de Tarification -->
                             <p-selectButton
                               [options]="pricingModeOptions"
                               optionLabel="label"
@@ -329,10 +377,14 @@
                           </div>
 
                           <div class="card-body">
-                            <!-- Mode: PER_ROOM -->
+                            <!-- PER_ROOM MODE -->
                             @if (rp.pricingMode === 'PER_ROOM') {
-                              <div class="field">
-                                <label>Price per Night</label>
+                              <div class="field single-rate-field">
+                                <label
+                                  >Price per Night ({{
+                                    selectedCurrencyCode()
+                                  }})</label
+                                >
                                 <p-inputNumber
                                   [ngModel]="rp.pricePerNight"
                                   (ngModelChange)="
@@ -343,17 +395,19 @@
                                     )
                                   "
                                   [min]="0"
-                                  mode="decimal"
+                                  mode="currency"
+                                  [currency]="selectedCurrencyCode()"
                                   styleClass="w-full"
                                 />
                               </div>
                             }
 
-                            <!-- Mode: PER_OCCUPANCY -->
+                            <!-- PER_OCCUPANCY MODE -->
                             @if (
                               rp.pricingMode === 'PER_OCCUPANCY' && rp.baseRate
                             ) {
                               <div class="base-rate-grid">
+                                <!-- Single -->
                                 @if (
                                   isBaseRateFieldVisible(
                                     rp.roomTypeId,
@@ -361,7 +415,7 @@
                                   )
                                 ) {
                                   <div class="field">
-                                    <label>Single</label>
+                                    <label>Single Rate</label>
                                     <p-inputNumber
                                       [ngModel]="rp.baseRate.single"
                                       (ngModelChange)="
@@ -372,10 +426,13 @@
                                         )
                                       "
                                       [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
                                     />
                                   </div>
                                 }
 
+                                <!-- Half Double -->
                                 @if (
                                   isBaseRateFieldVisible(
                                     rp.roomTypeId,
@@ -383,7 +440,7 @@
                                   )
                                 ) {
                                   <div class="field">
-                                    <label>Half Double</label>
+                                    <label>Half Double Rate</label>
                                     <p-inputNumber
                                       [ngModel]="rp.baseRate.halfDouble"
                                       (ngModelChange)="
@@ -394,14 +451,17 @@
                                         )
                                       "
                                       [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
                                     />
                                   </div>
                                 }
 
+                                <!-- 3rd Person Adult Supplement (Affiché SEULEMENT si max capacity === 2) -->
                                 @if (
                                   isBaseRateFieldVisible(
                                     rp.roomTypeId,
-                                    'thirdPersonAdult'
+                                    'thirdAdult'
                                   )
                                 ) {
                                   <div class="field">
@@ -416,10 +476,13 @@
                                         )
                                       "
                                       [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
                                     />
                                   </div>
                                 }
 
+                                <!-- Triple Room Total Rate (Affiché si max capacity >= 3) -->
                                 @if (
                                   isBaseRateFieldVisible(
                                     rp.roomTypeId,
@@ -427,7 +490,7 @@
                                   )
                                 ) {
                                   <div class="field">
-                                    <label>Triple</label>
+                                    <label>Triple Rate</label>
                                     <p-inputNumber
                                       [ngModel]="rp.baseRate.triple"
                                       (ngModelChange)="
@@ -438,10 +501,13 @@
                                         )
                                       "
                                       [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
                                     />
                                   </div>
                                 }
 
+                                <!-- Quadruple -->
                                 @if (
                                   isBaseRateFieldVisible(
                                     rp.roomTypeId,
@@ -449,7 +515,7 @@
                                   )
                                 ) {
                                   <div class="field">
-                                    <label>Quadruple</label>
+                                    <label>Quadruple Rate</label>
                                     <p-inputNumber
                                       [ngModel]="rp.baseRate.quadruple"
                                       (ngModelChange)="
@@ -460,24 +526,16 @@
                                         )
                                       "
                                       [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
                                     />
                                   </div>
                                 }
                               </div>
 
-                              @if (
-                                rp.baseRate.thirdPersonAdult != null &&
-                                rp.baseRate.triple != null
-                              ) {
-                                <small class="error block mt-2">
-                                  Fill either "3rd Person Adult" or "Triple",
-                                  not both.
-                                </small>
-                              }
-
-                              <!-- Section Age Policy (Niveau Room Type) -->
-                              <div class="age-policy-section mt-4">
-                                <h4 class="font-bold mb-3">Age policy</h4>
+                              <!-- Section Age Policy -->
+                              <div class="age-policy-section">
+                                <h5 class="font-bold mb-2">Age Policies</h5>
                                 <p-table
                                   [value]="
                                     agePolicyRowsByRoomPrice().get(rp.tempId) ??
@@ -487,18 +545,24 @@
                                   <ng-template pTemplate="header">
                                     <tr>
                                       <th>Age Category</th>
-                                      <th>Sharing</th>
-                                      <th>Value</th>
+                                      <th>Sharing Type</th>
+                                      <th>
+                                        Value ({{ selectedCurrencyCode() }})
+                                      </th>
                                     </tr>
                                   </ng-template>
                                   <ng-template pTemplate="body" let-row>
                                     <tr>
-                                      <td>{{ row.ageCategory.name }}</td>
+                                      <td>
+                                        {{ row.ageCategory.name }} ({{
+                                          row.ageCategory.minAge
+                                        }}-{{ row.ageCategory.maxAge }} yrs)
+                                      </td>
                                       <td>
                                         {{
                                           row.sharingType === 'WITH_PARENTS'
-                                            ? 'With parents'
-                                            : 'Separate room'
+                                            ? 'With Parents'
+                                            : 'Separate Room'
                                         }}
                                       </td>
                                       <td>
@@ -514,6 +578,8 @@
                                             )
                                           "
                                           [min]="0"
+                                          mode="currency"
+                                          [currency]="selectedCurrencyCode()"
                                         />
                                       </td>
                                     </tr>
@@ -532,14 +598,8 @@
 
             @if (roomPriceStepError()) {
               <small class="error block mt-3">
-                Select room types and set a price for every period before
+                Select room types and set prices for every period before
                 continuing.
-              </small>
-            }
-            @if (baseRateExclusivityError()) {
-              <small class="error block mt-3">
-                Some rooms have both "3rd Person Adult" and "Triple" filled —
-                fill only one of the two per room, per period.
               </small>
             }
           </div>

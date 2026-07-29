@@ -3514,11 +3514,12 @@ Ajouter `roomTypeId` à `AgePolicy`, **requis**, en miroir exact du pattern déj
 
 ### S4-FE-015-BIS — Relocate AgePolicy grid from per-period to per-room-type
 
-- **Type :** Fix
-- **Priority :** P2
-- **Story Points :** 1
-- **Branch :** `fix/S4-FIX-004-per-room-reset-baserate-agepolicy`
-- **Commit :** `fix(contracts): reset baseRate and agePolicies when switching to PER_ROOM`
+- **Type**: Feature
+- **Priority**: P1
+- **Story Points**: 3
+- **Branch**: `feat/S4-FE-015-BIS-age-policy-per-room-type`
+- **Commit**: `feat(contracts): relocate AgePolicy grid to per-room-type in wizard step 3`
+- **Status**: ✅ Done
 
 **Contexte**
 
@@ -3562,5 +3563,63 @@ Bloqué par S4-BE-013-BIS (schema + migration + DTOs + shared types `roomTypeId`
 - ✅ Rebasculer une ligne PER_OCCUPANCY → PER_ROOM supprime les localAgePolicies de ce (periodTempId, roomTypeId)
 - ✅ Rebasculer PER_ROOM → PER_OCCUPANCY réinitialise baseRate à emptyBaseRate() (comportement déjà correct, non régressé)
 - ✅ Aucune régression sur pricePerNight (déjà géré)
+
+---
+
+### S4-FIX-004 — Reset BaseRate/AgePolicy on switch back to PER_ROOM
+
+**Type**: Fix
+**Priority**: P2
+**Story Points**: 1
+**Branch**: `fix/S4-FIX-004-per-room-reset-baserate-agepolicy`
+**Commit**: `fix(contracts): reset baseRate and agePolicies when switching to PER_ROOM`
+**Status**: ✅ Done
+
+**Contexte**
+`onPricingModeChanged()` ne vidait ni `rp.baseRate` ni les entrées `localAgePolicies` associées lors du retour d'un `LocalRoomPrice` en `PER_ROOM` — seul `pricePerNight` était géré. Cela contredisait l'Acceptance Criteria de S4-FE-006-BIS : *"Rebasculer une ligne en PER_ROOM → BaseRate/AgePolicy de la ligne abandonnés, pricePerNight redevient éditable"*. Découvert en travaillant sur S4-FE-015-BIS, corrigé dans le même passage car les deux touchent la même méthode.
+
+**Fix**
+
+```typescript
+onPricingModeChanged(tempId: string, newMode: PricingMode): void {
+  const roomPrice = this.localRoomPrices().find((rp) => rp.tempId === tempId);
+
+  this.localRoomPrices.update((prices) =>
+    prices.map((rp) => {
+      if (rp.tempId !== tempId) return rp;
+      return {
+        ...rp,
+        pricingMode: newMode,
+        pricePerNight: newMode === 'PER_OCCUPANCY' ? null : rp.pricePerNight,
+        baseRate:
+          newMode === 'PER_OCCUPANCY'
+            ? (rp.baseRate ?? emptyBaseRate())
+            : null,
+      };
+    })
+  );
+
+  if (newMode === 'PER_ROOM' && roomPrice) {
+    this.localAgePolicies.update((entries) =>
+      entries.filter(
+        (e) =>
+          !(
+            e.periodTempId === roomPrice.periodTempId &&
+            e.roomTypeId === roomPrice.roomTypeId
+          )
+      )
+    );
+  }
+}
+```
+
+**Note technique** : `roomPrice` est capturé via `find()` sur la valeur du signal *avant* le `.update()` sur `localRoomPrices` — nécessaire car après cette mutation, `rp.baseRate` est déjà `null` et les identifiants ne sont plus lisibles depuis l'intérieur du `.map()` pour la seconde mutation (deux signaux distincts, deux `.update()` séparés).
+
+**Acceptance Criteria**
+- ✅ Rebasculer une ligne `PER_OCCUPANCY` → `PER_ROOM` vide `baseRate` (redevient `null`)
+- ✅ Rebasculer une ligne `PER_OCCUPANCY` → `PER_ROOM` supprime les `localAgePolicies` de ce `(periodTempId, roomTypeId)`
+- ✅ Rebasculer `PER_ROOM` → `PER_OCCUPANCY` réinitialise `baseRate` à `emptyBaseRate()` (comportement déjà correct, non régressé)
+- ✅ Aucune régression sur `pricePerNight` (déjà géré)
+- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
 
 ---
