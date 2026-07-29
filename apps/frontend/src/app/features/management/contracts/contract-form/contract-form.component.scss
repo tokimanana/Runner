@@ -96,5 +96,81 @@
       color: var(--p-red-500);
       font-size: 0.85rem;
     }
+
+    .base-rate-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 0;
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        min-width: 140px;
+
+        label {
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: var(--p-text-color);
+        }
+      }
+    }
+
+    .age-policy-section {
+      margin-top: 1rem;
+
+      h4 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+
+  .room-price-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .room-price-card {
+    border: 1px solid var(--surface-border, #e5e7eb);
+    border-radius: 8px;
+    padding: 1.25rem;
+    background-color: var(--surface-card, #ffffff);
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--surface-border, #f3f4f6);
+      margin-bottom: 1rem;
+
+      .room-title {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+
+    .base-rate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+
+        label {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--text-color-secondary, #6b7280);
+        }
+      }
+    }
   }
 }
