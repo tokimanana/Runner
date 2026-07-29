@@ -474,66 +474,62 @@
                                   not both.
                                 </small>
                               }
+
+                              <!-- Section Age Policy (Niveau Room Type) -->
+                              <div class="age-policy-section mt-4">
+                                <h4 class="font-bold mb-3">Age policy</h4>
+                                <p-table
+                                  [value]="
+                                    agePolicyRowsByRoomPrice().get(rp.tempId) ??
+                                    []
+                                  "
+                                >
+                                  <ng-template pTemplate="header">
+                                    <tr>
+                                      <th>Age Category</th>
+                                      <th>Sharing</th>
+                                      <th>Value</th>
+                                    </tr>
+                                  </ng-template>
+                                  <ng-template pTemplate="body" let-row>
+                                    <tr>
+                                      <td>{{ row.ageCategory.name }}</td>
+                                      <td>
+                                        {{
+                                          row.sharingType === 'WITH_PARENTS'
+                                            ? 'With parents'
+                                            : 'Separate room'
+                                        }}
+                                      </td>
+                                      <td>
+                                        <p-inputNumber
+                                          [ngModel]="row.value"
+                                          (ngModelChange)="
+                                            updateAgePolicyValue(
+                                              rp.periodTempId,
+                                              rp.roomTypeId,
+                                              row.ageCategory.id,
+                                              row.sharingType,
+                                              $event
+                                            )
+                                          "
+                                          [min]="0"
+                                        />
+                                      </td>
+                                    </tr>
+                                  </ng-template>
+                                </p-table>
+                              </div>
                             }
                           </div>
                         </div>
                       }
                     </div>
-
-                    <!-- Section Age Policy (Niveau Période) -->
-                    @if (group.hasPerOccupancy) {
-                      <div class="age-policy-section mt-6">
-                        <h4 class="font-bold mb-3">
-                          Age policy (applies to all rooms in this period)
-                        </h4>
-                        <p-table
-                          [value]="
-                            agePolicyRowsByPeriod().get(group.period.tempId) ??
-                            []
-                          "
-                        >
-                          <ng-template pTemplate="header">
-                            <tr>
-                              <th>Age Category</th>
-                              <th>Sharing</th>
-                              <th>Value</th>
-                            </tr>
-                          </ng-template>
-                          <ng-template pTemplate="body" let-row>
-                            <tr>
-                              <td>{{ row.ageCategory.name }}</td>
-                              <td>
-                                {{
-                                  row.sharingType === 'WITH_PARENTS'
-                                    ? 'With parents'
-                                    : 'Separate room'
-                                }}
-                              </td>
-                              <td>
-                                <p-inputNumber
-                                  [ngModel]="row.value"
-                                  (ngModelChange)="
-                                    updateAgePolicyValue(
-                                      group.period.tempId,
-                                      row.ageCategory.id,
-                                      row.sharingType,
-                                      $event
-                                    )
-                                  "
-                                  [min]="0"
-                                />
-                              </td>
-                            </tr>
-                          </ng-template>
-                        </p-table>
-                      </div>
-                    }
                   </p-accordion-content>
                 </p-accordion-panel>
               }
             </p-accordion>
 
-            <!-- Messages d'erreur d'étape -->
             @if (roomPriceStepError()) {
               <small class="error block mt-3">
                 Select room types and set a price for every period before

@@ -38,6 +38,7 @@ export interface LocalRoomPrice extends Omit<RoomPriceDto, 'occupancyRates'> {
 export interface LocalAgePolicyEntry {
   tempId: string;
   periodTempId: string;
+  roomTypeId: string;
   ageCategoryId: string;
   sharingType: SharingType;
   value: number | null;
