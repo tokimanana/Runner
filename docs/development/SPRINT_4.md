@@ -1253,6 +1253,12 @@ If inline table editing is used (as in Step 2) : re-evaluate consistency with Sa
 
 ## S4-FE-006-BIS : Step 3 — PER_OCCUPANCY (BaseRate + AgePolicy)
 
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 3
+- **Branch :** `feat/S4-FE-006-BIS`
+- **Commit :** `feat(contracts): rework Step 3 PER_OCCUPANCY UI to card-based layout`
+
 **Contexte :** S4-FE-006 a livré la matrice période × room type pour PER_ROOM
 uniquement. PER_OCCUPANCY était différé — pas d'UI encore. Cette version du
 ticket cible le backend réel issu de la refonte PER_OCCUPANCY (Sprint 4 BE) :
@@ -1548,6 +1554,51 @@ de haut en bas dans l'arbre avant de résoudre les `children`/`loadChildren`.
 - ✅ Routes nichées dans `MANAGEMENT_ROUTES`, componentless
 - ✅ `/management/contracts/contracts-list` compile et navigue sans erreur
 - ✅ Entrée sidebar avec icône unique, `roles` filtrant l'affichage (indépendant du guard qui filtre la navigation)
+
+---
+
+## S4-FE-014-BIS : OccupancyGuidance — gestion sur la fiche Room Type
+
+- **Type :** Feature
+- **Priority :** P2
+- **Story Points :** à estimer
+- **Emplacement :** `Hotels > [hotel] > Room Types` (fiche room type existante)
+
+**Contexte :** `OccupancyGuidance` (combinaisons indicatives d'occupation,
+non bloquantes) est scopée uniquement par `roomTypeId` — aucune dépendance
+à un contrat ni une période. Elle n'a donc pas sa place dans le wizard de
+contrat (Steps 1-5, dont S4-FE-006-BIS) et se gère plutôt là où le room
+type lui-même est administré, au même titre que `RoomTypeCapacity`.
+
+**Dépend de :** S4-BE-003-BIS (`OccupancyGuidancesController`,
+routes `occupancy-guidances` / `occupancy-guidances/room-types/:roomTypeId`),
+S4-BE-008-BIS (service)
+
+### Scope
+
+- Section/onglet dédié sur la fiche room type existante, listant les
+  `OccupancyGuidance` du room type (`GET occupancy-guidances/room-types/:roomTypeId`)
+- Création : `description` (texte libre), `maxAdults`/`maxTeens`/
+  `maxChildren`/`maxInfants` (entiers, défaut 0 si omis)
+- Plusieurs guidances par room type autorisées (pas de contrainte
+  d'unicité côté backend — pas de règle à répliquer côté frontend)
+- Édition / suppression d'une guidance existante
+
+### Hors scope
+
+- Toute validation croisée avec `RoomTypeCapacity` (relation entre les
+  deux non tranchée côté backend — cf. discussion ouverte, à traiter
+  séparément)
+- Utilisation de ces guidances dans le wizard de contrat (purement
+  informationnel pour l'instant, aucun lien avec `BaseRate`/`AgePolicy`)
+
+### Acceptance Criteria
+
+- ✅ La fiche room type affiche la liste des `OccupancyGuidance` existantes
+- ✅ Création d'une guidance sans capacités précisées → les 4 champs
+  `max...` valent 0
+- ✅ Édition et suppression fonctionnelles
+- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
 
 ---
 
@@ -3412,5 +3463,51 @@ export interface BaseRateCreateData {
 - ✅ `npx prisma generate` expose `triple`/`quadruple` sur le client TypeScript
 - ✅ `POST .../base-rates` accepte un payload avec ou sans `triple`/`quadruple`
 - ✅ `GET /contracts/:id` retourne `triple`/`quadruple` sans changement côté `findOne` — Prisma inclut les nouveaux champs scalaires automatiquement dès qu'ils sont dans le modèle, la requête `include` de S4-BE-005-BIS n'a rien à faire de plus
+
+---
+
+#### S4-BE-013-BIS — Add `roomTypeId` to `AgePolicy`
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 2
+- **Branch :** `chore/S4-BE-013-BIS-age-policy-room-type`
+- **Commit :** `ffeat(contracts): add roomTypeId to AgePolicy`
+
+## Contexte
+
+`AgePolicy` est actuellement scopé par `contractPeriod + ageCategory + sharingType` uniquement (pas de `roomTypeId`), sur la base d'une observation initiale (contrat LUX\* Belle Mare) selon laquelle les tarifs enfants/ados étaient identiques pour toutes les chambres d'une période.
+
+Deux contrats réels supplémentaires contredisent cette hypothèse :
+
+- **Belle Mare** : le tarif "2nd Child" varie selon la colonne (room type) — `Free of Charge` pour certaines chambres, `60` pour d'autres.
+- **Tamassa** : certaines règles ne s'appliquent qu'à une liste explicite de room types — _"Extra Bed Adult: Applicable in Superior Room, Ocean Superior Room & Beach Room only"_ ; _"Separate room ... Applicable only in Tamassa Room, Superior room, Ocean Superior Room or Beach Room"_.
+
+La décision initiale ("pas de `roomTypeId`") est donc invalidée.
+
+## Décision
+
+Ajouter `roomTypeId` à `AgePolicy`, **requis**, en miroir exact du pattern déjà utilisé sur `BaseRate` (pas de nouvelle logique d'éligibilité : un room type non concerné par une règle = simplement aucune entrée `AgePolicy` pour ce couple room type/catégorie/partage).
+
+## Hors scope (vérifié, pas d'impact)
+
+- **Nombre de parents (1 ou 2) partageant la chambre** : confirmé que le montant est identique dans les deux cas (le 2e parent paie via son propre `BaseRate`, pas via une valeur `AgePolicy` différente). Aucun champ à ajouter.
+- **Ordinaux "1st Child"/"2nd Child"/etc.** : couverts par une seule `AgeCategory` "Child" existante. Rien à modifier.
+- **`OccupancyGuidance`** (contraintes max d'occupation par room type) : hors scope de ce ticket, traité séparément dans S4-FE-014-BIS.
+
+## Travail à faire
+
+1. **Schema Prisma** : ajouter `roomTypeId: String` (requis) sur le modèle `AgePolicy`, relation vers `RoomType`, contrainte d'unicité mise à jour pour inclure `roomTypeId` (`contractPeriodId + roomTypeId + ageCategoryId + sharingType`).
+2. **Migration** : générer et appliquer la migration Prisma correspondante.
+3. **DTOs** : `create-age-policy.dto.ts` (et tout DTO de mise à jour associé) — ajouter `roomTypeId`.
+4. **Shared types** : mettre à jour le type `AgePolicy`/`AgePolicyDto` côté `@runner/shared/types`.
+5. **Service/Repository** : adapter la création/lecture pour inclure `roomTypeId` dans les requêtes et la validation d'unicité.
+6. **Controllers** : vérifier que les endpoints exposant `AgePolicy` (création, enrichissement `findOne`) propagent bien `roomTypeId`.
+
+## Non couvert par ce ticket
+
+- Migration des données existantes (aucune donnée de contrat réelle en prod à ce stade, à confirmer avant d'écrire un script de migration de données).
+- Validation backend de l'éligibilité par room type (l'absence d'entrée suffit, pas de champ "applicable"/"non applicable" à créer).
+- Modification du frontend (Step 3, relocalisation de la grille AgePolicy dans le row/card par room type) — ticket frontend séparé, à créer après celui-ci.
 
 ---
