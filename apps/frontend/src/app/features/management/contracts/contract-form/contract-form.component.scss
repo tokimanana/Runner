@@ -74,103 +74,187 @@
     }
   }
 
+  /* --- Step 3 Enhancements --- */
   .room-prices-step {
-    padding: 1.5rem 0;
+    padding: 1rem 0;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 
-    .field {
-      max-width: 480px;
+    .contract-context-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      padding: 1rem 1.25rem;
+      background-color: var(--p-surface-100);
+      border: 1px solid var(--p-surface-200);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+
+      .context-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .context-label {
+          font-size: 0.85rem;
+          color: var(--p-text-muted-color);
+          font-weight: 500;
+        }
+
+        .context-value {
+          font-weight: 600;
+          color: var(--p-text-color);
+
+          &.badge-currency {
+            background-color: var(--p-primary-color);
+            color: var(--p-primary-contrast-color);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+          }
+        }
+      }
+    }
+
+    .period-header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-right: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+
+      .period-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .period-name {
+          font-weight: 700;
+          font-size: 1.05rem;
+          color: var(--p-primary-color);
+        }
+
+        .period-dates-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background-color: var(--p-primary-50);
+          color: var(--p-primary-700);
+          border: 1px solid var(--p-primary-200);
+          font-weight: 600;
+          font-size: 0.85rem;
+          padding: 0.25rem 0.6rem;
+          border-radius: 6px;
+        }
+      }
+
+      .period-meta-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .meta-tag {
+          font-size: 0.85rem;
+          color: var(--p-text-muted-color);
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        .rooms-badge {
+          font-size: 0.75rem;
+          font-weight: 600;
+          background-color: var(--p-surface-200);
+          color: var(--p-text-color);
+          padding: 0.2rem 0.5rem;
+          border-radius: 12px;
+        }
+      }
+    }
+
+    .room-price-grid {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 1.25rem;
+      padding-top: 0.5rem;
+    }
 
-      label {
-        font-weight: 600;
-        color: var(--p-text-color);
+    .room-price-card {
+      border: 1px solid var(--p-surface-200);
+      border-radius: 8px;
+      padding: 1.25rem;
+      background-color: var(--p-surface-0);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--p-surface-100);
+        margin-bottom: 1rem;
+
+        .room-info {
+          .room-title {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+          }
+
+          .capacity-pill {
+            font-size: 0.75rem;
+            color: var(--p-primary-700);
+            background-color: var(--p-primary-50);
+            border: 1px solid var(--p-primary-200);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .single-rate-field {
+        max-width: 320px;
+      }
+
+      .base-rate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 1rem;
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+
+          label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--p-text-muted-color);
+          }
+        }
+      }
+
+      .age-policy-section {
+        margin-top: 1.25rem;
+        border-top: 1px dashed var(--p-surface-200);
+        padding-top: 1rem;
+
+        h5 {
+          margin: 0 0 0.5rem 0;
+          font-size: 0.95rem;
+          color: var(--p-text-color);
+        }
       }
     }
 
     .error {
       color: var(--p-red-500);
       font-size: 0.85rem;
-    }
-
-    .base-rate-form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      padding: 1rem 0;
-
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-        min-width: 140px;
-
-        label {
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: var(--p-text-color);
-        }
-      }
-    }
-
-    .age-policy-section {
-      margin-top: 1rem;
-
-      h4 {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-    }
-  }
-
-  .room-price-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-top: 1rem;
-  }
-
-  .room-price-card {
-    border: 1px solid var(--surface-border, #e5e7eb);
-    border-radius: 8px;
-    padding: 1.25rem;
-    background-color: var(--surface-card, #ffffff);
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--surface-border, #f3f4f6);
-      margin-bottom: 1rem;
-
-      .room-title {
-        margin: 0 0 0.25rem 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-      }
-    }
-
-    .base-rate-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1rem;
-
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-
-        label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--text-color-secondary, #6b7280);
-        }
-      }
     }
   }
 }

@@ -28,7 +28,6 @@ import {
 
 // PrimeNG core & APIs
 import { ConfirmationService } from 'primeng/api';
-
 import { TableModule } from 'primeng/table';
 
 // Composants Standalone PrimeNG v19
@@ -59,10 +58,7 @@ import { filter, pairwise, startWith, switchMap } from 'rxjs';
 
 // Services métiers
 import { confirmAction } from '@/app/shared/utils/confirm-action.util';
-import {
-  isValidDateRange,
-  rangesOverlap,
-} from '@/app/shared/utils/date-range.util';
+import { isValidDateRange } from '@/app/shared/utils/date-range.util';
 import { CurrenciesService } from '../../currencies/currencies.service';
 import { HotelsService } from '../../hotels/hotels.service';
 import { MarketsService } from '../../markets/markets.service';
@@ -80,13 +76,11 @@ import {
 @Component({
   selector: 'app-contract-form',
   imports: [
-    // Modules de formulaires & directives Angular communes
     ReactiveFormsModule,
     FormsModule,
     NgTemplateOutlet,
     DatePipe,
 
-    // Formulaire de saisie & sélections PrimeNG
     InputText,
     InputNumber,
     DatePicker,
@@ -94,19 +88,14 @@ import {
     SelectButton,
     MultiSelect,
     Button,
-
     TableModule,
-
-    // Blocs structurels migrés en Standalone v19
     ConfirmDialog,
 
-    // Nouveaux sous-composants Accordion autonomes
     Accordion,
     AccordionPanel,
     AccordionHeader,
     AccordionContent,
 
-    // Nouveaux sous-composants Stepper autonomes
     Stepper,
     StepList,
     Step,
@@ -185,16 +174,43 @@ export class ContractFormComponent {
     this.seasons().flatMap((season: Season) => season.seasonPeriods ?? [])
   );
 
-  // Step 3
+  // Step 3 Helpers & Derived Context
+  readonly selectedHotelName = computed(() => {
+    const id = this.step1Form.controls.hotelId.value;
+    return this.hotels().find((h) => h.id === id)?.name ?? 'N/A';
+  });
+
+  readonly selectedMarketName = computed(() => {
+    const id = this.step1Form.controls.marketId.value;
+    return this.markets().find((m) => m.id === id)?.name ?? 'N/A';
+  });
+
+  readonly selectedCurrencyCode = computed(() => {
+    const id = this.step1Form.controls.currencyId.value;
+    return this.currencies().find((c) => c.id === id)?.code ?? 'USD';
+  });
+
+  readonly mealPlansById = computed(() => {
+    const map = new Map<string, string>();
+    for (const mp of this.mealPlans()) {
+      map.set(mp.id, mp.code || mp.name);
+    }
+    return map;
+  });
+
   readonly selectedRoomTypeIds = signal<string[]>([]);
   readonly localRoomPrices = signal<LocalRoomPrice[]>([]);
   readonly localAgePolicies = signal<LocalAgePolicyEntry[]>([]);
   readonly roomPriceStepError = signal<boolean>(false);
-  readonly baseRateExclusivityError = signal<boolean>(false);
 
   readonly sharingTypeOptions: { label: string; value: SharingType }[] = [
     { label: 'With parents', value: 'WITH_PARENTS' },
     { label: 'Separate room', value: 'SEPARATE_ROOM' },
+  ];
+
+  readonly pricingModeOptions: { label: string; value: PricingMode }[] = [
+    { label: 'Per room', value: 'PER_ROOM' },
+    { label: 'Per occupancy', value: 'PER_OCCUPANCY' },
   ];
 
   readonly roomTypes = toSignal(
@@ -237,9 +253,6 @@ export class ContractFormComponent {
       return {
         period,
         roomPrices,
-        hasPerOccupancy: roomPrices.some(
-          (rp) => rp.pricingMode === 'PER_OCCUPANCY'
-        ),
       };
     });
   });
@@ -280,37 +293,18 @@ export class ContractFormComponent {
     return map;
   });
 
-  readonly expandedRowKeys = computed<{ [tempId: string]: boolean }>(() => {
-    const keys: { [tempId: string]: boolean } = {};
-    this.localRoomPrices().forEach((rp) => {
-      if (rp.pricingMode === 'PER_OCCUPANCY') {
-        keys[rp.tempId] = true;
-      }
-    });
-    return keys;
-  });
-
-  readonly pricingModeOptions: { label: string; value: PricingMode }[] = [
-    { label: 'Per room', value: 'PER_ROOM' },
-    { label: 'Per occupancy', value: 'PER_OCCUPANCY' },
-  ];
-
   constructor() {
     this.step1Form.controls.hotelId.valueChanges
       .pipe(pairwise(), takeUntilDestroyed())
       .subscribe(([previousHotelId, newHotelId]) => {
-        if (!newHotelId || previousHotelId === newHotelId) {
-          return;
-        }
+        if (!newHotelId || previousHotelId === newHotelId) return;
 
         const hasDataAtRisk =
           this.selectedRoomTypeIds().length > 0 ||
           this.localRoomPrices().length > 0 ||
           this.localAgePolicies().length > 0;
 
-        if (!hasDataAtRisk) {
-          return;
-        }
+        if (!hasDataAtRisk) return;
 
         confirmAction({
           header: 'Hotel changed',
@@ -331,35 +325,8 @@ export class ContractFormComponent {
       });
   }
 
-  private pruneStaleRoomTypeSelections(validIds: Set<string>): void {
-    const currentSelected = this.selectedRoomTypeIds();
-    const removedIds = currentSelected.filter((id) => !validIds.has(id));
-
-    if (removedIds.length === 0) {
-      return;
-    }
-
-    const stillValid = currentSelected.filter((id) => validIds.has(id));
-    const willLoseData = this.localRoomPrices().some((rp) =>
-      removedIds.includes(rp.roomTypeId)
-    );
-
-    if (willLoseData) {
-      confirmAction({
-        header: 'Hotel changed',
-        message:
-          'Some selected room types are not available for the new hotel. Their prices will be removed. Continue?',
-        confirmationService: this.confirmationService,
-        onAccept: () => {
-          this.selectedRoomTypeIds.set(stillValid);
-          this.syncRoomPriceMatrix();
-        },
-      });
-      return;
-    }
-
-    this.selectedRoomTypeIds.set(stillValid);
-    this.syncRoomPriceMatrix();
+  getMealPlanCode(id: string): string {
+    return this.mealPlansById().get(id) ?? '';
   }
 
   goNext(activateCallback: (step: number) => void): void {
@@ -373,10 +340,6 @@ export class ContractFormComponent {
       case 3:
         this.goNextFromStep3(activateCallback);
         break;
-      default:
-        console.warn(
-          `goNext() called with unhandled activeStep: ${this.activeStep()}`
-        );
     }
   }
 
@@ -409,18 +372,10 @@ export class ContractFormComponent {
       this.selectedRoomTypeIds().length === 0
     ) {
       this.roomPriceStepError.set(true);
-      this.baseRateExclusivityError.set(false);
-      return;
-    }
-
-    if (this.hasBaseRateExclusivityConflict()) {
-      this.roomPriceStepError.set(false);
-      this.baseRateExclusivityError.set(true);
       return;
     }
 
     this.roomPriceStepError.set(false);
-    this.baseRateExclusivityError.set(false);
     activateCallback(this.activeStep() + 1);
   }
 
@@ -440,32 +395,8 @@ export class ContractFormComponent {
     });
   }
 
-  private isDuplicatePeriod(draft: LocalContractPeriod): boolean {
-    return this.localPeriods().some(
-      (p) =>
-        p.name.trim().toLowerCase() === draft.name.trim().toLowerCase() &&
-        p.startDate?.getTime() === draft.startDate?.getTime() &&
-        p.endDate?.getTime() === draft.endDate?.getTime()
-    );
-  }
-
-  private overlapsExistingPeriod(draft: LocalContractPeriod): boolean {
-    if (!draft.startDate || !draft.endDate) return false;
-
-    return this.localPeriods().some((p) => {
-      if (!p.startDate || !p.endDate) return false;
-      return rangesOverlap(
-        draft.startDate!,
-        draft.endDate!,
-        p.startDate,
-        p.endDate
-      );
-    });
-  }
-
   onSeasonSelected(seasonId: string | null): void {
     this.selectedSeasonId.set(seasonId);
-
     if (!seasonId) {
       this.draftPeriods.set([]);
       return;
@@ -538,16 +469,6 @@ export class ContractFormComponent {
       return;
     }
 
-    if (this.isDuplicatePeriod(draft)) {
-      this.draftConfirmError.set('This period already exists.');
-      return;
-    }
-
-    if (this.overlapsExistingPeriod(draft)) {
-      this.draftConfirmError.set('This period overlaps with an existing one.');
-      return;
-    }
-
     this.draftConfirmError.set(null);
     this.localPeriods.update((periods) => [...periods, draft]);
     this.draftPeriods.update((drafts) =>
@@ -574,34 +495,8 @@ export class ContractFormComponent {
   }
 
   onRoomTypesSelected(roomTypeIds: string[]): void {
-    const previousIds = this.selectedRoomTypeIds();
-    const removedIds = previousIds.filter((id) => !roomTypeIds.includes(id));
-
-    const willLoseData =
-      removedIds.length > 0 &&
-      this.localRoomPrices().some((rp) => removedIds.includes(rp.roomTypeId));
-
-    if (willLoseData) {
-      confirmAction({
-        header: 'Remove room type',
-        message:
-          'Removing this room type will delete any prices already entered for it. Continue?',
-        confirmationService: this.confirmationService,
-        onAccept: () => {
-          this.selectedRoomTypeIds.set(roomTypeIds);
-          this.syncRoomPriceMatrix();
-        },
-        onReject: () => this.forceResyncRoomTypeSelection(),
-      });
-      return;
-    }
-
     this.selectedRoomTypeIds.set(roomTypeIds);
     this.syncRoomPriceMatrix();
-  }
-
-  private forceResyncRoomTypeSelection(): void {
-    this.selectedRoomTypeIds.update((ids) => [...ids]);
   }
 
   private syncRoomPriceMatrix(): void {
@@ -638,6 +533,9 @@ export class ContractFormComponent {
       return [...kept, ...missing];
     });
 
+    // Pas de "missing" à générer ici (contrairement à RoomPrice) :
+    // une AgePolicy est créée à la volée par updateAgePolicyValue(), pas
+    // pré-remplie. On ne fait que retirer les entrées orphelines.
     this.localAgePolicies.update((entries) =>
       entries.filter(
         (e) =>
@@ -740,26 +638,17 @@ export class ContractFormComponent {
     });
   }
 
-  private hasBaseRateExclusivityConflict(): boolean {
-    return this.localRoomPrices().some(
-      (rp) =>
-        rp.pricingMode === 'PER_OCCUPANCY' &&
-        rp.baseRate?.thirdPersonAdult != null &&
-        rp.baseRate?.triple != null
-    );
-  }
-
   getRoomTypeMaxCapacity(roomTypeId: string): number {
     const roomType = this.roomTypes().find((rt) => rt.id === roomTypeId);
     if (!roomType?.capacities || roomType.capacities.length === 0) {
-      return 4; // Valeur par défaut si non spécifiée : affiche tous les champs
+      return 4;
     }
     return roomType.capacities.reduce((sum, c) => sum + (c.maxPax || 0), 0);
   }
 
   isBaseRateFieldVisible(
     roomTypeId: string,
-    field: keyof LocalBaseRate
+    field: 'single' | 'halfDouble' | 'thirdAdult' | 'triple' | 'quadruple'
   ): boolean {
     const maxPax = this.getRoomTypeMaxCapacity(roomTypeId);
 
@@ -768,7 +657,8 @@ export class ContractFormComponent {
         return maxPax >= 1;
       case 'halfDouble':
         return maxPax >= 2;
-      case 'thirdPersonAdult':
+      case 'thirdAdult':
+        return maxPax === 2;
       case 'triple':
         return maxPax >= 3;
       case 'quadruple':
