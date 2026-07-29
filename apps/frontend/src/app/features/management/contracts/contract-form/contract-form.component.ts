@@ -244,10 +244,7 @@ export class ContractFormComponent {
     });
   });
 
-  // AgePolicy s'applique à toute la période (pas de roomTypeId côté
-  // backend) : une seule grille (AgeCategory x SharingType) par période,
-  // pas dupliquée par room type.
-  readonly agePolicyRowsByPeriod = computed(() => {
+  readonly agePolicyRowsByRoomPrice = computed(() => {
     const categories = this.ageCategories();
     const entries = this.localAgePolicies();
 
@@ -260,7 +257,9 @@ export class ContractFormComponent {
       }[]
     >();
 
-    for (const period of this.localPeriods()) {
+    for (const rp of this.localRoomPrices()) {
+      if (rp.pricingMode !== 'PER_OCCUPANCY') continue;
+
       const rows = categories.flatMap((category) =>
         this.sharingTypeOptions.map(({ value: sharingType }) => ({
           ageCategory: category,
@@ -268,13 +267,14 @@ export class ContractFormComponent {
           value:
             entries.find(
               (e) =>
-                e.periodTempId === period.tempId &&
+                e.periodTempId === rp.periodTempId &&
+                e.roomTypeId === rp.roomTypeId &&
                 e.ageCategoryId === category.id &&
                 e.sharingType === sharingType
             )?.value ?? null,
         }))
       );
-      map.set(period.tempId, rows);
+      map.set(rp.tempId, rows);
     }
 
     return map;
@@ -601,10 +601,6 @@ export class ContractFormComponent {
   }
 
   private forceResyncRoomTypeSelection(): void {
-    // Le widget a déjà décoché visuellement de façon optimiste. Comme le
-    // signal garde la même valeur logique, Angular ne repousserait rien
-    // au multiSelect sans nouvelle référence — on la force explicitement
-    // pour écraser l'état interne du widget avec la vraie sélection.
     this.selectedRoomTypeIds.update((ids) => [...ids]);
   }
 
@@ -641,6 +637,14 @@ export class ContractFormComponent {
 
       return [...kept, ...missing];
     });
+
+    this.localAgePolicies.update((entries) =>
+      entries.filter(
+        (e) =>
+          periods.some((p) => p.tempId === e.periodTempId) &&
+          roomTypeIds.includes(e.roomTypeId)
+      )
+    );
   }
 
   updateRoomPriceField<K extends keyof LocalRoomPrice>(
@@ -656,6 +660,8 @@ export class ContractFormComponent {
   }
 
   onPricingModeChanged(tempId: string, newMode: PricingMode): void {
+    const roomPrice = this.localRoomPrices().find((rp) => rp.tempId === tempId);
+
     this.localRoomPrices.update((prices) =>
       prices.map((rp) => {
         if (rp.tempId !== tempId) return rp;
@@ -666,10 +672,22 @@ export class ContractFormComponent {
           baseRate:
             newMode === 'PER_OCCUPANCY'
               ? (rp.baseRate ?? emptyBaseRate())
-              : rp.baseRate,
+              : null,
         };
       })
     );
+
+    if (newMode === 'PER_ROOM' && roomPrice) {
+      this.localAgePolicies.update((entries) =>
+        entries.filter(
+          (e) =>
+            !(
+              e.periodTempId === roomPrice.periodTempId &&
+              e.roomTypeId === roomPrice.roomTypeId
+            )
+        )
+      );
+    }
   }
 
   updateBaseRateField<K extends keyof LocalBaseRate>(
@@ -690,6 +708,7 @@ export class ContractFormComponent {
 
   updateAgePolicyValue(
     periodTempId: string,
+    roomTypeId: string,
     ageCategoryId: string,
     sharingType: SharingType,
     value: number | null
@@ -698,6 +717,7 @@ export class ContractFormComponent {
       const index = entries.findIndex(
         (e) =>
           e.periodTempId === periodTempId &&
+          e.roomTypeId === roomTypeId &&
           e.ageCategoryId === ageCategoryId &&
           e.sharingType === sharingType
       );
@@ -708,6 +728,7 @@ export class ContractFormComponent {
           {
             tempId: crypto.randomUUID(),
             periodTempId,
+            roomTypeId,
             ageCategoryId,
             sharingType,
             value,

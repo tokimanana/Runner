@@ -3512,25 +3512,31 @@ Ajouter `roomTypeId` à `AgePolicy`, **requis**, en miroir exact du pattern déj
 
 ---
 
-# S4-FE-015-BIS — Relocate AgePolicy grid from per-period to per-room-type
+### S4-FE-015-BIS — Relocate AgePolicy grid from per-period to per-room-type
 
-## Contexte
+- **Type :** Fix
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `fix/S4-FIX-004-per-room-reset-baserate-agepolicy`
+- **Commit :** `fix(contracts): reset baseRate and agePolicies when switching to PER_ROOM`
+
+**Contexte**
 
 Suite à S4-BE-013-BIS (`AgePolicy.roomTypeId`), la grille AgePolicy du Step 3 du wizard de contrat doit passer d'un affichage "une fois par période" à un affichage "une fois par room type", en miroir de la section BaseRate.
 
 Preuve : deux contrats réels (LUX* Belle Mare, LUX* Tamassa) montrent des tarifs AgePolicy différents selon le room type, et certains room types ne sont pas éligibles à une règle donnée.
 
-## Dépendance
+**Dépendance**
 
 Bloqué par S4-BE-013-BIS (schema + migration + DTOs + shared types `roomTypeId` sur `AgePolicy`). Ne pas démarrer avant que ce ticket soit mergé.
 
-## Décision déjà validée (rappel, pas à rediscuter)
+**Décision déjà validée (rappel, pas à rediscuter)**
 
 - Absence d'entrée `AgePolicy` pour un room type = règle non applicable à ce room type. Pas de champ "éligibilité" séparé à créer.
 - Pas de dimension "nombre de parents" à gérer (montant identique 1 ou 2 parents).
 - Ordinaux "1st Child"/"2nd Child" : une seule `AgeCategory` "Child", rien à changer ici.
 
-## Travail à faire (frontend uniquement)
+**Travail à faire (frontend uniquement)**
 
 1. Dans `contract-form.component.ts` : adapter `agePolicyRowsByPeriod` (ou le remplacer) pour grouper par `(period, roomType)` au lieu de `(period)` seul — probablement un nouveau computed du style `agePolicyRowsByPeriodAndRoomType`.
 2. Dans `contract-form.component.html` : déplacer le bloc `<h4>Age policy...</h4>` + `<p-table>` actuellement au niveau `@if (group.hasPerOccupancy)` (une fois par période) vers l'intérieur de chaque `room-price-card`, uniquement quand `rp.pricingMode === 'PER_OCCUPANCY'` — juste après la section BaseRate de la card.
@@ -3543,11 +3549,18 @@ Bloqué par S4-BE-013-BIS (schema + migration + DTOs + shared types `roomTypeId`
 - Toute logique d'éligibilité automatique par capacité (contrairement à BaseRate, il n'y a pas de règle "masquer si capacité insuffisante" identifiée pour AgePolicy à ce stade — l'agent choisit librement).
 - `OccupancyGuidance` — ticket séparé S4-FE-014-BIS.
 
-## Fichiers concernés
+**Fichiers concernés**
 
 - `contract-form.component.ts`
 - `contract-form.component.html`
 - `contract-form.component.scss` (si le layout de card nécessite un ajustement)
 - `contract-form.types.ts`
+
+**Acceptance Criteria**
+
+- ✅ Rebasculer une ligne PER_OCCUPANCY → PER_ROOM vide baseRate (redevient null)
+- ✅ Rebasculer une ligne PER_OCCUPANCY → PER_ROOM supprime les localAgePolicies de ce (periodTempId, roomTypeId)
+- ✅ Rebasculer PER_ROOM → PER_OCCUPANCY réinitialise baseRate à emptyBaseRate() (comportement déjà correct, non régressé)
+- ✅ Aucune régression sur pricePerNight (déjà géré)
 
 ---
