@@ -72,6 +72,9 @@ export interface RoomPrice {
   roomTypeId: string;
   pricingMode: PricingMode;
   pricePerNight: number | null;
+  extraPersonAdult: number | null;
+  extraPersonChild: number | null;
+  extraPersonTeen: number | null;
   roomType?: { id: string; name: string; code: string };
   occupancyRates?: OccupancyRate[];
 }
@@ -80,6 +83,9 @@ export interface RoomPriceDto {
   roomTypeId: string;
   pricingMode: PricingMode;
   pricePerNight?: number | null;
+  extraPersonAdult?: number | null;
+  extraPersonChild?: number | null;
+  extraPersonTeen?: number | null;
   occupancyRates?: OccupancyRateDto[];
 }
 
