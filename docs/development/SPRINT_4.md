@@ -3616,7 +3616,6 @@ Analyse de deux contrats réels (contrat famille avec Junior Suite, contrat teen
 - **Story Points :** 3
 - **Branch :** `feature/S4-BE-015-BIS-roomprice-per-room-extra-person`
 - **Commit :** `feat(contracts): add extra person supplements (Adult/Child/Teen) to RoomPrice PER_ROOM`
-- **Dépend de :** aucun ticket bloquant — indépendant de la série AgePolicy
 
 **Contexte**
 
