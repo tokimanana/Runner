@@ -19,7 +19,6 @@ enum SharingType {
   SEPARATE_ROOM
 }
 
-
 enum BaseRateReference {
   single
   halfDouble
@@ -74,19 +73,19 @@ model AgeCategory {
 }
 
 model AgePolicy {
-  id                 String             @id @default(cuid())
-  contractPeriodId   String
-  roomTypeId         String
-  ageCategoryId      String
-  sharingType        SharingType
-  occurrenceIndex    Int
-  baseRateReference  BaseRateReference
-  value              Decimal            @db.Decimal(10, 4)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  contractPeriod     ContractPeriod     @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
-  roomType           RoomType           @relation(fields: [roomTypeId], references: [id])
-  ageCategory        AgeCategory        @relation(fields: [ageCategoryId], references: [id])
+  id                String            @id @default(cuid())
+  contractPeriodId  String
+  roomTypeId        String
+  ageCategoryId     String
+  sharingType       SharingType
+  occurrenceIndex   Int
+  baseRateReference BaseRateReference
+  value             Decimal           @db.Decimal(10, 4)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  contractPeriod    ContractPeriod    @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType          RoomType          @relation(fields: [roomTypeId], references: [id])
+  ageCategory       AgeCategory       @relation(fields: [ageCategoryId], references: [id])
 
   @@unique([contractPeriodId, roomTypeId, ageCategoryId, sharingType, occurrenceIndex])
   @@index([contractPeriodId])
@@ -186,14 +185,17 @@ model ContractPeriod {
   @@index([seasonPeriodId])
 }
 model RoomPrice {
-  id               String          @id @default(cuid())
-  contractPeriodId String
-  roomTypeId       String
-  pricingMode      PricingMode
-  pricePerNight    Decimal?
-  contractPeriod   ContractPeriod  @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
-  roomType         RoomType        @relation(fields: [roomTypeId], references: [id])
-  occupancyRates   OccupancyRate[]
+  id                String          @id @default(cuid())
+  contractPeriodId  String
+  roomTypeId        String
+  pricingMode       PricingMode
+  pricePerNight     Decimal?
+  extraPersonAdult  Decimal?        @db.Decimal(10, 2)
+  extraPersonChild  Decimal?        @db.Decimal(10, 2)
+  extraPersonTeen   Decimal?        @db.Decimal(10, 2)
+  contractPeriod    ContractPeriod  @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType          RoomType        @relation(fields: [roomTypeId], references: [id])
+  occupancyRates    OccupancyRate[]
   @@unique([contractPeriodId, roomTypeId])
   @@index([contractPeriodId])
 }
