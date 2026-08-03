@@ -2,6 +2,11 @@ import { SeasonPeriod } from './season.types';
 
 export type PricingMode = 'PER_ROOM' | 'PER_OCCUPANCY';
 export type SharingType = 'WITH_PARENTS' | 'SEPARATE_ROOM';
+export type BaseRateReference =
+  | 'single'
+  | 'halfDouble'
+  | 'triple'
+  | 'quadruple';
 export interface Contract {
   id: string;
   name: string;
@@ -126,6 +131,8 @@ export interface AgePolicy {
   roomTypeId: string;
   ageCategoryId: string;
   sharingType: SharingType;
+  occurrenceIndex: number;
+  baseRateReference: BaseRateReference;
   value: number;
   roomType?: { id: string; name: string; code: string };
   ageCategory?: { id: string; name: string; minAge: number; maxAge: number };
