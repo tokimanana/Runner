@@ -14,6 +14,19 @@ enum UserRole {
   AGENT
 }
 
+enum SharingType {
+  WITH_PARENTS
+  SEPARATE_ROOM
+}
+
+
+enum BaseRateReference {
+  single
+  halfDouble
+  triple
+  quadruple
+}
+
 model User {
   id             String        @id @default(cuid())
   email          String        @unique
@@ -60,25 +73,22 @@ model AgeCategory {
   agePolicies         AgePolicy[]
 }
 
-enum SharingType {
-  WITH_PARENTS
-  SEPARATE_ROOM
-}
-
 model AgePolicy {
-  id               String         @id @default(cuid())
-  contractPeriodId String
-  roomTypeId       String
-  ageCategoryId    String
-  sharingType      SharingType
-  value            Decimal        @db.Decimal(10, 4)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
-  roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
-  ageCategory      AgeCategory    @relation(fields: [ageCategoryId], references: [id])
+  id                 String             @id @default(cuid())
+  contractPeriodId   String
+  roomTypeId         String
+  ageCategoryId      String
+  sharingType        SharingType
+  occurrenceIndex    Int
+  baseRateReference  BaseRateReference
+  value              Decimal            @db.Decimal(10, 4)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  contractPeriod     ContractPeriod     @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
+  roomType           RoomType           @relation(fields: [roomTypeId], references: [id])
+  ageCategory        AgeCategory        @relation(fields: [ageCategoryId], references: [id])
 
-  @@unique([contractPeriodId, roomTypeId, ageCategoryId, sharingType])
+  @@unique([contractPeriodId, roomTypeId, ageCategoryId, sharingType, occurrenceIndex])
   @@index([contractPeriodId])
   @@index([roomTypeId])
   @@index([ageCategoryId])
