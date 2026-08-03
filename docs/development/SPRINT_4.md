@@ -3341,50 +3341,6 @@ export interface AgePolicy {
 
 ---
 
-## S4-REFACTOR-003 : Nettoyage — retrait définitif du legacy `OccupancyRate`/validation de capacité
-
-- **Type :** Refactor
-- **Priority :** P2
-- **Story Points :** 2
-- **Branch :** `refactor/S4-REFACTOR-003-cleanup-legacy-occupancy`
-- **Commit :** `refactor(contracts): remove dead code and legacy references`
-
-**Contexte :** dernier ticket de la série. Une fois S4-BE-008-BIS, S4-BE-009-BIS, S4-BE-005-BIS et S4-BE-011-BIS validés en usage réel (au moins un contrat créé de bout en bout avec le nouveau modèle), on nettoie ce qui a été volontairement laissé de côté pendant la refonte pour ne pas bloquer le reste de l'équipe.
-
-**Dépend de :** tous les tickets précédents, validés en usage réel — ce ticket n'est **pas** à traiter en parallèle, c'est le dernier de la série.
-
-### Scope
-
-**1. `contracts.service.ts`**
-
-- Supprimer le commentaire mort / imports inutilisés liés à `buildOccupancyRates` s'il en reste (constantes, types `OccupancyRateDto` importés mais plus utilisés)
-
-**2. `contracts.types.ts`**
-
-- Marquer `OccupancyRateCreateData` avec un commentaire `@deprecated` explicite si le type est encore référencé ailleurs (scripts de migration/archivage), ou le supprimer s'il n'a plus aucune référence
-
-**3. `contract.types.ts` (shared)**
-
-- Marquer `OccupancyRate`, `OccupancyRateDto` comme `@deprecated` dans le JSDoc, pour signaler au frontend de ne plus les utiliser dans les nouveaux écrans
-
-**4. `schema.prisma`**
-
-- Décision à prendre **avec Samuel avant d'exécuter ce ticket** : le modèle `OccupancyRate` reste-t-il indéfiniment en base (archivage), ou planifie-t-on sa suppression physique dans une migration ultérieure une fois qu'on est sûr qu'aucun contrat en production ne s'appuie encore dessus ? Ce ticket ne fait **pas** cette suppression — il documente juste la décision dans un commentaire au-dessus du modèle.
-
-### Hors scope
-
-- Suppression physique de la table `OccupancyRate` en base (nécessite une décision produit séparée, cf. point 4 ci-dessus)
-- Nettoyage frontend (`ContractForm` Step 3) — c'est un chantier frontend distinct, hors périmètre backend
-
-### Acceptance Criteria
-
-- ✅ `nx build backend` compile toujours sans erreur après nettoyage
-- ✅ Aucune méthode de service n'appelle plus de logique liée à la validation de capacité (`totalMaxPax`)
-- ✅ Une recherche globale de `buildOccupancyRates` dans le repo ne retourne aucun résultat
-- ✅ Les tests de S4-BE-011-BIS passent toujours après le nettoyage
-
----
-
 ## S4-BE-012-BIS : BaseRate — ajout des paliers Triple et Quadruple
 
 - **Type :** Task
@@ -3512,73 +3468,36 @@ Ajouter `roomTypeId` à `AgePolicy`, **requis**, en miroir exact du pattern déj
 
 ---
 
-### S4-FE-015-BIS — Relocate AgePolicy grid from per-period to per-room-type
-
-- **Type**: Feature
-- **Priority**: P1
-- **Story Points**: 3
-- **Branch**: `feat/S4-FE-015-BIS-age-policy-per-room-type`
-- **Commit**: `feat(contracts): relocate AgePolicy grid to per-room-type in wizard step 3`
-- **Status**: ✅ Done
-
-**Contexte**
-
-Suite à S4-BE-013-BIS (`AgePolicy.roomTypeId`), la grille AgePolicy du Step 3 du wizard de contrat doit passer d'un affichage "une fois par période" à un affichage "une fois par room type", en miroir de la section BaseRate.
-
-Preuve : deux contrats réels (LUX* Belle Mare, LUX* Tamassa) montrent des tarifs AgePolicy différents selon le room type, et certains room types ne sont pas éligibles à une règle donnée.
-
-**Dépendance**
-
-Bloqué par S4-BE-013-BIS (schema + migration + DTOs + shared types `roomTypeId` sur `AgePolicy`). Ne pas démarrer avant que ce ticket soit mergé.
-
-**Décision déjà validée (rappel, pas à rediscuter)**
-
-- Absence d'entrée `AgePolicy` pour un room type = règle non applicable à ce room type. Pas de champ "éligibilité" séparé à créer.
-- Pas de dimension "nombre de parents" à gérer (montant identique 1 ou 2 parents).
-- Ordinaux "1st Child"/"2nd Child" : une seule `AgeCategory` "Child", rien à changer ici.
-
-**Travail à faire (frontend uniquement)**
-
-1. Dans `contract-form.component.ts` : adapter `agePolicyRowsByPeriod` (ou le remplacer) pour grouper par `(period, roomType)` au lieu de `(period)` seul — probablement un nouveau computed du style `agePolicyRowsByPeriodAndRoomType`.
-2. Dans `contract-form.component.html` : déplacer le bloc `<h4>Age policy...</h4>` + `<p-table>` actuellement au niveau `@if (group.hasPerOccupancy)` (une fois par période) vers l'intérieur de chaque `room-price-card`, uniquement quand `rp.pricingMode === 'PER_OCCUPANCY'` — juste après la section BaseRate de la card.
-3. `updateAgePolicyValue()` : ajouter `roomTypeId` en paramètre et dans la logique de recherche/mise à jour de l'entrée locale.
-4. `LocalAgePolicyEntry` (`contract-form.types.ts`) : ajouter `roomTypeId`.
-5. Vérifier que la synchronisation de la matrice de prix (`syncRoomPriceMatrix`) gère bien la création/suppression des entrées `AgePolicy` locales quand un room type est ajouté/retiré, comme elle le fait déjà pour `localRoomPrices`.
-
-**Hors scope :**
-
-- Toute logique d'éligibilité automatique par capacité (contrairement à BaseRate, il n'y a pas de règle "masquer si capacité insuffisante" identifiée pour AgePolicy à ce stade — l'agent choisit librement).
-- `OccupancyGuidance` — ticket séparé S4-FE-014-BIS.
-
-**Fichiers concernés**
-
-- `contract-form.component.ts`
-- `contract-form.component.html`
-- `contract-form.component.scss` (si le layout de card nécessite un ajustement)
-- `contract-form.types.ts`
-
-**Acceptance Criteria**
-
-- ✅ Rebasculer une ligne PER_OCCUPANCY → PER_ROOM vide baseRate (redevient null)
-- ✅ Rebasculer une ligne PER_OCCUPANCY → PER_ROOM supprime les localAgePolicies de ce (periodTempId, roomTypeId)
-- ✅ Rebasculer PER_ROOM → PER_OCCUPANCY réinitialise baseRate à emptyBaseRate() (comportement déjà correct, non régressé)
-- ✅ Aucune régression sur pricePerNight (déjà géré)
-
----
-
-### S4-FIX-004 — Reset BaseRate/AgePolicy on switch back to PER_ROOM
+### S4-FIX-004 — AgePolicy per-room-type relocation + PER_ROOM reset fix
 
 **Type**: Fix
 **Priority**: P2
-**Story Points**: 1
+**Story Points**: 4
 **Branch**: `fix/S4-FIX-004-per-room-reset-baserate-agepolicy`
-**Commit**: `fix(contracts): reset baseRate and agePolicies when switching to PER_ROOM`
+**Commit**: `fix(contracts): relocate AgePolicy grid to per-room-type and reset baseRate/agePolicies on PER_ROOM switch`
 **Status**: ✅ Done
 
-**Contexte**
-`onPricingModeChanged()` ne vidait ni `rp.baseRate` ni les entrées `localAgePolicies` associées lors du retour d'un `LocalRoomPrice` en `PER_ROOM` — seul `pricePerNight` était géré. Cela contredisait l'Acceptance Criteria de S4-FE-006-BIS : *"Rebasculer une ligne en PER_ROOM → BaseRate/AgePolicy de la ligne abandonnés, pricePerNight redevient éditable"*. Découvert en travaillant sur S4-FE-015-BIS, corrigé dans le même passage car les deux touchent la même méthode.
+**Dépend de**: S4-BE-013-BIS (AgePolicy.roomTypeId — schema, DTOs, shared types)
 
-**Fix**
+**Contexte**
+
+Deux problèmes traités ensemble suite à une manip de branche — regroupés ici au lieu d'être séparés en S4-FE-015-BIS + S4-FIX-004 :
+
+1. **Relocalisation de la grille AgePolicy** — suite à S4-BE-013-BIS, la grille AgePolicy du Step 3 du wizard passait d'un affichage "une fois par période" à "une fois par room type", en miroir de BaseRate. Preuve : deux contrats réels (LUX* Belle Mare, LUX* Tamassa) montrent des tarifs AgePolicy différents selon le room type, et certains room types ne sont pas éligibles à une règle donnée.
+
+2. **Reset incomplet au retour PER_ROOM** — `onPricingModeChanged()` ne vidait ni `rp.baseRate` ni les `localAgePolicies` associées lors du retour d'un `LocalRoomPrice` en `PER_ROOM` (seul `pricePerNight` était géré), contredisant l'AC de S4-FE-006-BIS : _"Rebasculer une ligne en PER_ROOM → BaseRate/AgePolicy de la ligne abandonnés"_. Découvert en travaillant sur le point 1, corrigé dans le même passage car les deux touchent la même méthode.
+
+**Travail effectué**
+
+- `contract-form.types.ts` — `LocalAgePolicyEntry` : ajout de `roomTypeId`
+- `contract-form.component.ts` :
+  - `agePolicyRowsByPeriod` remplacé par `agePolicyRowsByRoomPrice`, clé = `rp.tempId` (encode déjà period + roomType)
+  - `updateAgePolicyValue()` : ajout du paramètre `roomTypeId`
+  - `syncRoomPriceMatrix()` : pruning de `localAgePolicies` ajouté (orphelines supprimées quand un room type est retiré — bug latent corrigé au passage)
+  - `onPricingModeChanged()` : `baseRate` remis à `null` et `localAgePolicies` du `(periodTempId, roomTypeId)` supprimées au retour en `PER_ROOM`
+- `contract-form.component.html` : bloc Age Policy déplacé de l'intérieur de `@if (group.hasPerOccupancy)` (niveau accordéon/période) vers l'intérieur de chaque `room-price-card`, dans `@if (rp.pricingMode === 'PER_OCCUPANCY' && rp.baseRate)`
+
+**Code clé — `onPricingModeChanged()`**
 
 ```typescript
 onPricingModeChanged(tempId: string, newMode: PricingMode): void {
@@ -3594,7 +3513,7 @@ onPricingModeChanged(tempId: string, newMode: PricingMode): void {
         baseRate:
           newMode === 'PER_OCCUPANCY'
             ? (rp.baseRate ?? emptyBaseRate())
-            : null,
+            : null, // vidé au retour en PER_ROOM
       };
     })
   );
@@ -3613,13 +3532,178 @@ onPricingModeChanged(tempId: string, newMode: PricingMode): void {
 }
 ```
 
-**Note technique** : `roomPrice` est capturé via `find()` sur la valeur du signal *avant* le `.update()` sur `localRoomPrices` — nécessaire car après cette mutation, `rp.baseRate` est déjà `null` et les identifiants ne sont plus lisibles depuis l'intérieur du `.map()` pour la seconde mutation (deux signaux distincts, deux `.update()` séparés).
+Note technique : `roomPrice` est capturé via `find()` sur la valeur du signal _avant_ le `.update()` sur `localRoomPrices` — nécessaire car après cette mutation, `rp.baseRate` est déjà `null` et les identifiants ne sont plus lisibles depuis l'intérieur du `.map()` pour la seconde mutation (deux signaux distincts, deux `.update()` séparés).
+
+**Hors scope**
+
+- Toute logique d'éligibilité automatique par capacité pour AgePolicy
+- OccupancyGuidance (ticket séparé S4-FE-014-BIS)
 
 **Acceptance Criteria**
+
+- ✅ Chaque `LocalRoomPrice` en `PER_OCCUPANCY` affiche sa propre grille AgePolicy (AgeCategory × SharingType)
+- ✅ Saisir une valeur AgePolicy sur un room type n'affecte pas les autres room types de la même période
+- ✅ Retirer un room type de la sélection (`onRoomTypesSelected`) supprime ses entrées `localAgePolicies` associées
 - ✅ Rebasculer une ligne `PER_OCCUPANCY` → `PER_ROOM` vide `baseRate` (redevient `null`)
 - ✅ Rebasculer une ligne `PER_OCCUPANCY` → `PER_ROOM` supprime les `localAgePolicies` de ce `(periodTempId, roomTypeId)`
 - ✅ Rebasculer `PER_ROOM` → `PER_OCCUPANCY` réinitialise `baseRate` à `emptyBaseRate()` (comportement déjà correct, non régressé)
 - ✅ Aucune régression sur `pricePerNight` (déjà géré)
+- ✅ Aucune régression sur le flux BaseRate/PER_ROOM existant
 - ✅ `nx build frontend` / `nx test frontend` passent sans erreur
+
+---
+
+## S4-BE-014-BIS : AgePolicy — `occurrenceIndex`, `mode`, `baseRateReference`
+
+- **Type :** Task
+- **Priority :** P1
+- **Story Points :** 5
+- **Branch :** `chore/S4-BE-014-BIS-agepolicy-occurrence-mode-baserate`
+- **Commit :** `chore(prisma): add occurrenceIndex, mode and baseRateReference to AgePolicy`
+- **Dépend de :** S4-BE-013-BIS (`AgePolicy.roomTypeId` déjà mergé)
+
+**Contexte**
+
+Analyse de deux contrats réels (contrat famille avec Junior Suite, contrat teens-only) pour modéliser les règles de tarification `WITH_PARENTS`. Deux constats invalident/précisent le modèle `LocalAgePolicyEntry` actuel.
+
+**Preuve**
+
+1. 1st Child et 2nd Child ont des montants réellement différents sur les deux contrats (confirmé explicitement par Samuel) — invalide la décision précédente "une seule `AgeCategory` Child, les ordinaux ne comptent pas" (S4-FE-015-BIS).
+2. La base de calcul référencée par une règle (`single` / `halfDouble` / `triple` / `quadruple`) varie selon l'hôtel/contrat — ne peut pas être déduite en dur dans le code (ex. "2 adultes = toujours `halfDouble`" serait faux pour certains contrats).
+3. La base du rabais "chambre séparée" (5% sur `single` vs 5% sur `double`) varie aussi selon le contrat — même implication : champ explicite, jamais déduit.
+
+**Décision déjà validée (rappel, pas à rediscuter)**
+
+- `occurrenceIndex`, scopé par `ageCategoryId` (1st Child et 1st Teen sont indépendants, chacun a son propre compteur).
+- `baseRateReference` : champ explicite par règle (clé de `BaseRate` : `single` / `halfDouble` / `triple` / `quadruple`), jamais déduit d'une logique métier codée en dur.
+- `mode` : `SHARING` (valeur absolue en devise) vs `SEPARATE_ROOM_DISCOUNT` (valeur en %).
+
+**⚠️ Point non tranché — NE PAS CODER avant confirmation explicite**
+
+La proposition initiale de Samuel étendait aussi `sharingType` avec une nuance 1 parent / 2 parents. Mais si `baseRateReference` capture déjà explicitement quelle base de tarif s'applique, cette nuance sur `sharingType` devient peut-être redondante. Cette question n'a pas été retranchée après les réponses business — **à clarifier en premier lieu de la prochaine session avant d'écrire le moindre schema.**
+
+**Travail à faire (backend uniquement)**
+
+1. Schema + migration : `AgePolicy` += `occurrenceIndex` (int), `mode` (enum), `baseRateReference` (enum ou string contrainte aux clés de `BaseRate`).
+2. DTOs : `create-age-policy.dto.ts` / update équivalent, avec validation cohérente par `mode` (valeur absolue vs %).
+3. Shared types : `AgePolicy` / `AgePolicyDto` (`contract.types.ts`).
+
+**Hors scope**
+
+- Le calcul et l'application du % `SEPARATE_ROOM_DISCOUNT` aux suppléments repas (Half Board / Full Board / All Inclusive) — ticket séparé.
+- Toute logique frontend — ticket FE séparé une fois ce ticket mergé (miroir de S4-FE-015-BIS pour S4-BE-013-BIS).
+- Occupancy caps par room type — hors scope, sujet indépendant (contrainte de réservation, pas de pricing).
+
+**Acceptance Criteria**
+
+- ✅ Point non tranché ci-dessus discuté et arbitré avant tout code
+- ✅ `AgePolicy` porte `occurrenceIndex`, `mode`, `baseRateReference`, migration sans perte de données
+- ✅ 1st Child et 2nd Child peuvent avoir des `value` différentes sur la même période/room type
+- ✅ `baseRateReference` est une valeur explicite, jamais déduite côté service
+- ✅ DTOs valident `value` différemment selon `mode` (absolu vs %)
+- ✅ `nx build backend` → 0 erreur
+
+**Fichiers concernés**
+
+- `schema.prisma`
+- `create-age-policy.dto.ts` (et `update-age-policy.dto.ts` si existant)
+- shared types `AgePolicy` / `AgePolicyDto`
+
+---
+
+## S4-BE-015-BIS : RoomPrice PER_ROOM — supplément "Unit extra person" (Adult / Child / Teen)
+
+- **Type :** Feature
+- **Priority :** P1
+- **Story Points :** 3
+- **Branch :** `feature/S4-BE-015-BIS-roomprice-per-room-extra-person`
+- **Commit :** `feat(contracts): add extra person supplements (Adult/Child/Teen) to RoomPrice PER_ROOM`
+- **Dépend de :** aucun ticket bloquant — indépendant de la série AgePolicy
+
+**Contexte**
+
+En mode de tarification `PER_ROOM` (chambre entière, indépendant de `BaseRate`/`AgePolicy` qui sont scopés `PER_OCCUPANCY`), les contrats réels prévoient une ligne "Unit extra person" avec 3 colonnes informables : Adult, Child, Teen — un supplément par personne additionnelle dans la chambre.
+
+**Preuve**
+
+Vérifié `RoomPriceDto` / `RoomPrice` (shared) et `CreateRoomPriceDto` (backend) : en mode `PER_ROOM`, seul `pricePerNight` existe aujourd'hui. Aucune des 3 colonnes n'existe nulle part — confirmé "nouveauté" par Samuel, pas un champ caché côté front.
+
+**Décision déjà validée (rappel)**
+
+- Mécanisme entièrement distinct de `thirdPersonAdult` (`BaseRate`), qui reste inchangé et correct pour son propre cas : `PER_OCCUPANCY`, capacité de chambre strictement == 2 (vérifié dans `isBaseRateFieldVisible()`, déjà correct, aucun fix nécessaire).
+- 3 colonnes distinctes : Adult, Child, Teen.
+
+**Travail à faire (backend uniquement)**
+
+1. Schema + migration : nouvelle structure côté `RoomPrice` pour `PER_ROOM` (3 valeurs numériques nullable — à déterminer si champs directs sur `RoomPrice` ou sous-table ; **sujet à trancher en premier lieu de la session dédiée à ce ticket**).
+2. DTOs : extension de `CreateRoomPriceDto` (validation `@ValidateIf` sur `pricingMode === 'PER_ROOM'`, cohérente avec le pattern déjà utilisé pour `pricePerNight`).
+3. Shared types : `RoomPriceDto` (`contract.types.ts`).
+
+**Hors scope**
+
+- Occupancy caps par room type (max adultes/ados) — sujet séparé, contrainte de réservation indépendante du pricing.
+- Nettoyage du champ legacy `occupancyRates` sur `RoomPriceDto`/`RoomPrice` — déjà prévu dans S4-REFACTOR-003, ne pas le mélanger ici.
+- Toute logique frontend — ticket FE séparé une fois ce ticket mergé.
+
+**Acceptance Criteria**
+
+- ✅ Décision structurelle (champs directs vs sous-table) prise et documentée avant migration
+- ✅ `RoomPrice` en `PER_ROOM` peut porter un supplément Adult/Child/Teen indépendant de `pricePerNight`
+- ✅ Validation `@ValidateIf(pricingMode === 'PER_ROOM')` sur les 3 nouveaux champs
+- ✅ `GET /contracts/:id` renvoie les 3 champs sans changement supplémentaire côté `findOne`
+- ✅ `nx build backend` → 0 erreur
+
+**Fichiers concernés**
+
+- `schema.prisma`
+- `create-room-price.dto.ts`
+- shared types `RoomPriceDto`
+
+---
+
+## S4-REFACTOR-003 : Nettoyage — retrait définitif du legacy `OccupancyRate`/validation de capacité
+
+- **Type :** Refactor
+- **Priority :** P2
+- **Story Points :** 2
+- **Branch :** `refactor/S4-REFACTOR-003-cleanup-legacy-occupancy`
+- **Commit :** `refactor(contracts): remove dead code and legacy references`
+- **Dépend de :** tous les tickets précédents de la refonte PER_OCCUPANCY, validés en usage réel — y compris **S4-BE-014-BIS** (`occurrenceIndex`/`mode`/`baseRateReference` sur `AgePolicy`) et **S4-BE-015-BIS** (supplément "Unit extra person" sur `RoomPrice` PER_ROOM). Ce ticket n'est **pas** à traiter en parallèle : c'est le dernier de toute la série.
+
+**Contexte**
+
+Dernier ticket de la série. Une fois S4-BE-008-BIS, S4-BE-009-BIS, S4-BE-005-BIS, S4-BE-011-BIS, S4-BE-013-BIS, S4-FIX-004, S4-BE-014-BIS et S4-BE-015-BIS validés en usage réel (au moins un contrat créé de bout en bout avec le modèle final — `BaseRate` + `AgePolicy` scopée par room type avec `occurrenceIndex`/`mode`/`baseRateReference` + supplément extra person PER_ROOM), on nettoie ce qui a été volontairement laissé de côté pendant la refonte pour ne pas bloquer le reste de l'équipe.
+
+**Scope**
+
+**1. `contracts.service.ts`**
+
+- Supprimer le commentaire mort / imports inutilisés liés à `buildOccupancyRates` s'il en reste (constantes, types `OccupancyRateDto` importés mais plus utilisés)
+
+**2. `contracts.types.ts`**
+
+- Marquer `OccupancyRateCreateData` avec un commentaire `@deprecated` explicite si le type est encore référencé ailleurs (scripts de migration/archivage), ou le supprimer s'il n'a plus aucune référence
+
+**3. `contract.types.ts` (shared)**
+
+- Marquer `OccupancyRate`, `OccupancyRateDto` comme `@deprecated` dans le JSDoc, pour signaler au frontend de ne plus les utiliser dans les nouveaux écrans
+- Vérifier qu'aucun champ legacy équivalent ne subsiste sur `RoomPriceDto` maintenant que le supplément extra person (S4-BE-015-BIS) couvre le besoin PER_ROOM
+
+**4. `schema.prisma`**
+
+- Décision à prendre **avec Samuel avant d'exécuter ce ticket** : le modèle `OccupancyRate` reste-t-il indéfiniment en base (archivage), ou planifie-t-on sa suppression physique dans une migration ultérieure une fois qu'on est sûr qu'aucun contrat en production ne s'appuie encore dessus ? Ce ticket ne fait **pas** cette suppression — il documente juste la décision dans un commentaire au-dessus du modèle.
+
+**Hors scope**
+
+- Suppression physique de la table `OccupancyRate` en base (nécessite une décision produit séparée, cf. point 4 ci-dessus)
+- Nettoyage frontend (`ContractForm` Step 3) — c'est un chantier frontend distinct, hors périmètre backend
+
+**Acceptance Criteria**
+
+- ✅ `nx build backend` compile toujours sans erreur après nettoyage
+- ✅ Aucune méthode de service n'appelle plus de logique liée à la validation de capacité (`totalMaxPax`)
+- ✅ Une recherche globale de `buildOccupancyRates` dans le repo ne retourne aucun résultat
+- ✅ Les tests de S4-BE-011-BIS passent toujours après le nettoyage
+- ✅ Aucun champ/type legacy résiduel ne fait doublon avec `AgePolicy.baseRateReference` (S4-BE-014-BIS) ou le supplément extra person PER_ROOM (S4-BE-015-BIS)
 
 ---
