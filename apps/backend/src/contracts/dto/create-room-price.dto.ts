@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsObject,
+  IsOptional,
   IsString,
   Min,
   ValidateIf,
@@ -37,6 +38,24 @@ export class CreateRoomPriceDto {
   @IsNumber()
   @Min(0)
   pricePerNight?: number | null;
+
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  extraPersonAdult?: number | null;
+
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  extraPersonChild?: number | null;
+
+  @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_ROOM')
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  extraPersonTeen?: number | null;
 
   @ValidateIf((o: CreateRoomPriceDto) => o.pricingMode === 'PER_OCCUPANCY')
   @ValidateNested({ each: true })
