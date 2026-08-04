@@ -211,6 +211,12 @@ export class ContractsService {
           pricingMode: dto.pricingMode,
           pricePerNight:
             dto.pricingMode === 'PER_ROOM' ? dto.pricePerNight : null,
+          extraPersonAdult:
+            dto.pricingMode === 'PER_ROOM' ? dto.extraPersonAdult : null,
+          extraPersonChild:
+            dto.pricingMode === 'PER_ROOM' ? dto.extraPersonChild : null,
+          extraPersonTeen:
+            dto.pricingMode === 'PER_ROOM' ? dto.extraPersonTeen : null,
         },
         periodId,
         occupancyRatesData,
@@ -232,6 +238,9 @@ export class ContractsService {
         roomTypeId: dto.roomTypeId,
         pricingMode: dto.pricingMode,
         pricePerNight: dto.pricePerNight,
+        extraPersonAdult: dto.extraPersonAdult,
+        extraPersonChild: dto.extraPersonChild,
+        extraPersonTeen: dto.extraPersonTeen,
       });
     } catch (error) {
       this.handleRepositoryError(error, {
