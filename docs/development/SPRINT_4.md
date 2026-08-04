@@ -1391,6 +1391,135 @@ combinaisons adultes/enfants).
 
 ---
 
+## S4-FE-016-BIS : ContractForm — AgePolicy `occurrenceIndex` + `baseRateReference`
+
+- **Type :** Feature
+- **Priority :** P0
+- **Story Points :** 5
+- **Branch :** `feat/S4-FE-016-BIS-agepolicy-occurrence-baserate`
+- **Status :** ✅
+- **Dépend de :** S4-BE-014-BIS (schéma/DTOs backend, mergé)
+
+### Contexte
+
+`S4-FE-015-BIS` a livré la grille `AgePolicy` par room type, mais avec **une seule
+valeur** par (roomType, ageCategory, sharingType) — modélisation antérieure aux
+décisions backend `occurrenceIndex`/`baseRateReference` (S4-BE-014-BIS). Ce ticket
+aligne le frontend sur le modèle final : plusieurs occurrences possibles par
+(roomType, ageCategory, sharingType), chacune avec sa propre base de calcul et sa
+propre valeur.
+
+Rappel sémantique (déjà actée côté backend, à respecter dans le code comme dans l'UI) :
+
+- `WITH_PARENTS` : `occurrenceIndex` = "quel enfant" (1er/2e...), chaque occurrence a
+  sa propre `value`, indépendante des autres.
+- `SEPARATE_ROOM` : `occurrenceIndex` = occupation totale de la chambre séparée
+  (1 vs 2 enfants), qui sélectionne le `baseRateReference` (`single`→`halfDouble`) ;
+  la `value` de la ligne s'applique identiquement à chacun des N enfants de
+  l'occurrence — elle n'est pas divisée.
+
+### Scope
+
+- **`LocalAgePolicyEntry`** (`contract-form.types.ts`) : ajout de `occurrenceIndex`
+  (number) et `baseRateReference` (`BaseRateReference` — `single`/`halfDouble`/
+  `triple`/`quadruple`, jamais `thirdPersonAdult`, exclu côté backend).
+- **`agePolicyRowsByRoomPrice`** (table figée, une ligne par ageCategory × sharingType)
+  remplacé par **`agePolicyGroupsByRoomPrice`** : un groupe par (roomType, ageCategory,
+  sharingType), chaque groupe portant la liste de ses occurrences triées par
+  `occurrenceIndex`.
+- **`addAgePolicyOccurrence(periodTempId, roomTypeId, ageCategoryId, sharingType)`** :
+  ajoute une occurrence, `occurrenceIndex` = nombre d'occurrences déjà présentes dans
+  ce groupe + 1.
+- **`removeAgePolicyOccurrence(tempId)`** : supprime une occurrence et réindexe les
+  occurrences restantes du même groupe (jamais de trou dans `occurrenceIndex`, en
+  miroir de la contrainte `@@unique` backend qui l'inclut).
+- **`updateAgePolicyField(tempId, field, value)`** : mutation générique d'un champ
+  d'occurrence (remplace l'ancien `updateAgePolicyValue`, devenu trop spécifique).
+- **`getBaseRateReferenceOptions(roomTypeId)`** : réutilise `isBaseRateFieldVisible()`
+  existant pour filtrer les choix de `baseRateReference` selon la capacité max de la
+  chambre (aucune nouvelle logique de capacité créée).
+- Template : section Age Policies remplacée par des groupes avec bouton "Add
+  occurrence" par groupe, une ligne par occurrence (select `baseRateReference` +
+  montant + bouton suppression).
+- SCSS : styles pour `.age-policy-group`, `.age-policy-group-header`,
+  `.age-policy-occurrence-row`, `.occurrence-index`, `.age-policy-empty`.
+
+### Hors scope
+
+- Toute validation de capacité sur le nombre d'occurrences (pas de règle backend
+  équivalente à mirrorer)
+- Calcul automatique du `baseRateReference` par défaut selon le contexte — reste un
+  choix manuel de l'agent à chaque occurrence ajoutée
+
+### Point ouvert à vérifier
+
+- `contract-form.types.ts` n'a pas été rejoint dans les fichiers de cette session —
+  reconstruit à partir de son usage dans `contract-form.component.ts`. À confronter
+  au fichier réel avant merge (`LocalContractPeriod`/`LocalBaseRate` notamment).
+
+### Acceptance Criteria
+
+- ✅ `LocalAgePolicyEntry` porte `occurrenceIndex` et `baseRateReference`
+- ✅ Chaque groupe (roomType, ageCategory, sharingType) affiche ses occurrences,
+  triées par `occurrenceIndex`
+- ✅ "Add occurrence" ajoute une ligne avec le prochain `occurrenceIndex` disponible
+  dans son groupe
+- ✅ Supprimer une occurrence au milieu d'un groupe réindexe les suivantes, jamais de
+  trou
+- ✅ Le select `baseRateReference` ne propose que les valeurs compatibles avec la
+  capacité de la chambre (`thirdPersonAdult` jamais proposé)
+- ✅ Retirer un room type de la sélection supprime toutes ses occurrences
+  `localAgePolicies` (pruning déjà en place dans `syncRoomPriceMatrix`, non régressé)
+- ✅ Rebasculer une ligne `PER_OCCUPANCY` → `PER_ROOM` supprime toutes les occurrences
+  du `(periodTempId, roomTypeId)` (comportement déjà en place, non régressé)
+
+---
+
+## S4-FE-017-BIS : ContractForm — RoomPrice PER_ROOM — "Unit extra person" (Adult/Child/Teen)
+
+- **Type :** Feature
+- **Priority :** P1
+- **Story Points :** 3
+- **Branch :** `feat/S4-FE-017-BIS-per-room-extra-person`
+- **Status :** À faire — prochain ticket
+- **Dépend de :** S4-BE-015-BIS (schéma/DTOs backend, mergé)
+
+### Contexte
+
+`RoomPrice` en mode `PER_ROOM` gagne 3 champs supplément par personne additionnelle
+côté backend : `extraPersonAdult`, `extraPersonChild`, `extraPersonTeen` (Decimal
+nullable). Mécanisme entièrement distinct de `BaseRate.thirdPersonAdult`
+(`PER_OCCUPANCY` uniquement, capacité de chambre == 2) — confirmé, aucun
+chevauchement.
+
+### Scope (à valider avant codage — une seule décision structurelle à la fois)
+
+- `LocalRoomPrice` (`contract-form.types.ts`) : ajout de `extraPersonAdult`/
+  `extraPersonChild`/`extraPersonTeen` (number | null), visibles uniquement en mode
+  `PER_ROOM`
+- Card `room-price-card`, bloc `PER_ROOM` existant (à côté de "Price per Night") :
+  3 nouveaux champs `p-inputNumber`
+- `updateRoomPriceField` existant suffit pour la mutation (générique par clé) — pas
+  de nouvelle méthode a priori, à confirmer une fois le type mis à jour
+- Reset : au passage `PER_ROOM` → `PER_OCCUPANCY`, décider si ces 3 champs doivent
+  être vidés (symétrique du reset déjà en place pour `baseRate`/`localAgePolicies`
+  au retour `PER_OCCUPANCY` → `PER_ROOM`) — point à trancher en session
+
+### Hors scope
+
+- Toute validation croisée avec `BaseRate.thirdPersonAdult`
+- `OccupancyGuidance` (S4-FE-014-BIS, toujours en attente séparément)
+
+### Acceptance Criteria (à affiner en session)
+
+- ✅ Les 3 champs extra person sont éditables uniquement en mode `PER_ROOM`
+- ✅ Comportement de reset au changement de `pricingMode` défini et cohérent avec le
+  pattern déjà en place pour `PER_OCCUPANCY`
+- ✅ Aucune régression sur le flux `PER_ROOM`/`pricePerNight` existant
+- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
+
+---
+
 ### S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
 
 - **Type :** Feature
