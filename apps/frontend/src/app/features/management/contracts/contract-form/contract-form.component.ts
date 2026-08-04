@@ -544,6 +544,9 @@ export class ContractFormComponent {
               pricingMode: 'PER_ROOM',
               pricePerNight: null,
               baseRate: null,
+              extraPersonAdult: null,
+              extraPersonChild: null,
+              extraPersonTeen: null,
             });
           }
         }
@@ -587,6 +590,12 @@ export class ContractFormComponent {
             newMode === 'PER_OCCUPANCY'
               ? (rp.baseRate ?? emptyBaseRate())
               : null,
+          extraPersonAdult:
+            newMode === 'PER_OCCUPANCY' ? null : rp.extraPersonAdult,
+          extraPersonChild:
+            newMode === 'PER_OCCUPANCY' ? null : rp.extraPersonChild,
+          extraPersonTeen:
+            newMode === 'PER_OCCUPANCY' ? null : rp.extraPersonTeen,
         };
       })
     );

@@ -39,7 +39,11 @@ export interface LocalRoomPrice {
   pricingMode: PricingMode;
   pricePerNight: number | null;
   baseRate: LocalBaseRate | null;
+  extraPersonAdult: number | null;
+  extraPersonChild: number | null;
+  extraPersonTeen: number | null;
 }
+
 export interface LocalAgePolicyEntry {
   tempId: string;
   periodTempId: string;

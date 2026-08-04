@@ -220,6 +220,25 @@
         max-width: 320px;
       }
 
+      .extra-person-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-top: 1rem;
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+
+          label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--p-text-muted-color);
+          }
+        }
+      }
+
       .base-rate-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
