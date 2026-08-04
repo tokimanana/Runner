@@ -2,8 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/apps/backend",
-    "types": ["node", "jest"],
-    "composite": true,
+    "types": ["node", "jest"]
   },
   "exclude": [],
   "include": [
@@ -11,6 +10,7 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "test/**/*.test.ts",
-    "test/**/*.spec.ts"
+    "test/**/*.spec.ts",
+    "test/**/*.e2e-spec.ts"
   ]
 }
