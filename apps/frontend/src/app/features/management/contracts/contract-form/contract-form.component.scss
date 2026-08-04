@@ -249,6 +249,56 @@
           font-size: 0.95rem;
           color: var(--p-text-color);
         }
+
+        .age-policy-group {
+          margin-bottom: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .age-policy-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+
+            .age-policy-group-title {
+              font-size: 0.85rem;
+              font-weight: 600;
+              color: var(--p-text-color);
+            }
+          }
+
+          .age-policy-empty {
+            margin: 0;
+            padding: 0.35rem 0;
+            font-size: 0.8rem;
+            color: var(--p-text-muted-color);
+            font-style: italic;
+          }
+
+          .age-policy-occurrence-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+
+            .occurrence-index {
+              font-size: 0.8rem;
+              font-weight: 600;
+              color: var(--p-primary-700);
+              background-color: var(--p-primary-50);
+              border: 1px solid var(--p-primary-200);
+              border-radius: 4px;
+              padding: 0.1rem 0.4rem;
+              min-width: 1.75rem;
+              text-align: center;
+              flex-shrink: 0;
+            }
+          }
+        }
       }
     }
 

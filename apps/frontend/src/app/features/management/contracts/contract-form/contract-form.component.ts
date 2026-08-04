@@ -19,6 +19,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 // Types internes
 import {
   AgeCategory,
+  BaseRateReference,
   ContractDto,
   PricingMode,
   RoomType,
@@ -213,6 +214,18 @@ export class ContractFormComponent {
     { label: 'Per occupancy', value: 'PER_OCCUPANCY' },
   ];
 
+  // baseRateReference exclut volontairement 'thirdPersonAdult' — jamais utilisé
+  // comme base de calcul d'une règle AgePolicy (confirmé sur les 8 contrats, S4-BE-014-BIS)
+  readonly baseRateReferenceOptionsAll: {
+    label: string;
+    value: BaseRateReference;
+  }[] = [
+    { label: 'Single', value: 'single' },
+    { label: 'Half Double', value: 'halfDouble' },
+    { label: 'Triple', value: 'triple' },
+    { label: 'Quadruple', value: 'quadruple' },
+  ];
+
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
       startWith(this.step1Form.controls.hotelId.value),
@@ -257,7 +270,12 @@ export class ContractFormComponent {
     });
   });
 
-  readonly agePolicyRowsByRoomPrice = computed(() => {
+  /**
+   * Pour chaque LocalRoomPrice en PER_OCCUPANCY : un groupe par (AgeCategory, SharingType),
+   * chaque groupe portant ses occurrences (LocalAgePolicyEntry) triées par occurrenceIndex.
+   * Remplace l'ancienne agePolicyRowsByRoomPrice (une seule valeur par groupe, sans occurrence).
+   */
+  readonly agePolicyGroupsByRoomPrice = computed(() => {
     const categories = this.ageCategories();
     const entries = this.localAgePolicies();
 
@@ -266,28 +284,29 @@ export class ContractFormComponent {
       {
         ageCategory: AgeCategory;
         sharingType: SharingType;
-        value: number | null;
+        occurrences: LocalAgePolicyEntry[];
       }[]
     >();
 
     for (const rp of this.localRoomPrices()) {
       if (rp.pricingMode !== 'PER_OCCUPANCY') continue;
 
-      const rows = categories.flatMap((category) =>
+      const groups = categories.flatMap((category) =>
         this.sharingTypeOptions.map(({ value: sharingType }) => ({
           ageCategory: category,
           sharingType,
-          value:
-            entries.find(
+          occurrences: entries
+            .filter(
               (e) =>
                 e.periodTempId === rp.periodTempId &&
                 e.roomTypeId === rp.roomTypeId &&
                 e.ageCategoryId === category.id &&
                 e.sharingType === sharingType
-            )?.value ?? null,
+            )
+            .sort((a, b) => a.occurrenceIndex - b.occurrenceIndex),
         }))
       );
-      map.set(rp.tempId, rows);
+      map.set(rp.tempId, groups);
     }
 
     return map;
@@ -533,9 +552,6 @@ export class ContractFormComponent {
       return [...kept, ...missing];
     });
 
-    // Pas de "missing" à générer ici (contrairement à RoomPrice) :
-    // une AgePolicy est créée à la volée par updateAgePolicyValue(), pas
-    // pré-remplie. On ne fait que retirer les entrées orphelines.
     this.localAgePolicies.update((entries) =>
       entries.filter(
         (e) =>
@@ -604,38 +620,73 @@ export class ContractFormComponent {
     });
   }
 
-  updateAgePolicyValue(
+  addAgePolicyOccurrence(
     periodTempId: string,
     roomTypeId: string,
     ageCategoryId: string,
-    sharingType: SharingType,
-    value: number | null
+    sharingType: SharingType
   ): void {
-    this.localAgePolicies.update((entries) => {
-      const index = entries.findIndex(
-        (e) =>
-          e.periodTempId === periodTempId &&
-          e.roomTypeId === roomTypeId &&
-          e.ageCategoryId === ageCategoryId &&
-          e.sharingType === sharingType
-      );
+    const siblingCount = this.localAgePolicies().filter(
+      (e) =>
+        e.periodTempId === periodTempId &&
+        e.roomTypeId === roomTypeId &&
+        e.ageCategoryId === ageCategoryId &&
+        e.sharingType === sharingType
+    ).length;
 
-      if (index === -1) {
-        return [
-          ...entries,
-          {
-            tempId: crypto.randomUUID(),
-            periodTempId,
-            roomTypeId,
-            ageCategoryId,
-            sharingType,
-            value,
-          },
-        ];
-      }
+    this.localAgePolicies.update((entries) => [
+      ...entries,
+      {
+        tempId: crypto.randomUUID(),
+        periodTempId,
+        roomTypeId,
+        ageCategoryId,
+        sharingType,
+        occurrenceIndex: siblingCount + 1,
+        baseRateReference: 'single',
+        value: null,
+      },
+    ]);
+  }
 
-      return entries.map((e, i) => (i === index ? { ...e, value } : e));
-    });
+  removeAgePolicyOccurrence(tempId: string): void {
+    const removed = this.localAgePolicies().find((e) => e.tempId === tempId);
+    if (!removed) return;
+
+    this.localAgePolicies.update((entries) =>
+      entries
+        .filter((e) => e.tempId !== tempId)
+        .map((e) => {
+          const isSibling =
+            e.periodTempId === removed.periodTempId &&
+            e.roomTypeId === removed.roomTypeId &&
+            e.ageCategoryId === removed.ageCategoryId &&
+            e.sharingType === removed.sharingType;
+
+          return isSibling && e.occurrenceIndex > removed.occurrenceIndex
+            ? { ...e, occurrenceIndex: e.occurrenceIndex - 1 }
+            : e;
+        })
+    );
+  }
+
+  updateAgePolicyField<K extends keyof LocalAgePolicyEntry>(
+    tempId: string,
+    field: K,
+    value: LocalAgePolicyEntry[K]
+  ): void {
+    this.localAgePolicies.update((entries) =>
+      entries.map((e) => (e.tempId === tempId ? { ...e, [field]: value } : e))
+    );
+  }
+
+  /** baseRateReference exclut thirdPersonAdult — filtre juste par capacité de chambre. */
+  getBaseRateReferenceOptions(
+    roomTypeId: string
+  ): { label: string; value: BaseRateReference }[] {
+    return this.baseRateReferenceOptionsAll.filter((opt) =>
+      this.isBaseRateFieldVisible(roomTypeId, opt.value)
+    );
   }
 
   getRoomTypeMaxCapacity(roomTypeId: string): number {

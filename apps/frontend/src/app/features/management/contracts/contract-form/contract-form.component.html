@@ -533,58 +533,113 @@
                                 }
                               </div>
 
-                              <!-- Section Age Policy -->
+                              <!-- Section Age Policy — occurrences dynamiques par (AgeCategory, SharingType) -->
                               <div class="age-policy-section">
                                 <h5 class="font-bold mb-2">Age Policies</h5>
-                                <p-table
-                                  [value]="
-                                    agePolicyRowsByRoomPrice().get(rp.tempId) ??
-                                    []
-                                  "
-                                >
-                                  <ng-template pTemplate="header">
-                                    <tr>
-                                      <th>Age Category</th>
-                                      <th>Sharing Type</th>
-                                      <th>
-                                        Value ({{ selectedCurrencyCode() }})
-                                      </th>
-                                    </tr>
-                                  </ng-template>
-                                  <ng-template pTemplate="body" let-row>
-                                    <tr>
-                                      <td>
-                                        {{ row.ageCategory.name }} ({{
-                                          row.ageCategory.minAge
-                                        }}-{{ row.ageCategory.maxAge }} yrs)
-                                      </td>
-                                      <td>
+
+                                @for (
+                                  group of agePolicyGroupsByRoomPrice().get(
+                                    rp.tempId
+                                  ) ?? [];
+                                  track group.ageCategory.id + group.sharingType
+                                ) {
+                                  <div class="age-policy-group">
+                                    <div class="age-policy-group-header">
+                                      <span class="age-policy-group-title">
+                                        {{ group.ageCategory.name }} ({{
+                                          group.ageCategory.minAge
+                                        }}-{{ group.ageCategory.maxAge }}
+                                        yrs) —
                                         {{
-                                          row.sharingType === 'WITH_PARENTS'
+                                          group.sharingType === 'WITH_PARENTS'
                                             ? 'With Parents'
                                             : 'Separate Room'
                                         }}
-                                      </td>
-                                      <td>
-                                        <p-inputNumber
-                                          [ngModel]="row.value"
-                                          (ngModelChange)="
-                                            updateAgePolicyValue(
-                                              rp.periodTempId,
-                                              rp.roomTypeId,
-                                              row.ageCategory.id,
-                                              row.sharingType,
-                                              $event
-                                            )
-                                          "
-                                          [min]="0"
-                                          mode="currency"
-                                          [currency]="selectedCurrencyCode()"
-                                        />
-                                      </td>
-                                    </tr>
-                                  </ng-template>
-                                </p-table>
+                                      </span>
+                                      <p-button
+                                        icon="pi pi-plus"
+                                        label="Add occurrence"
+                                        [text]="true"
+                                        size="small"
+                                        (onClick)="
+                                          addAgePolicyOccurrence(
+                                            rp.periodTempId,
+                                            rp.roomTypeId,
+                                            group.ageCategory.id,
+                                            group.sharingType
+                                          )
+                                        "
+                                      />
+                                    </div>
+
+                                    @if (group.occurrences.length === 0) {
+                                      <p class="age-policy-empty">
+                                        No rule defined for this room type.
+                                      </p>
+                                    } @else {
+                                      @for (
+                                        occurrence of group.occurrences;
+                                        track occurrence.tempId
+                                      ) {
+                                        <div class="age-policy-occurrence-row">
+                                          <span class="occurrence-index"
+                                            >#{{
+                                              occurrence.occurrenceIndex
+                                            }}</span
+                                          >
+
+                                          <p-select
+                                            [options]="
+                                              getBaseRateReferenceOptions(
+                                                rp.roomTypeId
+                                              )
+                                            "
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            [ngModel]="
+                                              occurrence.baseRateReference
+                                            "
+                                            (ngModelChange)="
+                                              updateAgePolicyField(
+                                                occurrence.tempId,
+                                                'baseRateReference',
+                                                $event
+                                              )
+                                            "
+                                            placeholder="Base rate"
+                                          />
+
+                                          <p-inputNumber
+                                            [ngModel]="occurrence.value"
+                                            (ngModelChange)="
+                                              updateAgePolicyField(
+                                                occurrence.tempId,
+                                                'value',
+                                                $event
+                                              )
+                                            "
+                                            [min]="0"
+                                            mode="currency"
+                                            [currency]="selectedCurrencyCode()"
+                                          />
+
+                                          <p-button
+                                            icon="pi pi-trash"
+                                            [text]="true"
+                                            [rounded]="true"
+                                            size="small"
+                                            severity="danger"
+                                            (onClick)="
+                                              removeAgePolicyOccurrence(
+                                                occurrence.tempId
+                                              )
+                                            "
+                                          />
+                                        </div>
+                                      }
+                                    }
+                                  </div>
+                                }
                               </div>
                             }
                           </div>
