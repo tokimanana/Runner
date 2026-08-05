@@ -1526,9 +1526,9 @@ chevauchement.
 - **Priority :** P2
 - **Story Points :** 3
 - **Branch :** `feat/S4-FE-014-BIS-occupancy-guidance-room-type`
-- **Status :** ✅
+- **Status :** À faire — prêt à démarrer (dépendances résolues)
 - **Emplacement :** `Hotels > [hotel] > Room Types` (fiche room type existante)
-- **Dépend de :** S4-BE-003-BIS
+- **Dépend de :** S4-BE-003-BIS (`OccupancyGuidancesController`, ✅ mergé),
   S4-BE-008-BIS (service, ✅ mergé) — **mise à jour** : les deux étaient listés
   "à faire" dans la version précédente du ticket, ils sont en réalité déjà
   mergés depuis la phase backend. Ticket non bloqué.
@@ -1598,98 +1598,154 @@ n'a donc rien à trancher structurellement : juste une liste de lignes
 - ✅ Édition et suppression fonctionnelles
 - ✅ `nx build frontend` / `nx test frontend` passent sans erreur
 
+---
+
+## S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
+
 - **Type :** Feature
-- **Priority :** P2
-- **Story Points :** à estimer
-- **Emplacement :** `Hotels > [hotel] > Room Types` (fiche room type existante)
+- **Priority :** P1
+- **Story Points :** 3
+- **Branch :** `feature/S4-FE-007-contract-form-step4`
+- **Status :** ⬜ À faire
+- **Commit :** aucun — pas encore commencé
 
-**Contexte :** `OccupancyGuidance` (combinaisons indicatives d'occupation,
-non bloquantes) est scopée uniquement par `roomTypeId` — aucune dépendance
-à un contrat ni une période. Elle n'a donc pas sa place dans le wizard de
-contrat (Steps 1-5, dont S4-FE-006-BIS) et se gère plutôt là où le room
-type lui-même est administré, au même titre que `RoomTypeCapacity`.
+### Point structurel à noter avant de commencer
 
-**Dépend de :** S4-BE-003-BIS (`OccupancyGuidancesController`,
-routes `occupancy-guidances` / `occupancy-guidances/room-types/:roomTypeId`),
-S4-BE-008-BIS (service)
+Le stepper actuel (`contract-form.component.html`) n'a que **3** `p-step`
+("Contract Info", "Periods", "Room Prices") — pas de 4e étape. Ce ticket
+implique donc d'ajouter un vrai step supplémentaire au `p-stepper`, pas
+seulement des champs dans l'existant. Décision structurelle à valider avant
+codage.
 
-### Scope
+### Scope (repris du sprint doc original — à affiner en session)
 
-- Section/onglet dédié sur la fiche room type existante, listant les
-  `OccupancyGuidance` du room type (`GET occupancy-guidances/room-types/:roomTypeId`)
-- Création : `description` (texte libre), `maxAdults`/`maxTeens`/
-  `maxChildren`/`maxInfants` (entiers, défaut 0 si omis)
-- Plusieurs guidances par room type autorisées (pas de contrainte
-  d'unicité côté backend — pas de règle à répliquer côté frontend)
-- Édition / suppression d'une guidance existante
+- Un `LocalMealPlanSupplement` par période : `mealPlanId`, `occupancyRates`
+  (`Record<string, number>` — clé = combinaison d'occupation, à définir),
+  `billingUnit` (`PER_NIGHT`/`PER_STAY`, requis — cf. `S4-BE-009-BIS`)
+- Édition inline ou dialog, à trancher en session (le pattern Step 2 —
+  édition inline — a été jugé plus adapté au workflow réel lors de
+  `S4-FE-005`, probablement à reproduire ici)
 
 ### Hors scope
 
-- Toute validation croisée avec `RoomTypeCapacity` (relation entre les
-  deux non tranchée côté backend — cf. discussion ouverte, à traiter
-  séparément)
-- Utilisation de ces guidances dans le wizard de contrat (purement
-  informationnel pour l'instant, aucun lien avec `BaseRate`/`AgePolicy`)
-
-### Acceptance Criteria
-
-- ✅ La fiche room type affiche la liste des `OccupancyGuidance` existantes
-- ✅ Création d'une guidance sans capacités précisées → les 4 champs
-  `max...` valent 0
-- ✅ Édition et suppression fonctionnelles
-- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
+- Steps 5 (`S4-FE-008`), submit final (`S4-FE-009`)
 
 ---
 
-### S4-REFACTOR-001 : Harmoniser la gestion des erreurs Prisma sur les foreign keys
+## S4-FE-008 : ContractForm — Étape 5 (Stop Sales)
 
-- **Type :** Refactor
+- **Type :** Feature
 - **Priority :** P2
+- **Story Points :** 2
+- **Branch :** `feature/S4-FE-008-contract-form-step5`
+- **Status :** ⬜ À faire
+- **Commit :** aucun — pas encore commencé
+
+### Scope (repris du sprint doc original)
+
+Bornes de dates depuis `ContractPeriod.startDate/endDate` (pas
+`SeasonPeriod`) :
+
+```typescript
+periodRange = computed(() => ({
+  minDate: new Date(this.currentPeriod()?.startDate ?? ''),
+  maxDate: new Date(this.currentPeriod()?.endDate ?? ''),
+}));
+```
+
+Même remarque structurelle que S4-FE-007 : nécessite un 5e `p-step`.
+
+### Hors scope
+
+- Submit final (`S4-FE-009`)
+
+---
+
+## S4-FE-009 : ContractForm — Récapitulatif + Submit
+
+- **Type :** Feature
+- **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `refactor/S4-REFACTOR-001-prisma-error-handling`
-- **Commit :** `refactor(contracts): align Prisma error handling with actual schema relations`
+- **Branch :** `feature/S4-FE-009-contract-submit`
+- **Status :** ⬜ À faire
+- **Commit :** aucun — pas encore commencé
 
-**Contexte :** Identifié pendant S4-BE-009 et S4-BE-010. La gestion des codes
-d'erreur Prisma (P2002/P2003/P2025) doit refléter exactement les relations
-réelles du schéma — ni en manquer (trou de robustesse), ni en gérer qui ne
-peuvent jamais survenir (code mort, fausse impression de sécurité).
+### Dépend de
 
-**Catégorie A — P2003 manquant sur une vraie foreign key modifiable :**
+S4-FE-007 et S4-FE-008 (les collections `mealSupplementsByPeriod`/
+`stopSalesByPeriod` que le submit original consomme n'existent pas encore).
+**Bloqué tant que ces deux tickets ne sont pas faits.**
 
-| Méthode           | Foreign key concernée              | Statut            |
-| ----------------- | ---------------------------------- | ----------------- |
-| `updateRoomPrice` | `roomTypeId`                       | ❌ P2003 non géré |
-| `createPeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
-| `updatePeriod`    | `seasonPeriodId`, `baseMealPlanId` | ❌ P2003 non géré |
+### Scope (repris du sprint doc original — squelette `submit()` à valider,
 
-**Catégorie B — code mort, gère un cas structurellement impossible :**
+pas encore vérifié contre les DTOs réels post-refonte PER_OCCUPANCY)
 
-| Méthode                    | Code géré à tort        | Pourquoi impossible                                                                                  |
-| -------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| `removeMealPlanSupplement` | P2003 → `HAS_RELATIONS` | Aucune table ne référence `MealPlanSupplement` par foreign key — rien ne peut bloquer sa suppression |
+Le snippet original du sprint doc construit les payloads `RoomPrice` sans
+tenir compte du fait que `createRoomPrice` ne prend plus `occupancyRates` en
+`PER_OCCUPANCY` (remplacé par des appels séparés `createBaseRate`/
+`createAgePolicy`, cf. `S4-BE-008-BIS`) — le squelette de soumission devra
+être réécrit pour appeler ces endpoints séparément par room type en mode
+`PER_OCCUPANCY`, pas juste passer `rp` tel quel à `createRoomPrice`.
 
-**Méthode de vérification à appliquer à CHAQUE méthode create/update/delete :**
+### Hors scope
 
-1. Lister les champs `*Id` envoyés dans `data` → ce sont les P2003 potentiels (create/update)
-2. Lister les tables qui ont une `@relation` pointant vers l'entité qu'on supprime
-   → seulement celles-là justifient un P2003/HAS_RELATIONS sur delete
-3. Si aucune table enfant n'existe → ne pas gérer HAS_RELATIONS, point.
+- Rien — dernier ticket du wizard
 
-**Modifications nécessaires :**
+---
 
-- `updateRoomPrice`, `createPeriod`, `updatePeriod` — ajouter P2003 (Catégorie A)
-- `removeMealPlanSupplement` — retirer le bloc P2003/HAS_RELATIONS (Catégorie B)
-- Auditer `create`/`update`/`remove` sur `Contract` avec la même grille
-- Auditer les futures méthodes `StopSalesDate` (S4-BE-010) dès leur création,
-  pour éviter de reproduire l'un ou l'autre problème dès le départ
+## S4-FE-010 : Routes Contracts + Sidebar
 
-**Acceptance Criteria :**
+- **Type :** Task
+- **Priority :** P0
+- **Story Points :** 1
+- **Branch :** `chore/S4-FE-010-contracts-routes`
+- **Status :** ⬜ À faire
+- **Commit :** aucun — pas encore commencé
 
-- ✅ Chaque méthode gère exactement les codes d'erreur que sa relation au
-  schéma justifie — ni plus, ni moins
-- ✅ Aucun bloc `if (error.code === ...)` ne correspond à une relation
-  inexistante dans `schema.prisma`
-- ✅ Messages d'erreur identifiant précisément l'entité concernée
+### Point à vérifier avant de commencer
+
+Le sprint doc original suppose que `contracts-list`/`contract-form` sont déjà
+scaffoldés et juste à router. Vu que tout le reste (S4-FE-007/008/009) n'est
+pas fait, à confirmer : `ContractsListComponent` et `ContractFormComponent`
+existent-ils déjà dans l'arbre de fichiers réel, ou ce ticket doit-il aussi
+les scaffolder ?
+
+### Scope (repris du sprint doc original)
+
+```typescript
+// management.routes.ts
+{
+  path: 'contracts',
+  children: [
+    { path: '', redirectTo: 'contracts-list', pathMatch: 'full' },
+    {
+      path: 'contracts-list',
+      loadComponent: () =>
+        import('./contracts/contracts-list/contracts-list.component')
+          .then(m => m.ContractsListComponent),
+    },
+    {
+      path: 'create',
+      loadComponent: () =>
+        import('./contracts/contract-form/contract-form.component')
+          .then(m => m.ContractFormComponent),
+    },
+    {
+      path: ':contractId/edit',
+      loadComponent: () =>
+        import('./contracts/contract-form/contract-form.component')
+          .then(m => m.ContractFormComponent),
+    },
+  ],
+},
+```
+
+Guards hérités du parent `management` (`RoleGuard`, `roles: ['ADMIN',
+'MANAGER']`), pas de duplication sur les routes enfants.
+
+### Hors scope
+
+- Rien de nouveau signalé
 
 ---
 
