@@ -18,6 +18,7 @@ import {
 } from '@angular/forms';
 import {
   AgeCategory,
+  OccupancyGuidance,
   RoomType,
   RoomTypeCapacity,
   RoomTypeCapacityDto,
@@ -31,7 +32,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { HotelsService } from '../../hotels.service';
 
-export enum CapacityRowState {
+// Générique — partagée entre la section Capacities et la section
+// Occupancy Guidance (S4-FE-014-BIS), même cycle idle/editing/saving/saved
+// pour les deux, aucune raison de dupliquer.
+export enum EditableRowState {
   Idle = 'idle',
   Editing = 'editing',
   Saving = 'saving',
@@ -42,7 +46,24 @@ interface CapacityRow {
   ageCategory: AgeCategory;
   capacity: RoomTypeCapacity | null;
   maxPax: FormControl<number>;
-  state: ReturnType<typeof signal<CapacityRowState>>;
+  state: ReturnType<typeof signal<EditableRowState>>;
+}
+
+interface GuidanceRowForm {
+  description: FormControl<string>;
+  maxAdults: FormControl<number>;
+  maxTeens: FormControl<number>;
+  maxChildren: FormControl<number>;
+  maxInfants: FormControl<number>;
+}
+
+interface GuidanceRow {
+  // tempId sert de clé stable pour le tracking, y compris pour une ligne
+  // jamais sauvegardée (guidance === null) — l'id serveur n'existe pas encore.
+  tempId: string;
+  guidance: OccupancyGuidance | null;
+  form: FormGroup<GuidanceRowForm>;
+  state: ReturnType<typeof signal<EditableRowState>>;
 }
 
 @Component({
@@ -73,6 +94,7 @@ export class RoomTypesFormComponent {
 
   readonly isSubmitting = signal(false);
   readonly capacityRows = signal<CapacityRow[]>([]);
+  readonly guidanceRows = signal<GuidanceRow[]>([]);
 
   readonly visible = model(false);
 
@@ -83,7 +105,7 @@ export class RoomTypesFormComponent {
     this.capacityRows().filter((r) => r.capacity === null)
   );
 
-  readonly CapacityRowState = CapacityRowState;
+  readonly EditableRowState = EditableRowState;
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -102,9 +124,11 @@ export class RoomTypesFormComponent {
       if (room) {
         this.form.patchValue(room);
         this._buildCapacityRows(room);
+        this._loadGuidanceRows(room);
       } else {
         this.form.reset();
         this.capacityRows.set([]);
+        this.guidanceRows.set([]);
       }
     });
   }
@@ -161,19 +185,19 @@ export class RoomTypesFormComponent {
   }
 
   enableEditing(row: CapacityRow): void {
-    row.state.set(CapacityRowState.Editing);
+    row.state.set(EditableRowState.Editing);
   }
 
   cancelEdit(row: CapacityRow): void {
     row.maxPax.setValue(row.capacity?.maxPax ?? 1);
-    row.state.set(CapacityRowState.Idle);
+    row.state.set(EditableRowState.Idle);
   }
 
   saveCapacity(row: CapacityRow): void {
     const room = this._roomType();
     if (!room || row.maxPax.invalid) return;
 
-    row.state.set(CapacityRowState.Saving);
+    row.state.set(EditableRowState.Saving);
     const maxPax = row.maxPax.value;
 
     if (row.capacity) {
@@ -185,10 +209,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (updated) => {
             row.capacity = updated;
-            row.state.set(CapacityRowState.Saved);
-            setTimeout(() => row.state.set(CapacityRowState.Idle), 2000);
+            row.state.set(EditableRowState.Saved);
+            setTimeout(() => row.state.set(EditableRowState.Idle), 2000);
           },
-          error: () => row.state.set(CapacityRowState.Editing),
+          error: () => row.state.set(EditableRowState.Editing),
         });
     } else {
       const dto: RoomTypeCapacityDto = {
@@ -201,10 +225,10 @@ export class RoomTypesFormComponent {
         .subscribe({
           next: (created) => {
             row.capacity = created;
-            row.state.set(CapacityRowState.Idle);
+            row.state.set(EditableRowState.Idle);
             this.capacityRows.set([...this.capacityRows()]);
           },
-          error: () => row.state.set(CapacityRowState.Idle),
+          error: () => row.state.set(EditableRowState.Idle),
         });
     }
   }
@@ -225,12 +249,160 @@ export class RoomTypesFormComponent {
             next: () => {
               row.capacity = null;
               row.maxPax.setValue(1);
-              row.state.set(CapacityRowState.Idle);
+              row.state.set(EditableRowState.Idle);
               this.capacityRows.set([...this.capacityRows()]);
             },
           });
       },
     });
+  }
+
+  // --- Occupancy Guidance (S4-FE-014-BIS) ---
+  // Contrairement aux Capacities (une ligne par AgeCategory de l'hôtel, fixe),
+  // les guidances sont une liste librement addable/supprimable — pas de
+  // dérivation depuis une autre collection.
+
+  addGuidanceRow(): void {
+    this.guidanceRows.update((rows) => [
+      ...rows,
+      {
+        tempId: crypto.randomUUID(),
+        guidance: null,
+        form: this._buildGuidanceForm(),
+        state: signal(EditableRowState.Editing),
+      },
+    ]);
+  }
+
+  enableGuidanceEditing(row: GuidanceRow): void {
+    row.state.set(EditableRowState.Editing);
+  }
+
+  cancelGuidanceEdit(row: GuidanceRow): void {
+    if (!row.guidance) {
+      // Jamais sauvegardée — annuler = la retirer, rien à restaurer.
+      this._removeGuidanceRow(row.tempId);
+      return;
+    }
+    row.form.patchValue(row.guidance);
+    row.state.set(EditableRowState.Idle);
+  }
+
+  saveGuidance(row: GuidanceRow): void {
+    const room = this._roomType();
+    row.form.markAllAsTouched();
+    if (!room || row.form.invalid) return;
+
+    row.state.set(EditableRowState.Saving);
+    const { description, maxAdults, maxTeens, maxChildren, maxInfants } =
+      row.form.getRawValue();
+
+    if (row.guidance) {
+      this.hotelsService
+        .updateOccupancyGuidance(row.guidance.id, {
+          description,
+          maxAdults,
+          maxTeens,
+          maxChildren,
+          maxInfants,
+        })
+        .pipe(take(1))
+        .subscribe({
+          next: (updated) => {
+            row.guidance = updated;
+            row.state.set(EditableRowState.Saved);
+            setTimeout(() => row.state.set(EditableRowState.Idle), 2000);
+          },
+          error: () => row.state.set(EditableRowState.Editing),
+        });
+    } else {
+      this.hotelsService
+        .createOccupancyGuidance({
+          roomTypeId: room.id,
+          description,
+          maxAdults,
+          maxTeens,
+          maxChildren,
+          maxInfants,
+        })
+        .pipe(take(1))
+        .subscribe({
+          next: (created) => {
+            row.guidance = created;
+            row.state.set(EditableRowState.Idle);
+            this.guidanceRows.set([...this.guidanceRows()]);
+          },
+          error: () => row.state.set(EditableRowState.Editing),
+        });
+    }
+  }
+
+  deleteGuidance(row: GuidanceRow): void {
+    if (!row.guidance) {
+      this._removeGuidanceRow(row.tempId);
+      return;
+    }
+
+    this.confirmationService.confirm({
+      header: 'Remove Occupancy Guidance',
+      message: `Remove the guidance "${row.guidance.description}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.hotelsService
+          .deleteOccupancyGuidance(row.guidance!.id)
+          .pipe(take(1))
+          .subscribe({
+            next: () => this._removeGuidanceRow(row.tempId),
+          });
+      },
+    });
+  }
+
+  private _buildGuidanceForm(
+    guidance?: OccupancyGuidance
+  ): FormGroup<GuidanceRowForm> {
+    return new FormGroup<GuidanceRowForm>({
+      description: new FormControl(guidance?.description ?? '', {
+        validators: [Validators.required],
+        nonNullable: true,
+      }),
+      maxAdults: new FormControl(guidance?.maxAdults ?? 0, {
+        validators: [Validators.required, Validators.min(0)],
+        nonNullable: true,
+      }),
+      maxTeens: new FormControl(guidance?.maxTeens ?? 0, {
+        validators: [Validators.required, Validators.min(0)],
+        nonNullable: true,
+      }),
+      maxChildren: new FormControl(guidance?.maxChildren ?? 0, {
+        validators: [Validators.required, Validators.min(0)],
+        nonNullable: true,
+      }),
+      maxInfants: new FormControl(guidance?.maxInfants ?? 0, {
+        validators: [Validators.required, Validators.min(0)],
+        nonNullable: true,
+      }),
+    });
+  }
+
+  private _loadGuidanceRows(room: RoomType): void {
+    this.hotelsService
+      .getOccupancyGuidances(room.id)
+      .pipe(take(1))
+      .subscribe((guidances) => {
+        this.guidanceRows.set(
+          guidances.map((guidance) => ({
+            tempId: guidance.id,
+            guidance,
+            form: this._buildGuidanceForm(guidance),
+            state: signal(EditableRowState.Idle),
+          }))
+        );
+      });
+  }
+
+  private _removeGuidanceRow(tempId: string): void {
+    this.guidanceRows.update((rows) => rows.filter((r) => r.tempId !== tempId));
   }
 
   deleteRoomType(): void {
@@ -262,7 +434,7 @@ export class RoomTypesFormComponent {
           validators: [Validators.required, Validators.min(1)],
           nonNullable: true,
         }),
-        state: signal(CapacityRowState.Idle),
+        state: signal(EditableRowState.Idle),
       };
     });
     this.capacityRows.set(rows);
@@ -272,5 +444,6 @@ export class RoomTypesFormComponent {
     this.form.reset();
     this._roomType.set(undefined);
     this.capacityRows.set([]);
+    this.guidanceRows.set([]);
   }
 }

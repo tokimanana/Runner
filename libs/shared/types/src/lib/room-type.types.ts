@@ -21,3 +21,22 @@ export interface RoomTypeCapacityDto {
   ageCategoryId: string;
   maxPax: number;
 }
+
+export interface OccupancyGuidance {
+  id: string;
+  roomTypeId: string;
+  description: string;
+  maxAdults: number;
+  maxTeens: number;
+  maxChildren: number;
+  maxInfants: number;
+}
+
+export interface OccupancyGuidanceDto {
+  roomTypeId: string;
+  description: string;
+  maxAdults?: number;
+  maxTeens?: number;
+  maxChildren?: number;
+  maxInfants?: number;
+}
