@@ -100,6 +100,96 @@
   }
 }
 
+/* --- Occupancy Guidance (S4-FE-014-BIS) --- */
+.occupancy-guidance-section {
+  margin-top: 0.5rem;
+}
+
+.section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.5px solid var(--p-surface-200);
+
+  .section-label {
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.guidance-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guidance-row {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.25rem;
+  border-bottom: 1px solid var(--p-surface-700);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.guidance-row input[readonly] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  cursor: default;
+  color: var(--p-text-color);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.guidance-row input:not([readonly]) {
+  background: var(--p-surface-0);
+  border-color: var(--p-primary-color);
+  box-shadow: 0 0 0 1px var(--p-primary-color);
+}
+
+.guidance-description {
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.guidance-caps {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.guidance-cap-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  label {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--p-text-muted-color);
+  }
+
+  input {
+    width: 3.5rem;
+    text-align: center;
+  }
+}
+
+.guidance-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .empty-state {
   font-size: 0.8125rem;
   color: var(--p-text-muted-color);
