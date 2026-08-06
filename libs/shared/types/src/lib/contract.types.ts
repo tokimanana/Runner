@@ -2,6 +2,7 @@ import { SeasonPeriod } from './season.types';
 
 export type PricingMode = 'PER_ROOM' | 'PER_OCCUPANCY';
 export type SharingType = 'WITH_PARENTS' | 'SEPARATE_ROOM';
+export type BillingUnit = 'PER_NIGHT' | 'PER_STAY';
 export type BaseRateReference =
   | 'single'
   | 'halfDouble'
@@ -99,12 +100,14 @@ export interface MealPlanSupplement {
   id: string;
   contractPeriodId: string;
   mealPlanId: string;
+  billingUnit: BillingUnit;
   occupancyRates: Record<string, number>;
   mealPlan?: { id: string; code: string; name: string };
 }
 
 export interface MealPlanSupplementDto {
   mealPlanId: string;
+  billingUnit: BillingUnit;
   occupancyRates: Record<string, number>;
 }
 
