@@ -26,6 +26,7 @@
       <p-step [value]="2">Periods</p-step>
       <p-step [value]="3">Room Prices</p-step>
       <p-step [value]="4">Meal Supplements</p-step>
+      <p-step [value]="5">Stop Sales</p-step>
     </p-step-list>
 
     <p-step-panels>
@@ -847,7 +848,7 @@
                                       [ngModel]="
                                         supplement.ratesByAgeCategory[
                                           category.id
-                                        ] ?? 0
+                                        ]
                                       "
                                       (ngModelChange)="
                                         updateMealPlanSupplementRate(
@@ -866,6 +867,106 @@
                             </div>
                           }
                         </div>
+                      }
+                    </p-accordion-content>
+                  </p-accordion-panel>
+                }
+              </p-accordion>
+            }
+          </div>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
+
+      <!-- Step 5 : Stop Sales -->
+      <p-step-panel [value]="5">
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="stop-sales-step">
+            <div class="contract-context-bar">
+              <div class="context-item">
+                <span class="context-label">Hotel:</span>
+                <span class="context-value">{{ selectedHotelName() }}</span>
+              </div>
+            </div>
+
+            @if (localPeriods().length === 0) {
+              <p class="empty-state">No periods defined — go back to Step 2.</p>
+            } @else {
+              <p-accordion>
+                @for (period of sortedLocalPeriods(); track period.tempId) {
+                  <p-accordion-panel [value]="period.tempId">
+                    <p-accordion-header>
+                      <div class="period-header-content">
+                        <div class="period-title-group">
+                          <span class="period-name">{{ period.name }}</span>
+                          <span class="period-dates-pill">
+                            <i class="pi pi-calendar"></i>
+                            {{ period.startDate | date: 'dd/MM/yyyy' }} —
+                            {{ period.endDate | date: 'dd/MM/yyyy' }}
+                          </span>
+                        </div>
+                        <span class="rooms-badge">
+                          {{
+                            (stopSalesDatesByPeriod().get(period.tempId) ?? [])
+                              .length
+                          }}
+                          date(s)
+                        </span>
+                      </div>
+                    </p-accordion-header>
+
+                    <p-accordion-content>
+                      <div class="stop-sales-toolbar">
+                        <p-datepicker
+                          [ngModel]="null"
+                          (ngModelChange)="
+                            addStopSalesDate(period.tempId, $event)
+                          "
+                          [minDate]="getStopSalesDateRange(period).minDate"
+                          [maxDate]="getStopSalesDateRange(period).maxDate"
+                          dateFormat="dd/mm/yy"
+                          placeholder="Add a stop-sale date"
+                          appendTo="body"
+                        />
+                      </div>
+
+                      @if (
+                        (stopSalesDatesByPeriod().get(period.tempId) ?? [])
+                          .length === 0
+                      ) {
+                        <p class="empty-state">
+                          No stop-sale date added for this period yet.
+                        </p>
+                      } @else {
+                        <ul class="stop-sales-list">
+                          @for (
+                            stopSale of stopSalesDatesByPeriod().get(
+                              period.tempId
+                            ) ?? [];
+                            track stopSale.tempId
+                          ) {
+                            <li class="stop-sales-list-item">
+                              <span class="stop-sale-date">
+                                <i class="pi pi-ban"></i>
+                                {{ stopSale.date | date: 'dd/MM/yyyy' }}
+                              </span>
+                              <p-button
+                                icon="pi pi-trash"
+                                [text]="true"
+                                [rounded]="true"
+                                size="small"
+                                severity="danger"
+                                (onClick)="removeStopSalesDate(stopSale.tempId)"
+                              />
+                            </li>
+                          }
+                        </ul>
                       }
                     </p-accordion-content>
                   </p-accordion-panel>
