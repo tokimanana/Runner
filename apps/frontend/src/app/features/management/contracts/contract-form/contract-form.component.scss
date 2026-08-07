@@ -398,4 +398,54 @@
       }
     }
   }
+
+  /* --- Step 5 : Stop Sales --- */
+  .stop-sales-step {
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .empty-state {
+      text-align: center;
+      color: var(--p-text-muted-color);
+      padding: 1.5rem 0;
+    }
+
+    .stop-sales-toolbar {
+      padding: 0.75rem 0;
+      max-width: 220px;
+    }
+
+    .stop-sales-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .stop-sales-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--p-surface-200);
+        border-radius: 6px;
+        background-color: var(--p-surface-0);
+
+        .stop-sale-date {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 500;
+          color: var(--p-text-color);
+
+          i {
+            color: var(--p-red-500);
+          }
+        }
+      }
+    }
+  }
 }

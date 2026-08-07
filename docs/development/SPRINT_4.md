@@ -1666,8 +1666,8 @@ l'agent choisit explicitement à chaque supplément — friction assumée pour
 - **Priority :** P2
 - **Story Points :** 2
 - **Branch :** `feature/S4-FE-008-contract-form-step5`
-- **Status :** À faire — pas commencé (corrigé : `SPRINT_4.md` le marquait ✅ Done
-  avec un commit, c'était un plan pré-rédigé, pas l'état réel)
+- **Status :** ✅ Done
+- **Commit :** `feat(contracts): add stop sales step (single-picker + list per period)`
 
 ### Contexte
 
@@ -1686,16 +1686,29 @@ periodRange = computed(() => ({
 }));
 ```
 
+### Décision actée en session (remplace le point ouvert)
+
+Pattern "un contrôle (datepicker) + une liste" retenu plutôt que
+`selectionMode="multiple"` sur un seul calendrier — le volume de dates par
+période peut être important, la liste reste gérable/lisible individuellement
+(ajout/suppression ligne par ligne) là où un calendrier avec beaucoup de
+dates sélectionnées devient difficile à auditer visuellement.
+
 - Liste de dates par période, ajout/suppression
 
 ### Hors scope
 
 - Récap+Submit (S4-FE-009), routes (S4-FE-010)
 
-### Acceptance Criteria (à écrire en session)
+### Acceptance Criteria
 
-- ⬜ Une date de stop-sale hors de `ContractPeriod.startDate/endDate` est
-  rejetée côté UI avant tentative de soumission
+- ✅ Une date de stop-sale hors de `ContractPeriod.startDate/endDate` est
+  rejetée côté UI avant tentative de soumission (bornée par `[minDate]`/
+  `[maxDate]` du datepicker, jamais `SeasonPeriod`)
+- ✅ Retirer une période supprime ses stop-sales (pruning non régressé)
+
+### Non traité — à trancher si besoin
+- Pas de garde anti-doublon sur une date déjà ajoutée pour la période
 
 ---
 
