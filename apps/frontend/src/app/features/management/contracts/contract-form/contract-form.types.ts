@@ -55,7 +55,6 @@ export interface LocalAgePolicyEntry {
   baseRateReference: BaseRateReference;
   value: number | null;
 }
-
 export interface LocalMealPlanSupplement {
   tempId: string;
   periodTempId: string;

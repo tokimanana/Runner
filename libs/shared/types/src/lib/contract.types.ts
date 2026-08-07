@@ -134,6 +134,15 @@ export interface BaseRate {
   roomType?: { id: string; name: string; code: string };
 }
 
+export interface BaseRateDto {
+  roomTypeId: string;
+  halfDouble: number;
+  single: number;
+  thirdPersonAdult?: number | null;
+  triple?: number | null;
+  quadruple?: number | null;
+}
+
 export interface AgePolicy {
   id: string;
   contractPeriodId: string;
@@ -145,4 +154,13 @@ export interface AgePolicy {
   value: number;
   roomType?: { id: string; name: string; code: string };
   ageCategory?: { id: string; name: string; minAge: number; maxAge: number };
+}
+
+export interface AgePolicyDto {
+  roomTypeId: string;
+  ageCategoryId: string;
+  sharingType: SharingType;
+  occurrenceIndex: number;
+  baseRateReference: BaseRateReference;
+  value: number;
 }
