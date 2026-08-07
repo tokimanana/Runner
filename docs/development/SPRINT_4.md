@@ -1475,7 +1475,7 @@ Rappel sémantique (déjà actée côté backend, à respecter dans le code comm
 
 ---
 
-## S4-FE-017-BIS : ContractForm — RoomPrice PER_ROOM — "Unit extra person" (Adult/Child/Teen)
+### S4-FE-017-BIS : ContractForm — RoomPrice PER_ROOM — "Unit extra person" (Adult/Child/Teen)
 
 - **Type :** Feature
 - **Priority :** P1
@@ -1485,7 +1485,7 @@ Rappel sémantique (déjà actée côté backend, à respecter dans le code comm
 - **Commit :** `feat(contracts): add PER_ROOM extra person supplement (Adult/Child/Teen)`
 - **Dépend de :** S4-BE-015-BIS (schéma/DTOs backend, mergé)
 
-### Contexte
+# Contexte
 
 `RoomPrice` en mode `PER_ROOM` gagne 3 champs supplément par personne additionnelle
 côté backend : `extraPersonAdult`, `extraPersonChild`, `extraPersonTeen` (Decimal
@@ -1493,7 +1493,7 @@ nullable). Mécanisme entièrement distinct de `BaseRate.thirdPersonAdult`
 (`PER_OCCUPANCY` uniquement, capacité de chambre == 2) — confirmé, aucun
 chevauchement.
 
-### Scope
+## Scope
 
 - `LocalRoomPrice` (`contract-form.types.ts`) : ajout de `extraPersonAdult`/
   `extraPersonChild`/`extraPersonTeen` (number | null)
@@ -1506,12 +1506,12 @@ chevauchement.
   `baseRate` — décision actée en session, symétrique au reset déjà en place au
   passage inverse
 
-### Hors scope
+## Hors scope
 
 - Toute validation croisée avec `BaseRate.thirdPersonAdult`
 - `OccupancyGuidance` (S4-FE-014-BIS, ticket séparé)
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - ✅ Les 3 champs extra person sont éditables uniquement en mode `PER_ROOM`
 - ✅ Passage `PER_ROOM` → `PER_OCCUPANCY` vide les 3 champs
@@ -1520,7 +1520,7 @@ chevauchement.
 
 ---
 
-## S4-FE-014-BIS : OccupancyGuidance — gestion sur la fiche Room Type
+### S4-FE-014-BIS : OccupancyGuidance — gestion sur la fiche Room Type
 
 - **Type :** Feature
 - **Priority :** P2
@@ -1533,7 +1533,7 @@ chevauchement.
   "à faire" dans la version précédente du ticket, ils sont en réalité déjà
   mergés depuis la phase backend. Ticket non bloqué.
 
-### Contexte
+## Contexte
 
 `OccupancyGuidance` (combinaisons indicatives d'occupation, non bloquantes) est
 scopée uniquement par `roomTypeId` — aucune dépendance à un contrat ni une
@@ -1546,7 +1546,7 @@ room type) sont une contrainte de réservation, indépendante de la
 tarification — aucun lien avec `BaseRate`/`AgePolicy`, purement informationnel
 pour l'agent qui saisit un contrat.
 
-### Décision actée — structure (point resté ouvert dans la version précédente)
+## Décision actée — structure (point resté ouvert dans la version précédente)
 
 Pas de choix "liste structurée **vs** texte libre" à faire : le schéma
 `OccupancyGuidance` combine déjà les deux —
@@ -1569,7 +1569,7 @@ or 1 INFANT"_ (vue sur les contrats Lux Collective) devient **4 lignes
 n'a donc rien à trancher structurellement : juste une liste de lignes
 (description + 4 champs numériques), create/edit/delete par ligne.
 
-### Scope
+## Scope
 
 - Section/onglet dédié sur la fiche room type existante, listant les
   `OccupancyGuidance` du room type (`GET occupancy-guidances/room-types/:roomTypeId`)
@@ -1579,7 +1579,7 @@ n'a donc rien à trancher structurellement : juste une liste de lignes
   d'unicité côté backend — pas de règle à répliquer côté frontend)
 - Édition / suppression d'une guidance existante
 
-### Hors scope
+## Hors scope
 
 - Toute validation croisée avec `RoomTypeCapacity` (relation entre les
   deux non tranchée côté backend — discussion ouverte, à traiter
@@ -1600,7 +1600,7 @@ n'a donc rien à trancher structurellement : juste une liste de lignes
 
 ---
 
-## S4-FE-007 : ContractForm — Étape 4 (Meal Plan Supplements)
+### S4-FE-007 : ContractForm — Étape 4 (Meal Plan Supplements)
 
 - **Type :** Feature
 - **Priority :** P1
@@ -1610,7 +1610,7 @@ n'a donc rien à trancher structurellement : juste une liste de lignes
 - **Commit :** `feat(contracts): add meal plan supplements step (age-category based, per period)`
 - **Dépend de :** S4-BE-009-BIS (billingUnit, rétroactif, fait dans la même session)
 
-### Décision actée en session (remplace le point ouvert du sprint doc)
+## Décision actée en session (remplace le point ouvert du sprint doc)
 
 Le pattern de saisie n'était pas "inline vs dialog" au sens Step 2/3 (répétition
 par room type) — les contrats réels (LBM, LGB, LGG, SOP, villas/résidences)
@@ -1624,7 +1624,7 @@ d'entité par occurrence.
 l'agent choisit explicitement à chaque supplément — friction assumée pour
 éviter une erreur d'enum silencieuse multipliée par durée × volume.
 
-### Scope livré
+## Scope livré
 
 - `LocalMealPlanSupplement` (`contract-form.types.ts`)
 - `localMealPlanSupplements` (signal), `mealPlanSupplementsByPeriod` (computed,
@@ -1640,13 +1640,13 @@ l'agent choisit explicitement à chaque supplément — friction assumée pour
 - Carte par supplément : select `billingUnit` (vide par défaut) + une ligne
   montant par `AgeCategory` de l'hôtel (0 = FOC explicite, jamais `null`)
 
-### Hors scope
+## Hors scope
 
 - Step 5 (`S4-FE-008`), Récap+Submit (`S4-FE-009`)
 - `goNext` step 4 : pas de validation, avance sans vérifier — signalé en code,
   à revoir une fois `S4-FE-008` en place (pas de Step 5 pour l'instant en face)
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - ✅ Un `LocalMealPlanSupplement` par (période, mealPlan), jamais par occurrence
 - ✅ `ratesByAgeCategory` indexé uniquement sur `AgeCategory`, aucune notion de
@@ -1660,7 +1660,7 @@ l'agent choisit explicitement à chaque supplément — friction assumée pour
 
 ---
 
-## S4-FE-008 : ContractForm — Étape 5 (Stop Sales)
+### S4-FE-008 : ContractForm — Étape 5 (Stop Sales)
 
 - **Type :** Feature
 - **Priority :** P2
@@ -1669,12 +1669,12 @@ l'agent choisit explicitement à chaque supplément — friction assumée pour
 - **Status :** ✅ Done
 - **Commit :** `feat(contracts): add stop sales step (single-picker + list per period)`
 
-### Contexte
+## Contexte
 
 Step 5 — dates de stop-sale par période, bornées par les dates réelles de la
 `ContractPeriod` (pas la `SeasonPeriod`).
 
-### Scope
+## Scope
 
 - Nouveau `p-step [value]="5"`, après "Meal Supplements"
 - Sélection de dates via `p-datepicker`, bornées par :
@@ -1686,7 +1686,7 @@ periodRange = computed(() => ({
 }));
 ```
 
-### Décision actée en session (remplace le point ouvert)
+## Décision actée en session (remplace le point ouvert)
 
 Pattern "un contrôle (datepicker) + une liste" retenu plutôt que
 `selectionMode="multiple"` sur un seul calendrier — le volume de dates par
@@ -1696,58 +1696,43 @@ dates sélectionnées devient difficile à auditer visuellement.
 
 - Liste de dates par période, ajout/suppression
 
-### Hors scope
+## Hors scope
 
 - Récap+Submit (S4-FE-009), routes (S4-FE-010)
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - ✅ Une date de stop-sale hors de `ContractPeriod.startDate/endDate` est
   rejetée côté UI avant tentative de soumission (bornée par `[minDate]`/
   `[maxDate]` du datepicker, jamais `SeasonPeriod`)
 - ✅ Retirer une période supprime ses stop-sales (pruning non régressé)
 
-### Non traité — à trancher si besoin
+## Non traité — à trancher si besoin
+
 - Pas de garde anti-doublon sur une date déjà ajoutée pour la période
 
 ---
 
-## S4-FE-009 : ContractForm — Récapitulatif + Submit
+### S4-FE-009 : ContractForm — Récapitulatif + Submit
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-009-contract-submit`
-- **Status :** À faire — pas commencé (corrigé : `SPRINT_4.md` le marquait ✅ Done
-  avec un commit, c'était un plan pré-rédigé, pas l'état réel)
+- **Status :** ✅ Done
+- **Commit :** `feat(contracts): add stop sales step (single-picker + list per period)`
 
-### Contexte
+## Scope livré
 
-Dernière étape : soumission séquentielle de tout l'état local du wizard
-(`step1Form`, `localPeriods`, `localRoomPrices`, `localAgePolicies`, meal
-supplements, stop sales) vers le backend, contrat par contrat, période par
-période.
+- `AgePolicyDto`/`BaseRateDto` ajoutés à `contract.types.ts` (mirroir des DTOs backend)
+- `ContractsService.createAgePolicy`/`createBaseRate` (create-only)
+- `submitContract()` : séquentiel, contrat → périodes → room prices → (base rate + age policies si PER_OCCUPANCY) → meal supplements → stop sales
+- Validation bloquante pré-submit sur `billingUnit` manquant (pas de perte de données silencieuse)
+- Step 6 "Review & Submit" : compteurs + bouton submit avec état loading/erreur
 
-### Point à revoir avant codage
+## Non traité — à trancher avant prod
 
-Le snippet original (`SPRINT_4.md`) soumet `roomPricesByPeriod()`/
-`mealSupplementsByPeriod()`/`stopSalesByPeriod()` — ces signaux n'existent
-plus tels quels dans l'état actuel du composant (`localRoomPrices`,
-`localAgePolicies` séparés, structure post-S4-FE-016/017-BIS). Le payload de
-soumission pour `RoomPrice` doit maintenant recomposer `baseRate` +
-`extraPersonAdult/Child/Teen` (PER_ROOM) depuis `LocalRoomPrice`, et déclencher
-des appels `createAgePolicy`/`createBaseRate` séparés par occurrence — le
-snippet original ne couvre aucun de ces deux cas. À redessiner en session,
-pas un simple copier-coller du snippet existant.
-
-### Hors scope
-
-- Toute modification du flux Steps 1-3, déjà stable
-
-### Acceptance Criteria (à écrire en session)
-
-- ⬜ À définir une fois le payload de soumission redessiné pour le modèle
-  BaseRate/AgePolicy/extra-person actuel
+- Pas de rollback/transaction si la séquence échoue en cours de route
 
 ---
 

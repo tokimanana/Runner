@@ -3,6 +3,10 @@ import { environment } from '@/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+  AgePolicy,
+  AgePolicyDto,
+  BaseRate,
+  BaseRateDto,
   Contract,
   ContractDto,
   ContractFilters,
@@ -175,6 +179,28 @@ export class ContractsService {
   removeMealPlanSupplement(id: string): Observable<void> {
     return this.http.delete<void>(
       `${environment.apiUrl}/meal-supplements/${id}`
+    );
+  }
+
+  createBaseRate(
+    contractId: string,
+    periodId: string,
+    dto: BaseRateDto
+  ): Observable<BaseRate> {
+    return this.http.post<BaseRate>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}/base-rates`,
+      dto
+    );
+  }
+
+  createAgePolicy(
+    contractId: string,
+    periodId: string,
+    dto: AgePolicyDto
+  ): Observable<AgePolicy> {
+    return this.http.post<AgePolicy>(
+      `${this.apiUrl}/${contractId}/periods/${periodId}/age-policies`,
+      dto
     );
   }
 

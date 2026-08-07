@@ -448,4 +448,46 @@
       }
     }
   }
+
+  /* --- Step 6 : Review & Submit --- */
+  .review-step {
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .review-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .review-summary-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 1.25rem 1rem;
+      border: 1px solid var(--p-surface-200);
+      border-radius: 8px;
+      background-color: var(--p-surface-0);
+
+      .review-summary-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--p-primary-color);
+      }
+
+      .review-summary-label {
+        font-size: 0.85rem;
+        color: var(--p-text-muted-color);
+        font-weight: 500;
+      }
+    }
+
+    .error {
+      color: var(--p-red-500);
+      font-size: 0.85rem;
+    }
+  }
 }
