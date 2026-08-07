@@ -25,6 +25,7 @@
       <p-step [value]="1">Contract Info</p-step>
       <p-step [value]="2">Periods</p-step>
       <p-step [value]="3">Room Prices</p-step>
+      <p-step [value]="4">Meal Supplements</p-step>
     </p-step-list>
 
     <p-step-panels>
@@ -707,6 +708,169 @@
                 Select room types and set prices for every period before
                 continuing.
               </small>
+            }
+          </div>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
+
+      <!-- Step 4 : Meal Plan Supplements -->
+      <p-step-panel [value]="4">
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="meal-supplements-step">
+            <div class="contract-context-bar">
+              <div class="context-item">
+                <span class="context-label">Hotel:</span>
+                <span class="context-value">{{ selectedHotelName() }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Currency:</span>
+                <span class="context-value badge-currency">{{
+                  selectedCurrencyCode()
+                }}</span>
+              </div>
+            </div>
+
+            @if (localPeriods().length === 0) {
+              <p class="empty-state">No periods defined — go back to Step 2.</p>
+            } @else {
+              <p-accordion>
+                @for (period of sortedLocalPeriods(); track period.tempId) {
+                  <p-accordion-panel [value]="period.tempId">
+                    <p-accordion-header>
+                      <div class="period-header-content">
+                        <div class="period-title-group">
+                          <span class="period-name">{{ period.name }}</span>
+                          <span class="period-dates-pill">
+                            <i class="pi pi-calendar"></i>
+                            {{ period.startDate | date: 'dd/MM/yyyy' }} —
+                            {{ period.endDate | date: 'dd/MM/yyyy' }}
+                          </span>
+                        </div>
+                        <span class="rooms-badge">
+                          {{
+                            (
+                              mealPlanSupplementsByPeriod().get(
+                                period.tempId
+                              ) ?? []
+                            ).length
+                          }}
+                          supplement(s)
+                        </span>
+                      </div>
+                    </p-accordion-header>
+
+                    <p-accordion-content>
+                      <div class="meal-supplement-toolbar">
+                        <p-select
+                          [options]="availableMealPlansForPeriod(period.tempId)"
+                          optionLabel="name"
+                          optionValue="id"
+                          placeholder="Add a meal plan supplement"
+                          [ngModel]="null"
+                          (ngModelChange)="
+                            addMealPlanSupplement(period.tempId, $event)
+                          "
+                          appendTo="body"
+                        />
+                      </div>
+
+                      @if (
+                        (mealPlanSupplementsByPeriod().get(period.tempId) ?? [])
+                          .length === 0
+                      ) {
+                        <p class="empty-state">
+                          No meal plan supplement added for this period yet.
+                        </p>
+                      } @else {
+                        <div class="meal-supplement-grid">
+                          @for (
+                            supplement of mealPlanSupplementsByPeriod().get(
+                              period.tempId
+                            ) ?? [];
+                            track supplement.tempId
+                          ) {
+                            <div class="meal-supplement-card">
+                              <div class="card-header">
+                                <h4 class="room-title">
+                                  {{ getMealPlanCode(supplement.mealPlanId) }}
+                                </h4>
+                                <div class="meal-supplement-header-actions">
+                                  <p-select
+                                    [options]="billingUnitOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    [ngModel]="supplement.billingUnit"
+                                    (ngModelChange)="
+                                      updateMealPlanSupplementField(
+                                        supplement.tempId,
+                                        'billingUnit',
+                                        $event
+                                      )
+                                    "
+                                    placeholder="Billing unit"
+                                    appendTo="body"
+                                  />
+                                  <p-button
+                                    icon="pi pi-trash"
+                                    [text]="true"
+                                    [rounded]="true"
+                                    size="small"
+                                    severity="danger"
+                                    (onClick)="
+                                      removeMealPlanSupplement(
+                                        supplement.tempId
+                                      )
+                                    "
+                                  />
+                                </div>
+                              </div>
+
+                              <div class="meal-supplement-rates-grid">
+                                @for (
+                                  category of ageCategories();
+                                  track category.id
+                                ) {
+                                  <div class="field">
+                                    <label
+                                      >{{ category.name }} ({{
+                                        category.minAge
+                                      }}-{{ category.maxAge }} yrs)</label
+                                    >
+                                    <p-inputNumber
+                                      [ngModel]="
+                                        supplement.ratesByAgeCategory[
+                                          category.id
+                                        ] ?? 0
+                                      "
+                                      (ngModelChange)="
+                                        updateMealPlanSupplementRate(
+                                          supplement.tempId,
+                                          category.id,
+                                          $event
+                                        )
+                                      "
+                                      [min]="0"
+                                      mode="currency"
+                                      [currency]="selectedCurrencyCode()"
+                                    />
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </p-accordion-content>
+                  </p-accordion-panel>
+                }
+              </p-accordion>
             }
           </div>
 
