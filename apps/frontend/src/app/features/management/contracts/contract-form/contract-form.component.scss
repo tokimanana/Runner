@@ -8,22 +8,22 @@
     flex-direction: column;
     gap: 1.25rem;
     padding: 1.5rem 0;
+  }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+  .step1-form .field,
+  .periods-toolbar .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 
-      label {
-        font-weight: 600;
-        color: var(--p-text-color);
-      }
-
-      .error {
-        color: var(--p-red-500);
-        font-size: 0.85rem;
-      }
+    label {
+      font-weight: 600;
+      color: var(--p-text-color);
     }
+  }
+
+  .periods-toolbar .field {
+    min-width: 260px;
   }
 
   .periods-step {
@@ -37,28 +37,49 @@
       align-items: flex-end;
       justify-content: space-between;
       gap: 1rem;
+    }
+  }
 
-      .field {
-        min-width: 260px;
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
+  .empty-state {
+    text-align: center;
+    color: var(--p-text-muted-color);
+    padding: 1.5rem 0;
+  }
 
-        label {
-          font-weight: 600;
+  /* Utilisé sur Steps 3, 4, 5, 6 — doit rester au niveau racine, pas scopé à un step */
+  .contract-context-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    background-color: var(--p-surface-100);
+    border: 1px solid var(--p-surface-200);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+
+    .context-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .context-label {
+        font-size: 0.85rem;
+        color: var(--p-text-muted-color);
+        font-weight: 500;
+      }
+
+      .context-value {
+        font-weight: 600;
+        color: var(--p-text-color);
+
+        &.badge-currency {
+          background-color: var(--p-primary-color);
+          color: var(--p-primary-contrast-color);
+          padding: 0.15rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
         }
       }
-    }
-
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 2rem 0;
-    }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
     }
   }
 
@@ -74,48 +95,52 @@
     }
   }
 
+  /* Base carte partagée : room-price-card, meal-supplement-card */
+  .room-price-card,
+  .meal-supplement-card {
+    border: 1px solid var(--p-surface-200);
+    border-radius: 8px;
+    padding: 1.25rem;
+    background-color: var(--p-surface-0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--p-surface-100);
+      margin-bottom: 1rem;
+
+      .room-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* Grilles de champs numériques par tranche d'âge/room-type — pattern identique partout */
+  .extra-person-grid .field,
+  .base-rate-grid .field,
+  .meal-supplement-rates-grid .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--p-text-muted-color);
+    }
+  }
+
   /* --- Step 3 Enhancements --- */
   .room-prices-step {
     padding: 1rem 0;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-
-    .contract-context-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      padding: 1rem 1.25rem;
-      background-color: var(--p-surface-100);
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-
-      .context-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-
-        .context-label {
-          font-size: 0.85rem;
-          color: var(--p-text-muted-color);
-          font-weight: 500;
-        }
-
-        .context-value {
-          font-weight: 600;
-          color: var(--p-text-color);
-
-          &.badge-currency {
-            background-color: var(--p-primary-color);
-            color: var(--p-primary-contrast-color);
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-          }
-        }
-      }
-    }
 
     .period-header-content {
       display: flex;
@@ -183,36 +208,19 @@
     }
 
     .room-price-card {
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      padding: 1.25rem;
-      background-color: var(--p-surface-0);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      .room-info {
+        .room-title {
+          margin: 0 0 0.25rem 0;
+        }
 
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--p-surface-100);
-        margin-bottom: 1rem;
-
-        .room-info {
-          .room-title {
-            margin: 0 0 0.25rem 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-          }
-
-          .capacity-pill {
-            font-size: 0.75rem;
-            color: var(--p-primary-700);
-            background-color: var(--p-primary-50);
-            border: 1px solid var(--p-primary-200);
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-weight: 500;
-          }
+        .capacity-pill {
+          font-size: 0.75rem;
+          color: var(--p-primary-700);
+          background-color: var(--p-primary-50);
+          border: 1px solid var(--p-primary-200);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          font-weight: 500;
         }
       }
 
@@ -220,42 +228,16 @@
         max-width: 320px;
       }
 
-      .extra-person-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 2rem;
-        margin-top: 1rem;
-
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
-      }
-
+      .extra-person-grid,
       .base-rate-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 2rem;
         margin-bottom: 1rem;
+      }
 
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
+      .extra-person-grid {
+        margin-top: 1rem;
       }
 
       .age-policy-section {
@@ -320,11 +302,6 @@
         }
       }
     }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
-    }
   }
 
   /* --- Step 4 : Meal Plan Supplements --- */
@@ -333,12 +310,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 1.5rem 0;
-    }
 
     .meal-supplement-toolbar {
       padding: 0.75rem 0;
@@ -352,49 +323,16 @@
     }
 
     .meal-supplement-card {
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      padding: 1.25rem;
-      background-color: var(--p-surface-0);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-      .card-header {
+      .meal-supplement-header-actions {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--p-surface-100);
-        margin-bottom: 1rem;
-
-        .room-title {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-
-        .meal-supplement-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
+        gap: 0.5rem;
       }
 
       .meal-supplement-rates-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 2rem;
-
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
       }
     }
   }
@@ -405,12 +343,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 1.5rem 0;
-    }
 
     .stop-sales-toolbar {
       padding: 0.75rem 0;
@@ -483,11 +415,6 @@
         color: var(--p-text-muted-color);
         font-weight: 500;
       }
-    }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
     }
   }
 }
