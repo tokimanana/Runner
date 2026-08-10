@@ -3918,7 +3918,8 @@ le même commit.
 ### Changements
 
 - `hotels-form.component.scss` : suppression des deux `@use` locaux
-  (`forms`, `page-layout`) — fichier vide de tout import de partial.
+  (`forms`, `page-layout`) — fichier désormais vide (0 octet), aucun style
+  propre à ce composant pour l'instant.
 - `styles.scss` : ajout de `@use 'styles/page-layout' as *;` aux côtés de
   `styles/forms` et `styles/shared-form-patterns`.
 
