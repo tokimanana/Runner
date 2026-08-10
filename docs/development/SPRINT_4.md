@@ -3889,46 +3889,52 @@ Dernier ticket de la série. Une fois S4-BE-008-BIS, S4-BE-009-BIS, S4-BE-005-BI
 - **Priority :** P2
 - **Story Points :** 1
 - **Branch :** `fix/S4-TECH-001-page-layout-global-use`
-- **Status :** ⬜ À faire
+- **Status :** ✅ Done
+- **Commit :** `fix(styles): migrate page-layout to global @use, drop redundant local forms import`
 
 ### Contexte
 
-Découvert en corrigeant S4-FE-010 : `_forms.scss` et le nouveau
-`_shared-form-patterns.scss` sont chargés globalement dans `styles.scss`
-(`@use 'styles/forms' as *;`), mais `_page-layout.scss` (`.form-page`,
-`.form-header`, `.form-title`, `.form-subtitle`, `.form-actions`) est
-toujours importé en `@use` local, composant par composant.
+Découvert en corrigeant S4-FE-010 : `_forms.scss` et `_shared-form-patterns.scss`
+sont chargés globalement dans `styles.scss`, mais `_page-layout.scss` (`.form-page`,
+`.form-header`, `.form-title`, `.form-subtitle`, `.form-actions`) était toujours
+importé en `@use` local, composant par composant. Même bug de scope que
+`.contract-context-bar`/`.rooms-badge` — resterait invisible tant qu'un seul
+composant l'importe, resurgirait silencieusement dès qu'un deuxième composant
+réutiliserait ces classes sans réimporter le partial localement.
 
-C'est exactement le même bug de scope que `.contract-context-bar`/
-`.rooms-badge` — une classe pensée comme réutilisable mais dont le style ne
-survit pas en dehors du composant qui l'a importée localement. Tant qu'aucun
-autre composant ne réutilise ces classes hors de son propre scope, rien ne se
-casse ; ça resurgira silencieusement dès qu'un composant comme
-`hotels-form`/`seasons-list` grossira et qu'un dev réutilisera `.form-page`
-ailleurs en s'attendant à ce qu'il soit stylé.
+### Recensement
 
-### Scope
+Un seul composant concerné : `hotels-form.component.scss`
+(`grep -rln "@use.*page-layout" apps/frontend/src`).
 
-- Retirer les `@use '.../page-layout'` locaux de chaque composant qui
-  l'importe actuellement (à recenser — au minimum les form-components déjà
-  connus : `hotels-form`, potentiellement d'autres)
-- Ajouter `@use 'styles/page-layout' as *;` dans `styles.scss`, aux côtés de
-  `styles/forms`
-- Vérifier qu'aucun style ne casse par un changement d'ordre de cascade
-  (`_forms.scss` vs `_page-layout.scss` ne se chevauchent pas en sélecteurs,
-  a priori sans risque)
+### Nettoyage additionnel inclus
 
-### Hors scope
+En touchant `hotels-form.component.scss`, `_forms.scss` y était aussi importé
+en `@use` local — redondant, puisque déjà chargé globalement dans `styles.scss`.
+Ne cassait rien (Sass dédupe les `@use` d'un même module, zéro CSS dupliqué en
+sortie), mais même confusion de pattern que ce qu'on nettoie ici. Supprimé dans
+le même commit.
 
-- Toute réécriture des classes elles-mêmes — migration de scope uniquement,
-  zéro changement visuel
+### Changements
+
+- `hotels-form.component.scss` : suppression des deux `@use` locaux
+  (`forms`, `page-layout`) — fichier vide de tout import de partial.
+- `styles.scss` : ajout de `@use 'styles/page-layout' as *;` aux côtés de
+  `styles/forms` et `styles/shared-form-patterns`.
+
+### Résultat CI (nx run frontend:build:production)
+
+- Build vert, aucune erreur.
+- Warnings inchangés par rapport à S4-FE-010 (bundle initial 553.50 kB,
+  contract-form.component.scss 6.97 kB) → confirme zéro régression, cette
+  migration ne devait avoir aucun impact sur ces chiffres.
 
 ### Acceptance Criteria
 
-- ⬜ `_page-layout.scss` chargé une seule fois, globalement, dans `styles.scss`
-- ⬜ Plus aucun `@use` local vers `page-layout` dans les composants
-- ⬜ `nx run frontend:build:production` passe sans régression
-- ⬜ Aucun changement visuel sur les pages qui utilisent `.form-page`/`.form-header`/etc.
+- ✅ `_page-layout.scss` chargé une seule fois, globalement, dans `styles.scss`
+- ✅ Plus aucun `@use` local vers `page-layout` dans les composants
+- ✅ `nx run frontend:build:production` passe sans régression
+- ✅ Aucun changement visuel sur les pages qui utilisent `.form-page`/`.form-header`/etc. (à confirmer visuellement par toi sur `hotels-form` avant merge, si pas déjà fait)
 
 ---
 
