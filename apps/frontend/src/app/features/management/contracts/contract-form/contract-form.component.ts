@@ -20,6 +20,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   AgeCategory,
   BaseRateReference,
+  BillingUnit,
   ContractDto,
   PricingMode,
   RoomType,
@@ -71,6 +72,7 @@ import {
   LocalAgePolicyEntry,
   LocalBaseRate,
   LocalContractPeriod,
+  LocalMealPlanSupplement,
   LocalRoomPrice,
 } from './contract-form.types';
 
@@ -226,6 +228,17 @@ export class ContractFormComponent {
     { label: 'Quadruple', value: 'quadruple' },
   ];
 
+  // Step 4
+  readonly localMealPlanSupplements = signal<LocalMealPlanSupplement[]>([]);
+
+  // billingUnit n'a volontairement aucune valeur par défaut : select vide tant
+  // que l'agent n'a pas choisi explicitement (friction assumée, cf. décision
+  // S4-FE-007 — pas de valeur silencieuse qui se multiplie par la durée/volume)
+  readonly billingUnitOptions: { label: string; value: BillingUnit }[] = [
+    { label: 'Per Night', value: 'PER_NIGHT' },
+    { label: 'Per Stay', value: 'PER_STAY' },
+  ];
+
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
       startWith(this.step1Form.controls.hotelId.value),
@@ -312,6 +325,17 @@ export class ContractFormComponent {
     return map;
   });
 
+  /** Groupe les LocalMealPlanSupplement par période (une entrée par mealPlan ajouté). */
+  readonly mealPlanSupplementsByPeriod = computed(() => {
+    const map = new Map<string, LocalMealPlanSupplement[]>();
+    for (const supplement of this.localMealPlanSupplements()) {
+      const list = map.get(supplement.periodTempId) ?? [];
+      list.push(supplement);
+      map.set(supplement.periodTempId, list);
+    }
+    return map;
+  });
+
   constructor() {
     this.step1Form.controls.hotelId.valueChanges
       .pipe(pairwise(), takeUntilDestroyed())
@@ -358,6 +382,13 @@ export class ContractFormComponent {
         break;
       case 3:
         this.goNextFromStep3(activateCallback);
+        break;
+      case 4:
+        // Pas de validation : un supplément meal plan est optionnel par
+        // période (l'agent choisit librement lesquels ajouter, cf. décision
+        // S4-FE-007). Pas de step 5 pour l'instant (S4-FE-008/009 hors
+        // scope) — flag pour toi, à revoir quand ces tickets démarrent.
+        activateCallback(this.activeStep() + 1);
         break;
     }
   }
@@ -506,6 +537,9 @@ export class ContractFormComponent {
   removeConfirmedPeriod(tempId: string): void {
     this.localPeriods.update((periods) =>
       periods.filter((p) => p.tempId !== tempId)
+    );
+    this.localMealPlanSupplements.update((supplements) =>
+      supplements.filter((s) => s.periodTempId !== tempId)
     );
   }
 
@@ -726,5 +760,73 @@ export class ContractFormComponent {
       default:
         return true;
     }
+  }
+
+  /** Meal plans de l'hôtel pas encore ajoutés comme supplément pour cette période — choix libre de l'agent. */
+  availableMealPlansForPeriod(
+    periodTempId: string
+  ): { id: string; name: string; code: string }[] {
+    const usedMealPlanIds = new Set(
+      this.localMealPlanSupplements()
+        .filter((s) => s.periodTempId === periodTempId)
+        .map((s) => s.mealPlanId)
+    );
+    return this.mealPlans().filter((mp) => !usedMealPlanIds.has(mp.id));
+  }
+
+  addMealPlanSupplement(periodTempId: string, mealPlanId: string): void {
+    const ratesByAgeCategory: Record<string, number> = {};
+    for (const category of this.ageCategories()) {
+      ratesByAgeCategory[category.id] = 0;
+    }
+
+    this.localMealPlanSupplements.update((supplements) => [
+      ...supplements,
+      {
+        tempId: crypto.randomUUID(),
+        periodTempId,
+        mealPlanId,
+        billingUnit: null,
+        ratesByAgeCategory,
+      },
+    ]);
+  }
+
+  removeMealPlanSupplement(tempId: string): void {
+    this.localMealPlanSupplements.update((supplements) =>
+      supplements.filter((s) => s.tempId !== tempId)
+    );
+  }
+
+  updateMealPlanSupplementField<K extends keyof LocalMealPlanSupplement>(
+    tempId: string,
+    field: K,
+    value: LocalMealPlanSupplement[K]
+  ): void {
+    this.localMealPlanSupplements.update((supplements) =>
+      supplements.map((s) =>
+        s.tempId === tempId ? { ...s, [field]: value } : s
+      )
+    );
+  }
+
+  updateMealPlanSupplementRate(
+    tempId: string,
+    ageCategoryId: string,
+    value: number
+  ): void {
+    this.localMealPlanSupplements.update((supplements) =>
+      supplements.map((s) =>
+        s.tempId === tempId
+          ? {
+              ...s,
+              ratesByAgeCategory: {
+                ...s.ratesByAgeCategory,
+                [ageCategoryId]: value,
+              },
+            }
+          : s
+      )
+    );
   }
 }

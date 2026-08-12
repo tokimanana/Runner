@@ -1,5 +1,6 @@
 import {
   BaseRateReference,
+  BillingUnit,
   PricingMode,
   SharingType,
 } from '@runner/shared/types';
@@ -53,4 +54,12 @@ export interface LocalAgePolicyEntry {
   occurrenceIndex: number;
   baseRateReference: BaseRateReference;
   value: number | null;
+}
+
+export interface LocalMealPlanSupplement {
+  tempId: string;
+  periodTempId: string;
+  mealPlanId: string;
+  billingUnit: BillingUnit | null;
+  ratesByAgeCategory: Record<string, number>;
 }

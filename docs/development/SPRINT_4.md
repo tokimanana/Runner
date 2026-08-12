@@ -1606,35 +1606,57 @@ n'a donc rien à trancher structurellement : juste une liste de lignes
 - **Priority :** P1
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-007-contract-form-step4`
-- **Status :** À faire — pas commencé (corrigé : `SPRINT_4.md` le marquait ✅ Done
-  avec un commit, c'était un plan pré-rédigé, pas l'état réel)
+- **Status :** ✅ Done
+- **Commit :** `feat(contracts): add meal plan supplements step (age-category based, per period)`
+- **Dépend de :** S4-BE-009-BIS (billingUnit, rétroactif, fait dans la même session)
 
-### Contexte
+### Décision actée en session (remplace le point ouvert du sprint doc)
 
-Step 4 du wizard `contract-form` — saisie des `MealPlanSupplement` par période,
-en s'appuyant sur le `billingUnit` (`PER_NIGHT`/`PER_STAY`) déjà livré côté
-backend (S4-BE-009-BIS).
+Le pattern de saisie n'était pas "inline vs dialog" au sens Step 2/3 (répétition
+par room type) — les contrats réels (LBM, LGB, LGG, SOP, villas/résidences)
+montrent une grille indexée uniquement par `AgeCategory` (jamais par
+occupation/`sharingType`, jamais de 1st/2nd comme `WITH_PARENTS`). Modélisé
+comme une variante simplifiée d'`AgePolicy` : un `LocalMealPlanSupplement` par
+(période, mealPlan), portant un dictionnaire `ratesByAgeCategory` — pas
+d'entité par occurrence.
 
-### Scope (à affiner en session avant codage)
+`billingUnit` : pas de valeur par défaut stockée (`null` initial), select vide,
+l'agent choisit explicitement à chaque supplément — friction assumée pour
+éviter une erreur d'enum silencieuse multipliée par durée × volume.
 
-- Nouveau `p-step [value]="4"` dans le wizard, après "Room Prices"
-- Un formulaire de supplément par (période, meal plan) : `mealPlanId`,
-  `billingUnit`, `occupancyRates` (`Record<string, number>` — structure de
-  saisie encore à définir, cf. hors scope S4-BE-009-BIS sur la modélisation
-  future de ce champ)
-- Pattern à trancher : inline (comme Step 2/3) ou dialog — suivre la
-  leçon actée en S4-FE-005 (inline correspond mieux au flux de saisie en
-  masse réel)
+### Scope livré
+
+- `LocalMealPlanSupplement` (`contract-form.types.ts`)
+- `localMealPlanSupplements` (signal), `mealPlanSupplementsByPeriod` (computed,
+  groupé par période)
+- `availableMealPlansForPeriod`, `addMealPlanSupplement`,
+  `removeMealPlanSupplement`, `updateMealPlanSupplementField`,
+  `updateMealPlanSupplementRate`
+- Pruning dans `removeConfirmedPeriod` (retirer une période retire ses
+  suppléments)
+- `p-step [value]="4"` — accordéon par période, select "Add a meal plan
+  supplement" (ajout instantané, choix libre parmi les meal plans non encore
+  ajoutés pour cette période, y compris le `baseMealPlanId` lui-même)
+- Carte par supplément : select `billingUnit` (vide par défaut) + une ligne
+  montant par `AgeCategory` de l'hôtel (0 = FOC explicite, jamais `null`)
 
 ### Hors scope
 
-- Remodélisation structurée de `occupancyRates` (`Json` actuel) — hors
-  périmètre, discussion séparée
-- Step 5 (Stop Sales), Récap+Submit
+- Step 5 (`S4-FE-008`), Récap+Submit (`S4-FE-009`)
+- `goNext` step 4 : pas de validation, avance sans vérifier — signalé en code,
+  à revoir une fois `S4-FE-008` en place (pas de Step 5 pour l'instant en face)
 
-### Acceptance Criteria (à écrire en session)
+### Acceptance Criteria
 
-- ⬜ À définir une fois le pattern de saisie tranché
+- ✅ Un `LocalMealPlanSupplement` par (période, mealPlan), jamais par occurrence
+- ✅ `ratesByAgeCategory` indexé uniquement sur `AgeCategory`, aucune notion de
+  `sharingType`/occurrence/1st-2nd
+- ✅ FOC stocké comme `0`, jamais absent/`null`
+- ✅ `billingUnit` sans défaut — select vide à la création
+- ✅ L'agent choisit librement quels meal plans ajouter par période, y compris
+  le meal plan de base du contrat
+- ✅ Retirer une période supprime ses suppléments (pruning non régressé sur le
+  pattern déjà en place pour room prices/age policies)
 
 ---
 
@@ -3483,74 +3505,40 @@ Même triplet `create`/`update`/`remove` + `findByPeriod` pour `AgePolicy`, et `
 
 ---
 
-## S4-BE-009-BIS : MealPlanSupplement — câbler `billingUnit` dans repository/service
+## S4-BE-009-BIS : MealPlanSupplement — ajout billingUnit
 
-- **Type :** Task
+- **Type :** Feature
 - **Priority :** P1
-- **Story Points :** 2
-- **Branch :** `chore/S4-BE-009-BIS-billing-unit`
-- **Commit :** `feat(contracts): wire billingUnit through MealPlanSupplement flow`
+- **Story Points :** 1
+- **Branch :** `feat/S4-BE-009-BIS-meal-supplement-billing-unit`
+- **Status :** ✅ Done
+- **Commit :** `feat(contracts): add billingUnit to MealPlanSupplement (PER_NIGHT/PER_STAY)`
 
-**Contexte :** le champ `billingUnit` a été ajouté au schéma (S4-BE-001-BIS) et au DTO (S4-BE-004-BIS). Ce ticket est isolé du reste de la refonte PER_OCCUPANCY parce que `MealPlanSupplement` n'a aucun lien structurel avec `BaseRate`/`AgePolicy`/`OccupancyGuidance` — c'est un ajout de champ sur une table déjà existante et déjà câblée de bout en bout.
+### Contexte
 
-**Dépend de :** S4-BE-001-BIS (schéma), S4-BE-004-BIS (DTO)
+`CreateMealPlanSupplementDto` (backend) exigeait déjà `billingUnit` via
+`@IsEnum(BillingUnit)`, mais le type partagé `MealPlanSupplementDto` et
+l'entity `MealPlanSupplement` (`contract.types.ts`) n'avaient jamais été
+mis à jour — trou resté invisible jusqu'à la reprise du frontend sur
+S4-FE-007.
 
-### `contracts.types.ts`
+### Scope
 
-```typescript
-export interface MealPlanSupplementCreateData {
-  mealPlanId: string;
-  occupancyRates: Record<string, number>;
-  billingUnit: BillingUnit; // NOUVEAU
-}
-
-export type MealPlanSupplementUpdateData =
-  Partial<MealPlanSupplementCreateData>;
-```
-
-### `prisma-contract.repository.ts`
-
-Aucun changement de logique nécessaire — `createMealPlanSupplement`/`updateMealPlanSupplement` passent déjà `data` tel quel à Prisma (`data: { ...data, contractPeriodId }`). Le champ `billingUnit` est propagé automatiquement dès que `MealPlanSupplementCreateData` le contient.
-
-### `contracts.service.ts`
-
-```typescript
-async createMealPlanSupplement(
-  dto: CreateMealPlanSupplementDto,
-  periodId: string,
-  contractId: string,
-): Promise<MealPlanSupplement> {
-  const period = await this.getPeriodOrThrow(periodId, contractId);
-
-  try {
-    return await this.contractRepository.createMealPlanSupplement(
-      {
-        mealPlanId: dto.mealPlanId,
-        occupancyRates: dto.occupancyRates,
-        billingUnit: dto.billingUnit, // NOUVEAU
-      },
-      period.id,
-    );
-  } catch (error) {
-    this.handleRepositoryError(error, {
-      [RepositoryResult.CONFLICT]: `A meal plan already exists for this meal plan in this period`,
-      [RepositoryResult.NOT_FOUND]: `Meal plan ${dto.mealPlanId} not found`,
-    });
-  }
-}
-```
-
-Même ajout dans `updateMealPlanSupplement` (`billingUnit: dto.billingUnit`).
+- Ajout du type `BillingUnit` (`'PER_NIGHT' | 'PER_STAY'`) dans
+  `contract.types.ts`
+- `MealPlanSupplement` += `billingUnit: BillingUnit`
+- `MealPlanSupplementDto` += `billingUnit: BillingUnit`
 
 ### Hors scope
 
-- Modélisation structurée des suppléments repas (remplacer `occupancyRates: Json` par un modèle dédié — hors périmètre immédiat, cf. document de conception section 8)
+- Toute logique de calcul dépendant de `billingUnit` (reste un champ de
+  saisie/affichage pour l'instant, aucun calcul dérivé)
 
 ### Acceptance Criteria
 
-- ✅ `POST .../meal-plan-supplements` sans `billingUnit` est rejeté (validation DTO déjà couverte par S4-BE-004-BIS, vérifiée ici de bout en bout)
-- ✅ `billingUnit` est bien persisté et retourné par `GET` sur le contrat
-- ✅ `PATCH .../meal-plan-supplements/:id` permet de changer `billingUnit` seul, sans toucher `occupancyRates`
+- ✅ `MealPlanSupplement`/`MealPlanSupplementDto` portent `billingUnit`
+- ✅ Cohérent avec `CreateMealPlanSupplementDto` (backend, `@prisma/client`
+  `BillingUnit` enum)
 
 ---
 
