@@ -400,6 +400,57 @@
                                   styleClass="w-full"
                                 />
                               </div>
+
+                              <div class="extra-person-grid">
+                                <div class="field">
+                                  <label>Unit Extra Person — Adult</label>
+                                  <p-inputNumber
+                                    [ngModel]="rp.extraPersonAdult"
+                                    (ngModelChange)="
+                                      updateRoomPriceField(
+                                        rp.tempId,
+                                        'extraPersonAdult',
+                                        $event
+                                      )
+                                    "
+                                    [min]="0"
+                                    mode="currency"
+                                    [currency]="selectedCurrencyCode()"
+                                  />
+                                </div>
+                                <div class="field">
+                                  <label>Unit Extra Person — Child</label>
+                                  <p-inputNumber
+                                    [ngModel]="rp.extraPersonChild"
+                                    (ngModelChange)="
+                                      updateRoomPriceField(
+                                        rp.tempId,
+                                        'extraPersonChild',
+                                        $event
+                                      )
+                                    "
+                                    [min]="0"
+                                    mode="currency"
+                                    [currency]="selectedCurrencyCode()"
+                                  />
+                                </div>
+                                <div class="field">
+                                  <label>Unit Extra Person — Teen</label>
+                                  <p-inputNumber
+                                    [ngModel]="rp.extraPersonTeen"
+                                    (ngModelChange)="
+                                      updateRoomPriceField(
+                                        rp.tempId,
+                                        'extraPersonTeen',
+                                        $event
+                                      )
+                                    "
+                                    [min]="0"
+                                    mode="currency"
+                                    [currency]="selectedCurrencyCode()"
+                                  />
+                                </div>
+                              </div>
                             }
 
                             <!-- PER_OCCUPANCY MODE -->
