@@ -200,11 +200,16 @@ model BaseRate {
   id               String         @id @default(cuid())
   contractPeriodId String
   roomTypeId       String
+
   halfDouble       Decimal        @db.Decimal(10, 2)
   single           Decimal        @db.Decimal(10, 2)
   thirdPersonAdult Decimal?       @db.Decimal(10, 2)
+  triple           Decimal?       @db.Decimal(10, 2)
+  quadruple        Decimal?       @db.Decimal(10, 2)
+
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+
   contractPeriod   ContractPeriod @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
   roomType         RoomType       @relation(fields: [roomTypeId], references: [id])
 

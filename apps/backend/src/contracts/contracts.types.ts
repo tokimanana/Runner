@@ -64,6 +64,8 @@ export interface BaseRateCreateData {
   halfDouble: number;
   single: number;
   thirdPersonAdult?: number | null;
+  triple?: number | null;
+  quadruple?: number | null;
 }
 
 export type BaseRateUpdateData = Partial<BaseRateCreateData>;
