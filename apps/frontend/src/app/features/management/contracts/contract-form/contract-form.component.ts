@@ -74,6 +74,7 @@ import {
   LocalContractPeriod,
   LocalMealPlanSupplement,
   LocalRoomPrice,
+  LocalStopSalesDate,
 } from './contract-form.types';
 
 @Component({
@@ -239,6 +240,9 @@ export class ContractFormComponent {
     { label: 'Per Stay', value: 'PER_STAY' },
   ];
 
+  // Step 5
+  readonly localStopSalesDates = signal<LocalStopSalesDate[]>([]);
+
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
       startWith(this.step1Form.controls.hotelId.value),
@@ -336,6 +340,20 @@ export class ContractFormComponent {
     return map;
   });
 
+  /** Groupe les LocalStopSalesDate par période, triées chronologiquement. */
+  readonly stopSalesDatesByPeriod = computed(() => {
+    const map = new Map<string, LocalStopSalesDate[]>();
+    for (const stopSale of this.localStopSalesDates()) {
+      const list = map.get(stopSale.periodTempId) ?? [];
+      list.push(stopSale);
+      map.set(stopSale.periodTempId, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+    return map;
+  });
+
   constructor() {
     this.step1Form.controls.hotelId.valueChanges
       .pipe(pairwise(), takeUntilDestroyed())
@@ -386,8 +404,13 @@ export class ContractFormComponent {
       case 4:
         // Pas de validation : un supplément meal plan est optionnel par
         // période (l'agent choisit librement lesquels ajouter, cf. décision
-        // S4-FE-007). Pas de step 5 pour l'instant (S4-FE-008/009 hors
-        // scope) — flag pour toi, à revoir quand ces tickets démarrent.
+        // S4-FE-007).
+        activateCallback(this.activeStep() + 1);
+        break;
+      case 5:
+        // Idem : une date de stop-sale est optionnelle par période. Pas de
+        // step 6 pour l'instant (S4-FE-009 hors scope) — flag pour toi, à
+        // revoir quand ce ticket démarre.
         activateCallback(this.activeStep() + 1);
         break;
     }
@@ -540,6 +563,9 @@ export class ContractFormComponent {
     );
     this.localMealPlanSupplements.update((supplements) =>
       supplements.filter((s) => s.periodTempId !== tempId)
+    );
+    this.localStopSalesDates.update((dates) =>
+      dates.filter((d) => d.periodTempId !== tempId)
     );
   }
 
@@ -762,7 +788,6 @@ export class ContractFormComponent {
     }
   }
 
-  /** Meal plans de l'hôtel pas encore ajoutés comme supplément pour cette période — choix libre de l'agent. */
   availableMealPlansForPeriod(
     periodTempId: string
   ): { id: string; name: string; code: string }[] {
@@ -827,6 +852,33 @@ export class ContractFormComponent {
             }
           : s
       )
+    );
+  }
+
+  getStopSalesDateRange(period: LocalContractPeriod): {
+    minDate: Date | undefined;
+    maxDate: Date | undefined;
+  } {
+    return {
+      minDate: period.startDate ?? undefined,
+      maxDate: period.endDate ?? undefined,
+    };
+  }
+
+  addStopSalesDate(periodTempId: string, date: Date): void {
+    this.localStopSalesDates.update((dates) => [
+      ...dates,
+      {
+        tempId: crypto.randomUUID(),
+        periodTempId,
+        date,
+      },
+    ]);
+  }
+
+  removeStopSalesDate(tempId: string): void {
+    this.localStopSalesDates.update((dates) =>
+      dates.filter((d) => d.tempId !== tempId)
     );
   }
 }

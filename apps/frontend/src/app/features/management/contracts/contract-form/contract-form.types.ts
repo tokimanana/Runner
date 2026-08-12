@@ -63,3 +63,9 @@ export interface LocalMealPlanSupplement {
   billingUnit: BillingUnit | null;
   ratesByAgeCategory: Record<string, number>;
 }
+
+export interface LocalStopSalesDate {
+  tempId: string;
+  periodTempId: string;
+  date: Date;
+}
