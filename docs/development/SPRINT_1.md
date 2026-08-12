@@ -6,7 +6,7 @@ Auth complète avec refresh token cookie httpOnly + layout de l'application (She
 
 **Durée estimée :** 2-3 jours
 **Story Points :** 21 points
-**Statut :** 🔄 En cours
+**Statut :** ✅ Done
 
 ---
 
@@ -46,7 +46,7 @@ export class RolesGuard implements CanActivate {
 export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
 ```
 
-  - **Status :** ✅ Done
+- **Status :** ✅ Done
 - **Acceptance Criteria :**
   - ✅ Guard fonctionne avec 1 ou plusieurs rôles
   - ✅ HTTP 403 si rôle insuffisant
@@ -95,11 +95,41 @@ async findMe(userId: string) {
   - ✅ HTTP 401 si JWT invalide
 
 - **Status :** ❌ Cancelled — obsolète depuis S1-BE-005. `/auth/refresh` retourne déjà `{ user }` via full httpOnly cookie.
+
 ---
 
 ### S1-BE-003 : Refresh token (cookie httpOnly) _(P0)_
 
-Look at S1-BE-005
+- **Type :** Investigation
+- **Priority :** P0
+- **Story Points :** 1
+- **Status :** ✅ Done — comportement backend déjà correct, implémenté via S1-BE-005
+
+#### Contexte
+
+Ticket resté sans description, remonté comme "le refresh ne marche pas du tout". Investigation menée en observant le Network tab de bout en bout (requête, cookies, status, réponse) plutôt qu'en relisant le code à l'aveugle.
+
+#### Constat
+
+L'implémentation backend de `POST /auth/refresh` (posée par S1-BE-005) est fonctionnellement correcte :
+
+- ✅ Cookie `refresh_token` bien reçu par le backend
+- ✅ `POST /auth/refresh` → `200 OK`
+- ✅ Nouveau cookie `access_token` reposé avec les bons attributs (`HttpOnly`, `SameSite=Lax`, `Max-Age` cohérent avec l'expiry de 1h de S1-DOCS-BE-006)
+- ✅ Body de réponse conforme (`{ user }`)
+
+**Aucune régression backend. Le ticket est donc résolu par le travail déjà livré en S1-BE-005 — pas de nouveau code backend nécessaire.**
+
+#### Root cause réelle (frontend)
+
+Le symptôme "ça ne marche pas" venait de `AuthActions.loginSuccess` dispatché indifféremment par un vrai login **et** par les refresh silencieux (`authInitializer` au reload, `refreshInterceptor` sur 401). L'effect `loginSuccess$` redirige systématiquement vers `/dashboard` — un refresh réussi en arrière-plan éjectait donc l'utilisateur de sa page courante.
+
+→ Voir **S1-FE-013** pour le correctif (nouvelle action `refreshSuccess`, sans navigation associée).
+
+#### Files
+
+- Aucun changement backend requis
+- Voir S1-FE-013 pour les fichiers modifiés côté frontend
 
 ---
 
@@ -122,11 +152,11 @@ Look at S1-BE-005
 
 **Nouveaux endpoints**
 
-| Endpoint | Rôle |
-| ---------------------- | ------------------------------------------------------- |
-| `POST /auth/login` | Set les deux cookies, retourne `{ user }` |
+| Endpoint             | Rôle                                                         |
+| -------------------- | ------------------------------------------------------------ |
+| `POST /auth/login`   | Set les deux cookies, retourne `{ user }`                    |
 | `POST /auth/refresh` | Vérifie le refresh token, set un nouveau access token cookie |
-| `POST /auth/logout` | Efface les deux cookies |
+| `POST /auth/logout`  | Efface les deux cookies                                      |
 
 **Corrections de design**
 
@@ -568,6 +598,40 @@ return next(authReq).pipe(
   - `apps/frontend/src/app/core/shell/header/header.component.ts`
   - `apps/frontend/src/app/core/shell/header/header.component.html`
 - **Status :** ✅ Done
+
+---
+
+### S1-FE-013 : Fix — refresh silencieux ne doit pas rediriger l'utilisateur
+
+- **Type :** Bug
+- **Priority :** P0
+- **Story Points :** 2
+- **Branch :** `fix/S1-FE-013-refresh-success-action`
+- **Commit :** `fix(auth): separate refreshSuccess from loginSuccess to prevent unwanted redirect`
+
+#### Description
+
+`AuthActions.loginSuccess` était dispatché par trois sources différentes (`login$` effect, `authInitializer`, `refreshInterceptor`), toutes traitées de façon identique par `loginSuccess$` qui redirige vers `/dashboard`. Un refresh silencieux (reload de page, ou renouvellement transparent sur 401 en cours de navigation) provoquait donc une redirection intempestive vers `/dashboard`, donnant l'impression que le refresh "ne marchait pas".
+
+**Correctif :**
+
+- Nouvelle action `AuthActions.refreshSuccess({ user })`, distincte de `loginSuccess`
+- `auth.reducer.ts` : `refreshSuccess` met à jour `user` sans toucher `isLoading` (ce flag concerne uniquement le formulaire de login)
+- `authInitializer` et `refreshInterceptor` dispatchent désormais `refreshSuccess` au lieu de `loginSuccess`
+- `loginSuccess$` (navigation vers `/dashboard`) reste inchangé et ne se déclenche donc plus que sur un vrai login manuel
+
+#### Acceptance Criteria
+
+- ✅ Reload de page sur une route protégée → session rehydratée, utilisateur reste sur sa page
+- ✅ Refresh silencieux déclenché par `refreshInterceptor` (401 en cours de navigation) → pas de redirection
+- ✅ Login manuel → redirection vers `/dashboard` inchangée
+
+#### Files
+
+- `apps/frontend/src/app/core/auth/store/auth.actions.ts`
+- `apps/frontend/src/app/core/auth/store/auth.reducer.ts`
+- `apps/frontend/src/app/core/auth/auth.initializer.ts`
+- `apps/frontend/src/app/core/auth/interceptors/refresh.interceptor.ts`
 
 ---
 
