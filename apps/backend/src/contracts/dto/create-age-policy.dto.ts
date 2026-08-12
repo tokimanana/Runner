@@ -1,5 +1,12 @@
-import { SharingType } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { BaseRateReference, SharingType } from '@prisma/client';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateAgePolicyDto {
   @IsString()
@@ -12,6 +19,13 @@ export class CreateAgePolicyDto {
 
   @IsEnum(SharingType)
   sharingType: SharingType;
+
+  @IsInt()
+  @Min(1)
+  occurrenceIndex: number;
+
+  @IsEnum(BaseRateReference)
+  baseRateReference: BaseRateReference;
 
   @IsNumber()
   @Min(0)

@@ -3553,54 +3553,52 @@ Note technique : `roomPrice` est capturé via `find()` sur la valeur du signal _
 
 ---
 
-## S4-BE-014-BIS : AgePolicy — `occurrenceIndex`, `mode`, `baseRateReference`
+## S4-BE-014-BIS : AgePolicy — `occurrenceIndex`, `baseRateReference`
 
 - **Type :** Task
 - **Priority :** P1
-- **Story Points :** 5
-- **Branch :** `chore/S4-BE-014-BIS-agepolicy-occurrence-mode-baserate`
-- **Commit :** `chore(prisma): add occurrenceIndex, mode and baseRateReference to AgePolicy`
-- **Dépend de :** S4-BE-013-BIS (`AgePolicy.roomTypeId` déjà mergé)
+- **Story Points :** 3
+- **Branch :** `chore/S4-BE-014-BIS-agepolicy-occurrence-baserate`
+- **Commit :** `chore(prisma): add occurrenceIndex and baseRateReference to AgePolicy`
+- **Dépend de :** S4-BE-013-BIS
 
 **Contexte**
 
-Analyse de deux contrats réels (contrat famille avec Junior Suite, contrat teens-only) pour modéliser les règles de tarification `WITH_PARENTS`. Deux constats invalident/précisent le modèle `LocalAgePolicyEntry` actuel.
+Analyse de deux contrats réels (contrat famille avec Junior Suite, contrat teens-only), complétée cette session par une relecture croisée des 8 contrats Lux Collective (LBM, LGB, LGG, SOP, LBMV, LGBV, LGBR + une grille additionnelle). Objectif : faire porter à `AgePolicy` la base de calcul (`baseRateReference`) et la distinction 1er/2e enfant (`occurrenceIndex`), sans dupliquer ce qui existe déjà.
 
-**Preuve**
+**Décisions validées cette session**
 
-1. 1st Child et 2nd Child ont des montants réellement différents sur les deux contrats (confirmé explicitement par Samuel) — invalide la décision précédente "une seule `AgeCategory` Child, les ordinaux ne comptent pas" (S4-FE-015-BIS).
-2. La base de calcul référencée par une règle (`single` / `halfDouble` / `triple` / `quadruple`) varie selon l'hôtel/contrat — ne peut pas être déduite en dur dans le code (ex. "2 adultes = toujours `halfDouble`" serait faux pour certains contrats).
-3. La base du rabais "chambre séparée" (5% sur `single` vs 5% sur `double`) varie aussi selon le contrat — même implication : champ explicite, jamais déduit.
-
-**Décision déjà validée (rappel, pas à rediscuter)**
-
-- `occurrenceIndex`, scopé par `ageCategoryId` (1st Child et 1st Teen sont indépendants, chacun a son propre compteur).
-- `baseRateReference` : champ explicite par règle (clé de `BaseRate` : `single` / `halfDouble` / `triple` / `quadruple`), jamais déduit d'une logique métier codée en dur.
-- `mode` : `SHARING` (valeur absolue en devise) vs `SEPARATE_ROOM_DISCOUNT` (valeur en %).
-
-**⚠️ Point non tranché — NE PAS CODER avant confirmation explicite**
-
-La proposition initiale de Samuel étendait aussi `sharingType` avec une nuance 1 parent / 2 parents. Mais si `baseRateReference` capture déjà explicitement quelle base de tarif s'applique, cette nuance sur `sharingType` devient peut-être redondante. Cette question n'a pas été retranchée après les réponses business — **à clarifier en premier lieu de la prochaine session avant d'écrire le moindre schema.**
+1. **`mode` retiré du scope backend.** Vérifié sur les 8 contrats : `sharingType = WITH_PARENTS` correspond toujours à une valeur absolue en devise, `sharingType = SEPARATE_ROOM` correspond toujours à un pourcentage — mais ce pourcentage est calculé par l'agent dans le fichier de travail actuel et c'est le montant en devise résultant qui est saisi, jamais un `%` brut. `AgePolicy.value` reste donc un `Decimal` unique quel que soit `sharingType`, sans champ `mode` requis pour ça. Si un calcul automatique du pourcentage est ajouté plus tard, ce sera une feature frontend, pas un champ de schema.
+2. **`sharingType` (existant) est conservé tel quel** — reste le discriminant `WITH_PARENTS` / `SEPARATE_ROOM` sur `AgePolicy`, aucune suppression.
+3. **`baseRateReference`** : nouvel enum à 4 valeurs — `single`, `halfDouble`, `triple`, `quadruple`. `thirdPersonAdult` en est explicitement exclu : confirmé sur les 8 contrats qu'il reste un mécanisme à part (supplément adulte conditionnel à la capacité de chambre), jamais utilisé comme base de calcul d'une règle `AgePolicy`.
+4. **Pas de nuance `sharingType` 1 parent / 2 parents.** Aucun des deux contrats récents ne présente de cas où le même `baseRateReference` donne un montant différent selon 1 ou 2 parents accompagnants — cohérent avec la décision du 18/07 (clause single-parent non automatisée, gérée manuellement par l'agent, hors modèle).
+5. **Sémantique de `occurrenceIndex` différente selon `sharingType`** — à documenter clairement dans le code, pas seulement ici :
+   - `WITH_PARENTS` : `occurrenceIndex` désigne "quel enfant" (1er, 2e...) ; chaque occurrence porte sa propre `value`, indépendante des autres (ex. LBM : 1st Child et 2nd Child ont des montants différents).
+   - `SEPARATE_ROOM` : `occurrenceIndex` désigne l'occupation totale de la chambre séparée à ce moment (1 enfant vs 2 enfants), qui sélectionne le `baseRateReference` (`single` vs `halfDouble`) ; la `value` de la ligne s'applique **identiquement** à chacun des N enfants de cette occurrence, elle n'est pas divisée ni propre à "quel" enfant.
 
 **Travail à faire (backend uniquement)**
 
-1. Schema + migration : `AgePolicy` += `occurrenceIndex` (int), `mode` (enum), `baseRateReference` (enum ou string contrainte aux clés de `BaseRate`).
-2. DTOs : `create-age-policy.dto.ts` / update équivalent, avec validation cohérente par `mode` (valeur absolue vs %).
+1. Schema + migration :
+   - Nouvel enum `BaseRateReference` (`single`, `halfDouble`, `triple`, `quadruple`).
+   - `AgePolicy` += `occurrenceIndex` (Int, requis) et `baseRateReference` (BaseRateReference, requis).
+   - `@@unique` étendu : `[contractPeriodId, roomTypeId, ageCategoryId, sharingType, occurrenceIndex]`.
+   - Pas de backfill nécessaire — aucune donnée `AgePolicy` réelle à préserver en base actuellement, données de test à vider avant migration.
+2. DTOs : `create-age-policy.dto.ts` (et update équivalent si existant) — `occurrenceIndex` et `baseRateReference` requis, validation cohérente avec le pattern déjà en place.
 3. Shared types : `AgePolicy` / `AgePolicyDto` (`contract.types.ts`).
 
 **Hors scope**
 
-- Le calcul et l'application du % `SEPARATE_ROOM_DISCOUNT` aux suppléments repas (Half Board / Full Board / All Inclusive) — ticket séparé.
-- Toute logique frontend — ticket FE séparé une fois ce ticket mergé (miroir de S4-FE-015-BIS pour S4-BE-013-BIS).
-- Occupancy caps par room type — hors scope, sujet indépendant (contrainte de réservation, pas de pricing).
+- `mode` / calcul automatique du pourcentage `SEPARATE_ROOM_DISCOUNT` — déplacé côté frontend, ticket futur séparé.
+- Occupancy caps par room type (max adultes/ados) — sujet séparé, contrainte de réservation indépendante du pricing.
+- Discount meal-plan-supplement sur chambre séparée — varie par contrat, ticket séparé.
 
 **Acceptance Criteria**
 
-- ✅ Point non tranché ci-dessus discuté et arbitré avant tout code
-- ✅ `AgePolicy` porte `occurrenceIndex`, `mode`, `baseRateReference`, migration sans perte de données
-- ✅ 1st Child et 2nd Child peuvent avoir des `value` différentes sur la même période/room type
-- ✅ `baseRateReference` est une valeur explicite, jamais déduite côté service
-- ✅ DTOs valident `value` différemment selon `mode` (absolu vs %)
+- ✅ `AgePolicy` porte `occurrenceIndex` et `baseRateReference`, migration sans perte de données (base de test vidée au préalable)
+- ✅ `@@unique` empêche toute collision 1er/2e enfant (même `ageCategoryId`/`sharingType`, `occurrenceIndex` différent)
+- ✅ `baseRateReference` est une valeur explicite (`single`/`halfDouble`/`triple`/`quadruple`), jamais déduite côté service
+- ✅ `thirdPersonAdult` reste hors de l'enum `BaseRateReference`
+- ✅ DTOs valident `occurrenceIndex` et `baseRateReference` comme requis
 - ✅ `nx build backend` → 0 erreur
 
 **Fichiers concernés**
@@ -3618,7 +3616,6 @@ La proposition initiale de Samuel étendait aussi `sharingType` avec une nuance 
 - **Story Points :** 3
 - **Branch :** `feature/S4-BE-015-BIS-roomprice-per-room-extra-person`
 - **Commit :** `feat(contracts): add extra person supplements (Adult/Child/Teen) to RoomPrice PER_ROOM`
-- **Dépend de :** aucun ticket bloquant — indépendant de la série AgePolicy
 
 **Contexte**
 

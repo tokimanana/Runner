@@ -1,5 +1,10 @@
 import { PaginationQuery } from '@backend/common/pagination.types';
-import { BillingUnit, PricingMode, SharingType } from '@prisma/client';
+import {
+  BaseRateReference,
+  BillingUnit,
+  PricingMode,
+  SharingType,
+} from '@prisma/client';
 
 export interface ContractQuery extends PaginationQuery {
   hotelId?: string;
@@ -28,12 +33,18 @@ export interface RoomPriceCreateData {
   roomTypeId: string;
   pricingMode: PricingMode;
   pricePerNight?: number | null;
+  extraPersonAdult?: number | null;
+  extraPersonChild?: number | null;
+  extraPersonTeen?: number | null;
 }
 
 export interface RoomPriceUpdateData {
   roomTypeId?: string;
   pricingMode?: PricingMode;
   pricePerNight?: number | null;
+  extraPersonAdult?: number | null;
+  extraPersonChild?: number | null;
+  extraPersonTeen?: number | null;
 }
 
 export interface OccupancyRateCreateData {
@@ -74,6 +85,8 @@ export interface AgePolicyCreateData {
   roomTypeId: string;
   ageCategoryId: string;
   sharingType: SharingType;
+  occurrenceIndex: number;
+  baseRateReference: BaseRateReference;
   value: number;
 }
 
