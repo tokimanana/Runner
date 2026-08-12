@@ -1481,7 +1481,8 @@ Rappel sémantique (déjà actée côté backend, à respecter dans le code comm
 - **Priority :** P1
 - **Story Points :** 3
 - **Branch :** `feat/S4-FE-017-BIS-per-room-extra-person`
-- **Status :** À faire — prochain ticket
+- **Status :** ✅
+- **Commit :** `feat(contracts): add PER_ROOM extra person supplement (Adult/Child/Teen)`
 - **Dépend de :** S4-BE-015-BIS (schéma/DTOs backend, mergé)
 
 ### Contexte
@@ -1492,201 +1493,110 @@ nullable). Mécanisme entièrement distinct de `BaseRate.thirdPersonAdult`
 (`PER_OCCUPANCY` uniquement, capacité de chambre == 2) — confirmé, aucun
 chevauchement.
 
-### Scope (à valider avant codage — une seule décision structurelle à la fois)
+### Scope
 
 - `LocalRoomPrice` (`contract-form.types.ts`) : ajout de `extraPersonAdult`/
-  `extraPersonChild`/`extraPersonTeen` (number | null), visibles uniquement en mode
-  `PER_ROOM`
-- Card `room-price-card`, bloc `PER_ROOM` existant (à côté de "Price per Night") :
-  3 nouveaux champs `p-inputNumber`
-- `updateRoomPriceField` existant suffit pour la mutation (générique par clé) — pas
-  de nouvelle méthode a priori, à confirmer une fois le type mis à jour
-- Reset : au passage `PER_ROOM` → `PER_OCCUPANCY`, décider si ces 3 champs doivent
-  être vidés (symétrique du reset déjà en place pour `baseRate`/`localAgePolicies`
-  au retour `PER_OCCUPANCY` → `PER_ROOM`) — point à trancher en session
+  `extraPersonChild`/`extraPersonTeen` (number | null)
+- Card `room-price-card`, bloc `PER_ROOM` existant : 3 nouveaux champs
+  `p-inputNumber` sous "Price per Night"
+- Mutation via `updateRoomPriceField` existant (générique par clé) — pas de
+  nouvelle méthode
+- Reset : au passage `PER_ROOM` → `PER_OCCUPANCY`, les 3 champs sont vidés
+  (`null`) dans le même bloc de `onPricingModeChanged()` que `pricePerNight`/
+  `baseRate` — décision actée en session, symétrique au reset déjà en place au
+  passage inverse
 
 ### Hors scope
 
 - Toute validation croisée avec `BaseRate.thirdPersonAdult`
-- `OccupancyGuidance` (S4-FE-014-BIS, toujours en attente séparément)
+- `OccupancyGuidance` (S4-FE-014-BIS, ticket séparé)
 
-### Acceptance Criteria (à affiner en session)
+### Acceptance Criteria
 
 - ✅ Les 3 champs extra person sont éditables uniquement en mode `PER_ROOM`
-- ✅ Comportement de reset au changement de `pricingMode` défini et cohérent avec le
-  pattern déjà en place pour `PER_OCCUPANCY`
+- ✅ Passage `PER_ROOM` → `PER_OCCUPANCY` vide les 3 champs
 - ✅ Aucune régression sur le flux `PER_ROOM`/`pricePerNight` existant
 - ✅ `nx build frontend` / `nx test frontend` passent sans erreur
 
 ---
 
-### S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
-
-- **Type :** Feature
-- **Priority :** P1
-- **Story Points :** 3
-- **Branch :** `feature/S4-FE-007-contract-form-step4`
-- **Commit :** `feat(contracts): add meal plan supplements`
-
----
-
-### S4-FE-008 : ContractForm — Étape 5 (Stop Sales)
+## S4-FE-014-BIS : OccupancyGuidance — gestion sur la fiche Room Type
 
 - **Type :** Feature
 - **Priority :** P2
-- **Story Points :** 2
-- **Branch :** `feature/S4-FE-008-contract-form-step5`
-- **Commit :** `feat(contracts): add stop sales dates management`
-
-**Limites depuis `ContractPeriod.startDate/endDate` (pas SeasonPeriod) :**
-
-```typescript
-periodRange = computed(() => ({
-  minDate: new Date(this.currentPeriod()?.startDate ?? ''),
-  maxDate: new Date(this.currentPeriod()?.endDate ?? ''),
-}));
-```
-
----
-
-### S4-FE-009 : ContractForm — Récapitulatif + Submit
-
-- **Type :** Feature
-- **Priority :** P0
 - **Story Points :** 3
-- **Branch :** `feature/S4-FE-009-contract-submit`
-- **Commit :** `feat(contracts): add contract recap and submit logic`
+- **Branch :** `feat/S4-FE-014-BIS-occupancy-guidance-room-type`
+- **Status :** ✅
+- **Emplacement :** `Hotels > [hotel] > Room Types` (fiche room type existante)
+- **Dépend de :** S4-BE-003-BIS
+  S4-BE-008-BIS (service, ✅ mergé) — **mise à jour** : les deux étaient listés
+  "à faire" dans la version précédente du ticket, ils sont en réalité déjà
+  mergés depuis la phase backend. Ticket non bloqué.
 
-```typescript
-async submit(): Promise<void> {
-  this.submitting.set(true);
-  try {
-    const contract = await firstValueFrom(
-      this.contractsService.create(this.step1Form.value as ContractDto)
-    );
+### Contexte
 
-    for (const period of this.periods()) {
-      const dto: ContractPeriodDto = {
-        seasonPeriodId: period.seasonPeriodId ?? null,  // optionnel
-        name:           period.name,
-        startDate:      period.startDate,               // dates réelles
-        endDate:        period.endDate,
-        baseMealPlanId: period.baseMealPlanId,
-        minStay:        period.minStay,
-      };
-      const createdPeriod = await firstValueFrom(
-        this.contractsService.createPeriod(contract.id, dto)
-      );
+`OccupancyGuidance` (combinaisons indicatives d'occupation, non bloquantes) est
+scopée uniquement par `roomTypeId` — aucune dépendance à un contrat ni une
+période. Elle n'a donc pas sa place dans le wizard de contrat et se gère plutôt
+là où le room type lui-même est administré, au même titre que
+`RoomTypeCapacity`.
 
-      for (const rp of this.roomPricesByPeriod()[period.tempId]) {
-        await firstValueFrom(
-          this.contractsService.createRoomPrice(contract.id, createdPeriod.id, rp)
-        );
-      }
-      for (const ms of this.mealSupplementsByPeriod()[period.tempId]) {
-        await firstValueFrom(
-          this.contractsService.createMealSupplement(contract.id, createdPeriod.id, ms)
-        );
-      }
-      for (const date of this.stopSalesByPeriod()[period.tempId]) {
-        await firstValueFrom(
-          this.contractsService.createStopSale(contract.id, createdPeriod.id, date)
-        );
-      }
-    }
+Confirmé en session : les plafonds d'occupation (max adultes/ados/enfants par
+room type) sont une contrainte de réservation, indépendante de la
+tarification — aucun lien avec `BaseRate`/`AgePolicy`, purement informationnel
+pour l'agent qui saisit un contrat.
 
-    this.contractsService.reload();
-    this.router.navigate(['/contracts']);
-    this.messageService.add({ severity: 'success', summary: 'Contract created' });
-  } catch {
-    this.messageService.add({ severity: 'error', summary: 'Error creating contract' });
-  } finally {
-    this.submitting.set(false);
-  }
+### Décision actée — structure (point resté ouvert dans la version précédente)
+
+Pas de choix "liste structurée **vs** texte libre" à faire : le schéma
+`OccupancyGuidance` combine déjà les deux —
+
+```prisma
+model OccupancyGuidance {
+  roomTypeId  String
+  description String   // texte libre, ex. "3 Adults" ou "2 Adults + 2 Teens"
+  maxAdults   Int      @default(0)
+  maxTeens    Int      @default(0)
+  maxChildren Int      @default(0)
+  maxInfants  Int      @default(0)
 }
 ```
 
----
+Une combinaison réelle du type _"3 ADULTS OR 2 ADULTS + 2 TEENS or 2 CHILDREN
+or 1 INFANT"_ (vue sur les contrats Lux Collective) devient **4 lignes
+`OccupancyGuidance` distinctes** pour le même room type — une par combinaison
+"OR", chacune avec sa propre `description` et ses propres `max*`. Le frontend
+n'a donc rien à trancher structurellement : juste une liste de lignes
+(description + 4 champs numériques), create/edit/delete par ligne.
 
-### S4-FE-010 : Routes Contracts + Sidebar
+### Scope
 
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `chore/S4-FE-010-contracts-routes`
-- **Commits :**
-  - `chore(contracts): scaffold ContractsListComponent and ContractFormComponent`
-  - `chore(routing): add contracts routes to management.routes.ts`
-  - `chore(sidebar): add contracts nav entry`
-  - `docs(sprint4): update S4-FE-010 ticket with final routing decisions`
+- Section/onglet dédié sur la fiche room type existante, listant les
+  `OccupancyGuidance` du room type (`GET occupancy-guidances/room-types/:roomTypeId`)
+- Création : `description` (texte libre), `maxAdults`/`maxTeens`/
+  `maxChildren`/`maxInfants` (entiers, défaut 0 si omis)
+- Plusieurs guidances par room type autorisées (pas de contrainte
+  d'unicité côté backend — pas de règle à répliquer côté frontend)
+- Édition / suppression d'une guidance existante
 
-**Décision finale — divergence avec le plan initial :**
+### Hors scope
 
-Le snippet original proposait Contracts en top-level (`app.routes.ts`, `loadChildren` séparé,
-guards dupliqués sur chaque route enfant). **Rejeté** : Contracts est fonctionnellement au même
-niveau d'autorisation que Hotels/Seasons/MealPlans (confirmé par `@Roles(UserRole.ADMIN, UserRole.MANAGER)`
-sur `ContractsController` backend) — dupliquer les guards aurait décorrélé une règle métier de sa
-représentation dans l'arbre de routes.
+- Toute validation croisée avec `RoomTypeCapacity` (relation entre les
+  deux non tranchée côté backend — discussion ouverte, à traiter
+  séparément)
+- Utilisation de ces guidances dans le wizard de contrat (purement
+  informationnel pour l'instant, aucun lien avec `BaseRate`/`AgePolicy`,
+  confirmé en session)
 
-```typescript
-// management.routes.ts — entrée inline, pas de fichier séparé (cohérent avec hotels/seasons)
-// Route componentless : pas de shell wrapper, <router-outlet /> parent suffit
-{
-  path: 'contracts',
-  children: [
-    { path: '', redirectTo: 'contracts-list', pathMatch: 'full' },
-    {
-      path: 'contracts-list',
-      loadComponent: () =>
-        import('./contracts/contracts-list/contracts-list.component')
-          .then(m => m.ContractsListComponent),
-    },
-    {
-      path: 'create',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-    {
-      path: ':contractId/edit',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-  ],
-},
-```
+### Acceptance Criteria
 
-**Convention actée :** dossier/classe pluriel pour les listes (`contracts-list` → `ContractsListComponent`),
-singulier pour les formulaires traitant une seule entité (`contract-form` → `ContractFormComponent`).
-Exception consciente à la stricte cohérence avec `hotels-form`/`seasons-form` (pluriel) — motivée par la
-sémantique (un form ne traite jamais plusieurs contrats à la fois), pas par un pattern général.
-
-```typescript
-// sidebar.component.ts — inséré après Currencies, avant Supplements
-// (Contracts agrège Hotel/Market/Currency/SeasonPeriod → dépend de tout ce qui précède)
-{
-  label: 'Contracts',
-  icon: 'pi pi-sitemap',
-  route: '/management/contracts',
-  roles: ['ADMIN', 'MANAGER'],
-},
-```
-
-**Guards :** hérités du parent `management` (`RoleGuard`, `roles: ['ADMIN', 'MANAGER']`) posé dans
-`app.routes.ts`. Pas de duplication sur les routes enfants — le router Angular propage les guards
-de haut en bas dans l'arbre avant de résoudre les `children`/`loadChildren`.
-
-**Acceptance Criteria :**
-
-- ✅ `ContractsListComponent` et `ContractFormComponent` scaffoldés (standalone, OnPush)
-- ✅ Routes nichées dans `MANAGEMENT_ROUTES`, componentless
-- ✅ `/management/contracts/contracts-list` compile et navigue sans erreur
-- ✅ Entrée sidebar avec icône unique, `roles` filtrant l'affichage (indépendant du guard qui filtre la navigation)
-
----
-
-## S4-FE-014-BIS : OccupancyGuidance — gestion sur la fiche Room Type
+- ✅ La fiche room type affiche la liste des `OccupancyGuidance` existantes
+- ✅ Création d'une guidance sans capacités précisées → les 4 champs
+  `max...` valent 0
+- ✅ Plusieurs guidances peuvent coexister pour le même room type (une par
+  combinaison "OR")
+- ✅ Édition et suppression fonctionnelles
+- ✅ `nx build frontend` / `nx test frontend` passent sans erreur
 
 - **Type :** Feature
 - **Priority :** P2
