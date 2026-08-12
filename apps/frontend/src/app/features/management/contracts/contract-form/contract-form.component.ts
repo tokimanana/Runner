@@ -23,6 +23,7 @@ import {
   PricingMode,
   RoomType,
   Season,
+  SharingType,
 } from '@runner/shared/types';
 
 // PrimeNG core & APIs
@@ -69,8 +70,10 @@ import { MealPlansService } from '../../meal-plans/meal-plans.service';
 import { SeasonsService } from '../../seasons/seasons.service';
 import { ContractsService } from '../contracts.service';
 import {
+  emptyBaseRate,
+  LocalAgePolicyEntry,
+  LocalBaseRate,
   LocalContractPeriod,
-  LocalOccupancyRate,
   LocalRoomPrice,
 } from './contract-form.types';
 
@@ -185,7 +188,14 @@ export class ContractFormComponent {
   // Step 3
   readonly selectedRoomTypeIds = signal<string[]>([]);
   readonly localRoomPrices = signal<LocalRoomPrice[]>([]);
+  readonly localAgePolicies = signal<LocalAgePolicyEntry[]>([]);
   readonly roomPriceStepError = signal<boolean>(false);
+  readonly baseRateExclusivityError = signal<boolean>(false);
+
+  readonly sharingTypeOptions: { label: string; value: SharingType }[] = [
+    { label: 'With parents', value: 'WITH_PARENTS' },
+    { label: 'Separate room', value: 'SEPARATE_ROOM' },
+  ];
 
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
@@ -216,25 +226,69 @@ export class ContractFormComponent {
   readonly periodRoomPriceGroups = computed(() => {
     const roomTypesById = this.roomTypesById();
 
-    return this.localPeriods().map((period) => ({
-      period,
-      roomPrices: this.localRoomPrices()
+    return this.localPeriods().map((period) => {
+      const roomPrices = this.localRoomPrices()
         .filter((rp) => rp.periodTempId === period.tempId)
         .map((rp) => ({
           ...rp,
           roomTypeName: roomTypesById.get(rp.roomTypeId)?.name ?? '',
-        })),
-    }));
+        }));
+
+      return {
+        period,
+        roomPrices,
+        hasPerOccupancy: roomPrices.some(
+          (rp) => rp.pricingMode === 'PER_OCCUPANCY'
+        ),
+      };
+    });
   });
 
-  readonly expandedRowKeys = computed<{ [tempId: string]: boolean }>(() =>
-    Object.fromEntries(
-      this.localRoomPrices().map((rp) => [
-        rp.tempId,
-        rp.pricingMode === 'PER_OCCUPANCY',
-      ])
-    )
-  );
+  // AgePolicy s'applique à toute la période (pas de roomTypeId côté
+  // backend) : une seule grille (AgeCategory x SharingType) par période,
+  // pas dupliquée par room type.
+  readonly agePolicyRowsByPeriod = computed(() => {
+    const categories = this.ageCategories();
+    const entries = this.localAgePolicies();
+
+    const map = new Map<
+      string,
+      {
+        ageCategory: AgeCategory;
+        sharingType: SharingType;
+        value: number | null;
+      }[]
+    >();
+
+    for (const period of this.localPeriods()) {
+      const rows = categories.flatMap((category) =>
+        this.sharingTypeOptions.map(({ value: sharingType }) => ({
+          ageCategory: category,
+          sharingType,
+          value:
+            entries.find(
+              (e) =>
+                e.periodTempId === period.tempId &&
+                e.ageCategoryId === category.id &&
+                e.sharingType === sharingType
+            )?.value ?? null,
+        }))
+      );
+      map.set(period.tempId, rows);
+    }
+
+    return map;
+  });
+
+  readonly expandedRowKeys = computed<{ [tempId: string]: boolean }>(() => {
+    const keys: { [tempId: string]: boolean } = {};
+    this.localRoomPrices().forEach((rp) => {
+      if (rp.pricingMode === 'PER_OCCUPANCY') {
+        keys[rp.tempId] = true;
+      }
+    });
+    return keys;
+  });
 
   readonly pricingModeOptions: { label: string; value: PricingMode }[] = [
     { label: 'Per room', value: 'PER_ROOM' },
@@ -251,7 +305,8 @@ export class ContractFormComponent {
 
         const hasDataAtRisk =
           this.selectedRoomTypeIds().length > 0 ||
-          this.localRoomPrices().length > 0;
+          this.localRoomPrices().length > 0 ||
+          this.localAgePolicies().length > 0;
 
         if (!hasDataAtRisk) {
           return;
@@ -265,6 +320,7 @@ export class ContractFormComponent {
           onAccept: () => {
             this.selectedRoomTypeIds.set([]);
             this.localRoomPrices.set([]);
+            this.localAgePolicies.set([]);
           },
           onReject: () => {
             this.step1Form.controls.hotelId.setValue(previousHotelId, {
@@ -353,9 +409,18 @@ export class ContractFormComponent {
       this.selectedRoomTypeIds().length === 0
     ) {
       this.roomPriceStepError.set(true);
+      this.baseRateExclusivityError.set(false);
       return;
     }
+
+    if (this.hasBaseRateExclusivityConflict()) {
+      this.roomPriceStepError.set(false);
+      this.baseRateExclusivityError.set(true);
+      return;
+    }
+
     this.roomPriceStepError.set(false);
+    this.baseRateExclusivityError.set(false);
     activateCallback(this.activeStep() + 1);
   }
 
@@ -568,7 +633,7 @@ export class ContractFormComponent {
               roomTypeId,
               pricingMode: 'PER_ROOM',
               pricePerNight: null,
-              occupancyRates: [],
+              baseRate: null,
             });
           }
         }
@@ -598,95 +663,97 @@ export class ContractFormComponent {
           ...rp,
           pricingMode: newMode,
           pricePerNight: newMode === 'PER_OCCUPANCY' ? null : rp.pricePerNight,
+          baseRate:
+            newMode === 'PER_OCCUPANCY'
+              ? (rp.baseRate ?? emptyBaseRate())
+              : rp.baseRate,
         };
       })
     );
   }
 
-  addOccupancyRate(roomPriceTempId: string): void {
-    const roomPrice = this.localRoomPrices().find(
-      (rp) => rp.tempId === roomPriceTempId
-    );
-    if (!roomPrice) return;
-
-    const newRate: LocalOccupancyRate = {
-      numAdults: 1,
-      numChildren: 0,
-      ratesPerAge: {},
-    };
-
-    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', [
-      ...roomPrice.occupancyRates,
-      newRate,
-    ]);
-  }
-
-  updateOccupancyRateField<K extends keyof LocalOccupancyRate>(
+  updateBaseRateField<K extends keyof LocalBaseRate>(
     roomPriceTempId: string,
-    rateIndex: number,
     field: K,
-    value: LocalOccupancyRate[K]
+    value: LocalBaseRate[K]
   ): void {
     const roomPrice = this.localRoomPrices().find(
       (rp) => rp.tempId === roomPriceTempId
     );
-    if (!roomPrice) return;
+    if (!roomPrice?.baseRate) return;
 
-    const updatedRates = roomPrice.occupancyRates.map((rate, index) =>
-      index === rateIndex ? { ...rate, [field]: value } : rate
-    );
-
-    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', updatedRates);
+    this.updateRoomPriceField(roomPriceTempId, 'baseRate', {
+      ...roomPrice.baseRate,
+      [field]: value,
+    });
   }
 
-  updateOccupancyRateAgeValue(
-    roomPriceTempId: string,
-    rateIndex: number,
+  updateAgePolicyValue(
+    periodTempId: string,
     ageCategoryId: string,
-    value: number
+    sharingType: SharingType,
+    value: number | null
   ): void {
-    const roomPrice = this.localRoomPrices().find(
-      (rp) => rp.tempId === roomPriceTempId
-    );
-    if (!roomPrice) return;
+    this.localAgePolicies.update((entries) => {
+      const index = entries.findIndex(
+        (e) =>
+          e.periodTempId === periodTempId &&
+          e.ageCategoryId === ageCategoryId &&
+          e.sharingType === sharingType
+      );
 
-    const rate = roomPrice.occupancyRates[rateIndex];
-    if (!rate) return;
+      if (index === -1) {
+        return [
+          ...entries,
+          {
+            tempId: crypto.randomUUID(),
+            periodTempId,
+            ageCategoryId,
+            sharingType,
+            value,
+          },
+        ];
+      }
 
-    const updatedRatesPerAge = { ...rate.ratesPerAge, [ageCategoryId]: value };
+      return entries.map((e, i) => (i === index ? { ...e, value } : e));
+    });
+  }
 
-    this.updateOccupancyRateField(
-      roomPriceTempId,
-      rateIndex,
-      'ratesPerAge',
-      updatedRatesPerAge
+  private hasBaseRateExclusivityConflict(): boolean {
+    return this.localRoomPrices().some(
+      (rp) =>
+        rp.pricingMode === 'PER_OCCUPANCY' &&
+        rp.baseRate?.thirdPersonAdult != null &&
+        rp.baseRate?.triple != null
     );
   }
 
-  removeOccupancyRate(roomPriceTempId: string, rateIndex: number): void {
-    const roomPrice = this.localRoomPrices().find(
-      (rp) => rp.tempId === roomPriceTempId
-    );
-    if (!roomPrice) return;
-
-    const updatedRates = roomPrice.occupancyRates.filter(
-      (_, index) => index !== rateIndex
-    );
-
-    this.updateRoomPriceField(roomPriceTempId, 'occupancyRates', updatedRates);
-  }
-
-  private roomTypeMaxPax(roomTypeId: string): number {
+  getRoomTypeMaxCapacity(roomTypeId: string): number {
     const roomType = this.roomTypes().find((rt) => rt.id === roomTypeId);
-    if (!roomType?.capacities) return 0;
-    return roomType.capacities.reduce((sum, c) => sum + c.maxPax, 0);
+    if (!roomType?.capacities || roomType.capacities.length === 0) {
+      return 4; // Valeur par défaut si non spécifiée : affiche tous les champs
+    }
+    return roomType.capacities.reduce((sum, c) => sum + (c.maxPax || 0), 0);
   }
 
-  isOccupancyOverCapacity(
+  isBaseRateFieldVisible(
     roomTypeId: string,
-    rate: LocalOccupancyRate
+    field: keyof LocalBaseRate
   ): boolean {
-    const totalPax = rate.numAdults + rate.numChildren;
-    return totalPax > this.roomTypeMaxPax(roomTypeId);
+    const maxPax = this.getRoomTypeMaxCapacity(roomTypeId);
+
+    switch (field) {
+      case 'single':
+        return maxPax >= 1;
+      case 'halfDouble':
+        return maxPax >= 2;
+      case 'thirdPersonAdult':
+      case 'triple':
+        return maxPax >= 3;
+      case 'quadruple':
+        return maxPax >= 4;
+      default:
+        return true;
+    }
   }
 }
