@@ -123,8 +123,10 @@ export interface BaseRate {
 export interface AgePolicy {
   id: string;
   contractPeriodId: string;
+  roomTypeId: string;
   ageCategoryId: string;
   sharingType: SharingType;
   value: number;
+  roomType?: { id: string; name: string; code: string };
   ageCategory?: { id: string; name: string; minAge: number; maxAge: number };
 }

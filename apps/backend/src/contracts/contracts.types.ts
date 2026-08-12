@@ -71,6 +71,7 @@ export interface BaseRateCreateData {
 export type BaseRateUpdateData = Partial<BaseRateCreateData>;
 
 export interface AgePolicyCreateData {
+  roomTypeId: string;
   ageCategoryId: string;
   sharingType: SharingType;
   value: number;

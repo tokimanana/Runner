@@ -480,8 +480,8 @@ export class ContractsService {
       return await this.contractRepository.createAgePolicy(dto, periodId);
     } catch (error) {
       this.handleRepositoryError(error, {
-        [RepositoryResult.CONFLICT]: `An age policy already exists for this age category and sharing type in this period`,
-        [RepositoryResult.NOT_FOUND]: `Age category ${dto.ageCategoryId} not found`,
+        [RepositoryResult.CONFLICT]: `An age policy already exists for this room type, age category and sharing type in this period`,
+        [RepositoryResult.NOT_FOUND]: `Room type ${dto.roomTypeId} or age category ${dto.ageCategoryId} not found`,
       });
     }
   }
