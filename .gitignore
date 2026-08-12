@@ -51,3 +51,5 @@ yarn-error.log*
 apps/frontend/src/environments/environment.dev.ts
 apps/frontend/src/environments/environment.prod.ts
 apps/backend/src/generated/
+
+*.tsbuildinfo
