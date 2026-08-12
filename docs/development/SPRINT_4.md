@@ -3939,52 +3939,52 @@ le même commit.
 
 ---
 
-## S4-TECH-002 : Réduire le bundle JS initial sous le budget
+## S4-TECH-002 : Retirer @ngrx/store-devtools du bundle de production
 
-- **Type :** Tech debt
+- **Type :** Performance
 - **Priority :** P2
-- **Story Points :** à estimer (investigation nécessaire avant chiffrage)
-- **Branch :** `chore/S4-TECH-002-initial-bundle-budget`
-- **Status :** ⬜ À faire
+- **Story Points :** 2
+- **Branch :** `fix/S4-TECH-002-strip-devtools-prod`
+- **Status :** ✅ Done
+- **Commit :** `fix(store): strip devtools from prod bundle via fileReplacements`
 
-### Contexte
+### Investigation (résumé)
 
-Warning non-bloquant relevé pendant S4-FE-010 :
+Cause : `logOnly: !isDevMode()` dans `provideStoreDevtools()` (`app.config.ts`) ne fait que désactiver le comportement à l'exécution — le tree-shaking ne peut pas éliminer un import conditionné au runtime. Seule une exclusion statique via `fileReplacements` fonctionne. Les autres postes lourds du bundle (`@angular/core` 135.5 kB, `@primeng/themes/aura` 102.3 kB, `@angular/router` 64.2 kB, `@angular/forms` 37.4 kB) sont structurels, sans fix identifié à coût raisonnable.
 
-▲ [WARNING] bundle initial exceeded maximum budget.
-Budget 500.00 kB was not met by 53.15 kB with a total of 553.15 kB.
+### Scope
 
-Sans lien avec le SCSS de contract-form — c'est le bundle JS initial
-(`main` + chunks synchrones chargés au démarrage), pas les chunks lazy des
-routes. Non investigué en profondeur : aucune cause confirmée à ce stade,
-seulement des pistes.
+1. Créer `apps/frontend/src/app/core/store/devtools.providers.ts` : exporte le tableau de providers avec `provideStoreDevtools(...)`.
+2. Créer `apps/frontend/src/app/core/store/devtools.providers.prod.ts` : exporte un tableau vide `[]` du même type (`EnvironmentProviders[]`).
+3. Ajouter l'entrée `fileReplacements` en configuration `production`, à côté de celle existante pour `environment.ts`.
+4. Dans `app.config.ts`, remplacer l'appel direct à `provideStoreDevtools(...)` par le spread du tableau importé depuis `devtools.providers.ts`.
 
-### Pistes à vérifier en session (aucune tranchée)
+### Cause réelle du blocage initial
 
-- Imports PrimeNG globaux non tree-shakés (modules importés en bloc plutôt
-  que les composants réellement utilisés)
-- Un import synchrone qui devrait être lazy-loadé (vérifier
-  `app.routes.ts`/`management.routes.ts` pour un `loadComponent`/
-  `loadChildren` manquant sur un module lourd)
-- Dépendances tierces volumineuses chargées dans le chunk initial plutôt que
-  différées
+Le monorepo utilise Nx avec un `project.json` par app, qui redéfinit entièrement sa propre cible `build` (Nx priorise `project.json` sur `angular.json`). Le premier fix avait ajouté l'entrée `fileReplacements` dans `angular.json` uniquement — jamais lue par le build réel, d'où un bundle strictement inchangé (553.50 kB avant/après) malgré un build "réussi". Correctif final : entrée ajoutée dans `apps/frontend/project.json`, à côté de celle pour `environment.ts` qui, elle, fonctionnait déjà.
 
-### Scope (à affiner en session)
+### Résultat mesuré
 
-- Analyser le bundle (`nx run frontend:build:production --stats-json` ou
-  équivalent) pour identifier ce qui compose les 553.15 kB avant de proposer
-  un fix
-- Pas de changement de code avant d'avoir la composition réelle du bundle
+- Bundle initial : 553.50 kB → **539.45 kB** (−14.05 kB)
+- Écart au budget (500 kB) : 53.50 kB → **39.45 kB**
+- `store-devtools` confirmé absent du bundle de prod (grep sur `dist/apps/frontend/browser/*.js`)
+
+### Restant hors d'atteinte facile (déjà documenté comme structurel)
+
+- `@primeng/themes/aura` (102.3 kB) — eager par design de `providePrimeNG`
+- `@angular/forms` (37.4 kB) — chunk partagé issu du code-splitting esbuild entre plusieurs routes lazy
+- Écart résiduel de 39.45 kB : à combler soit par un ajustement conscient du budget `initial` (justifié par écrit), soit par une action plus lourde hors scope (lazy-load du thème PrimeNG, réduction des composants PrimeNG hors routes lazy)
 
 ### Hors scope
 
-- `_page-layout.scss` (S4-TECH-001, séparé)
-- Tout budget par-composant (déjà traité en S4-FE-010)
+- Le thème PrimeNG et le chunk `@angular/forms` partagé — voir ci-dessus.
+- `npx update-browserslist-db@latest` — déjà listé dans S4-FE-010, à faire indépendamment.
 
 ### Acceptance Criteria
 
-- ⬜ Composition du bundle initial identifiée (quels modules/chunks pèsent le plus)
-- ⬜ `nx run frontend:build:production` sous 500 kB, ou budget ajusté avec
-  justification explicite si la taille est légitime
+- ✅ `nx run frontend:build:production` : `@ngrx/store-devtools` absent du bundle initial (confirmé par grep sur les fichiers compilés — aucun match)
+- ✅ Écart au budget réduit (53.50 kB → 39.45 kB)
+- ✅ Devtools fonctionnels en dev — action `[Auth] Login Success` visible et state `auth` inspectable dans Redux DevTools via `nx serve frontend`
+- ✅ Aucune régression sur le store — logout confirmé : state `auth` repasse proprement à `{ user: null, isLoading: false, error: null }`
 
 ---
