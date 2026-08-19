@@ -15,7 +15,16 @@
             (onClick)="goBack(activateCallback)"
           />
         }
-        <p-button label="Next" (onClick)="goNext(activateCallback)" />
+        @if (activeStep() === 6) {
+          <p-button
+            label="Submit Contract"
+            icon="pi pi-check"
+            [loading]="submitting()"
+            (onClick)="submitContract()"
+          />
+        } @else {
+          <p-button label="Next" (onClick)="goNext(activateCallback)" />
+        }
       </div>
     </div>
   </ng-template>
@@ -27,6 +36,7 @@
       <p-step [value]="3">Room Prices</p-step>
       <p-step [value]="4">Meal Supplements</p-step>
       <p-step [value]="5">Stop Sales</p-step>
+      <p-step [value]="6">Review & Submit</p-step>
     </p-step-list>
 
     <p-step-panels>
@@ -972,6 +982,72 @@
                   </p-accordion-panel>
                 }
               </p-accordion>
+            }
+          </div>
+
+          <ng-container
+            *ngTemplateOutlet="
+              stepActions;
+              context: { activateCallback: activateCallback }
+            "
+          />
+        </ng-template>
+      </p-step-panel>
+
+      <!-- Step 6 : Récapitulatif + Submit -->
+      <p-step-panel [value]="6">
+        <ng-template #content let-activateCallback="activateCallback">
+          <div class="review-step">
+            <div class="contract-context-bar">
+              <div class="context-item">
+                <span class="context-label">Name:</span>
+                <span class="context-value">{{ step1Data()?.name }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Hotel:</span>
+                <span class="context-value">{{ selectedHotelName() }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Market:</span>
+                <span class="context-value">{{ selectedMarketName() }}</span>
+              </div>
+              <div class="context-item">
+                <span class="context-label">Currency:</span>
+                <span class="context-value badge-currency">{{
+                  selectedCurrencyCode()
+                }}</span>
+              </div>
+            </div>
+
+            <div class="review-summary-grid">
+              <div class="review-summary-card">
+                <span class="review-summary-value">{{
+                  contractSummary().periodsCount
+                }}</span>
+                <span class="review-summary-label">Periods</span>
+              </div>
+              <div class="review-summary-card">
+                <span class="review-summary-value">{{
+                  contractSummary().roomPricesCount
+                }}</span>
+                <span class="review-summary-label">Room Prices</span>
+              </div>
+              <div class="review-summary-card">
+                <span class="review-summary-value">{{
+                  contractSummary().mealSupplementsCount
+                }}</span>
+                <span class="review-summary-label">Meal Supplements</span>
+              </div>
+              <div class="review-summary-card">
+                <span class="review-summary-value">{{
+                  contractSummary().stopSalesCount
+                }}</span>
+                <span class="review-summary-label">Stop Sales Dates</span>
+              </div>
+            </div>
+
+            @if (submitError()) {
+              <small class="error block mt-3">{{ submitError() }}</small>
             }
           </div>
 

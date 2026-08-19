@@ -19,10 +19,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 // Types internes
 import {
   AgeCategory,
+  AgePolicyDto,
+  BaseRateDto,
   BaseRateReference,
   BillingUnit,
   ContractDto,
+  ContractPeriodDto,
+  MealPlanSupplementDto,
   PricingMode,
+  RoomPriceDto,
   RoomType,
   Season,
   SharingType,
@@ -56,7 +61,7 @@ import {
 } from 'primeng/stepper';
 
 // RxJS operators
-import { filter, pairwise, startWith, switchMap } from 'rxjs';
+import { filter, firstValueFrom, pairwise, startWith, switchMap } from 'rxjs';
 
 // Services métiers
 import { confirmAction } from '@/app/shared/utils/confirm-action.util';
@@ -243,6 +248,17 @@ export class ContractFormComponent {
   // Step 5
   readonly localStopSalesDates = signal<LocalStopSalesDate[]>([]);
 
+  // Step 4
+  readonly localMealPlanSupplements = signal<LocalMealPlanSupplement[]>([]);
+
+  // billingUnit n'a volontairement aucune valeur par défaut : select vide tant
+  // que l'agent n'a pas choisi explicitement (friction assumée, cf. décision
+  // S4-FE-007 — pas de valeur silencieuse qui se multiplie par la durée/volume)
+  readonly billingUnitOptions: { label: string; value: BillingUnit }[] = [
+    { label: 'Per Night', value: 'PER_NIGHT' },
+    { label: 'Per Stay', value: 'PER_STAY' },
+  ];
+
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
       startWith(this.step1Form.controls.hotelId.value),
@@ -354,6 +370,17 @@ export class ContractFormComponent {
     return map;
   });
 
+  // Step 6 — Récapitulatif + Submit
+  readonly submitting = signal(false);
+  readonly submitError = signal<string | null>(null);
+
+  readonly contractSummary = computed(() => ({
+    periodsCount: this.localPeriods().length,
+    roomPricesCount: this.localRoomPrices().length,
+    mealSupplementsCount: this.localMealPlanSupplements().length,
+    stopSalesCount: this.localStopSalesDates().length,
+  }));
+
   constructor() {
     this.step1Form.controls.hotelId.valueChanges
       .pipe(pairwise(), takeUntilDestroyed())
@@ -408,9 +435,7 @@ export class ContractFormComponent {
         activateCallback(this.activeStep() + 1);
         break;
       case 5:
-        // Idem : une date de stop-sale est optionnelle par période. Pas de
-        // step 6 pour l'instant (S4-FE-009 hors scope) — flag pour toi, à
-        // revoir quand ce ticket démarre.
+        // Idem : une date de stop-sale est optionnelle par période.
         activateCallback(this.activeStep() + 1);
         break;
     }
@@ -855,6 +880,7 @@ export class ContractFormComponent {
     );
   }
 
+  /** Bornes de saisie pour le datepicker de stop-sale : ContractPeriod, jamais SeasonPeriod. */
   getStopSalesDateRange(period: LocalContractPeriod): {
     minDate: Date | undefined;
     maxDate: Date | undefined;
@@ -880,5 +906,152 @@ export class ContractFormComponent {
     this.localStopSalesDates.update((dates) =>
       dates.filter((d) => d.tempId !== tempId)
     );
+  }
+
+  async submitContract(): Promise<void> {
+    if (this.submitting()) return;
+
+    const step1Data = this.step1Data();
+    if (!step1Data) return;
+
+    const incompleteSupplements = this.localMealPlanSupplements().filter(
+      (s) => !s.billingUnit
+    );
+    if (incompleteSupplements.length > 0) {
+      this.submitError.set(
+        `${incompleteSupplements.length} meal plan supplement(s) are missing a billing unit. Go back to Step 4 to complete them before submitting.`
+      );
+      return;
+    }
+
+    this.submitting.set(true);
+    this.submitError.set(null);
+
+    try {
+      const contract = await firstValueFrom(
+        this.contractsService.create(step1Data)
+      );
+
+      for (const period of this.localPeriods()) {
+        const periodDto: ContractPeriodDto = {
+          seasonPeriodId: period.seasonPeriodId,
+          name: period.name,
+          startDate: (period.startDate as Date).toISOString(),
+          endDate: (period.endDate as Date).toISOString(),
+          baseMealPlanId: period.baseMealPlanId,
+          minStay: period.minStay,
+        };
+        const createdPeriod = await firstValueFrom(
+          this.contractsService.createPeriod(contract.id, periodDto)
+        );
+
+        const roomPrices = this.localRoomPrices().filter(
+          (rp) => rp.periodTempId === period.tempId
+        );
+
+        for (const rp of roomPrices) {
+          const roomPriceDto: RoomPriceDto = {
+            roomTypeId: rp.roomTypeId,
+            pricingMode: rp.pricingMode,
+            pricePerNight:
+              rp.pricingMode === 'PER_ROOM' ? rp.pricePerNight : null,
+            extraPersonAdult:
+              rp.pricingMode === 'PER_ROOM' ? rp.extraPersonAdult : null,
+            extraPersonChild:
+              rp.pricingMode === 'PER_ROOM' ? rp.extraPersonChild : null,
+            extraPersonTeen:
+              rp.pricingMode === 'PER_ROOM' ? rp.extraPersonTeen : null,
+          };
+          await firstValueFrom(
+            this.contractsService.createRoomPrice(
+              contract.id,
+              createdPeriod.id,
+              roomPriceDto
+            )
+          );
+
+          if (rp.pricingMode === 'PER_OCCUPANCY' && rp.baseRate) {
+            const baseRateDto: BaseRateDto = {
+              roomTypeId: rp.roomTypeId,
+              single: rp.baseRate.single ?? 0,
+              halfDouble: rp.baseRate.halfDouble ?? 0,
+              thirdPersonAdult: rp.baseRate.thirdPersonAdult,
+              triple: rp.baseRate.triple,
+              quadruple: rp.baseRate.quadruple,
+            };
+            await firstValueFrom(
+              this.contractsService.createBaseRate(
+                contract.id,
+                createdPeriod.id,
+                baseRateDto
+              )
+            );
+
+            const agePolicies = this.localAgePolicies().filter(
+              (e) =>
+                e.periodTempId === period.tempId &&
+                e.roomTypeId === rp.roomTypeId
+            );
+            for (const entry of agePolicies) {
+              const agePolicyDto: AgePolicyDto = {
+                roomTypeId: entry.roomTypeId,
+                ageCategoryId: entry.ageCategoryId,
+                sharingType: entry.sharingType,
+                occurrenceIndex: entry.occurrenceIndex,
+                baseRateReference: entry.baseRateReference,
+                value: entry.value ?? 0,
+              };
+              await firstValueFrom(
+                this.contractsService.createAgePolicy(
+                  contract.id,
+                  createdPeriod.id,
+                  agePolicyDto
+                )
+              );
+            }
+          }
+        }
+
+        const mealSupplements = this.localMealPlanSupplements().filter(
+          (s) => s.periodTempId === period.tempId
+        );
+        for (const supplement of mealSupplements) {
+          const mealSupplementDto: MealPlanSupplementDto = {
+            mealPlanId: supplement.mealPlanId,
+            billingUnit: supplement.billingUnit as BillingUnit,
+            occupancyRates: supplement.ratesByAgeCategory,
+          };
+          await firstValueFrom(
+            this.contractsService.createMealPlanSupplement(
+              contract.id,
+              createdPeriod.id,
+              mealSupplementDto
+            )
+          );
+        }
+
+        const stopSalesDates = this.localStopSalesDates().filter(
+          (d) => d.periodTempId === period.tempId
+        );
+        for (const stopSale of stopSalesDates) {
+          await firstValueFrom(
+            this.contractsService.createStopSalesDate(
+              contract.id,
+              createdPeriod.id,
+              stopSale.date.toISOString()
+            )
+          );
+        }
+      }
+
+      this.router.navigate(['../contracts-list'], { relativeTo: this.route });
+    } catch (err) {
+      console.error('Contract submission failed', err);
+      this.submitError.set(
+        'Failed to submit the contract. Please check your data and try again.'
+      );
+    } finally {
+      this.submitting.set(false);
+    }
   }
 }
