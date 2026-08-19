@@ -8,22 +8,22 @@
     flex-direction: column;
     gap: 1.25rem;
     padding: 1.5rem 0;
+  }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+  .step1-form .field,
+  .periods-toolbar .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
 
-      label {
-        font-weight: 600;
-        color: var(--p-text-color);
-      }
-
-      .error {
-        color: var(--p-red-500);
-        font-size: 0.85rem;
-      }
+    label {
+      font-weight: 600;
+      color: var(--p-text-color);
     }
+  }
+
+  .periods-toolbar .field {
+    min-width: 260px;
   }
 
   .periods-step {
@@ -37,29 +37,13 @@
       align-items: flex-end;
       justify-content: space-between;
       gap: 1rem;
-
-      .field {
-        min-width: 260px;
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-
-        label {
-          font-weight: 600;
-        }
-      }
     }
+  }
 
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 2rem 0;
-    }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
-    }
+  .empty-state {
+    text-align: center;
+    color: var(--p-text-muted-color);
+    padding: 1.5rem 0;
   }
 
   .step-actions {
@@ -74,49 +58,49 @@
     }
   }
 
-  /* --- Step 3 Enhancements --- */
-  .room-prices-step {
-    padding: 1rem 0;
+  /* Grilles de champs numériques par tranche d'âge/room-type — pattern identique partout */
+  .extra-person-grid .field,
+  .base-rate-grid .field,
+  .meal-supplement-rates-grid .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--p-text-muted-color);
+    }
+  }
+
+  /* Conteneurs de step — même layout de base, seuls padding/gap varient */
+  .room-prices-step,
+  .meal-supplements-step,
+  .stop-sales-step {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    padding: 1rem 0;
+  }
 
-    .contract-context-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      padding: 1rem 1.25rem;
-      background-color: var(--p-surface-100);
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
+  .periods-step,
+  .review-step {
+    display: flex;
+    flex-direction: column;
+  }
 
-      .context-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+  .periods-step {
+    padding: 1.5rem 0;
+    gap: 1.5rem;
+  }
 
-        .context-label {
-          font-size: 0.85rem;
-          color: var(--p-text-muted-color);
-          font-weight: 500;
-        }
+  .review-step {
+    padding: 1rem 0;
+    gap: 1.5rem;
+  }
 
-        .context-value {
-          font-weight: 600;
-          color: var(--p-text-color);
-
-          &.badge-currency {
-            background-color: var(--p-primary-color);
-            color: var(--p-primary-contrast-color);
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-          }
-        }
-      }
-    }
-
+  /* --- Step 3 Enhancements --- */
+  .room-prices-step {
     .period-header-content {
       display: flex;
       align-items: center;
@@ -163,15 +147,6 @@
           align-items: center;
           gap: 0.25rem;
         }
-
-        .rooms-badge {
-          font-size: 0.75rem;
-          font-weight: 600;
-          background-color: var(--p-surface-200);
-          color: var(--p-text-color);
-          padding: 0.2rem 0.5rem;
-          border-radius: 12px;
-        }
       }
     }
 
@@ -183,36 +158,19 @@
     }
 
     .room-price-card {
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      padding: 1.25rem;
-      background-color: var(--p-surface-0);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      .room-info {
+        .room-title {
+          margin: 0 0 0.25rem 0;
+        }
 
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--p-surface-100);
-        margin-bottom: 1rem;
-
-        .room-info {
-          .room-title {
-            margin: 0 0 0.25rem 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-          }
-
-          .capacity-pill {
-            font-size: 0.75rem;
-            color: var(--p-primary-700);
-            background-color: var(--p-primary-50);
-            border: 1px solid var(--p-primary-200);
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-weight: 500;
-          }
+        .capacity-pill {
+          font-size: 0.75rem;
+          color: var(--p-primary-700);
+          background-color: var(--p-primary-50);
+          border: 1px solid var(--p-primary-200);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          font-weight: 500;
         }
       }
 
@@ -220,42 +178,16 @@
         max-width: 320px;
       }
 
-      .extra-person-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 2rem;
-        margin-top: 1rem;
-
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
-      }
-
+      .extra-person-grid,
       .base-rate-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 2rem;
         margin-bottom: 1rem;
+      }
 
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
+      .extra-person-grid {
+        margin-top: 1rem;
       }
 
       .age-policy-section {
@@ -320,26 +252,10 @@
         }
       }
     }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
-    }
   }
 
   /* --- Step 4 : Meal Plan Supplements --- */
   .meal-supplements-step {
-    padding: 1rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 1.5rem 0;
-    }
-
     .meal-supplement-toolbar {
       padding: 0.75rem 0;
       max-width: 360px;
@@ -352,66 +268,22 @@
     }
 
     .meal-supplement-card {
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      padding: 1.25rem;
-      background-color: var(--p-surface-0);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-      .card-header {
+      .meal-supplement-header-actions {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--p-surface-100);
-        margin-bottom: 1rem;
-
-        .room-title {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-
-        .meal-supplement-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
+        gap: 0.5rem;
       }
 
       .meal-supplement-rates-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 2rem;
-
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-
-          label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--p-text-muted-color);
-          }
-        }
       }
     }
   }
 
   /* --- Step 5 : Stop Sales --- */
   .stop-sales-step {
-    padding: 1rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-
-    .empty-state {
-      text-align: center;
-      color: var(--p-text-muted-color);
-      padding: 1.5rem 0;
-    }
-
     .stop-sales-toolbar {
       padding: 0.75rem 0;
       max-width: 220px;
@@ -430,9 +302,6 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.5rem 0.75rem;
-        border: 1px solid var(--p-surface-200);
-        border-radius: 6px;
-        background-color: var(--p-surface-0);
 
         .stop-sale-date {
           display: flex;
@@ -451,11 +320,6 @@
 
   /* --- Step 6 : Review & Submit --- */
   .review-step {
-    padding: 1rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-
     .review-summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -468,9 +332,6 @@
       align-items: center;
       gap: 0.35rem;
       padding: 1.25rem 1rem;
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      background-color: var(--p-surface-0);
 
       .review-summary-value {
         font-size: 1.75rem;
@@ -483,11 +344,6 @@
         color: var(--p-text-muted-color);
         font-weight: 500;
       }
-    }
-
-    .error {
-      color: var(--p-red-500);
-      font-size: 0.85rem;
     }
   }
 }

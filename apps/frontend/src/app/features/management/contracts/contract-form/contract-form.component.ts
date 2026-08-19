@@ -248,17 +248,6 @@ export class ContractFormComponent {
   // Step 5
   readonly localStopSalesDates = signal<LocalStopSalesDate[]>([]);
 
-  // Step 4
-  readonly localMealPlanSupplements = signal<LocalMealPlanSupplement[]>([]);
-
-  // billingUnit n'a volontairement aucune valeur par défaut : select vide tant
-  // que l'agent n'a pas choisi explicitement (friction assumée, cf. décision
-  // S4-FE-007 — pas de valeur silencieuse qui se multiplie par la durée/volume)
-  readonly billingUnitOptions: { label: string; value: BillingUnit }[] = [
-    { label: 'Per Night', value: 'PER_NIGHT' },
-    { label: 'Per Stay', value: 'PER_STAY' },
-  ];
-
   readonly roomTypes = toSignal(
     this.step1Form.controls.hotelId.valueChanges.pipe(
       startWith(this.step1Form.controls.hotelId.value),
