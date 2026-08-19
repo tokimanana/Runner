@@ -26,6 +26,16 @@ enum BaseRateReference {
   quadruple
 }
 
+enum OfferType {
+  PERCENTAGE
+  FLAT_AMOUNT
+}
+
+enum DiscountMode {
+  SEQUENTIAL
+  ADDITIVE
+}
+
 model User {
   id             String        @id @default(cuid())
   email          String        @unique
@@ -347,4 +357,23 @@ model OccupancyGuidance {
 
   @@index([roomTypeId])
   @@map("occupancy_guidances")
+}
+
+model Offer {
+  id                     String       @id @default(cuid())
+  code                   String
+  name                   String
+  description            String?
+  type                   OfferType
+  value                  Decimal      @db.Decimal(10, 2)
+  discountMode           DiscountMode
+  applyToRoomOnly        Boolean      @default(false)
+  applyToMealSupplements Boolean      @default(false)
+  minStay                Int?
+  tourOperatorId         String
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  @@unique([tourOperatorId, code])
+  @@index([tourOperatorId])
 }
