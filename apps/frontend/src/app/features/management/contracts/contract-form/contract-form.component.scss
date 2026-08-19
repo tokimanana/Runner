@@ -46,6 +46,43 @@
     padding: 1.5rem 0;
   }
 
+  /* Utilisé sur Steps 3, 4, 5, 6 — doit rester au niveau racine, pas scopé à un step */
+  .contract-context-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    background-color: var(--p-surface-100);
+    border: 1px solid var(--p-surface-200);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+
+    .context-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .context-label {
+        font-size: 0.85rem;
+        color: var(--p-text-muted-color);
+        font-weight: 500;
+      }
+
+      .context-value {
+        font-weight: 600;
+        color: var(--p-text-color);
+
+        &.badge-currency {
+          background-color: var(--p-primary-color);
+          color: var(--p-primary-contrast-color);
+          padding: 0.15rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
   .step-actions {
     display: flex;
     justify-content: space-between;
@@ -56,6 +93,49 @@
       display: flex;
       gap: 0.75rem;
     }
+  }
+
+  /* Badge de compte — réutilisé sur Steps 3, 4, 5 (period-header-content, meal/stop-sale accordéons) */
+  .rooms-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: var(--p-surface-200);
+    color: var(--p-text-color);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+  }
+
+  /* Base carte partagée : room-price-card, meal-supplement-card */
+  .room-price-card,
+  .meal-supplement-card {
+    border: 1px solid var(--p-surface-200);
+    border-radius: 8px;
+    padding: 1.25rem;
+    background-color: var(--p-surface-0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--p-surface-100);
+      margin-bottom: 1rem;
+
+      .room-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* Base carte partagée (bordure/fond) : review-summary-card, stop-sales-list-item */
+  .review-summary-card,
+  .stop-sales-list-item {
+    border: 1px solid var(--p-surface-200);
+    border-radius: 8px;
+    background-color: var(--p-surface-0);
   }
 
   /* Grilles de champs numériques par tranche d'âge/room-type — pattern identique partout */
@@ -73,24 +153,6 @@
     }
   }
 
-  /* Grille numérique elle-même : identique dans les 3 cas, seule la marge diffère */
-  .extra-person-grid,
-  .base-rate-grid,
-  .meal-supplement-rates-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 2rem;
-  }
-
-  .extra-person-grid,
-  .base-rate-grid {
-    margin-bottom: 1rem;
-  }
-
-  .extra-person-grid {
-    margin-top: 1rem;
-  }
-
   /* Conteneurs de step — même layout de base, seuls padding/gap varient */
   .room-prices-step,
   .meal-supplements-step,
@@ -101,14 +163,23 @@
     padding: 1rem 0;
   }
 
+  .periods-step,
   .review-step {
     display: flex;
     flex-direction: column;
+  }
+
+  .periods-step {
+    padding: 1.5rem 0;
+    gap: 1.5rem;
+  }
+
+  .review-step {
     padding: 1rem 0;
     gap: 1.5rem;
   }
 
-  /* --- Step 3 : Room Prices --- */
+  /* --- Step 3 Enhancements --- */
   .room-prices-step {
     .period-header-content {
       display: flex;
@@ -185,6 +256,18 @@
 
       .single-rate-field {
         max-width: 320px;
+      }
+
+      .extra-person-grid,
+      .base-rate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .extra-person-grid {
+        margin-top: 1rem;
       }
 
       .age-policy-section {
@@ -269,6 +352,12 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+      }
+
+      .meal-supplement-rates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
       }
     }
   }
