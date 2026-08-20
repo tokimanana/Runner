@@ -35,6 +35,10 @@
             {
               "replace": "apps/frontend/src/environments/environment.ts",
               "with": "apps/frontend/src/environments/environment.prod.ts"
+            },
+            {
+              "replace": "apps/frontend/src/app/core/store/devtools.providers.ts",
+              "with": "apps/frontend/src/app/core/store/devtools.providers.prod.ts"
             }
           ]
         },
