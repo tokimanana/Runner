@@ -321,15 +321,16 @@ enum SupplementUnit {
 }
 
 model Supplement {
-  id                 String         @id @default(cuid())
+  id                 String            @id @default(cuid())
   name               String
   description        String?
   price              Decimal
   unit               SupplementUnit
-  canReceiveDiscount Boolean        @default(false)
+  canReceiveDiscount Boolean           @default(false)
   tourOperatorId     String
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  offerSupplements   OfferSupplement[]
 
   @@index([tourOperatorId])
 }
@@ -360,20 +361,21 @@ model OccupancyGuidance {
 }
 
 model Offer {
-  id                     String       @id @default(cuid())
+  id                     String            @id @default(cuid())
   code                   String
   name                   String
   description            String?
   type                   OfferType
-  value                  Decimal      @db.Decimal(10, 2)
+  value                  Decimal           @db.Decimal(10, 2)
   discountMode           DiscountMode
-  applyToRoomOnly        Boolean      @default(false)
-  applyToMealSupplements Boolean      @default(false)
+  applyToRoomOnly        Boolean           @default(false)
+  applyToMealSupplements Boolean           @default(false)
   minStay                Int?
   tourOperatorId         String
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  offerPeriod            OfferPeriod[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  offerPeriods           OfferPeriod[]
+  applicableSupplements  OfferSupplement[]
 
   @@unique([tourOperatorId, code])
   @@index([tourOperatorId])
@@ -391,3 +393,14 @@ model OfferPeriod {
   @@index([offerId])
 }
 
+model OfferSupplement {
+  id            String     @id @default(cuid())
+  offerId       String
+  supplementId  String
+  applyDiscount Boolean    @default(false)
+  offer         Offer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  supplement    Supplement @relation(fields: [supplementId], references: [id])
+
+  @@unique([offerId, supplementId])
+  @@index([offerId])
+}

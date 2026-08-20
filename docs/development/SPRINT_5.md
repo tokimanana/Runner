@@ -275,7 +275,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-004a — Prisma : `OfferSupplement` join model + migration
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Schema · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-BE-004a-prisma-offer-supplement`
 - **Commit :** `feat(offers): add OfferSupplement join model to Prisma schema`
