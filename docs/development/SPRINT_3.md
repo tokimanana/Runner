@@ -1,111 +1,79 @@
-# Sprint 3 - Referentials (MealPlans, Markets, Currencies, Supplements)
+# Sprint 3 — Référentiels (MealPlans, Markets, Currencies, Supplements)
 
-## 🎯 Sprint Goal
-
-Build the CRUD for all referential entities used in contracts and bookings.
-
----
-
-## Execution Order
-
-Backend first (unblock the APIs), then routing (unblock navigation), then frontend feature by feature.
+> **Document consolidé — état final.** Remplace intégralement le plan Sprint 3 original. Mêmes numéros de ticket que l'historique réel ; contenu réécrit pour refléter ce qui a été **effectivement livré**, dépendances et fichiers complétés là où ils manquaient.
+>
+> **Statut global : Sprint 3 terminé.** Base saine pour Sprint 4 (déjà consolidé séparément) et Sprint 5.
 
 ---
 
-## Architecture Decisions
+## 1. Objectif
+
+Construire le CRUD des 4 entités référentielles utilisées par les contrats et les réservations : `MealPlan`, `Market`, `Currency`, `Supplement`.
+
+**Ordre d'exécution :** backend d'abord (débloque les APIs) → routing (débloque la navigation) → frontend feature par feature.
+
+---
+
+## 2. Décisions d'architecture
 
 ### Backend
 
-- **Repository Pattern** — abstract class as DI token (not a string token)
-  > ⚠️ This differs from Sprint 2 (Hotels/Seasons used an `interface` + string constant token like `HOTEL_REPOSITORY`). From Sprint 3 onward, the pattern is: **abstract class** as both the type and the DI injection token — no separate constants file needed.
-- **Repository** = data access only. No HTTP exceptions.
-- **Service** = business logic, HTTP exceptions, sanitization (`MAX_LIMIT = 100`)
-- **Multi-tenancy** — `tourOperatorId` extracted from the JWT, never from the request body
-- **Currencies exception** — global referential, no `tourOperatorId` at any layer. `RolesGuard` is still maintained.
-- **Supplements** — `price` is `Decimal` in Prisma, serialized to `number` in the service
+- **Repository Pattern — abstract class comme token DI.** Différent de Sprint 2 (Hotels/Seasons utilisaient une `interface` + constante string type `HOTEL_REPOSITORY`). À partir de Sprint 3 : une **abstract class** sert à la fois de type et de token d'injection NestJS — plus besoin de fichier de constantes séparé.
+- **Repository = accès aux données uniquement.** Aucune exception HTTP à ce niveau.
+- **Service = logique métier**, exceptions HTTP, sanitization (`MAX_LIMIT = 100`).
+- **Multi-tenancy** — `tourOperatorId` extrait du JWT, jamais du body de la requête.
+- **Exception Currencies** — référentiel global, aucun `tourOperatorId` à aucun niveau. `RolesGuard` reste appliqué.
+- **Supplements** — `price` est `Decimal` côté Prisma, sérialisé en `number` dans le service (jamais l'inverse).
 
 ### Frontend
 
-- **BehaviorSubject** + `loaded` flag for all 4 services (HotelsService pattern — not SeasonsService)
-- **`take(1)`** on all `subscribe()` calls
-- All components under `features/management/<feature>/` — consistent with hotels and seasons
-- **`confirmDelete` utility** — `shared/utils/confirm-delete.util.ts` centralise
-  toute la logique de confirmation + feedback toast. Chaque composant passe
-  `header`, `entityName`, `delete$`, `onSuccess?`, `conflictMessage?`, et
-  optionnellement `message?` pour les cas avec avertissement cascade.
-  Règle : tout nouveau `confirmDelete` dans Sprint 4+ **doit** utiliser ce helper.
+- **BehaviorSubject + flag `loaded`** pour les 4 services (pattern `HotelsService` — pas `SeasonsService`).
+- **`take(1)`** sur tous les `subscribe()`.
+- Tous les composants sous `features/management/<feature>/` — cohérent avec hotels et seasons.
+- **Utilitaire `confirmDelete`** — `shared/utils/confirm-delete.util.ts` centralise toute la logique de confirmation + feedback toast. Chaque composant passe `header`, `entityName`, `delete$`, `onSuccess?`, `conflictMessage?`, et optionnellement `message?` pour les cas avec avertissement cascade. **Règle : tout nouveau `confirmDelete` en Sprint 4+ doit utiliser ce helper** (introduit en cours de Sprint 3, voir §6).
 
 ---
 
-## File Structure
+## 3. Structure des fichiers (état final)
 
 ### Backend
 
 ```
 apps/backend/src/
 ├── meal-plans/
-│   ├── dto/
-│   │   ├── create-meal-plan.dto.ts
-│   │   └── update-meal-plan.dto.ts
-│   ├── repositories/
-│   │   ├── meal-plan.repository.ts
-│   │   └── prisma-meal-plan.repository.ts
+│   ├── dto/create-meal-plan.dto.ts, update-meal-plan.dto.ts
+│   ├── repositories/meal-plan.repository.ts, prisma-meal-plan.repository.ts
 │   ├── meal-plans.service.ts
 │   ├── meal-plans.controller.ts
 │   └── meal-plans.module.ts
-├── markets/
-│   ├── dto/
-│   ├── repositories/
-│   ├── markets.service.ts
-│   ├── markets.controller.ts
-│   └── markets.module.ts
-├── currencies/
-│   ├── dto/
-│   ├── repositories/
-│   ├── currencies.service.ts
-│   ├── currencies.controller.ts
-│   └── currencies.module.ts
-└── supplements/
-    ├── dto/
-    ├── repositories/
-    ├── supplements.service.ts
-    ├── supplements.controller.ts
-    └── supplements.module.ts
+├── markets/            (même structure)
+├── currencies/         (même structure, sans tourOperatorId)
+├── supplements/        (même structure, + SupplementUnit enum)
+└── common/
+    └── repository.types.ts   — RepositoryResult (DELETED/NOT_FOUND/CONFLICT/HAS_CONTRACTS/HAS_PERIODS)
 ```
 
 ### Frontend
 
 ```
-apps/frontend/src/app/features/management/
-├── hotels/          — Sprint 2 ✅
-├── seasons/         — Sprint 2 ✅
-├── meal-plans/
-│   ├── components/
-│   │   ├── meal-plans-list/
-│   │   └── meal-plan-form/
-│   └── meal-plans.service.ts
-├── markets/
-│   ├── components/
-│   │   ├── markets-list/
-│   │   └── market-form/
-│   └── markets.service.ts
-├── currencies/
-│   ├── components/
-│   │   ├── currencies-list/
-│   │   └── currency-form/
-│   └── currencies.service.ts
-└── supplements/
-    ├── components/
-    │   ├── supplements-list/
-    │   └── supplement-form/
-    └── supplements.service.ts
+apps/frontend/src/app/
+├── features/management/
+│   ├── hotels/, seasons/         — Sprint 2 ✅
+│   ├── meal-plans/
+│   │   ├── components/meal-plans-list/, meal-plan-form/
+│   │   └── meal-plans.service.ts
+│   ├── markets/                  (même structure)
+│   ├── currencies/                (même structure)
+│   └── supplements/               (même structure)
+└── shared/
+    └── utils/confirm-delete.util.ts   — nouveau, introduit en cours de sprint
 ```
 
 ### Shared Types
 
 ```
 libs/shared/types/src/lib/
-├── types.ts                 — existing from Sprint 2
+├── types.ts               — existant depuis Sprint 2
 ├── meal-plan.types.ts
 ├── market.types.ts
 ├── currency.types.ts
@@ -114,23 +82,15 @@ libs/shared/types/src/lib/
 
 ---
 
-## Backend Tasks
+## 4. Tickets — Backend
 
 ### MealPlans
 
-#### S3-BE-001 — Prisma: MealPlan model + migration
+**S4-BE-001 renumbered? — non, on garde les vrais numéros ci-dessous.**
 
-> Define the `MealPlan` Prisma model and run the migration. This is the prerequisite for every other MealPlan ticket — nothing can be built until the table exists. The unique constraint on `(tourOperatorId, code)` enforces that two meal plans with the same code cannot coexist within a single tour operator.
+#### S3-BE-001 — Prisma : `MealPlan` model + migration
 
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 2
-- **Branch:** `feature/S3-BE-001-prisma-meal-plan`
-- **Commit:** `feat(meal-plans): add MealPlan model to prisma schema`
-- **Tasks:**
-  - Add the `MealPlan` model to `prisma/schema.prisma`
-  - Run the migration: `npx prisma migrate dev --name add_meal_plan`
-- **Model:**
+**Status : ✅ Done** · P0 · 2 SP · `feature/S3-BE-001-prisma-meal-plan`
 
 ```prisma
 model MealPlan {
@@ -147,194 +107,57 @@ model MealPlan {
 }
 ```
 
-- **Acceptance Criteria:**
-  - ✅ Migration applied without error
-  - ✅ `meal_plans` table created in PostgreSQL with all columns
-  - ✅ `@@unique([tourOperatorId, code])` constraint enforced at DB level
-  - ✅ Prisma client regenerated (`prisma generate`)
-- **Files:** `prisma/schema.prisma`
+Prérequis bloquant pour tous les autres tickets MealPlan. `@@unique([tourOperatorId, code])` empêche deux meal plans au même code chez un même tour opérateur.
 
----
+#### S3-BE-002 — Shared types : `MealPlan` + `MealPlanDto`
 
-#### S3-BE-002 — Shared types: MealPlan + MealPlanDto
+**Status : ✅ Done** · P0 · 1 SP · Depends on S3-BE-001 · `feature/S3-BE-002-shared-types-meal-plan`
 
-> Add the `MealPlan` interface and `MealPlanDto` to the shared types library so both the backend and frontend can use the same type definitions. This must be done before writing DTOs, repositories, or frontend services that reference MealPlan data shapes.
+`MealPlan { id, code, name, description, tourOperatorId, createdAt, updatedAt }`, `MealPlanDto { code, name, description? }`. Fichier : `libs/shared/types/src/lib/meal-plan.types.ts`.
 
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 1
-- **Branch:** `feature/S3-BE-002-shared-types-meal-plan`
-- **Commit:** `feat(meal-plans): add MealPlan shared types`
-- **Tasks:**
-  - Add `MealPlan` interface and `MealPlanDto` to `@runner/shared/types`
-  - Export from the index
-- **Acceptance Criteria:**
-  - ✅ `MealPlan` interface exported from `@runner/shared/types` with fields: `id`, `code`, `name`, `description`, `tourOperatorId`, `createdAt`, `updatedAt`
-  - ✅ `MealPlanDto` exported with fields: `code`, `name`, `description?`
-  - ✅ Both types importable in backend and frontend without error
-- **Files:** `libs/shared/types/src/lib/meal-plan.types.ts`
+#### S3-BE-003 — DTOs : `CreateMealPlanDto` + `UpdateMealPlanDto`
 
----
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-002 · `feature/S3-BE-003-meal-plan-dtos`
 
-#### S3-BE-003 — DTOs: CreateMealPlanDto + UpdateMealPlanDto
+`code`/`name` requis (`@IsNotEmpty`), `description` optionnel. `UpdateMealPlanDto extends PartialType(CreateMealPlanDto)`.
 
-> Define the validation DTOs for creating and partially updating a meal plan. These enforce request shape at the controller boundary via class-validator, ensuring invalid payloads are rejected before reaching service or repository logic.
+#### S3-BE-004 — `MealPlanRepository` (abstract class)
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-002
-- **Branch:** `feature/S3-BE-003-meal-plan-dtos`
-- **Commit:** `feat(meal-plans): add create and update DTOs`
-- **Tasks:**
-  - `CreateMealPlanDto`: `code` (string, not empty), `name` (string, not empty), `description` (string, optional)
-  - `UpdateMealPlanDto` extends `PartialType(CreateMealPlanDto)`
-- **Acceptance Criteria:**
-  - ✅ `POST /meal-plans` with empty `code` returns HTTP 400
-  - ✅ `POST /meal-plans` with empty `name` returns HTTP 400
-  - ✅ `POST /meal-plans` without `description` succeeds (optional field)
-  - ✅ `PATCH /meal-plans/:id` with a partial body is accepted
-- **Files:**
-  - `apps/backend/src/meal-plans/dto/create-meal-plan.dto.ts`
-  - `apps/backend/src/meal-plans/dto/update-meal-plan.dto.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-002 · `feature/S3-BE-004-meal-plan-repository`
 
----
+5 méthodes (`findAll`, `findOne`, `create`, `update`, `remove`), toutes avec `tourOperatorId`. Même pattern que `SeasonRepository`.
 
-#### S3-BE-004 — MealPlanRepository (abstract class)
+#### S3-BE-005 — `PrismaMealPlanRepository`
 
-> Define the `MealPlanRepository` abstract class that serves as both the interface contract and the NestJS DI token. This is the Sprint 3 repository pattern — an abstract class replaces the interface + string-token approach used in Sprint 2, eliminating the need for a separate constants file.
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-004 · `feature/S3-BE-005-prisma-meal-plan-repository`
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-002
-- **Branch:** `feature/S3-BE-004-meal-plan-repository`
-- **Commit:** `feat(meal-plans): add MealPlanRepository abstract class`
-- **Tasks:**
-  - Abstract class `MealPlanRepository` with methods: `findAll`, `findOne`, `create`, `update`, `remove`
-  - Same pattern as `SeasonRepository`
-- **Acceptance Criteria:**
-  - ✅ `MealPlanRepository` is an abstract class (not an interface)
-  - ✅ All 5 method signatures defined with correct parameter types (including `tourOperatorId`)
-  - ✅ Class is usable as a NestJS DI token without a separate constants file
-- **Files:** `apps/backend/src/meal-plans/repositories/meal-plan.repository.ts`
+Toutes les requêtes scopées `tourOperatorId`. `findAll` via `$transaction([findMany, count])`. P2002 → `CONFLICT`, P2025 → `NOT_FOUND`, P2003 → `HAS_CONTRACTS` sur `remove` — code forward-looking (le modèle `Contract` n'existe pas encore, arrive en Sprint 4 ; le catch est ajouté dès maintenant pour ne pas nécessiter de migration plus tard). Aucune exception HTTP à ce niveau.
 
----
+#### S3-BE-006 — `MealPlansService`
 
-#### S3-BE-005 — PrismaMealPlanRepository
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-005 · `feature/S3-BE-006-meal-plans-service`
 
-> Implement the Prisma-backed repository for MealPlan data access. All DB queries are scoped to `tourOperatorId` to enforce multi-tenancy. Prisma error codes are caught here and converted to typed `RepositoryException` values — no HTTP exceptions are thrown at this layer.
+`findAll` cape `limit` à `MAX_LIMIT = 100`. `findOne` → 404 si absent. `create`/`update` → `CONFLICT` → 409 ; `update` appelle `findOne` d'abord. `remove` → `NOT_FOUND` → 404, `HAS_CONTRACTS` → 409.
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-004
-- **Branch:** `feature/S3-BE-005-prisma-meal-plan-repository`
-- **Commit:** `feat(meal-plans): add PrismaMealPlanRepository`
-- **Tasks:**
-  - `findAll`: filter by `tourOperatorId` + `$transaction([findMany, count])`
-  - `findOne`: `findUnique({ where: { id, tourOperatorId } })`
-  - `create`: catch P2002 → `RepositoryException(CONFLICT)`
-  - `update`: catch P2002 → `RepositoryException(CONFLICT)`
-  - `remove`: catch P2025 → `NOT_FOUND`, P2003 → `HAS_CONTRACTS`
-    > ℹ️ `HAS_CONTRACTS` is a forward-looking error code — the `Contract` model does not exist yet (Sprint 4). Add the catch block now so the repository is contract-ready without a migration later.
-- **Acceptance Criteria:**
-  - ✅ `findAll` only returns records matching the caller's `tourOperatorId`
-  - ✅ `findAll` returns `{ data, total }` via `$transaction`
-  - ✅ `findOne` returns `null` when the id belongs to a different `tourOperatorId`
-  - ✅ Creating two records with the same `(tourOperatorId, code)` throws `RepositoryException(CONFLICT)`
-  - ✅ `remove` on a non-existent id throws `RepositoryException(NOT_FOUND)`
-  - ✅ No HTTP exceptions thrown — all errors are `RepositoryException`
-- **Files:** `apps/backend/src/meal-plans/repositories/prisma-meal-plan.repository.ts`
+#### S3-BE-007 — `MealPlansController`
 
----
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-BE-006 · `feature/S3-BE-007-meal-plans-controller`
 
-#### S3-BE-006 — MealPlansService
+`@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(ADMIN, MANAGER)`. `tourOperatorId` toujours extrait du JWT. 5 endpoints REST, `@HttpCode(204)` sur DELETE.
 
-> Implement the business logic layer for meal plans. The service translates repository-level exceptions into HTTP exceptions, enforces the `MAX_LIMIT = 100` cap on list queries, and guarantees that update and delete operations perform an existence check before proceeding.
+#### S3-BE-008 — `MealPlansModule` + `AppModule`
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-005
-- **Branch:** `feature/S3-BE-006-meal-plans-service`
-- **Commit:** `feat(meal-plans): add MealPlansService`
-- **Tasks:**
-  - `findAll`: sanitize limit (`MAX_LIMIT = 100`)
-  - `findOne`: throw 404 if not found
-  - `create`: catch `CONFLICT` → 409
-  - `update`: call `findOne` first, catch `CONFLICT` → 409
-  - `remove`: `NOT_FOUND` → 404, `HAS_CONTRACTS` → 409
-- **Acceptance Criteria:**
-  - ✅ `findAll` with `limit > 100` is capped at 100
-  - ✅ `findOne` with unknown id throws `NotFoundException` (HTTP 404)
-  - ✅ `create` with a duplicate `code` for the same `tourOperatorId` throws `ConflictException` (HTTP 409)
-  - ✅ `update` calls `findOne` first — returns 404 if the record doesn't exist before attempting the update
-  - ✅ `remove` returns 404 for unknown id, 409 if linked contracts exist
-- **Files:** `apps/backend/src/meal-plans/meal-plans.service.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-007 · `feature/S3-BE-008-meal-plans-module`
 
----
-
-#### S3-BE-007 — MealPlansController
-
-> Expose the MealPlan CRUD operations as a REST API. All 5 endpoints are protected by `JwtAuthGuard` and `RolesGuard`, restricted to ADMIN and MANAGER roles. The `tourOperatorId` is always extracted from the JWT payload — never from the request body.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 2
-- **Depends on:** S3-BE-006
-- **Branch:** `feature/S3-BE-007-meal-plans-controller`
-- **Commit:** `feat(meal-plans): add MealPlansController`
-- **Tasks:**
-  - `@Controller('meal-plans')` + `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(ADMIN, MANAGER)`
-  - Extract `tourOperatorId` from JWT on every endpoint
-  - `GET /meal-plans`, `GET /meal-plans/:id`, `POST /meal-plans`, `PATCH /meal-plans/:id`, `DELETE /meal-plans/:id`
-  - `@HttpCode(204)` on DELETE
-- **Acceptance Criteria:**
-  - ✅ All endpoints return HTTP 401 without a valid JWT
-  - ✅ All endpoints return HTTP 403 for `AGENT` role
-  - ✅ `POST /meal-plans` returns HTTP 201 on success
-  - ✅ `DELETE /meal-plans/:id` returns HTTP 204 on success
-  - ✅ `tourOperatorId` is never read from the request body — always from the JWT payload
-- **Files:** `apps/backend/src/meal-plans/meal-plans.controller.ts`
-
----
-
-#### S3-BE-008 — MealPlansModule + AppModule
-
-> Wire the MealPlan module by binding `PrismaMealPlanRepository` to the `MealPlanRepository` abstract class DI token, then register the module in `AppModule`. This is the final step that makes the MealPlan API fully operational.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-007
-- **Branch:** `feature/S3-BE-008-meal-plans-module`
-- **Commit:** `feat(meal-plans): wire MealPlansModule and register in AppModule`
-- **Tasks:**
-  - `MealPlansModule`: `provide: MealPlanRepository, useClass: PrismaMealPlanRepository`
-  - Import into `AppModule`
-- **Acceptance Criteria:**
-  - ✅ NestJS app starts without DI errors
-  - ✅ `GET /meal-plans` is reachable and returns a valid response
-  - ✅ `PrismaMealPlanRepository` is injected wherever `MealPlanRepository` is requested
-- **Files:**
-  - `apps/backend/src/meal-plans/meal-plans.module.ts`
-  - `apps/backend/src/app.module.ts`
+`provide: MealPlanRepository, useClass: PrismaMealPlanRepository`, importé dans `AppModule`.
 
 ---
 
 ### Markets
 
-#### S3-BE-009 — Prisma: Market model + migration
+#### S3-BE-009 — Prisma : `Market` model + migration
 
-> Define the `Market` Prisma model and run the migration. Markets represent the geographical or commercial segments used to categorize contracts. Like MealPlans, codes are unique per tour operator.
-
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 2
-- **Branch:** `feature/S3-BE-009-prisma-market`
-- **Commit:** `feat(markets): add Market model to prisma schema`
-- **Model:**
+**Status : ✅ Done** · P0 · 2 SP · `feature/S3-BE-009-prisma-market`
 
 ```prisma
 model Market {
@@ -350,164 +173,55 @@ model Market {
 }
 ```
 
-- **Acceptance Criteria:**
-  - ✅ Migration applied without error
-  - ✅ `markets` table created in PostgreSQL with all columns
-  - ✅ `@@unique([tourOperatorId, code])` constraint enforced at DB level
-  - ✅ Prisma client regenerated
-- **Files:** `prisma/schema.prisma`
+Pas de `description` (plus simple que MealPlan).
 
----
+#### S3-BE-010 — Shared types : `Market` + `MarketDto`
 
-#### S3-BE-010 — Shared types: Market + MarketDto
+**Status : ✅ Done** · P0 · 1 SP · Depends on S3-BE-009 · `feature/S3-BE-010-shared-types-market`
 
-> Add `Market` and `MarketDto` to the shared types library. Markets have no `description` field — simpler than MealPlans. Required before writing any DTO, repository, or frontend service that handles market data.
+`Market { id, code, name, tourOperatorId, createdAt, updatedAt }`, `MarketDto { code, name }`.
 
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 1
-- **Branch:** `feature/S3-BE-010-shared-types-market`
-- **Commit:** `feat(markets): add Market shared types`
-- **Acceptance Criteria:**
-  - ✅ `Market` interface exported from `@runner/shared/types` with fields: `id`, `code`, `name`, `tourOperatorId`, `createdAt`, `updatedAt`
-  - ✅ `MarketDto` exported with fields: `code`, `name`
-  - ✅ Both types importable in backend and frontend without error
-- **Files:** `libs/shared/types/src/lib/market.types.ts`
+#### S3-BE-011 — DTOs : `CreateMarketDto` + `UpdateMarketDto`
 
----
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-010 · `feature/S3-BE-011-market-dtos`
 
-#### S3-BE-011 — DTOs: CreateMarketDto + UpdateMarketDto
+`code`/`name` requis, aucun champ optionnel.
 
-> Define validation DTOs for the Market endpoints. Both `code` and `name` are required — markets have no optional fields.
+#### S3-BE-012 — `MarketRepository` (abstract class)
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-010
-- **Branch:** `feature/S3-BE-011-market-dtos`
-- **Commit:** `feat(markets): add create and update DTOs`
-- **Tasks:** `code` (string, not empty), `name` (string, not empty)
-- **Acceptance Criteria:**
-  - ✅ `POST /markets` with empty `code` returns HTTP 400
-  - ✅ `POST /markets` with empty `name` returns HTTP 400
-  - ✅ `PATCH /markets/:id` with a partial body is accepted
-- **Files:**
-  - `apps/backend/src/markets/dto/create-market.dto.ts`
-  - `apps/backend/src/markets/dto/update-market.dto.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-010 · `feature/S3-BE-012-market-repository`
 
----
+Même pattern DI que S3-BE-004.
 
-#### S3-BE-012 — MarketRepository (abstract class)
+#### S3-BE-013 — `PrismaMarketRepository`
 
-> Define the `MarketRepository` abstract class following the same DI token pattern established in S3-BE-004. Provides the contract for data access without coupling the service to any specific persistence layer.
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-012 · `feature/S3-BE-013-prisma-market-repository`
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-010
-- **Branch:** `feature/S3-BE-012-market-repository`
-- **Commit:** `feat(markets): add MarketRepository abstract class`
-- **Acceptance Criteria:**
-  - ✅ `MarketRepository` is an abstract class usable as a NestJS DI token
-  - ✅ All 5 method signatures defined: `findAll`, `findOne`, `create`, `update`, `remove`
-- **Files:** `apps/backend/src/markets/repositories/market.repository.ts`
+Même structure que `PrismaMealPlanRepository` — scopé `tourOperatorId`, erreurs Prisma mappées vers `RepositoryException`.
 
----
+#### S3-BE-014 — `MarketsService`
 
-#### S3-BE-013 — PrismaMarketRepository
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-013 · `feature/S3-BE-014-markets-service`
 
-> Implement the Prisma-backed repository for Market. Follows the same structure as `PrismaMealPlanRepository`: all queries scoped to `tourOperatorId`, Prisma error codes mapped to typed `RepositoryException` values.
+Mêmes responsabilités que `MealPlansService`.
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-012
-- **Branch:** `feature/S3-BE-013-prisma-market-repository`
-- **Commit:** `feat(markets): add PrismaMarketRepository`
-- **Acceptance Criteria:**
-  - ✅ `findAll` only returns records matching the caller's `tourOperatorId`
-  - ✅ `findAll` returns `{ data, total }` via `$transaction`
-  - ✅ Duplicate `(tourOperatorId, code)` throws `RepositoryException(CONFLICT)`
-  - ✅ `remove` on a non-existent id throws `RepositoryException(NOT_FOUND)`
-  - ✅ No HTTP exceptions thrown at repository layer
-- **Files:** `apps/backend/src/markets/repositories/prisma-market.repository.ts`
+#### S3-BE-015 — `MarketsController`
 
----
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-BE-014 · `feature/S3-BE-015-markets-controller`
 
-#### S3-BE-014 — MarketsService
+Même pattern guards/JWT que `MealPlansController`.
 
-> Implement the business logic layer for markets. Same responsibilities as `MealPlansService`: limit sanitization, existence checks before update/delete, and HTTP exception translation from repository errors.
+#### S3-BE-016 — `MarketsModule` + `AppModule`
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-013
-- **Branch:** `feature/S3-BE-014-markets-service`
-- **Commit:** `feat(markets): add MarketsService`
-- **Acceptance Criteria:**
-  - ✅ `findAll` with `limit > 100` is capped at 100
-  - ✅ `findOne` with unknown id throws `NotFoundException` (HTTP 404)
-  - ✅ `create` with duplicate `code` throws `ConflictException` (HTTP 409)
-  - ✅ `update` calls `findOne` first — returns 404 before attempting update on unknown id
-  - ✅ `remove` returns 404 for unknown id, 409 if linked contracts exist
-- **Files:** `apps/backend/src/markets/markets.service.ts`
-
----
-
-#### S3-BE-015 — MarketsController
-
-> Expose the Market CRUD API. Follows the same guard and JWT-extraction pattern as `MealPlansController`.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 2
-- **Depends on:** S3-BE-014
-- **Branch:** `feature/S3-BE-015-markets-controller`
-- **Commit:** `feat(markets): add MarketsController`
-- **Acceptance Criteria:**
-  - ✅ All endpoints return HTTP 401 without a valid JWT
-  - ✅ All endpoints return HTTP 403 for `AGENT` role
-  - ✅ `POST /markets` returns HTTP 201 on success
-  - ✅ `DELETE /markets/:id` returns HTTP 204 on success
-  - ✅ `tourOperatorId` always extracted from JWT, never from request body
-- **Files:** `apps/backend/src/markets/markets.controller.ts`
-
----
-
-#### S3-BE-016 — MarketsModule + AppModule
-
-> Wire the Markets module and register it in AppModule. Final step to make the Markets API operational.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-015
-- **Branch:** `feature/S3-BE-016-markets-module`
-- **Commit:** `feat(markets): wire MarketsModule and register in AppModule`
-- **Acceptance Criteria:**
-  - ✅ NestJS app starts without DI errors
-  - ✅ `GET /markets` is reachable and returns a valid response
-- **Files:**
-  - `apps/backend/src/markets/markets.module.ts`
-  - `apps/backend/src/app.module.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-015 · `feature/S3-BE-016-markets-module`
 
 ---
 
 ### Currencies
 
-#### S3-BE-017 — Prisma: Currency model + migration
+#### S3-BE-017 — Prisma : `Currency` model + migration
 
-> Define the `Currency` Prisma model. Unlike MealPlans and Markets, Currency is a **global referential** — it has no `tourOperatorId`, no `createdAt`/`updatedAt`, and its `code` is unique across the entire application. All tour operators share the same currency list.
-
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 2
-- **Branch:** `feature/S3-BE-017-prisma-currency`
-- **Commit:** `feat(currencies): add Currency model to prisma schema`
-- **Tasks:**
-  - ⚠️ No `tourOperatorId` — `code` is globally unique
-  - ⚠️ No `createdAt`/`updatedAt` — global immutable referential
-- **Model:**
+**Status : ✅ Done** · P0 · 2 SP · `feature/S3-BE-017-prisma-currency`
 
 ```prisma
 model Currency {
@@ -518,168 +232,55 @@ model Currency {
 }
 ```
 
-- **Acceptance Criteria:**
-  - ✅ Migration applied without error
-  - ✅ `currencies` table has no `tourOperatorId`, `createdAt`, or `updatedAt` columns
-  - ✅ `code` unique constraint enforced at DB level
-  - ✅ Prisma client regenerated
-- **Files:** `prisma/schema.prisma`
+**Référentiel global** — pas de `tourOperatorId`, pas de `createdAt`/`updatedAt`, `code` unique dans toute l'application, partagé par tous les tour-opérateurs.
 
----
+#### S3-BE-018 — Shared types : `Currency` + `CurrencyDto`
 
-#### S3-BE-018 — Shared types: Currency + CurrencyDto
+**Status : ✅ Done** · P0 · 1 SP · Depends on S3-BE-017 · `feature/S3-BE-018-shared-types-currency`
 
-> Add `Currency` and `CurrencyDto` to the shared types library. The `Currency` interface intentionally omits `tourOperatorId` and timestamps, reflecting its global nature. This distinction must be explicit in the shared types to avoid confusion with tenant-scoped referentials.
+`Currency { id, code, name, symbol }` — pas de `tourOperatorId` ni de timestamps, distinction explicite avec les référentiels tenant-scoped.
 
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 1
-- **Branch:** `feature/S3-BE-018-shared-types-currency`
-- **Commit:** `feat(currencies): add Currency shared types`
-- **Acceptance Criteria:**
-  - ✅ `Currency` interface exported from `@runner/shared/types` with fields: `id`, `code`, `name`, `symbol` — no `tourOperatorId`, no timestamps
-  - ✅ `CurrencyDto` exported with fields: `code`, `name`, `symbol`
-  - ✅ Both types importable in backend and frontend without error
-- **Files:** `libs/shared/types/src/lib/currency.types.ts`
+#### S3-BE-019 — DTOs : `CreateCurrencyDto` + `UpdateCurrencyDto`
 
----
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-018 · `feature/S3-BE-019-currency-dtos`
 
-#### S3-BE-019 — DTOs: CreateCurrencyDto + UpdateCurrencyDto
+`code`/`name`/`symbol` tous requis. `code` en format ISO 4217 par convention de documentation, pas de regex validator à ce stade.
 
-> Define validation DTOs for currency management. All three fields (`code`, `name`, `symbol`) are required. `code` should follow ISO 4217 format (e.g. `EUR`, `USD`) — enforced by documentation convention, not a regex validator at this stage.
+#### S3-BE-020 — `CurrencyRepository` (abstract class)
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-018
-- **Branch:** `feature/S3-BE-019-currency-dtos`
-- **Commit:** `feat(currencies): add create and update DTOs`
-- **Tasks:** `code` (string, not empty — ISO 4217), `name` (string, not empty), `symbol` (string, not empty)
-- **Acceptance Criteria:**
-  - ✅ `POST /currencies` with empty `code`, `name`, or `symbol` returns HTTP 400
-  - ✅ `PATCH /currencies/:id` with a partial body is accepted
-- **Files:**
-  - `apps/backend/src/currencies/dto/create-currency.dto.ts`
-  - `apps/backend/src/currencies/dto/update-currency.dto.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-018 · `feature/S3-BE-020-currency-repository`
 
----
+Aucun `tourOperatorId` dans aucune signature de méthode.
 
-#### S3-BE-020 — CurrencyRepository (abstract class)
+#### S3-BE-021 — `PrismaCurrencyRepository`
 
-> Define the `CurrencyRepository` abstract class. Unlike MealPlan and Market repositories, no method takes `tourOperatorId` as a parameter — currencies are global and all queries operate without a tenant filter.
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-020 · `feature/S3-BE-021-prisma-currency-repository`
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-018
-- **Branch:** `feature/S3-BE-020-currency-repository`
-- **Commit:** `feat(currencies): add CurrencyRepository abstract class`
-- **Tasks:** ⚠️ No `tourOperatorId` in any method signature
-- **Acceptance Criteria:**
-  - ✅ `CurrencyRepository` is an abstract class usable as a NestJS DI token
-  - ✅ No `tourOperatorId` parameter in any method signature
-  - ✅ All 5 method signatures defined: `findAll`, `findOne`, `create`, `update`, `remove`
-- **Files:** `apps/backend/src/currencies/repositories/currency.repository.ts`
+Aucune clause `where` ne référence `tourOperatorId`. `findAll` retourne toutes les devises, indépendamment de l'appelant.
 
----
+#### S3-BE-022 — `CurrenciesService`
 
-#### S3-BE-021 — PrismaCurrencyRepository
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-021 · `feature/S3-BE-022-currencies-service`
 
-> Implement the Prisma-backed repository for Currency. All queries operate without a `tourOperatorId` filter — currencies are shared across all tour operators. Prisma errors are still mapped to typed `RepositoryException` values.
+Même structure que les autres services référentiels, sans `tourOperatorId` dans aucune méthode.
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-020
-- **Branch:** `feature/S3-BE-021-prisma-currency-repository`
-- **Commit:** `feat(currencies): add PrismaCurrencyRepository`
-- **Tasks:** ⚠️ `where` clauses have no `tourOperatorId` anywhere
-- **Acceptance Criteria:**
-  - ✅ `findAll` returns all currencies regardless of caller identity
-  - ✅ Duplicate `code` throws `RepositoryException(CONFLICT)`
-  - ✅ `remove` on a non-existent id throws `RepositoryException(NOT_FOUND)`
-  - ✅ No `tourOperatorId` referenced anywhere in the implementation
-- **Files:** `apps/backend/src/currencies/repositories/prisma-currency.repository.ts`
+#### S3-BE-023 — `CurrenciesController`
 
----
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-BE-022 · `feature/S3-BE-023-currencies-controller`
 
-#### S3-BE-022 — CurrenciesService
+Guards/rôles maintenus (`ADMIN`/`MANAGER`) même si le référentiel est global — seule différence : aucune extraction de `tourOperatorId` depuis le JWT.
 
-> Implement the business logic layer for currencies. Follows the same service structure as other referentials (limit sanitization, 404/409 translation) but with no `tourOperatorId` in any method signature, since currencies are global.
+#### S3-BE-024 — `CurrenciesModule` + `AppModule`
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-021
-- **Branch:** `feature/S3-BE-022-currencies-service`
-- **Commit:** `feat(currencies): add CurrenciesService`
-- **Tasks:** ⚠️ No method takes `tourOperatorId` as a parameter
-- **Acceptance Criteria:**
-  - ✅ `findAll` with `limit > 100` is capped at 100
-  - ✅ `findOne` with unknown id throws `NotFoundException` (HTTP 404)
-  - ✅ `create` with duplicate `code` throws `ConflictException` (HTTP 409)
-  - ✅ No `tourOperatorId` in any method signature
-- **Files:** `apps/backend/src/currencies/currencies.service.ts`
-
----
-
-#### S3-BE-023 — CurrenciesController
-
-> Expose the Currency CRUD API. Guards and roles are maintained identically to other referentials — only authenticated ADMINs and MANAGERs can manage currencies. The key difference from other controllers is that no `tourOperatorId` is extracted from the JWT.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 2
-- **Depends on:** S3-BE-022
-- **Branch:** `feature/S3-BE-023-currencies-controller`
-- **Commit:** `feat(currencies): add CurrenciesController`
-- **Tasks:**
-  - `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(ADMIN, MANAGER)` maintained
-  - ⚠️ No `tourOperatorId` extraction from the JWT
-- **Acceptance Criteria:**
-  - ✅ All endpoints return HTTP 401 without a valid JWT
-  - ✅ All endpoints return HTTP 403 for `AGENT` role
-  - ✅ `POST /currencies` returns HTTP 201 on success
-  - ✅ `DELETE /currencies/:id` returns HTTP 204 on success
-  - ✅ No `tourOperatorId` extracted or used anywhere in the controller
-- **Files:** `apps/backend/src/currencies/currencies.controller.ts`
-
----
-
-#### S3-BE-024 — CurrenciesModule + AppModule
-
-> Wire the Currencies module and register it in AppModule. Final step to make the Currencies API operational.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-023
-- **Branch:** `feature/S3-BE-024-currencies-module`
-- **Commit:** `feat(currencies): wire CurrenciesModule and register in AppModule`
-- **Acceptance Criteria:**
-  - ✅ NestJS app starts without DI errors
-  - ✅ `GET /currencies` is reachable and returns a valid response
-- **Files:**
-  - `apps/backend/src/currencies/currencies.module.ts`
-  - `apps/backend/src/app.module.ts`
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-023 · `feature/S3-BE-024-currencies-module`
 
 ---
 
 ### Supplements
 
-#### S3-BE-025 — Prisma: SupplementUnit enum + Supplement model + migration
+#### S3-BE-025 — Prisma : `SupplementUnit` enum + `Supplement` model + migration
 
-> Define the `SupplementUnit` enum and `Supplement` model in Prisma. Supplements are the most complex referential: they carry a `price` (stored as `Decimal` for precision), a unit type that determines how the price is applied, and a flag controlling discount eligibility. The `price` type mismatch between Prisma (`Decimal`) and TypeScript (`number`) is handled at the service layer, not here.
-
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 2
-- **Branch:** `feature/S3-BE-025-prisma-supplement`
-- **Commit:** `feat(supplements): add SupplementUnit enum and Supplement model to prisma schema`
-- **Tasks:**
-  - ⚠️ `price` is `Decimal` in Prisma
-  - Migration: `npx prisma migrate dev --name add_supplement`
-- **Model:**
+**Status : ✅ Done** · P0 · 2 SP · `feature/S3-BE-025-prisma-supplement`
 
 ```prisma
 enum SupplementUnit {
@@ -704,1300 +305,222 @@ model Supplement {
 }
 ```
 
-- **Acceptance Criteria:**
-  - ✅ Migration applied without error
-  - ✅ `supplements` table created with `price` as a numeric/decimal column
-  - ✅ `SupplementUnit` enum exists in the DB with all 4 values
-  - ✅ `canReceiveDiscount` defaults to `false` at DB level
-  - ✅ Prisma client regenerated
-- **Files:** `prisma/schema.prisma`
+Référentiel le plus complexe : `price` en `Decimal` (précision), `unit` détermine comment le prix s'applique, `canReceiveDiscount` contrôle l'éligibilité aux remises. La conversion `Decimal → number` se fait au niveau service, pas ici.
+
+#### S3-BE-026 — Shared types : `SupplementUnit` + `Supplement` + `SupplementDto`
+
+**Status : ✅ Done** · P0 · 1 SP · Depends on S3-BE-025 · `feature/S3-BE-026-shared-types-supplement`
+
+`price: number` côté shared types — jamais `Decimal`, qui reste un détail d'implémentation de la couche de persistance et ne doit jamais fuiter dans le contrat partagé frontend/backend.
+
+#### S3-BE-027 — DTOs : `CreateSupplementDto` + `UpdateSupplementDto`
+
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-026 · `feature/S3-BE-027-supplement-dtos`
+
+`name` requis, `description` optionnel, `price` (`@IsNumber`, min 0), `unit` (`@IsEnum(SupplementUnit)`), `canReceiveDiscount` (`@IsBoolean`). DTO le plus complexe du sprint côté validation.
+
+#### S3-BE-028 — `SupplementRepository` (abstract class)
+
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-026 · `feature/S3-BE-028-supplement-repository`
+
+Multi-tenant — `tourOperatorId` dans toutes les signatures.
+
+#### S3-BE-029 — `PrismaSupplementRepository`
+
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-028 · `feature/S3-BE-029-prisma-supplement-repository`
+
+`price` retourné tel quel par Prisma (`Decimal`) — aucune conversion à ce niveau, c'est la responsabilité du service.
+
+#### S3-BE-030 — `SupplementsService`
+
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-029 · `feature/S3-BE-030-supplements-service`
+
+En plus des responsabilités standard, convertit `price: Number(supplement.price)` avant de retourner — empêche l'objet `Decimal` de fuiter dans la réponse API.
+
+#### S3-BE-031 — `SupplementsController`
+
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-BE-030 · `feature/S3-BE-031-supplements-controller`
+
+Même pattern guards/rôles/JWT que `MealPlansController`/`MarketsController`.
+
+#### S3-BE-032 — `SupplementsModule` + `AppModule`
+
+**Status : ✅ Done** · P1 · 1 SP · Depends on S3-BE-031 · `feature/S3-BE-032-supplements-module`
 
 ---
 
-#### S3-BE-026 — Shared types: SupplementUnit + Supplement + SupplementDto
+## 5. Tickets — Frontend
 
-> Add `SupplementUnit`, `Supplement`, and `SupplementDto` to the shared types library. `price` is typed as `number` — not `Decimal` — because the `Decimal` Prisma type is an implementation detail of the persistence layer and must not leak into the shared contract between frontend and backend.
+### Routing & Sidebar
 
-- **Type:** Task
-- **Priority:** P0
-- **SP:** 1
-- **Branch:** `feature/S3-BE-026-shared-types-supplement`
-- **Commit:** `feat(supplements): add Supplement shared types`
-- **Tasks:** `price` typed as `number` (not `Decimal`) in the TypeScript interfaces
-- **Acceptance Criteria:**
-  - ✅ `SupplementUnit` enum exported from `@runner/shared/types` with all 4 values
-  - ✅ `Supplement` interface exported with `price: number` (not `Decimal`)
-  - ✅ `SupplementDto` exported with all writable fields
-  - ✅ All types importable in backend and frontend without error
-- **Files:** `libs/shared/types/src/lib/supplement.types.ts`
+#### S3-FE-001 — Routes lazy-loaded pour les 4 référentiels
 
----
+**Status : ✅ Done** · P1 · 2 SP · `chore/S3-FE-001-referentials-routes`
 
-#### S3-BE-027 — DTOs: CreateSupplementDto + UpdateSupplementDto
+`meal-plans`, `markets`, `currencies`, `supplements` sous le groupe `management` dans `app.routes.ts`. `loadComponent` + `AuthGuard` + `RoleGuard`, rôles via `route.data['roles']` (ex. `{ roles: ['ADMIN', 'MANAGER'] }`) — cohérent avec le `RoleGuard` de Sprint 1. Redirige vers `/dashboard` pour `AGENT`, vers `/login` si non authentifié.
 
-> Define validation DTOs for supplement creation and update. These are the most complex DTOs in the sprint — they validate a numeric `price` with a minimum of 0, an enum `unit`, a boolean flag, and an optional description, in addition to the required `name`.
+#### S3-FE-002 — Sidebar : ajout des 4 référentiels
 
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-026
-- **Branch:** `feature/S3-BE-027-supplement-dtos`
-- **Commit:** `feat(supplements): add create and update DTOs`
-- **Tasks:**
-  - `name` (string, not empty), `description` (string, optional)
-  - `price` (`IsNumber`, min 0), `unit` (`IsEnum SupplementUnit`)
-  - `canReceiveDiscount` (`IsBoolean`)
-- **Acceptance Criteria:**
-  - ✅ `POST /supplements` with empty `name` returns HTTP 400
-  - ✅ `POST /supplements` with `price < 0` returns HTTP 400
-  - ✅ `POST /supplements` with an invalid `unit` value returns HTTP 400
-  - ✅ `POST /supplements` without `description` succeeds (optional field)
-  - ✅ `PATCH /supplements/:id` with a partial body is accepted
-- **Files:**
-  - `apps/backend/src/supplements/dto/create-supplement.dto.ts`
-  - `apps/backend/src/supplements/dto/update-supplement.dto.ts`
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-FE-001 · `chore/S3-FE-002-sidebar-referentials`
 
----
-
-#### S3-BE-028 — SupplementRepository (abstract class)
-
-> Define the `SupplementRepository` abstract class. Follows the same DI token pattern as the other Sprint 3 repositories. Supplements are multi-tenant, so `tourOperatorId` is present in all method signatures.
-
-- **Type:** Task
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-026
-- **Branch:** `feature/S3-BE-028-supplement-repository`
-- **Commit:** `feat(supplements): add SupplementRepository abstract class`
-- **Acceptance Criteria:**
-  - ✅ `SupplementRepository` is an abstract class usable as a NestJS DI token
-  - ✅ All 5 method signatures defined with correct parameter types (including `tourOperatorId`)
-- **Files:** `apps/backend/src/supplements/repositories/supplement.repository.ts`
-
----
-
-#### S3-BE-029 — PrismaSupplementRepository
-
-> Implement the Prisma-backed repository for Supplement. Follows the same structure as other multi-tenant repositories. Importantly, `price` is returned as Prisma's `Decimal` type — the repository does not convert it. Serialization to `number` is the service's responsibility.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-028
-- **Branch:** `feature/S3-BE-029-prisma-supplement-repository`
-- **Commit:** `feat(supplements): add PrismaSupplementRepository`
-- **Tasks:** ⚠️ `price` is returned as `Decimal` by Prisma — serialization happens in the service, not here
-- **Acceptance Criteria:**
-  - ✅ `findAll` only returns records matching the caller's `tourOperatorId`
-  - ✅ `findAll` returns `{ data, total }` via `$transaction`
-  - ✅ `remove` on a non-existent id throws `RepositoryException(NOT_FOUND)`
-  - ✅ `price` is returned as-is from Prisma (`Decimal`) — no conversion in this layer
-  - ✅ No HTTP exceptions thrown at repository layer
-- **Files:** `apps/backend/src/supplements/repositories/prisma-supplement.repository.ts`
-
----
-
-#### S3-BE-030 — SupplementsService
-
-> Implement the business logic layer for supplements. In addition to the standard responsibilities (limit cap, 404/409 translation), this service is responsible for converting `price` from Prisma's `Decimal` to a plain JavaScript `number` before returning data. This prevents the `Decimal` object from leaking into the API response.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-029
-- **Branch:** `feature/S3-BE-030-supplements-service`
-- **Commit:** `feat(supplements): add SupplementsService`
-- **Tasks:** ⚠️ Map `price: Number(supplement.price)` before returning
-- **Acceptance Criteria:**
-  - ✅ `findAll` with `limit > 100` is capped at 100
-  - ✅ `findOne` with unknown id throws `NotFoundException` (HTTP 404)
-  - ✅ All returned supplement objects have `price` as a JavaScript `number`, not a `Decimal` object
-  - ✅ `remove` returns 404 for unknown id, 409 if linked contracts exist
-- **Files:** `apps/backend/src/supplements/supplements.service.ts`
-
----
-
-#### S3-BE-031 — SupplementsController
-
-> Expose the Supplement CRUD API. Follows the same guard, role, and JWT-extraction pattern as `MealPlansController` and `MarketsController`.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 2
-- **Depends on:** S3-BE-030
-- **Branch:** `feature/S3-BE-031-supplements-controller`
-- **Commit:** `feat(supplements): add SupplementsController`
-- **Acceptance Criteria:**
-  - ✅ All endpoints return HTTP 401 without a valid JWT
-  - ✅ All endpoints return HTTP 403 for `AGENT` role
-  - ✅ `POST /supplements` returns HTTP 201 on success
-  - ✅ `DELETE /supplements/:id` returns HTTP 204 on success
-  - ✅ `tourOperatorId` always extracted from JWT, never from request body
-- **Files:** `apps/backend/src/supplements/supplements.controller.ts`
-
----
-
-#### S3-BE-032 — SupplementsModule + AppModule
-
-> Wire the Supplements module and register it in AppModule. Final step to make the Supplements API operational.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 1
-- **Depends on:** S3-BE-031
-- **Branch:** `feature/S3-BE-032-supplements-module`
-- **Commit:** `feat(supplements): wire SupplementsModule and register in AppModule`
-- **Acceptance Criteria:**
-  - ✅ NestJS app starts without DI errors
-  - ✅ `GET /supplements` is reachable and returns a valid response
-- **Files:**
-  - `apps/backend/src/supplements/supplements.module.ts`
-  - `apps/backend/src/app.module.ts`
-
----
-
-## Frontend Tasks
-
-### Routing
-
-#### S3-FE-001 — Lazy-loaded routes for all 4 referentials
-
-> Register the 4 new management routes in `app.routes.ts`. Each route is lazy-loaded via `loadComponent`, protected by `AuthGuard` and `RoleGuard` (restricted to ADMIN and MANAGER via `route.data['roles']`). This ticket unblocks all frontend component development and must land before any list or form component can be navigated to.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 2
-- **Branch:** `chore/S3-FE-001-referentials-routes`
-- **Commit:** `chore(routing): add lazy routes for all referentials`
-- **Tasks:**
-  - Add `meal-plans`, `markets`, `currencies`, `supplements` routes under the `management` group in `app.routes.ts`
-  - `loadComponent` + `AuthGuard` + `RoleGuard`
-  - Roles passed via `route.data['roles']` (e.g. `data: { roles: ['ADMIN', 'MANAGER'] }`) — consistent with the `RoleGuard` implemented in Sprint 1
-- **Acceptance Criteria:**
-  - ✅ `/management/meal-plans` loads `MealPlansListComponent` when authenticated as ADMIN or MANAGER
-  - ✅ `/management/markets` loads `MarketsListComponent` when authenticated as ADMIN or MANAGER
-  - ✅ `/management/currencies` loads `CurrenciesListComponent` when authenticated as ADMIN or MANAGER
-  - ✅ `/management/supplements` loads `SupplementsListComponent` when authenticated as ADMIN or MANAGER
-  - ✅ All 4 routes redirect to `/dashboard` for `AGENT` role (via `RoleGuard`)
-  - ✅ All 4 routes redirect to `/login` when unauthenticated (via `AuthGuard`)
-  - ✅ All components are lazy-loaded (`loadComponent`)
-- **Files:** `apps/frontend/src/app/app.routes.ts`
-
----
-
-#### S3-FE-002 — Sidebar: add the 4 referentials
-
-> Add navigation items for Meal Plans, Markets, Currencies, and Supplements to the sidebar under the `management` group. Items must respect role visibility — AGENT users should not see these entries. Depends on the routes being registered first.
-
-- **Type:** Chore
-- **Priority:** P1
-- **SP:** 2
-- **Depends on:** S3-FE-001
-- **Branch:** `chore/S3-FE-002-sidebar-referentials`
-- **Commit:** `chore(sidebar): add referentials nav items`
-- **Tasks:** Add Meal Plans, Markets, Currencies, Supplements items to the `management` group
-- **Acceptance Criteria:**
-  - ✅ Meal Plans, Markets, Currencies, Supplements nav items visible for ADMIN and MANAGER
-  - ✅ Items not visible for AGENT role
-  - ✅ Active item highlighted via `RouterLinkActive`
-  - ✅ Clicking each item navigates to the correct route
-- **Files:**
-  - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.ts`
-  - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.html`
-
----
+Items Meal Plans/Markets/Currencies/Supplements sous le groupe `management`, visibles ADMIN/MANAGER uniquement, `RouterLinkActive` pour l'item actif.
 
 ### Services
 
-#### S3-FE-003 — MealPlansService
+#### S3-FE-003 — `MealPlansService`
 
-> Create the Angular service that manages MealPlan data on the frontend. Uses the HotelsService caching pattern: a `BehaviorSubject` holds the current list and a `loaded` flag prevents redundant API calls. The BehaviorSubject is updated in-place after every mutation, so components subscribing to it reflect changes without needing to refetch.
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-008 · `feature/S3-FE-003-meal-plans-service`
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-008
-- **Branch:** `feature/S3-FE-003-meal-plans-service`
-- **Commit:** `feat(meal-plans): add MealPlansService with BehaviorSubject cache`
-- **Tasks:**
-  - HotelsService pattern: BehaviorSubject + `loaded` flag
-  - `getAll()`, `create()`, `update()`, `remove()`
-  - `take(1)` on all `subscribe()` calls
-- **Acceptance Criteria:**
-  - ✅ `getAll()` fetches from API only once — subsequent calls return cached BehaviorSubject value
-  - ✅ After `create()`, `update()`, or `remove()`, the BehaviorSubject is updated in place
-  - ✅ `take(1)` used on every `subscribe()` — no memory leaks
-  - ✅ Service is `providedIn: 'root'`
-  - ✅ No `any` — strict TypeScript with `MealPlan` types from `@runner/shared/types`
-- **Files:** `apps/frontend/src/app/features/management/meal-plans/meal-plans.service.ts`
+Pattern `HotelsService` : `BehaviorSubject` + flag `loaded` (un seul fetch, appels suivants servent depuis le cache). `getAll()`/`create()`/`update()`/`remove()` mettent à jour le `BehaviorSubject` en place. `take(1)` partout, `providedIn: 'root'`, aucun `any`.
 
----
+#### S3-FE-004 — `MarketsService`
 
-#### S3-FE-004 — MarketsService
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-016 · `feature/S3-FE-004-markets-service`
 
-> Create the Angular service for Markets, following the exact same BehaviorSubject caching pattern as `MealPlansService`. Unblocks `MarketsListComponent` and `MarketFormComponent`.
+Même pattern exact que `MealPlansService`.
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-016
-- **Branch:** `feature/S3-FE-004-markets-service`
-- **Commit:** `feat(markets): add MarketsService with BehaviorSubject cache`
-- **Acceptance Criteria:**
-  - ✅ Same caching behavior as MealPlansService (BehaviorSubject + `loaded` flag)
-  - ✅ `take(1)` on every `subscribe()`
-  - ✅ No `any` — strict TypeScript with `Market` types
-- **Files:** `apps/frontend/src/app/features/management/markets/markets.service.ts`
+#### S3-FE-005 — `CurrenciesService`
 
----
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-024 · `feature/S3-FE-005-currencies-service`
 
-#### S3-FE-005 — CurrenciesService
+Même pattern de cache. L'API retourne toutes les devises indépendamment du tour-opérateur courant — aucun filtrage tenant côté client à gérer.
 
-> Create the Angular service for Currencies. Same caching pattern as the other services. Note that the API returns all currencies regardless of the current user's tour operator — the service does not need to handle tenant filtering on the client side.
+#### S3-FE-006 — `SupplementsService`
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-024
-- **Branch:** `feature/S3-FE-005-currencies-service`
-- **Commit:** `feat(currencies): add CurrenciesService with BehaviorSubject cache`
-- **Acceptance Criteria:**
-  - ✅ Same caching behavior as MealPlansService (BehaviorSubject + `loaded` flag)
-  - ✅ `take(1)` on every `subscribe()`
-  - ✅ No `any` — strict TypeScript with `Currency` types
-- **Files:** `apps/frontend/src/app/features/management/currencies/currencies.service.ts`
+**Status : ✅ Done** · P1 · 3 SP · Depends on S3-BE-032 · `feature/S3-FE-006-supplements-service`
 
----
-
-#### S3-FE-006 — SupplementsService
-
-> Create the Angular service for Supplements. Same caching pattern as the other services. The `price` field arrives from the API as a plain `number` (serialized in the backend service) — no additional conversion needed on the frontend.
-
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 3
-- **Depends on:** S3-BE-032
-- **Branch:** `feature/S3-FE-006-supplements-service`
-- **Commit:** `feat(supplements): add SupplementsService with BehaviorSubject cache`
-- **Acceptance Criteria:**
-  - ✅ Same caching behavior as MealPlansService (BehaviorSubject + `loaded` flag)
-  - ✅ `take(1)` on every `subscribe()`
-  - ✅ No `any` — strict TypeScript with `Supplement` types
-- **Files:** `apps/frontend/src/app/features/management/supplements/supplements.service.ts`
-
----
+Même pattern. `price` arrive déjà en `number` depuis l'API (sérialisé côté backend service) — aucune conversion supplémentaire nécessaire côté frontend.
 
 ### MealPlans
 
-#### S3-FE-007 — MealPlansListComponent
+#### S3-FE-007 — `MealPlansListComponent`
 
-> Build the main list view for meal plans, displayed as a PrimeNG `p-table` with Code, Name, Description, and Actions columns. Supports inline Edit and Delete per row, and an Add button in the header. Delete operations require confirmation via `p-confirmdialog`, and all outcomes (success or failure) are communicated via `p-toast`.
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-003 · `feature/S3-FE-007-meal-plans-list`
 
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-003
-- **Branch:** `feature/S3-FE-007-meal-plans-list`
-- **Commit:** `feat(meal-plans): add MealPlansListComponent`
-- **Tasks:**
-  - `p-table`: columns Code, Name, Description, Actions
-  - Edit / Delete buttons per row, Add button in header
-  - Delete confirmation (`p-confirmdialog`)
-  - Success/error toast (`p-toast`)
-- **Acceptance Criteria:**
-  - ✅ Table displays all meal plans for the authenticated tour operator
-  - ✅ Clicking Delete opens a `p-confirmdialog` — deletion only proceeds on confirmation
-  - ✅ Successful delete shows a success toast and removes the row from the table
-  - ✅ Failed delete (e.g. 409) shows an error toast, row is not removed
-  - ✅ Clicking Edit opens `MealPlanFormComponent` in edit mode pre-filled with the row's data
-  - ✅ Clicking Add opens `MealPlanFormComponent` in create mode with empty fields
-  - ✅ Component uses `OnPush` change detection
-  - ✅ No `any` — strict TypeScript
-- **Files:**
-  - `apps/frontend/src/app/features/management/meal-plans/components/meal-plans-list/meal-plans-list.component.ts`
-  - `apps/frontend/src/app/features/management/meal-plans/components/meal-plans-list/meal-plans-list.component.html`
+`p-table` : Code, Name, Description, Actions. Edit/Delete par ligne, Add en header. Suppression via `p-confirmdialog` (migré vers le helper `confirmDelete` en cours de sprint, voir §6). `p-toast` succès/erreur. `OnPush`.
 
----
+#### S3-FE-008 — `MealPlanFormComponent`
 
-#### S3-FE-008 — MealPlanFormComponent
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-007 · `feature/S3-FE-008-meal-plan-form`
 
-> Build the create/edit form for a meal plan, rendered inside a `p-dialog`. The form is reactive and supports two modes: create (empty fields) and edit (pre-filled from the selected row). The mode is determined by the presence of a `mealPlan` signal input. Validation errors are shown inline; API errors trigger a toast while keeping the dialog open.
-
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-007
-- **Branch:** `feature/S3-FE-008-meal-plan-form`
-- **Commit:** `feat(meal-plans): add MealPlanFormComponent`
-- **Tasks:**
-  - `p-dialog` with Reactive Form
-  - Fields: `code` (required), `name` (required), `description` (optional)
-  - Create / Edit mode based on presence of a `mealPlan` input
-- **Acceptance Criteria:**
-  - ✅ Dialog opens in create mode with all fields empty
-  - ✅ Dialog opens in edit mode with fields pre-filled from the `mealPlan` input
-  - ✅ Submit button disabled while form is invalid
-  - ✅ Submitting with empty `code` or `name` shows inline validation errors
-  - ✅ Successful create/edit closes the dialog, emits an event, and triggers a list refresh
-  - ✅ API error (e.g. 409 duplicate code) shows an error toast — dialog stays open
-  - ✅ Component uses `input()` / `output()` functions, `inject()`, `OnPush`
-- **Files:**
-  - `apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/meal-plan-form.component.ts`
-  - `apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/meal-plan-form.component.html`
-
----
+`p-dialog` + Reactive Form. Champs : `code`/`name` requis, `description` optionnel. Mode create/edit déterminé par la présence d'un `input()` `mealPlan`. Validation inline, erreur API (409 doublon) → toast, dialog reste ouvert. `input()`/`output()`, `inject()`, `OnPush`.
 
 ### Markets
 
-#### S3-FE-009 — MarketsListComponent
+#### S3-FE-009 — `MarketsListComponent`
 
-> Build the list view for markets. Simpler than MealPlans — no Description column. Same UX pattern: `p-table`, Edit/Delete per row, Add button, `p-confirmdialog` on delete, `p-toast` for outcomes.
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-004 · `feature/S3-FE-009-markets-list`
 
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-004
-- **Branch:** `feature/S3-FE-009-markets-list`
-- **Commit:** `feat(markets): add MarketsListComponent`
-- **Tasks:** `p-table`: columns Code, Name, Actions
-- **Acceptance Criteria:**
-  - ✅ Table displays all markets for the authenticated tour operator
-  - ✅ Clicking Delete opens a `p-confirmdialog` — deletion only proceeds on confirmation
-  - ✅ Successful delete shows a success toast and removes the row
-  - ✅ Failed delete shows an error toast, row is not removed
-  - ✅ Clicking Edit opens `MarketFormComponent` in edit mode pre-filled with the row's data
-  - ✅ Clicking Add opens `MarketFormComponent` in create mode with empty fields
-  - ✅ Component uses `OnPush` change detection
-- **Files:**
-  - `apps/frontend/src/app/features/management/markets/components/markets-list/markets-list.component.ts`
-  - `apps/frontend/src/app/features/management/markets/components/markets-list/markets-list.component.html`
+`p-table` : Code, Name, Actions (pas de colonne Description). Même UX que MealPlansList.
 
----
+#### S3-FE-010 — `MarketFormComponent`
 
-#### S3-FE-010 — MarketFormComponent
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-009 · `feature/S3-FE-010-market-form`
 
-> Build the create/edit form for a market in a `p-dialog`. Only two required fields: `code` and `name`. Same dual-mode pattern as `MealPlanFormComponent`.
-
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-009
-- **Branch:** `feature/S3-FE-010-market-form`
-- **Commit:** `feat(markets): add MarketFormComponent`
-- **Tasks:** Fields: `code` (required), `name` (required)
-- **Acceptance Criteria:**
-  - ✅ Dialog opens in create mode with all fields empty
-  - ✅ Dialog opens in edit mode with fields pre-filled
-  - ✅ Submit button disabled while form is invalid
-  - ✅ Submitting with empty `code` or `name` shows inline validation errors
-  - ✅ Successful create/edit closes the dialog and triggers a list refresh
-  - ✅ API error shows an error toast — dialog stays open
-  - ✅ Component uses `input()` / `output()` functions, `inject()`, `OnPush`
-- **Files:**
-  - `apps/frontend/src/app/features/management/markets/components/market-form/market-form.component.ts`
-  - `apps/frontend/src/app/features/management/markets/components/market-form/market-form.component.html`
-
----
+Deux champs requis : `code`, `name`. Même pattern dual-mode que `MealPlanFormComponent`.
 
 ### Currencies
 
-#### S3-FE-011 — CurrenciesListComponent
+#### S3-FE-011 — `CurrenciesListComponent`
 
-> Build the list view for currencies with Code, Name, and Symbol columns. Unlike other referentials, this table shows a global dataset — not filtered by tour operator. Same UX pattern as the other list components.
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-005 · `feature/S3-FE-011-currencies-list`
 
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-005
-- **Branch:** `feature/S3-FE-011-currencies-list`
-- **Commit:** `feat(currencies): add CurrenciesListComponent`
-- **Tasks:** `p-table`: columns Code, Name, Symbol, Actions
-- **Acceptance Criteria:**
-  - ✅ Table displays all currencies (global — no tenant filtering)
-  - ✅ Clicking Delete opens a `p-confirmdialog` — deletion only proceeds on confirmation
-  - ✅ Successful delete shows a success toast and removes the row
-  - ✅ Failed delete shows an error toast, row is not removed
-  - ✅ Clicking Edit opens `CurrencyFormComponent` in edit mode pre-filled with the row's data
-  - ✅ Clicking Add opens `CurrencyFormComponent` in create mode with empty fields
-  - ✅ Component uses `OnPush` change detection
-- **Files:**
-  - `apps/frontend/src/app/features/management/currencies/components/currencies-list/currencies-list.component.ts`
-  - `apps/frontend/src/app/features/management/currencies/components/currencies-list/currencies-list.component.html`
+`p-table` : Code, Name, Symbol, Actions. Dataset global — pas de filtrage tenant. Même UX que les autres listes.
 
----
+#### S3-FE-012 — `CurrencyFormComponent`
 
-#### S3-FE-012 — CurrencyFormComponent
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-011 · `feature/S3-FE-012-currency-form`
 
-> Build the create/edit form for a currency in a `p-dialog`. Three required fields: `code` (ISO 4217), `name`, and `symbol`. Same dual-mode and error-handling pattern as the other form components.
-
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-011
-- **Branch:** `feature/S3-FE-012-currency-form`
-- **Commit:** `feat(currencies): add CurrencyFormComponent`
-- **Tasks:** Fields: `code` (required), `name` (required), `symbol` (required)
-- **Acceptance Criteria:**
-  - ✅ Dialog opens in create mode with all fields empty
-  - ✅ Dialog opens in edit mode with fields pre-filled
-  - ✅ Submit button disabled while form is invalid
-  - ✅ Submitting with empty `code`, `name`, or `symbol` shows inline validation errors
-  - ✅ Successful create/edit closes the dialog and triggers a list refresh
-  - ✅ API error (e.g. 409 duplicate code) shows an error toast — dialog stays open
-  - ✅ Component uses `input()` / `output()` functions, `inject()`, `OnPush`
-- **Files:**
-  - `apps/frontend/src/app/features/management/currencies/components/currency-form/currency-form.component.ts`
-  - `apps/frontend/src/app/features/management/currencies/components/currency-form/currency-form.component.html`
-
----
+Trois champs requis : `code` (ISO 4217), `name`, `symbol`. Même pattern dual-mode.
 
 ### Supplements
 
-#### S3-FE-013 — SupplementsListComponent
+#### S3-FE-013 — `SupplementsListComponent`
 
-> Build the list view for supplements with Name, Price, Unit, Can Receive Discount, and Actions columns. `price` must be displayed as a formatted number. `canReceiveDiscount` should render as a readable value (e.g. a checkmark icon). Same UX pattern as the other list components.
+**Status : ✅ Done** · P2 · 3 SP · Depends on S3-FE-006 · `feature/S3-FE-013-supplements-list`
 
-- **Type:** Feature
-- **Priority:** P2
-- **SP:** 3
-- **Depends on:** S3-FE-006
-- **Branch:** `feature/S3-FE-013-supplements-list`
-- **Commit:** `feat(supplements): add SupplementsListComponent`
-- **Tasks:** `p-table`: columns Name, Price, Unit, Can Receive Discount, Actions
-- **Acceptance Criteria:**
-  - ✅ Table displays all supplements for the authenticated tour operator
-  - ✅ `price` displayed formatted as a number (not a Decimal object)
-  - ✅ `canReceiveDiscount` displayed as a readable boolean (e.g. checkmark icon or Yes/No)
-  - ✅ Clicking Delete opens a `p-confirmdialog` — deletion only proceeds on confirmation
-  - ✅ Successful delete shows a success toast and removes the row
-  - ✅ Failed delete shows an error toast, row is not removed
-  - ✅ Clicking Edit opens `SupplementFormComponent` in edit mode pre-filled with the row's data
-  - ✅ Clicking Add opens `SupplementFormComponent` in create mode with empty fields
-  - ✅ Component uses `OnPush` change detection
-- **Files:**
-  - `apps/frontend/src/app/features/management/supplements/components/supplements-list/supplements-list.component.ts`
-  - `apps/frontend/src/app/features/management/supplements/components/supplements-list/supplements-list.component.html`
+`p-table` : Name, Price, Unit, Can Receive Discount, Actions. `price` affiché formaté (jamais l'objet `Decimal`), `canReceiveDiscount` en icône/lisible.
+
+#### S3-FE-014 — `SupplementFormComponent`
+
+**Status : ✅ Done** · P1 · 5 SP (le plus complexe du sprint) · Depends on S3-FE-013 · `feature/S3-FE-014-supplement-form`
+
+Champs : `name`, `description`, `price`, `unit`, `canReceiveDiscount`. `p-select` pour `unit` avec tooltip explicatif par option (les 4 valeurs `SupplementUnit`), validation client sur `price ≥ 0`, `p-checkbox` pour `canReceiveDiscount` (défaut `false`).
 
 ---
 
-#### S3-FE-014 — SupplementFormComponent
+## 6. Tickets — Refacto & Fix (introduits en cours de sprint)
 
-> Build the create/edit form for a supplement — the most complex form in the sprint (SP 5). In addition to standard text fields, it includes a `p-select` for `unit` with a tooltip on each option explaining how that unit type applies the price, a number input for `price` with minimum-value validation, and a `p-checkbox` for `canReceiveDiscount`. All 4 `SupplementUnit` values must be selectable and clearly labeled.
+> Ces tickets n'étaient pas dans le plan initial — découverts en cours d'implémentation. Ils font partie intégrante du Sprint 3 terminé et sont la base des conventions Sprint 4+.
 
-- **Type:** Feature
-- **Priority:** P1
-- **SP:** 5
-- **Depends on:** S3-FE-013
-- **Branch:** `feature/S3-FE-014-supplement-form`
-- **Commit:** `feat(supplements): add SupplementFormComponent with unit selector`
-- **Tasks:**
-  - Fields: `name`, `description`, `price`, `unit`, `canReceiveDiscount`
-  - `p-select` for Unit with tooltips on each option
-  - `p-checkbox` for `canReceiveDiscount`
-- **Acceptance Criteria:**
-  - ✅ Dialog opens in create mode with all fields empty and `canReceiveDiscount` defaulting to `false`
-  - ✅ Dialog opens in edit mode with all fields pre-filled
-  - ✅ Submit button disabled while form is invalid
-  - ✅ `price` field rejects negative values (client-side validation)
-  - ✅ `unit` dropdown shows all 4 `SupplementUnit` values, each with a descriptive tooltip
-  - ✅ Successful create/edit closes the dialog and triggers a list refresh
-  - ✅ API error shows an error toast — dialog stays open
-  - ✅ Component uses `input()` / `output()` functions, `inject()`, `OnPush`
-  - ✅ No `any` — strict TypeScript with `SupplementUnit` from `@runner/shared/types`
-- **Files:**
-  - `apps/frontend/src/app/features/management/supplements/components/supplement-form/supplement-form.component.ts`
-  - `apps/frontend/src/app/features/management/supplements/components/supplement-form/supplement-form.component.html`
+### S3-REFACTOR-FE-001 — Extraire l'utilitaire partagé `confirmDelete`
 
----
+**Status : ✅ Done** · P1 · 2 SP · `refactor/S3-REFACTOR-FE-001-confirm-delete-util`
 
-### S3-REFACTOR-FE-001 — Extract `confirmDelete` shared utility
+**Contexte :** 6 composants (`SupplementFormComponent` ×2, `RoomTypesListComponent`, `MarketFormComponent`, `MealPlansListComponent`, `SeasonsListComponent`) dupliquaient une logique `confirmDelete` quasi identique — tout bug/évolution aurait dû être corrigé 6 fois.
 
-- **Type :** Refactor
-- **Priority :** P1
-- **Story Points :** 2
-- **Branch :** `refactor/S3-REFACTOR-FE-001-confirm-delete-util`
-- **Commit :** `refactor(shared): extract confirmDelete utility to eliminate duplication`
+**Livré :** `apps/frontend/src/app/shared/utils/confirm-delete.util.ts` — fonction `confirmDelete(opts: ConfirmDeleteOptions)` prenant `header`, `entityName`, `message?` (sinon message généré automatiquement), `delete$`, `onSuccess?`, `conflictMessage?`, `confirmationService`, `messageService`. Gère la confirmation PrimeNG, le toast succès, le toast erreur (409 → `warn` avec `conflictMessage`, sinon `error` générique), `take(1)` centralisé.
 
-#### Contexte
+Migré : `supplement-form.component.ts`, `room-types-list.component.ts`, `market-form.component.ts`, `meal-plans-list.component.ts`, `seasons-list.component.ts` (ce dernier dépendait de S3-FIX-FE-001).
 
-Six composants implémentent une logique `confirmDelete` quasi-identique :
-`SupplementFormComponent` (×2), `RoomTypesListComponent`, `MarketFormComponent`,
-`MealPlansListComponent`, `SeasonsListComponent`. Le code est dupliqué mot pour mot
-à l'exception des labels et du message 409. Tout bug ou évolution devra être corrigé
-6 fois.
+**AC clés :** zéro `subscribe` inline restant dans les 6 méthodes ; comportement identique avant/après ; `err` typé `{ status: number }`, jamais `any`.
 
-#### Tâche 1 — Créer le helper
+### S3-FIX-FE-001 — Exposer `reload()` sur `SeasonsService`
 
-**`apps/frontend/src/app/shared/utils/confirm-delete.util.ts`**
+**Status : ✅ Done** · P0 (bloquait S3-REFACTOR-FE-001 côté seasons) · 1 SP · `fix/S3-FIX-FE-001-seasons-service-reload`
 
-```typescript
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { Observable } from 'rxjs';
-import { take } from 'rxjs/operators';
-
-export interface ConfirmDeleteOptions {
-  /** Titre de la dialog de confirmation. Ex: 'Delete Supplement' */
-  header: string;
-  /** Nom affiché de l'entité. Ex: supplement.name */
-  entityName: string;
-  /**
-   * Message affiché dans la dialog.
-   * Si absent, génère : `Are you sure you want to delete "${entityName}"?`
-   * Utiliser uniquement quand le message standard ne suffit pas
-   * (ex: avertissement cascade, données liées visibles).
-   */
-  message?: string;
-  /** Observable retourné par le service de suppression */
-  delete$: Observable<void>;
-  /** Appelé après une suppression réussie (reload, emit, navigate…) */
-  onSuccess?: () => void;
-  /** Message affiché si le backend retourne 409 */
-  conflictMessage?: string;
-  confirmationService: ConfirmationService;
-  messageService: MessageService;
-}
-
-export function confirmDelete(opts: ConfirmDeleteOptions): void {
-  opts.confirmationService.confirm({
-    header: opts.header,
-    message:
-      opts.message ?? `Are you sure you want to delete "${opts.entityName}"?`,
-    icon: 'pi pi-exclamation-triangle',
-    accept: () => {
-      opts.delete$.pipe(take(1)).subscribe({
-        next: () => {
-          opts.messageService.add({
-            severity: 'success',
-            summary: 'Deleted',
-            detail: `"${opts.entityName}" has been deleted.`,
-          });
-          opts.onSuccess?.();
-        },
-        error: (err: { status: number }) => {
-          const is409 = err.status === 409;
-          opts.messageService.add({
-            severity: is409 ? 'warn' : 'error',
-            summary: is409 ? 'Cannot delete' : 'Error',
-            detail: is409
-              ? (opts.conflictMessage ??
-                `"${opts.entityName}" is used by existing records.`)
-              : 'An unexpected error occurred.',
-          });
-        },
-      });
-    },
-  });
-}
-```
-
-#### Tâche 2 — Migrer les composants existants
-
-**`supplement-form.component.ts`**
-
-```typescript
-confirmDelete(): void {
-  const supplement = this.supplement();
-  if (!supplement) return;
-
-  confirmDelete({
-    header: 'Delete Supplement',
-    entityName: supplement.name,
-    delete$: this.supplementsService.remove(supplement.id),
-    onSuccess: () => this.saved.emit(),
-    conflictMessage: `"${supplement.name}" is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-**`room-types-list.component.ts`**
-
-```typescript
-// Ajouter l'injection
-private readonly messageService = inject(MessageService);
-
-confirmDelete(room: RoomType): void {
-  confirmDelete({
-    header: 'Delete Room Type',
-    entityName: room.name,
-    delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
-    onSuccess: () => this.loadRooms(this.hotelId()),
-    conflictMessage: `"${room.name}" is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-**`market-form.component.ts`**
-
-```typescript
-confirmDelete(): void {
-  const market = this.market();
-  if (!market) return;
-
-  confirmDelete({
-    header: 'Delete Market',
-    entityName: market.name,
-    delete$: this.marketsService.remove(market.id),
-    onSuccess: () => this.saved.emit(),
-    conflictMessage: `"${market.name}" is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-**`meal-plans-list.component.ts`** (ou `meal-plan-form.component.ts`)
-
-```typescript
-confirmDelete(mealPlan: MealPlan): void {
-  confirmDelete({
-    header: 'Delete Meal Plan',
-    entityName: mealPlan.name,
-    delete$: this.mealPlansService.remove(mealPlan.id),
-    conflictMessage: `"${mealPlan.name}" is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-**`seasons-list.component.ts`** _(dépend de S3-FIX-FE-001)_
-
-```typescript
-confirmDelete(season: Season): void {
-  confirmDelete({
-    header: 'Delete Season',
-    entityName: season.name,
-    delete$: this.seasonsService.deleteSeason(season.id),
-    onSuccess: () => this.seasonsService.reload(),
-    conflictMessage: `"${season.name}" cannot be deleted because it is used in contract periods.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/shared/utils/confirm-delete.util.ts                                    ← nouveau
-apps/frontend/src/app/features/management/supplements/components/supplement-form/supplement-form.component.ts
-apps/frontend/src/app/features/management/hotels/room-types/room-types-list/room-types-list.component.ts
-apps/frontend/src/app/features/management/markets/components/market-form/market-form.component.ts
-apps/frontend/src/app/features/management/meal-plans/components/meal-plan-form/meal-plan-form.component.ts
-apps/frontend/src/app/features/management/seasons/seasons-list/seasons-list.component.ts
-```
-
-#### Acceptance Criteria
-
-- ✅ `confirm-delete.util.ts` créé dans `shared/utils/`
-- ✅ Aucune des 6 méthodes `confirmDelete` existantes ne contient plus de `subscribe` inline
-- ✅ Comportement identique avant/après (succès, erreur 409, erreur générique)
-- ✅ `conflictMessage` renseigné dans tous les appels
-- ✅ `err` typé `{ status: number }` — pas de `any`
-- ✅ `take(1)` centralisé dans le helper, supprimé des composants
-
----
-
-### S3-FIX-FE-001 — Expose `reload()` on `SeasonsService`
-
-- **Type :** Fix
-- **Priority :** P0 ← bloque S3-REFACTOR-FE-001 sur le composant seasons
-- **Story Points :** 1
-- **Branch :** `fix/S3-FIX-FE-001-seasons-service-reload`
-- **Commit :** `fix(seasons): expose public reload() method on SeasonsService`
-
-#### Contexte
-
-`SeasonsService` a une méthode `refresh()` privée. `SeasonsListComponent` ne peut pas
-l'appeler depuis l'extérieur. Tous les autres services du projet exposent `reload()` —
-`SeasonsService` doit être aligné.
-
-#### Tâche
-
-```typescript
-// Avant — privé, inaccessible
-private refresh(): void {
-  this.loaded = false;
-  this.loadSeasons();
-}
-
-// Après — public, aligné sur le pattern projet
-reload(): void {
-  this.loaded = false;
-  this.loadSeasons();
-}
-
-// Mettre à jour les 3 appels internes
-createSeason(dto: SeasonDto): Observable<Season> {
-  return this.http.post<Season>(this.apiUrl, dto)
-    .pipe(tap(() => this.reload()));
-}
-
-updateSeason(id: string, dto: Partial<SeasonDto>): Observable<Season> {
-  return this.http.patch<Season>(`${this.apiUrl}/${id}`, dto)
-    .pipe(tap(() => this.reload()));
-}
-
-deleteSeason(id: string): Observable<void> {
-  return this.http.delete<void>(`${this.apiUrl}/${id}`)
-    .pipe(tap(() => this.reload()));
-}
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/features/management/seasons/seasons.service.ts
-```
-
-#### Acceptance Criteria
-
-- ✅ `reload()` est public
-- ✅ `refresh()` n'existe plus — renommé, pas dupliqué
-- ✅ Les trois `tap()` internes pointent vers `this.reload()`
-- ✅ `SeasonsListComponent` compile sans erreur
-
----
+`SeasonsService` avait une méthode `refresh()` **privée**, inaccessible depuis `SeasonsListComponent`. Renommée en `reload()` publique (alignée sur le pattern déjà utilisé ailleurs dans le projet), les 3 `tap()` internes (`createSeason`/`updateSeason`/`deleteSeason`) mis à jour en conséquence.
 
 ### S3-FIX-BE-001 — Corriger `HAS_CONTRACTS` → `HAS_PERIODS` pour Season
 
-- **Type :** Fix
-- **Priority :** P1
-- **Story Points :** 1
-- **Branch :** `fix/S3-FIX-BE-001-season-conflict-message`
-- **Commit :** `fix(seasons): use HAS_PERIODS result code and clarify 409 conflict message`
+**Status : ✅ Done** · P1 · 1 SP · `fix/S3-FIX-BE-001-season-conflict-message`
 
-#### Contexte
+`PrismaSeasonRepository.remove()` retournait `HAS_CONTRACTS` quand une `Season` était liée à des `ContractPeriod` — nom trompeur (Season n'est jamais liée directement à un `Contract`). `RepositoryResult.HAS_PERIODS` ajouté (nouveau, **`HAS_CONTRACTS` conservé** — toujours correct pour MealPlan/Market/Supplement, qui eux sont bien liés à des `Contract`). Message 409 clarifié : _"Season {id} cannot be deleted — it is linked to existing contract periods"_.
 
-`PrismaSeasonRepository.remove()` retourne `RepositoryResult.HAS_CONTRACTS` quand une
-Season est liée à des `ContractPeriod`. Le nom est trompeur : une Season n'est pas liée
-à des `Contract` mais à des `ContractPeriod`. Le message d'erreur backend est également
-vague.
+### S3-REFACTOR-FE-003 — Migrer `HotelsListComponent.confirmDelete` + étendre le helper
 
-`HAS_CONTRACTS` doit rester dans l'enum — il est correct pour MealPlan, Market,
-Supplement qui sont eux bien liés à des `Contract`. Ne pas le supprimer.
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-REFACTOR-FE-001 · `refactor/S3-REFACTOR-FE-003-hotels-confirm-delete`
 
-#### Tâches
+`HotelsListComponent.confirmDelete()` avait 3 problèmes : message conditionnel (hôtel avec/sans données liées) non supporté par le helper d'origine, succès silencieux (pas de reload/toast), erreur 409 silencieuse. `ConfirmDeleteOptions` étendu avec `message?: string` (rétrocompatible — les 5 appels existants sans `message` compilent sans modification). `HotelsListComponent` migré : message d'avertissement cascade si `ageCategories`/`roomTypes` configurés, sinon message standard généré ; `onSuccess: () => this.hotelsService.reload()` (dépendait de S3-FIX-FE-003).
 
-**`apps/backend/src/common/repository.types.ts`**
+### S3-REFACTOR-FE-002 — Confirmations sur `RoomTypesFormComponent`
 
-```typescript
-export enum RepositoryResult {
-  DELETED = 'DELETED',
-  NOT_FOUND = 'NOT_FOUND',
-  CONFLICT = 'CONFLICT',
-  HAS_CONTRACTS = 'HAS_CONTRACTS', // ← garder — MealPlan, Market, Supplement
-  HAS_PERIODS = 'HAS_PERIODS', // ← nouveau — Season → ContractPeriod
-}
-```
+**Status : ✅ Done** · P1 · 2 SP · Depends on S3-REFACTOR-FE-001 · `refactor/S3-REFACTOR-FE-002-room-type-form-confirm-delete`
 
-**`apps/backend/src/seasons/repositories/prisma-season.repository.ts`**
+Deux suppressions sans confirmation identifiées : `deleteCapacity(row)` (perte faible, recréable) et `deleteRoomType()` (perte élevée, cascade sur toutes les capacités, peut être bloqué 409 si lié à un contrat). **Deux niveaux de confirmation distincts, décision assumée** :
 
-```typescript
-// Avant
-if (error.code === 'P2003') return RepositoryResult.HAS_CONTRACTS;
+- `deleteRoomType()` → via le helper `confirmDelete` complet (toast + gestion 409).
+- `deleteCapacity()` → `ConfirmationService.confirm()` directe, **sans** passer par le helper (pas de 409 possible pour une sous-ressource de formulaire, un toast "Deleted" serait du bruit pour une action aussi granulaire). Règle actée : ne pas généraliser le helper au-delà de son périmètre — entités de premier niveau uniquement.
 
-// Après
-if (error.code === 'P2003') return RepositoryResult.HAS_PERIODS;
-```
+`<p-confirmDialog />` placé au niveau racine du template (hors `<p-dialog>`), jamais dupliqué si déjà rendu par le parent.
 
-**`apps/backend/src/seasons/seasons.service.ts`**
+### S3-FIX-FE-002 — Ref template `#roomTypesForm` manquante
 
-```typescript
-// Avant
-if (result === RepositoryResult.HAS_CONTRACTS)
-  throw new ConflictException(`Season ${id} has linked Periods`);
+**Status : ✅ Done** · P0 · 1 SP · `fix/S3-FIX-FE-002-room-types-form-viewchild-ref`
 
-// Après
-if (result === RepositoryResult.HAS_PERIODS)
-  throw new ConflictException(
-    `Season ${id} cannot be deleted — it is linked to existing contract periods`
-  );
-```
+`hotels-form.component.html` rendait `<app-room-types-form>` sans `#roomTypesForm` — le `viewChild<RoomTypesFormComponent>('roomTypesForm')` résolvait `undefined`, donc `onAddRoom()`/`onEditRoom()` ne faisaient rien (`.open()` appelé sur `undefined`). Ref ajoutée, `viewChild` vérifié/complété côté composant. Découvert en marge de S3-REFACTOR-FE-002 en testant le dialog `RoomTypesFormComponent`.
 
-#### Fichiers modifiés
+### S3-FIX-FE-003 — Exposer `reload()` sur `HotelsService`
 
-```
-apps/backend/src/common/repository.types.ts
-apps/backend/src/seasons/repositories/prisma-season.repository.ts
-apps/backend/src/seasons/seasons.service.ts
-```
+**Status : ✅ Done** · P0 (bloquait S3-REFACTOR-FE-003) · 1 SP · `fix/S3-FIX-FE-003-hotels-service-reload`
 
-#### Acceptance Criteria
+Même anomalie que S3-FIX-FE-001, sur `HotelsService` cette fois. `refresh()` privée → `reload()` publique, 3 `tap()` internes mis à jour (`createHotel`/`updateHotel`/`deleteHotel`).
 
-- ✅ `HAS_PERIODS` existe dans `RepositoryResult`
-- ✅ `HAS_CONTRACTS` conservé (MealPlan/Market/Supplement non impactés)
-- ✅ Supprimer une Season liée → HTTP 409 avec message clair
-- ✅ Supprimer une Season non liée → HTTP 204 (comportement inchangé)
+### S3-DOC-001 — Mettre à jour le doc Sprint 3 avec les nouveaux tickets
+
+**Status : ✅ Done (superseded)** · P2 · 1 SP · Depends on tous les tickets précédents · `docs/S3-DOC-001-update-sprint3-refacto-tickets`
+
+Objectif initial : ajouter une section "Refacto & Fix" au document original. **Ce document consolidé remplace ce livrable** — la mise à jour demandée est intégrée nativement ici plutôt que patchée sur l'ancien fichier.
 
 ---
 
-### S3-REFACTOR-FE-003 — Migrate `HotelsListComponent.confirmDelete` + extend helper
-
-- **Type :** Refactor
-- **Priority :** P1
-- **Story Points :** 2
-- **Branch :** `refactor/S3-REFACTOR-FE-003-hotels-confirm-delete`
-- **Commit :** `refactor(hotels): migrate confirmDelete to shared utility with custom message support`
-- **Depends on :** S3-REFACTOR-FE-001
-
-#### Contexte
-
-`HotelsListComponent.confirmDelete()` a trois problèmes :
-
-1. Message conditionnel (hôtel avec/sans données) non supporté par le helper actuel
-2. Succès silencieux — liste non rafraîchie, pas de toast
-3. Erreur 409 silencieuse — commentaire vide, zéro feedback utilisateur
-
-#### Tâche 1 — Étendre `ConfirmDeleteOptions` avec `message?`
-
-Le helper créé en S3-REFACTOR-FE-001 reçoit un nouveau champ optionnel. Les 5 appels
-existants sans `message` ne sont pas modifiés.
-
-```typescript
-// confirm-delete.util.ts — seul changement dans l'interface
-export interface ConfirmDeleteOptions {
-  // ... champs existants ...
-  message?: string;   // ← nouveau, optionnel
-}
-
-// Dans la fonction — une ligne change
-message: opts.message ?? `Are you sure you want to delete "${opts.entityName}"?`,
-```
-
-#### Tâche 2 — Migrer `HotelsListComponent`
-
-```typescript
-// Ajouter l'injection si absente
-private readonly messageService = inject(MessageService);
-
-confirmDelete(hotel: Hotel): void {
-  const hasData =
-    (hotel.ageCategories?.length ?? 0) > 0 ||
-    (hotel.roomTypes?.length ?? 0) > 0;
-
-  confirmDelete({
-    header: 'Delete Hotel',
-    entityName: hotel.name,
-    message: hasData
-      ? `"${hotel.name}" has configured age categories or room types. Deleting it will remove all associated data. Continue?`
-      : undefined,
-    delete$: this.hotelsService.deleteHotel(hotel.id),
-    onSuccess: () => this.hotelsService.reload(),
-    conflictMessage: `"${hotel.name}" cannot be deleted because it is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/shared/utils/confirm-delete.util.ts
-apps/frontend/src/app/features/management/hotels/hotels-list/hotels-list.component.ts
-```
-
-#### Acceptance Criteria
-
-- ✅ `message?: string` ajouté dans `ConfirmDeleteOptions`
-- ✅ Les 5 appels existants sans `message` compilent sans modification
-- ✅ Hôtel avec données → message d'avertissement cascade
-- ✅ Hôtel sans données → message standard généré par le helper
-- ✅ Succès → toast success + `hotelsService.reload()`
-- ✅ Erreur 409 → toast warn avec `conflictMessage`
-- ✅ Plus de `subscribe` inline dans `confirmDelete()`
-
----
-
-### S3-REFACTOR-FE-002 — Add confirmation dialogs to `RoomTypesFormComponent`
-
-- **Type :** Refactor
-- **Priority :** P1
-- **Story Points :** 2 ← était 1, ajusté car deux méthodes traitées
-- **Branch :** `refactor/S3-REFACTOR-FE-002-room-type-form-confirm-delete`
-- **Commit :** `refactor(hotels): add confirmation dialogs for deleteRoomType and deleteCapacity`
-- **Depends on :** S3-REFACTOR-FE-001 (le helper `confirmDelete` doit exister)
-
-#### Contexte
-
-`RoomTypesFormComponent` a deux méthodes de suppression sans confirmation :
-
-| Méthode               | Supprime               | Cascade Prisma             | Risque                             |
-| --------------------- | ---------------------- | -------------------------- | ---------------------------------- |
-| `deleteCapacity(row)` | Une `RoomTypeCapacity` | Non                        | Faible — recréable facilement      |
-| `deleteRoomType()`    | Le `RoomType` entier   | Oui (toutes ses capacités) | Élevé — bloqué si lié à un contrat |
-
-Les deux suppriment immédiatement au clic. Un clic accidentel sur `deleteRoomType()`
-supprime le room type **et toutes ses capacités** sans avertissement, et peut retourner
-une erreur 409 silencieuse si des contrats y sont liés.
-
-`RoomTypesListComponent` a déjà été migré vers `confirmDelete()` en S3-REFACTOR-FE-001.
-Le formulaire doit être aligné sur le même comportement.
-
-#### Décision — deux niveaux de confirmation différents
-
-Les deux suppressions n'ont pas le même poids — elles ne méritent pas la même UX.
-
-**`deleteCapacity`** — confirmation légère : la perte est limitée (une seule ligne de
-config, recréable en 2 clics). Une `p-confirmDialog` standard suffit, sans le helper
-`confirmDelete` car il n'y a pas de toast attendu ni de gestion 409 (les capacités ne
-peuvent pas être liées à des contrats directement).
-
-**`deleteRoomType`** — confirmation complète via le helper `confirmDelete` : la perte
-est lourde (room type + toutes ses capacités), et le backend peut bloquer avec un 409
-si le room type est utilisé dans un contrat. Le helper gère les toasts et le 409.
-
-#### Tâche 1 — `deleteRoomType()` via le helper `confirmDelete`
-
-Ajouter les injections :
-
-```typescript
-private readonly confirmationService = inject(ConfirmationService);
-private readonly messageService      = inject(MessageService);
-```
-
-Remplacer la méthode :
-
-```typescript
-// Avant — suppression directe, sans confirmation, sans feedback 409
-deleteRoomType(): void {
-  const room = this._roomType();
-  if (!room) return;
-
-  this.hotelsService
-    .deleteRoomType(this.hotelId(), room.id)
-    .pipe(take(1))
-    .subscribe({
-      next: () => {
-        this.close();
-        this.saved.emit();
-      },
-    });
-}
-
-// Après
-deleteRoomType(): void {
-  const room = this._roomType();
-  if (!room) return;
-
-  confirmDelete({
-    header: 'Delete Room Type',
-    entityName: room.name,
-    delete$: this.hotelsService.deleteRoomType(this.hotelId(), room.id),
-    onSuccess: () => {
-      this.close();
-      this.saved.emit();
-    },
-    conflictMessage: `"${room.name}" cannot be deleted because it is used in existing contracts.`,
-    confirmationService: this.confirmationService,
-    messageService: this.messageService,
-  });
-}
-```
-
-#### Tâche 2 — `deleteCapacity()` avec confirmation inline
-
-`deleteCapacity` ne passe pas par le helper — pas de toast attendu, pas de 409 possible.
-Une confirmation `ConfirmationService` directe suffit.
-
-```typescript
-// Avant — suppression directe, sans confirmation
-deleteCapacity(row: CapacityRow): void {
-  const room = this._roomType();
-  if (!room || !row.capacity) return;
-
-  this.hotelsService
-    .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity.id)
-    .pipe(take(1))
-    .subscribe({
-      next: () => {
-        row.capacity = null;
-        row.maxPax.setValue(1);
-        row.state.set(CapacityRowState.Idle);
-        this.capacityRows.set([...this.capacityRows()]);
-      },
-    });
-}
-
-// Après
-deleteCapacity(row: CapacityRow): void {
-  const room = this._roomType();
-  if (!room || !row.capacity) return;
-
-  this.confirmationService.confirm({
-    header: 'Remove Capacity',
-    message: `Remove the capacity for "${row.ageCategory.name}"?`,
-    icon: 'pi pi-exclamation-triangle',
-    accept: () => {
-      this.hotelsService
-        .deleteRoomTypeCapacity(this.hotelId(), room.id, row.capacity!.id)
-        .pipe(take(1))
-        .subscribe({
-          next: () => {
-            row.capacity = null;
-            row.maxPax.setValue(1);
-            row.state.set(CapacityRowState.Idle);
-            this.capacityRows.set([...this.capacityRows()]);
-          },
-        });
-    },
-  });
-}
-```
-
-> **Pourquoi ne pas passer `deleteCapacity` par le helper ?**
-> Le helper émet toujours un toast "Deleted" — ce serait du bruit pour une action aussi
-> granulaire que retirer une ligne de capacité. L'UX correcte ici est la confirmation
-> seule, sans toast. Le helper est conçu pour des suppressions d'entités de premier
-> niveau (Hotel, RoomType, Market…), pas pour des sous-ressources de formulaire.
-> Règle : ne pas généraliser un helper au-delà de son périmètre d'origine.
-
-#### Tâche 3 — Template
-
-Vérifier que `<p-confirmDialog />` est présent dans `room-types-form.component.html`.
-Si le composant parent (`hotels-form`) le rend déjà, ne pas le dupliquer.
-
-Ajouter `ConfirmDialogModule` dans le tableau `imports` du composant.
-
-#### Imports à ajouter
-
-```typescript
-import { confirmDelete } from '../../../../../shared/utils/confirm-delete.util';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room-types-form.component.ts
-apps/frontend/src/app/features/management/hotels/room-types/room-types-form/room-types-form.component.html
-```
-
-#### Acceptance Criteria
-
-**`deleteRoomType()`**
-
-- ✅ Cliquer "Delete Room Type" ouvre une `p-confirmDialog`
-- ✅ Confirmer → supprime, ferme le dialog, émet `saved`
-- ✅ Annuler → rien
-- ✅ Erreur 409 → toast warn avec `conflictMessage`
-- ✅ Erreur générique → toast error
-- ✅ Plus de `subscribe` inline dans `deleteRoomType()`
-
-**`deleteCapacity()`**
-
-- ✅ Cliquer "Remove" sur une ligne de capacité ouvre une `p-confirmDialog`
-- ✅ Confirmer → supprime la capacité, remet `maxPax` à 1, state → Idle
-- ✅ Annuler → rien, la ligne reste intacte
-- ✅ Pas de toast (action granulaire — confirmation seule suffit)
-
----
-
-### S3-DOC-001 — Mettre à jour `SPRINT_3.md` avec les nouveaux tickets
-
-- **Type :** Docs
-- **Priority :** P2
-- **Story Points :** 1
-- **Branch :** `docs/S3-DOC-001-update-sprint3-refacto-tickets`
-- **Commit :** `docs(sprint3): add refacto and fix tickets to Sprint 3 doc`
-- **Depends on :** tous les tickets précédents mergés
-
-#### Contexte
-
-`SPRINT_3.md` ne référence pas les tickets de refacto et fix ajoutés en cours de
-sprint. Le document doit refléter l'état réel du sprint pour servir de référence
-aux sprints suivants.
-
-#### Tâches
-
-1. Ajouter une section **Refacto & Fix** à la fin de `SPRINT_3.md`, après les tâches
-   frontend existantes et avant la Definition of Done
-2. Y lister les 5 nouveaux tickets avec leur statut final :
-
-#### Acceptance Criteria
-
-- ✅ Section "Refacto & Fix" présente avec les 5 tickets et le total SP
-- ✅ Total SP mis à jour (21 → 28)
-- ✅ Architecture Decisions mis à jour avec la règle `confirmDelete`
-- ✅ Definition of Done mis à jour
-- ✅ Notes for Sprint 4 mis à jour
-- ✅ Aucune autre section du document modifiée
-
-### S3-FIX-FE-002 — Fix missing `#roomTypesForm` template ref in `hotels-form.component.html`
-
-- **Type :** Fix
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `fix/S3-FIX-FE-002-room-types-form-viewchild-ref`
-- **Commit :** `fix(hotels): add missing #roomTypesForm template ref`
-
----
-
-#### Contexte
-
-`hotels-form.component.html` rend `<app-room-types-form>` sans référence template :
-
-```html
-<!-- État actuel — ref absente -->
-<app-room-types-form
-  [hotelId]="hotelId()!"
-  [ageCategories]="ageCategories()"
-  (saved)="onRoomSaved()"
-/>
-```
-
-Sans `#roomTypesForm`, le `viewChild` dans `hotels-form.component.ts` résout `undefined`.
-`onAddRoom()` et `onEditRoom($event)` appellent `this.roomTypesForm()?.open(...)` sur
-`undefined` — le dialog ne s'ouvre jamais.
-
-Le pattern `viewChild` + ref template est établi dans ce projet depuis Sprint 2
-(même pattern que `AgeCategoriesFormComponent`).
-
-#### Tâche 1 — Ajouter `#roomTypesForm` dans le template
-
-**`hotels-form.component.html`**
-
-```html
-<!-- Après -->
-<app-room-types-form
-  #roomTypesForm
-  [hotelId]="hotelId()!"
-  [ageCategories]="ageCategories()"
-  (saved)="onRoomSaved()"
-/>
-```
-
-#### Tâche 2 — Vérifier le `viewChild` dans le composant
-
-**`hotels-form.component.ts`** — vérifier que la déclaration existe :
-
-```typescript
-readonly roomTypesForm = viewChild<RoomTypesFormComponent>('roomTypesForm');
-```
-
-Si absent, l'ajouter et vérifier que `onAddRoom()` / `onEditRoom()` l'utilisent :
-
-```typescript
-onAddRoom(): void {
-  this.roomTypesForm()?.open();
-}
-
-onEditRoom(room: RoomType): void {
-  this.roomTypesForm()?.open(room);
-}
-```
-
-#### Note sur `<p-confirmDialog />`
-
-Le pattern du projet est de déclarer `<p-confirmDialog />` localement dans chaque
-composant liste (visible dans `hotels-list.component.html`).
-
-Pour S3-REFACTOR-FE-002, `room-types-form.component.html` est un dialog (`<p-dialog>`)
-— pas un composant liste. Le `<p-confirmDialog />` doit y être ajouté **en dehors**
-du `<p-dialog>`, au niveau racine du template :
-
-```html
-<!-- room-types-form.component.html -->
-
-<p-confirmDialog /> ← au niveau racine, jamais à l'intérieur de p-dialog
-
-<p-dialog [(visible)]="visible" ...> ... </p-dialog>
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/features/management/hotels/hotels-form/hotels-form.component.html
-apps/frontend/src/app/features/management/hotels/hotels-form/hotels-form.component.ts   (si viewChild absent)
-```
-
-#### Acceptance Criteria
-
-- ✅ `#roomTypesForm` présent dans `hotels-form.component.html`
-- ✅ `viewChild<RoomTypesFormComponent>('roomTypesForm')` présent dans `hotels-form.component.ts`
-- ✅ Cliquer "Add Room Type" ouvre le dialog
-- ✅ Cliquer "Edit" sur une ligne de room type ouvre le dialog pré-rempli
-- ✅ `<p-confirmDialog />` placé au niveau racine de `room-types-form.component.html` (hors `<p-dialog>`) pour S3-REFACTOR-FE-002
-
----
-
-### S3-FIX-FE-003 — Expose `reload()` on `HotelsService`
-
-- **Type :** Fix
-- **Priority :** P0 ← bloque S3-REFACTOR-FE-003 (`onSuccess: () => this.hotelsService.reload()`)
-- **Story Points :** 1
-- **Branch :** `fix/S3-FIX-FE-003-hotels-service-reload`
-- **Commit :** `fix(hotels): expose public reload() method on HotelsService`
-
-#### Contexte
-
-`HotelsService` a une méthode `refresh()` privée — même anomalie que `SeasonsService`
-corrigée en S3-FIX-FE-001. `HotelsListComponent` ne peut pas l'appeler depuis
-l'extérieur, ce qui bloque S3-REFACTOR-FE-003 dont le `onSuccess` appelle
-`this.hotelsService.reload()`.
-
-#### Tâche
-
-```typescript
-// Avant — privé, inaccessible
-private refresh(): void {
-  this.loaded = false;
-  this.loadHotels();
-}
-
-// Après — public, aligné sur le pattern projet
-reload(): void {
-  this.loaded = false;
-  this.loadHotels();
-}
-
-// Mettre à jour les 3 appels internes
-createHotel(dto: HotelDto): Observable<Hotel> {
-  return this.http.post<Hotel>(`${this.apiUrl}/hotels`, dto)
-    .pipe(tap(() => this.reload()));
-}
-
-updateHotel(id: string, dto: Partial<HotelDto>): Observable<Hotel> {
-  return this.http.patch<Hotel>(`${this.apiUrl}/hotels/${id}`, dto)
-    .pipe(tap(() => this.reload()));
-}
-
-deleteHotel(id: string): Observable<void> {
-  return this.http.delete<void>(`${this.apiUrl}/hotels/${id}`)
-    .pipe(tap(() => this.reload()));
-}
-```
-
-#### Fichiers modifiés
-
-```
-apps/frontend/src/app/features/management/hotels/hotels.service.ts
-```
-
-#### Acceptance Criteria
-
-- ✅ `reload()` est public
-- ✅ `refresh()` n'existe plus — renommé, pas dupliqué
-- ✅ Les trois `tap(() => this.refresh())` internes pointent vers `this.reload()`
-- ✅ `HotelsListComponent` compile sans erreur après S3-REFACTOR-FE-003
-
----
+## 7. Ticket — Déploiement
 
 ### S3-OPS-002 — Déploiement Sprint 3 sur Render
 
-- **Type :** Ops / Deployment
-- **Priority :** P0
-- **Story Points :** 3 ← était 2, ajusté (migration Neon plus complexe que prévu)
-- **Dépend de :** S3-OPS-001 (main à jour avec le tag v0.3.0)
-- **Plateforme :** Render + Neon (PostgreSQL)
+**Status : ✅ Done** · P0 · 3 SP (ajusté depuis 2, migration Neon plus complexe que prévu) · Depends on S3-OPS-001 (main à jour, tag v0.3.0) · Plateforme : Render + Neon PostgreSQL
 
-## Architecture cible
+**Architecture cible :**
 
 ```
 Render Services
@@ -2008,343 +531,128 @@ Base de données
 └── Neon PostgreSQL   (projet Runner, branch production, DB neondb)
 ```
 
-## ✅ Phase 1 — Migration DB Runner vers Neon
+**Phase 1 — Migration DB vers Neon (✅)**
 
-### 1. Configuration connexion Neon
+- Deux connection strings Neon : `DATABASE_URL` (pooler PgBouncer, runtime NestJS) et `DIRECT_URL` (connexion directe, migrations Prisma — obligatoire car les advisory locks PostgreSQL de `prisma migrate` sont incompatibles avec PgBouncer). `directUrl = env("DIRECT_URL")` ajouté au `datasource` de `schema.prisma`.
+- Diagnostic initial : migration `20260325130609_init` marquée `failed` en base (tentative interrompue), tables partiellement créées, état incohérent.
+- `npx prisma migrate reset` → 8 migrations appliquées proprement, Prisma Client régénéré, seed exécuté.
+- Données métier locales exportées (`pg_dump --data-only`) et importées dans Neon via connexion directe. Seul conflit : `admin@runner.com` déjà présent via le seed — ignoré (données identiques).
 
-Deux connection strings récupérées depuis le dashboard Neon
-(projet Runner, branch production, DB neondb) :
+**Phase 2 — Préparation du code (✅)**
 
-| Variable       | URL                                                                         | Usage             |
-| -------------- | --------------------------------------------------------------------------- | ----------------- |
-| `DATABASE_URL` | `postgresql://...pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require` | Runtime NestJS    |
-| `DIRECT_URL`   | `postgresql://...c-8.us-east-1.aws.neon.tech/neondb?sslmode=require`        | Migrations Prisma |
+- `render.yaml` créé à la racine : deux services (`runner-backend` web/node, `runner-frontend` static), `buildFilter` par service pour éviter les rebuilds croisés, variables d'env (`DATABASE_URL`/`DIRECT_URL`/`JWT_SECRET`/`JWT_REFRESH_SECRET`/`CORS_ORIGIN` en `sync: false`), `startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js`.
+- CORS lu depuis `process.env.CORS_ORIGIN` (au lieu d'un `origin` hardcodé sur `localhost:4200`).
 
-`directUrl = env("DIRECT_URL")` ajouté dans le `datasource` de `schema.prisma`.
+**Phase 3 — Déploiement (✅)**
 
-> **Pourquoi deux URLs ?**
-> Neon expose un pooler PgBouncer pour les requêtes runtime (scalable, gère les
-> connexions concurrentes). Mais Prisma migrate utilise des advisory locks PostgreSQL
-> incompatibles avec PgBouncer — la connexion directe est obligatoire pour les
-> migrations.
+- Services créés via Render Blueprint (détection automatique de `render.yaml`).
+- Variables `sync: false` renseignées manuellement (URLs Neon, `CORS_ORIGIN` = URL frontend Render).
+- `GET /health` → 200. `environment.prod.ts` mis à jour avec l'URL backend réelle.
+- Vérification manuelle : login, navigation, CRUD complet sur les 4 référentiels, suppression avec confirmation.
 
-### 2. Diagnostic état initial
+**Problèmes rencontrés :**
 
-```bash
-npx prisma migrate status --schema=./prisma/schema.prisma
-```
+| Problème                         | Cause                                            | Solution                                        |
+| -------------------------------- | ------------------------------------------------ | ----------------------------------------------- |
+| `migrate resolve` timeout        | Advisory lock incompatible avec le pooler Neon   | `DIRECT_URL` + `directUrl` dans `schema.prisma` |
+| Migration `init` failed en base  | Tentative de migration interrompue pré-existante | `prisma migrate reset` sur la DB Neon           |
+| `db pull` écrase `schema.prisma` | L'introspection modifie le schéma local          | `git checkout prisma/schema.prisma`             |
+| CORS bloqué en prod              | `origin` hardcodé sur `localhost:4200`           | Lecture depuis `process.env.CORS_ORIGIN`        |
 
-Résultat : 8 migrations présentes dans le repo, aucune appliquée. Une migration
-`20260325130609_init` existait dans `_prisma_migrations` marquée `failed`
-(créée par le collègue, exécution interrompue). La DB contenait des tables
-partiellement créées — état incohérent.
-
-### 3. Reset et migration propre
-
-Décision : vider la DB et repartir proprement.
-
-```bash
-npx prisma migrate reset --schema=./prisma/schema.prisma
-```
-
-Résultat :
-
-- 8 migrations appliquées dans l'ordre
-- Prisma Client régénéré (v6.19.2)
-- Seed exécuté automatiquement (`tsx prisma/seed.ts`) → `Seeding done!`
-
-### 4. Import des données métier locales
-
-Export depuis PostgreSQL local :
-
-```bash
-pg_dump -h localhost -U postgres -d runner \
-  --data-only \
-  --no-owner \
-  --no-privileges \
-  -f data_export.sql
-```
-
-Import dans Neon (connexion directe) :
-
-```bash
-psql "postgresql://neondb_owner:***@ep-cool-waterfall-aqaeu4dx.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require" \
-  -f data_export.sql
-```
-
-Résultat : toutes les tables importées. Seul conflit : table `User` —
-`admin@runner.com` existait déjà via le seed. Ignoré (données identiques).
-
-### État final DB Neon
-
-| Statut         | Détail         |
-| -------------- | -------------- |
-| Migrations     | 8/8 appliquées |
-| Seed           | Exécuté        |
-| Données métier | Importées      |
-| DB locale      | Inchangée      |
-
-## ✅ Phase 2 — Préparation du code (TERMINÉE)
-
-### `render.yaml` — créé à la racine du repo
-
-```yaml
-services:
-  - type: web
-    name: runner-backend
-    env: node
-    region: oregon
-    plan: free
-    branch: main
-    buildCommand: NODE_ENV=development npm install && npx prisma generate && npx nx build backend --configuration=production
-    startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_REFRESH_SECRET
-        generateValue: true
-      - key: JWT_EXPIRATION
-        value: 1d
-      - key: PORT
-        value: 10000
-      - key: NODE_ENV
-        value: production
-      - key: CORS_ORIGIN
-        sync: false
-    buildFilter:
-      paths:
-        - apps/backend/**
-        - prisma/**
-        - libs/**
-        - package.json
-        - package-lock.json
-        - nx.json
-        - tsconfig.base.json
-      ignoredPaths:
-        - '**/*.md'
-        - '**/*.spec.ts'
-
-  - type: web
-    name: runner-frontend
-    env: static
-    region: oregon
-    plan: free
-    branch: main
-    buildCommand: NODE_ENV=development npm install && npx nx build frontend --configuration=production
-    staticPublishPath: dist/apps/frontend/browser
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    buildFilter:
-      paths:
-        - apps/frontend/**
-        - libs/**
-        - package.json
-        - package-lock.json
-        - nx.json
-        - tsconfig.base.json
-      ignoredPaths:
-        - '**/*.md'
-        - '**/*.spec.ts'
-```
-
-### `main.ts` — CORS depuis variable d'environnement
-
-```typescript
-app.enableCors({
-  origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-});
-```
-
-Commit : `chore(ops): add render.yaml and fix CORS origin from env var`
-Branch : `chore/S3-OPS-002-render-deployment` → mergée dans `main`
-
-## 🔄 Phase 3 — Déploiement Render (EN COURS)
-
-### Étape 1 — Créer les services via Blueprint
-
-1. [render.com](https://render.com) → **New** → **Blueprint**
-2. Connecter le repo GitHub `tokimanana/Runner`
-3. Render détecte `render.yaml` → propose de créer `runner-backend` et `runner-frontend`
-4. Cliquer **Apply**
-
-Variables `sync: false` à renseigner manuellement :
-
-| Service        | Variable       | Valeur                                 |
-| -------------- | -------------- | -------------------------------------- |
-| runner-backend | `DATABASE_URL` | URL pooler Neon                        |
-| runner-backend | `DIRECT_URL`   | URL directe Neon                       |
-| runner-backend | `CORS_ORIGIN`  | `https://runner-frontend.onrender.com` |
-
-### Étape 2 — Vérifier le déploiement backend
-
-```bash
-curl https://runner-backend.onrender.com/health
-```
-
-Réponse attendue : HTTP 200
-
-### Étape 3 — Mettre à jour `environment.prod.ts`
-
-Une fois l'URL backend connue (ex: `https://runner-backend.onrender.com`) :
-
-```typescript
-// apps/frontend/src/environments/environment.prod.ts
-export const environment = {
-  production: true,
-  apiUrl: 'https://runner-backend.onrender.com',
-};
-```
-
-Commit : `chore(ops): set production API URL for frontend`
-
-### Étape 4 — Vérifier le déploiement frontend
-
-- Ouvrir `https://runner-frontend.onrender.com`
-- Login avec `admin@runner.com`
-- Naviguer sur Hotels, MealPlans, Markets, Currencies, Supplements
-- Tester un CRUD complet
-- Tester une suppression avec confirmation dialog
-
-## Problèmes rencontrés et solutions
-
-| Problème                         | Cause                                            | Solution                                               |
-| -------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
-| `migrate resolve` timeout        | Advisory lock incompatible avec pooler Neon      | Utiliser `DIRECT_URL` + `directUrl` dans schema.prisma |
-| Migration `init` failed en base  | Collègue avait tenté une migration interrompue   | `prisma migrate reset` sur la DB Neon                  |
-| `db pull` écrase `schema.prisma` | Commande d'introspection modifie le schéma local | `git checkout prisma/schema.prisma` pour revenir       |
-| CORS bloqué en prod              | `origin` hardcodé sur `localhost:4200`           | Lire depuis `process.env.CORS_ORIGIN`                  |
-
-## Acceptance Criteria
-
-- ✅ `render.yaml` commité dans `main`
-- ✅ CORS lit depuis `process.env.CORS_ORIGIN`
-- ✅ DB Neon : 8/8 migrations appliquées + données importées
-- ✅ `runner-backend` déployé et en ligne sur Render
-- ✅ `runner-frontend` déployé et en ligne sur Render
-- ✅ `GET /health` répond HTTP 200
-- ✅ Login fonctionne depuis le frontend déployé
-- ✅ Navigation et CRUD fonctionnels sur tous les référentiels
-- ✅ `environment.prod.ts` mis à jour avec l'URL Render réelle
-- ✅ Routing SPA fonctionne (refresh sur une route Angular ne donne pas 404)
+**AC :** `render.yaml` commité sur `main` · CORS dynamique · DB Neon 8/8 migrations + données importées · backend et frontend en ligne · `/health` → 200 · login + CRUD + routing SPA (refresh sans 404) fonctionnels en prod.
 
 ---
 
-## Definition of Done - Sprint 3
+## 8. Definition of Done — Sprint 3 (final)
 
 ### Backend
 
-- ✅ 4 CRUD modules created: MealPlans, Markets, Currencies, Supplements
-- ✅ DTOs created with each module (class-validator)
-- ✅ `createdAt` / `updatedAt` on MealPlan, Market, Supplement — not on Currency
-- ✅ Currencies global — no `tourOperatorId`, `RolesGuard` maintained
-- ✅ Supplements: `SupplementUnit` enum + `price` Decimal serialized to `number` in the service
-- ✅ Repository Pattern (abstract class as DI token) on all modules
-- ✅ HTTP 401/403/404/409 returned correctly
+- ✅ 4 modules CRUD : MealPlans, Markets, Currencies, Supplements
+- ✅ DTOs avec `class-validator` sur chaque module
+- ✅ `createdAt`/`updatedAt` sur MealPlan, Market, Supplement — absents sur Currency
+- ✅ Currencies global — pas de `tourOperatorId`, `RolesGuard` maintenu
+- ✅ Supplements : enum `SupplementUnit` + `price` Decimal→number sérialisé dans le service
+- ✅ Repository Pattern (abstract class comme token DI) sur tous les modules
+- ✅ HTTP 401/403/404/409 retournés correctement
+- ✅ `RepositoryResult.HAS_PERIODS` ajouté (Season↔ContractPeriod), `HAS_CONTRACTS` conservé pour les autres
 
 ### Frontend
 
-- ✅ Lazy-loaded routes protected (`AuthGuard` + `RoleGuard` via `route.data['roles']`) under the `management` group
-- ✅ Sidebar updated
-- ✅ 4 services with BehaviorSubject + cache (HotelsService pattern)
-- ✅ `take(1)` on all `subscribe()` calls
-- ✅ 4 List components (`p-table` PrimeNG)
-- ✅ 4 Form components (Reactive Forms inside `p-dialog`)
-- ✅ Success/error toast (`p-toast`)
-- ✅ Delete confirmation (`p-confirmdialog`)
-- ✅ Tooltips on supplement unit types
-- ✅ Components under `features/management/<feature>/`
-- ✅ `confirmDelete` utility créée dans `shared/utils/`
-- ✅ Tous les composants list/form utilisent le helper (zéro `subscribe` inline dans confirmDelete)
-- ✅ `SeasonsService.reload()` public
+- ✅ Routes lazy-loaded protégées (`AuthGuard` + `RoleGuard` via `route.data['roles']`) sous `management`
+- ✅ Sidebar à jour
+- ✅ 4 services avec `BehaviorSubject` + cache (pattern `HotelsService`), `reload()` public partout (y compris `SeasonsService`/`HotelsService`, corrigés en cours de sprint)
+- ✅ `take(1)` sur tous les `subscribe()`
+- ✅ 4 composants liste (`p-table` PrimeNG)
+- ✅ 4 composants formulaire (Reactive Forms dans `p-dialog`)
+- ✅ Toast succès/erreur (`p-toast`), confirmation de suppression (`p-confirmdialog`)
+- ✅ Tooltips sur les types d'unité de supplément
+- ✅ Composants sous `features/management/<feature>/`
+- ✅ Utilitaire `confirmDelete` créé dans `shared/utils/`, **tous** les composants liste/form l'utilisent — zéro `subscribe` inline dans une méthode de suppression
+- ✅ `RoomTypesFormComponent` : deux niveaux de confirmation distincts (helper complet pour `deleteRoomType`, confirmation légère pour `deleteCapacity`)
 
-### Angular Standards
+### Standards Angular
 
-- ✅ Standalone components — Angular 19 default, do not write `standalone: true` in the decorator
-- ✅ `input()` / `output()` functions
-- ✅ `inject()` not constructor injection
-- ✅ `OnPush` always
-- ✅ Signals for local state, `computed()` for derived state
-- ✅ Native control flow (`@if`, `@for`, `@switch`)
-- ✅ No `ngClass` / `ngStyle`
-- ✅ No `any` — strict TypeScript
-- ✅ WCAG AA compliance
+- ✅ Standalone components (défaut Angular 19, pas de `standalone: true` explicite)
+- ✅ `input()`/`output()`, `inject()`, `OnPush` systématique
+- ✅ Signals pour l'état local, `computed()` pour l'état dérivé
+- ✅ Control flow natif (`@if`/`@for`/`@switch`), pas de `ngClass`/`ngStyle`
+- ✅ Aucun `any` — TypeScript strict
+- ✅ Conformité WCAG AA
 
----
+### Déploiement
 
-## Story Points Summary
-
-| Area                | Tickets                 | Total SP |
-| ------------------- | ----------------------- | -------- |
-| MealPlans backend   | S3-BE-001 → 008         | 14       |
-| Markets backend     | S3-BE-009 → 016         | 14       |
-| Currencies backend  | S3-BE-017 → 024         | 14       |
-| Supplements backend | S3-BE-025 → 032         | 14       |
-| Routing & Sidebar   | S3-FE-001 → 002         | 4        |
-| Frontend services   | S3-FE-003 → 006         | 12       |
-| Frontend components | S3-FE-007 → 014         | 26       |
-| Refacto & Fix       | S3-REFACTOR/FIX 001→003 | 7        |
-| Documentation       | S3-DOC-001              | 1        |
-| **Total**           | **38 tickets**          | **106**  |
+- ✅ Backend + frontend en ligne sur Render, DB migrée sur Neon, CORS dynamique
 
 ---
 
-## Files to Attach at Session Start
+## 9. Story Points — récapitulatif
 
-```
-SPRINT_3.md                                          — this file
-prisma/schema.prisma                                 — current state
-apps/backend/src/app.module.ts                       — for imports
-libs/shared/types/src/index.ts                       — existing structure
-
-— Backend reference pattern (Seasons = the simplest):
-apps/backend/src/seasons/repositories/season.repository.ts
-apps/backend/src/seasons/repositories/prisma-season.repository.ts
-apps/backend/src/seasons/dto/create-season.dto.ts
-apps/backend/src/seasons/dto/update-season.dto.ts
-apps/backend/src/seasons/seasons.service.ts
-apps/backend/src/seasons/seasons.controller.ts
-apps/backend/src/seasons/seasons.module.ts
-```
+| Domaine             | Tickets                         | Total SP |
+| ------------------- | ------------------------------- | -------- |
+| MealPlans backend   | S3-BE-001 → 008                 | 14       |
+| Markets backend     | S3-BE-009 → 016                 | 14       |
+| Currencies backend  | S3-BE-017 → 024                 | 14       |
+| Supplements backend | S3-BE-025 → 032                 | 14       |
+| Routing & Sidebar   | S3-FE-001 → 002                 | 4        |
+| Services frontend   | S3-FE-003 → 006                 | 12       |
+| Composants frontend | S3-FE-007 → 014                 | 26       |
+| Refacto & Fix       | S3-REFACTOR/FIX ×7 + S3-DOC-001 | 10       |
+| Déploiement         | S3-OPS-002                      | 3        |
+| **Total**           | **41 tickets**                  | **111**  |
 
 ---
 
-## Dependencies
+## 10. Dépendances
 
-- Sprint 0 ✅, Sprint 1 ✅, Sprint 2 ✅ completed
+Sprint 0 ✅, Sprint 1 ✅, Sprint 2 ✅ terminés.
+
+## 11. Risques (résolus)
+
+| Risque                                             | Mitigation appliquée                                |
+| -------------------------------------------------- | --------------------------------------------------- |
+| Currencies global vs multi-tenant                  | `RolesGuard` maintenu, seul le filtre DB est absent |
+| `price` Decimal sur Supplements                    | Sérialisation `Number(price)` dans le service       |
+| 4 types d'unité de supplément, source de confusion | Tooltips explicatifs dans le formulaire             |
+| `SupplementFormComponent` (SP 5, le plus complexe) | Traité tôt dans le sprint                           |
+| Duplication de `confirmDelete` sur 6 composants    | Extrait en helper partagé (S3-REFACTOR-FE-001)      |
+| Migration Neon plus complexe que prévu             | SP ajusté 2→3, `DIRECT_URL` dédié aux migrations    |
 
 ---
 
-## Risks
+## 12. Héritage pour Sprint 4 (déjà appliqué — pour référence)
 
-| Risk                                        | Mitigation                                                    |
-| ------------------------------------------- | ------------------------------------------------------------- |
-| Currencies global vs multi-tenant           | `RolesGuard` maintained — only the DB filter is absent        |
-| Supplements `price` Decimal                 | Serialize via `Number(price)` in the service before returning |
-| 4 supplement unit types confusing for users | Explanatory tooltips in the form                              |
-| SupplementFormComponent complexity (SP 5)   | Highest-risk frontend ticket — tackle early in the sprint     |
+Ces décisions actées en Sprint 3 ont été reprises telles quelles en Sprint 4 (voir le document Sprint 4 consolidé) :
+
+- Repository pattern **abstract class**, jamais l'interface + token string de Sprint 2.
+- `HAS_CONTRACTS` (MealPlan/Market/Supplement) et `HAS_PERIODS` (Season) coexistent dans `RepositoryResult` — Sprint 4 a suivi le même principe pour ses propres relations (`ContractPeriod`, `BaseRate`, etc.).
+- `PATCH` sur toutes les mises à jour (pas de `PUT`).
+- `confirmDelete` importé depuis `shared/utils/confirm-delete.util.ts` pour toute nouvelle suppression, `message?` disponible pour les cas d'avertissement cascade.
+- Les tests unitaires (`> 80 %` coverage) commencent en Sprint 4 — Sprints 0-3 n'ont pas de tickets de test dédiés, frontière assumée, pas de backfill prévu.
 
 ---
 
-## Notes for Sprint 4
+## 13. Prêt pour Sprint 5 ?
 
-The following decisions made in Sprint 3 will affect Sprint 4 (Contracts):
+Sprint 5 (Offers — SEQUENTIAL/ADDITIVE) dépend de Sprint 3 comme prérequis "recommandé mais pas bloquant" (`OfferSupplement` se lie à `Supplement`). **Sprint 3 étant terminé et stable, ce prérequis est satisfait.** Combiné à la lecture déjà faite du Sprint 4 (terminé, aucun blocage), tu peux démarrer Sprint 5 sans dépendance en attente.
 
-- **Abstract class repository pattern** — Sprint 4 should follow the same pattern as Sprint 3 (abstract class as DI token), not revert to Sprint 2's interface + string token approach. Update Sprint 4 docs before starting.
-- **`HAS_CONTRACTS` error code** — MealPlan, Market, and Supplement repositories already catch `P2003 → HAS_CONTRACTS` on `remove`. Sprint 4 must ensure the `Contract` model has the correct foreign key relations pointing to these entities so those Prisma error codes actually fire.
-- **`PUT` vs `PATCH`** — Sprint 3 uses `PATCH` on all update endpoints (partial update, `PartialType`). Sprint 4 currently uses `PUT` in several places — align to `PATCH` for consistency unless full replacement is intentional.
-- **`features/contracts/` vs `features/management/contracts/`** — Sprint 4 places Contracts under `features/contracts/`, outside the `management/` group used by Sprint 3 referentials. Confirm whether Contracts should live under `management/` or be a top-level feature (impacts routing group and sidebar).
-- **Unit tests** — Sprint 4 introduces unit tests (`> 80% coverage`) for the first time. Sprints 0–3 have no test tasks. Decide whether to backfill tests on earlier services or keep the boundary at Sprint 4 forward.
-- **`confirmDelete` helper disponible** — importer depuis
-  `@/app/shared/utils/confirm-delete.util`. Champ `message?` disponible pour
-  les cas avec avertissement cascade (ex: contrat avec périodes liées).
-- **`HAS_PERIODS`** ajouté dans `RepositoryResult` — utiliser pour tout
-  repository dont l'entité est liée à des `ContractPeriod`.
+_Document généré à partir de la consolidation du plan Sprint 3 original + 8 tickets refacto/fix/ops produits en cours de sprint. Remplace intégralement `SPRINT_3.md`._
