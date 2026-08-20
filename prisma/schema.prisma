@@ -373,7 +373,21 @@ model Offer {
   tourOperatorId         String
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
+  offerPeriod            OfferPeriod[]
 
   @@unique([tourOperatorId, code])
   @@index([tourOperatorId])
 }
+
+model OfferPeriod {
+  id        String   @id @default(cuid())
+  offerId   String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+}
+
