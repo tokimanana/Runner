@@ -228,7 +228,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-003b — DTOs : `CreateOfferPeriodDto` + `UpdateOfferPeriodDto`
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Task · **Priority :** P1 · **SP :** 1
 - **Branch :** `feature/S5-BE-003b-offer-period-dtos`
 - **Commit :** `feat(offers): add CreateOfferPeriodDto and UpdateOfferPeriodDto`
