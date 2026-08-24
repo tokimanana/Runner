@@ -160,7 +160,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-002f — `OffersService`
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 3
 - **Branch :** `feature/S5-BE-002f-offers-service`
 - **Commit :** `feat(offers): implement OffersService business logic`
