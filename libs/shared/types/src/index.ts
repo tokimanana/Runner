@@ -5,6 +5,7 @@ export * from './lib/currency.types';
 export * from './lib/hotel.types';
 export * from './lib/market.types';
 export * from './lib/meal-plan.types';
+export * from './lib/offer.types';
 export * from './lib/room-type.types';
 export * from './lib/season.types';
 export * from './lib/supplement.types';
