@@ -177,7 +177,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-002g — `OffersController`
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-BE-002g-offers-controller`
 - **Commit :** `feat(offers): implement OffersController REST endpoints`
