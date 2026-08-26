@@ -242,7 +242,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-003c — `OfferPeriod` : méthodes repository + service
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-BE-003c-offer-period-logic`
 - **Commit :** `feat(offers): add OfferPeriod methods to repository and service`
