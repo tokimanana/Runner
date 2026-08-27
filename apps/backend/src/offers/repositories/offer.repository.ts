@@ -1,6 +1,6 @@
 import { PaginationQuery } from '@backend/common/pagination.types';
 import { RepositoryResult } from '@backend/common/repository.types';
-import { Offer, OfferPeriod } from '@prisma/client';
+import { Offer, OfferPeriod, OfferSupplement } from '@prisma/client';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateOfferDto } from '../dto/create-offer.dto';
 import { UpdateOfferDto } from '../dto/update-offer.dto';
@@ -47,5 +47,16 @@ export abstract class OfferRepository {
   abstract removePeriod(
     periodId: string,
     offerId: string,
+  ): Promise<RepositoryResult>;
+
+  abstract linkSupplement(
+    offerId: string,
+    supplementId: string,
+    applyDiscount: boolean,
+  ): Promise<OfferSupplement>;
+
+  abstract unlinkSupplement(
+    offerId: string,
+    supplementId: string,
   ): Promise<RepositoryResult>;
 }
