@@ -30,6 +30,7 @@ export abstract class OfferRepository {
   abstract findOfferPeriod(
     periodId: string,
     offerId: string,
+    tourOperatorId: string,
   ): Promise<OfferPeriod | null>;
 
   abstract createPeriod(
