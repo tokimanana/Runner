@@ -320,7 +320,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-004c — Endpoints `OfferSupplement` (link/unlink)
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 1
 - **Branch :** `feature/S5-BE-004c-offer-supplement-endpoints`
 - **Commit :** `feat(offers): add OfferSupplement link/unlink endpoints`
