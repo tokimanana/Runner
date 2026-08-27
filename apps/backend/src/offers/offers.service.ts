@@ -2,13 +2,18 @@ import {
   RepositoryException,
   RepositoryResult,
 } from '@backend/common/repository.types';
+import { SupplementsService } from '@backend/supplements/supplements.service';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferPeriod, Offer as PrismaOfferType } from '@prisma/client';
+import {
+  OfferPeriod,
+  OfferSupplement,
+  Offer as PrismaOfferType,
+} from '@prisma/client';
 import { Offer, PaginatedResult } from '@runner/shared/types';
 import {
   DEFAULT_PAGINATION_LIMIT,
@@ -16,6 +21,7 @@ import {
 } from '../common/pagination.constants';
 import { PaginationQuery } from '../common/pagination.types';
 import { CreateOfferPeriodDto } from './dto/create-offer-period.dto';
+import { CreateOfferSupplementDto } from './dto/create-offer-supplement.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { UpdateOfferPeriodDto } from './dto/update-offer-period.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
@@ -23,7 +29,10 @@ import { OfferRepository } from './repositories/offer.repository';
 
 @Injectable()
 export class OffersService {
-  constructor(private readonly offerRepository: OfferRepository) {}
+  constructor(
+    private readonly offerRepository: OfferRepository,
+    private readonly supplementsService: SupplementsService,
+  ) {}
 
   private mapOffer(offer: PrismaOfferType): Offer {
     return {
@@ -147,6 +156,37 @@ export class OffersService {
     const result = await this.offerRepository.removePeriod(periodId, offerId);
     if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Offer Period ${periodId} not found`);
+  }
+
+  async linkSupplement(
+    offerId: string,
+    dto: CreateOfferSupplementDto,
+    tourOperatorId: string,
+  ): Promise<OfferSupplement> {
+    await this.findOne(offerId, tourOperatorId);
+    await this.supplementsService.findOne(dto.supplementId, tourOperatorId);
+
+    return this.offerRepository.linkSupplement(
+      offerId,
+      dto.supplementId,
+      dto.applyDiscount ?? false,
+    );
+  }
+
+  async unlinkSupplement(
+    offerId: string,
+    supplementId: string,
+    tourOperatorId: string,
+  ): Promise<void> {
+    await this.findOne(offerId, tourOperatorId);
+    const result = await this.offerRepository.unlinkSupplement(
+      offerId,
+      supplementId,
+    );
+    if (result === RepositoryResult.NOT_FOUND)
+      throw new NotFoundException(
+        `Supplement ${supplementId} is not linked to Offer ${offerId}`,
+      );
   }
 
   private validatePeriodDates(startDate: Date, endDate: Date): void {
