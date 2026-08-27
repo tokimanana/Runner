@@ -5,11 +5,12 @@ import {
 } from '@backend/common/repository.types';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Offer, Prisma } from '@prisma/client';
+import { Offer, OfferPeriod, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateOfferDto } from '../dto/create-offer.dto';
 import { UpdateOfferDto } from '../dto/update-offer.dto';
+import { OfferPeriodCreateData, OfferPeriodUpdateData } from '../offers.types';
 import { OfferRepository } from './offer.repository';
 
 @Injectable()
@@ -91,6 +92,80 @@ export class PrismaOfferRepository extends OfferRepository {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') return RepositoryResult.NOT_FOUND;
       }
+      throw error;
+    }
+  }
+
+  async findOfferPeriod(
+    periodId: string,
+    offerId: string,
+    tourOperatorId: string,
+  ): Promise<OfferPeriod | null> {
+    return this.prisma.offerPeriod.findFirst({
+      where: {
+        id: periodId,
+        offerId,
+        offer: { tourOperatorId },
+      },
+    });
+  }
+
+  async createPeriod(
+    data: OfferPeriodCreateData,
+    offerId: string,
+  ): Promise<OfferPeriod> {
+    try {
+      return await this.prisma.offerPeriod.create({
+        data: {
+          ...data,
+          offer: { connect: { id: offerId } },
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      throw error;
+    }
+  }
+
+  async updatePeriod(
+    periodId: string,
+    data: OfferPeriodUpdateData,
+    offerId: string,
+  ): Promise<OfferPeriod> {
+    try {
+      return await this.prisma.offerPeriod.update({
+        where: { id: periodId, offerId },
+        data,
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        throw new RepositoryException(RepositoryResult.NOT_FOUND);
+      throw error;
+    }
+  }
+
+  async removePeriod(
+    periodId: string,
+    offerId: string,
+  ): Promise<RepositoryResult> {
+    try {
+      await this.prisma.offerPeriod.delete({
+        where: { id: periodId, offerId },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
       throw error;
     }
   }
