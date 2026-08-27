@@ -257,7 +257,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-003d — Endpoints `OfferPeriod` (nested)
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-BE-003d-offer-period-endpoints`
 - **Commit :** `feat(offers): add nested OfferPeriod endpoints`

@@ -13,13 +13,15 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { OfferPeriod, UserRole } from '@prisma/client';
 import { Offer, PaginatedResult } from '@runner/shared/types';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQuery } from '../common/pagination.types';
+import { CreateOfferPeriodDto } from './dto/create-offer-period.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
+import { UpdateOfferPeriodDto } from './dto/update-offer-period.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { OffersService } from './offers.service';
 
@@ -72,5 +74,43 @@ export class OffersController {
   remove(@Param('id') id: string, @Req() req: RequestWithUser): Promise<void> {
     const tourOperatorId = req.user.tourOperatorId;
     return this.offersService.remove(id, tourOperatorId);
+  }
+
+  @Post(':id/periods')
+  @HttpCode(HttpStatus.CREATED)
+  createPeriod(
+    @Param('id') offerId: string,
+    @Body() dto: CreateOfferPeriodDto,
+    @Req() req: RequestWithUser,
+  ): Promise<OfferPeriod> {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.offersService.createPeriod(dto, offerId, tourOperatorId);
+  }
+
+  @Patch(':id/periods/:periodId')
+  updatePeriod(
+    @Param('id') offerId: string,
+    @Param('periodId') periodId: string,
+    @Body() dto: UpdateOfferPeriodDto,
+    @Req() req: RequestWithUser,
+  ): Promise<OfferPeriod> {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.offersService.updatePeriod(
+      periodId,
+      dto,
+      offerId,
+      tourOperatorId,
+    );
+  }
+
+  @Delete(':id/periods/:periodId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removePeriod(
+    @Param('id') offerId: string,
+    @Param('periodId') periodId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.offersService.removePeriod(periodId, offerId, tourOperatorId);
   }
 }
