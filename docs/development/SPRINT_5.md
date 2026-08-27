@@ -1,396 +1,539 @@
-# Sprint 5 - Offers (Promotions SEQUENTIAL vs ADDITIVE)
+# Sprint 5 — Offers (Promotions SEQUENTIAL vs ADDITIVE)
 
-## 🎯 Objectif Sprint
+> **Version consolidée.** Fusionne le plan révisé (découpage backend granulaire, aligné sur Sprint 3) avec le niveau de détail par ticket du plan original (Type / Branch / Commit / Acceptance Criteria / Files). Remplace les deux documents précédents.
+
+**Durée estimée :** 5-6 jours
+**Story Points :** 43 SP
+
+---
+
+## 1. Objectif Sprint
 
 Créer le système d'offres promotionnelles avec modes SEQUENTIAL/ADDITIVE et règles de non-mixabilité.
 
-**Durée estimée :** 3-4 jours
-**Story Points :** 29 points
+## 2. Contexte de la révision
+
+Le ticket original S5-BE-002 regroupait Prisma + types + DTOs + repository + service + controller en un seul ticket monolithique. Sur demande de Samuel, le backend a été redécoupé à la même granularité que Sprint 3 (`Supplement`/`MealPlan`). Samuel code ce backend lui-même sur ce sprint (départ ponctuel du split habituel frontend/backend avec son collègue).
+
+## 3. Ordre d'exécution
+
+```
+Module scaffold (BE-001)
+   └─ Offer : Prisma → Types → DTOs → Repository → Service → Controller (BE-002a→g)
+        ├─ OfferPeriod : Prisma → DTOs → Repo/Service → Endpoints (BE-003a→d)
+        └─ OfferSupplement : Prisma → DTOs/Repo/Service → Endpoints (BE-004a→c)
+   └─ Validation compatibilité SEQUENTIAL/ADDITIVE (BE-005)
+        └─ Frontend (FE-001 → FE-008)
+```
 
 ---
 
-## Backend Tasks
+## 4. Tickets — Backend
 
-### S5-BE-001 : Créer OffersModule
+### S5-BE-001 — Créer OffersModule (scaffold)
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P0 · **SP :** 2
 - **Branch :** `feature/S5-BE-001-offers-module`
-- **Commit :** `feat(offers): create offers module with CRUD`
+- **Commit :** `feat(offers): create offers module scaffold`
+- **Depends on :** —
 - **Description :**
-  - Générer module : `nest g module offers`
-  - Créer controller et service
-  - Relations : Offer → TourOperator
+  - `nx g @nestjs/schematics:module offers --sourceRoot=apps/backend/src --no-interactive` (+ controller, service)
+  - Importé dans `AppModule`
 - **Acceptance Criteria :**
-  - ✅ Module créé et importé
+  - ✅ Module créé et importé dans `AppModule`
   - ✅ Structure de base en place
-- **Files :**
-  - `apps/backend/src/offers/offers.module.ts`
-  - `apps/backend/src/offers/offers.controller.ts`
-  - `apps/backend/src/offers/offers.service.ts`
+- **Files :** `offers.module.ts`, `offers.controller.ts`, `offers.service.ts`
 
 ---
 
-### S5-BE-002 : Endpoints Offers CRUD
+### Offer — chaîne complète
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 3
-- **Branch :** `feature/S5-BE-002-offers-crud`
-- **Commit :** `feat(offers): implement offers CRUD with discount modes`
+#### S5-BE-002a — Prisma : enums + modèle `Offer` + migration
+
+- **Statut :** ✅ Done
+- **Type :** Schema · **Priority :** P0 · **SP :** 2
+- **Branch :** `feature/S5-BE-002a-prisma-offer`
+- **Commit :** `feat(offers): add Offer model and enums to Prisma schema`
+- **Depends on :** S5-BE-001
 - **Description :**
-  - GET /offers, GET /offers/:id, POST /offers, PUT /offers/:id, DELETE /offers/:id
-  - Filtrage par tourOperatorId
-  - Include : offerPeriods, applicableSupplements
-  - Champs :
-    - type : `PERCENTAGE | FLAT_AMOUNT`
-    - value : Decimal
-    - discountMode : `SEQUENTIAL | ADDITIVE`
-    - applyToRoomOnly : boolean
-    - applyToMealSupplements : boolean
-    - minStay : int
+
+  ```prisma
+  enum OfferType {
+    PERCENTAGE
+    FLAT_AMOUNT
+  }
+
+  enum DiscountMode {
+    SEQUENTIAL
+    ADDITIVE
+  }
+
+  model Offer {
+    id                     String       @id @default(cuid())
+    code                   String
+    name                   String
+    description            String?
+    type                   OfferType
+    value                  Decimal      @db.Decimal(10, 2)
+    discountMode           DiscountMode
+    applyToRoomOnly        Boolean      @default(false)
+    applyToMealSupplements Boolean      @default(false)
+    minStay                Int?
+    tourOperatorId         String
+    createdAt              DateTime     @default(now())
+    updatedAt              DateTime     @updatedAt
+
+    @@unique([tourOperatorId, code])
+    @@index([tourOperatorId])
+  }
+  ```
+
+  - Multi-tenant (`tourOperatorId`), même pattern que `Supplement`/`MealPlan`
+
 - **Acceptance Criteria :**
-  - ✅ CRUD complet fonctionnel
-  - ✅ Validation type et discountMode
-  - ✅ HTTP 401/403/404 retournés correctement
-- **Files :**
-  - `apps/backend/src/offers/offers.controller.ts`
-  - `apps/backend/src/offers/offers.service.ts`
-  - `apps/backend/src/offers/dto/create-offer.dto.ts`
+  - ✅ Migration s'applique sans erreur
+  - ✅ Contrainte `@@unique([tourOperatorId, code])` vérifiée en base
+- **Files :** `schema.prisma`, migration générée
 
----
+#### S5-BE-002b — Shared types : `Offer`, `OfferDto`, `OfferType`, `DiscountMode`
 
-### S5-BE-003 : Endpoints OfferPeriod (nested)
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
-- **Branch :** `feature/S5-BE-003-offer-periods`
-- **Commit :** `feat(offers): implement offer periods CRUD`
+- **Statut :** ✅ Done
+- **Type :** Task · **Priority :** P0 · **SP :** 1
+- **Branch :** `feature/S5-BE-002b-shared-types-offer`
+- **Commit :** `feat(shared-types): add Offer types`
+- **Depends on :** S5-BE-002a
 - **Description :**
-  - POST /offers/:id/periods
-  - PUT /offers/:id/periods/:periodId
-  - DELETE /offers/:id/periods/:periodId
-  - Validation : startDate < endDate
-  - Permettre périodes multiples (ex: juillet ET décembre)
+  - `Offer { id, code, name, description?, type, value: number, discountMode, applyToRoomOnly, applyToMealSupplements, minStay?, tourOperatorId, createdAt, updatedAt }`
+  - `value: number`, jamais `Decimal` (même règle que `Supplement.price`)
 - **Acceptance Criteria :**
-  - ✅ CRUD période fonctionnel
-  - ✅ Périodes multiples supportées
-  - ✅ Validation dates
-- **Files :**
-  - `apps/backend/src/offers/offers.controller.ts`
-  - `apps/backend/src/offers/offers.service.ts`
-  - `apps/backend/src/offers/dto/create-offer-period.dto.ts`
+  - ✅ Types compilent côté `libs/shared`
+  - ✅ Aucune référence à `Decimal` dans les types partagés
+- **Files :** `libs/shared/types/src/lib/offer.types.ts`
 
----
+#### S5-BE-002c — DTOs : `CreateOfferDto` + `UpdateOfferDto`
 
-### S5-BE-004 : Endpoints OfferSupplement
-
-- **Type :** Feature
-- **Priority :** P1
-- **Story Points :** 2
-- **Branch :** `feature/S5-BE-004-offer-supplements`
-- **Commit :** `feat(offers): implement offer supplements linking`
+- **Statut :** ✅ Done
+- **Type :** Task · **Priority :** P1 · **SP :** 1
+- **Branch :** `feature/S5-BE-002c-offer-dtos`
+- **Commit :** `feat(offers): add CreateOfferDto and UpdateOfferDto`
+- **Depends on :** S5-BE-002b
 - **Description :**
-  - POST /offers/:id/supplements (lier supplement à offre)
-  - DELETE /offers/:id/supplements/:supplementId (délier)
-  - Champ applyDiscount : boolean
+  - `code`/`name`/`type`/`value`/`discountMode` requis
+  - `description`/`minStay`/`applyToRoomOnly`/`applyToMealSupplements` optionnels (défauts)
+  - `@IsEnum(OfferType)`, `@IsEnum(DiscountMode)`, `@IsNumber()` sur `value` (min 0)
+  - `UpdateOfferDto extends PartialType(CreateOfferDto)`
 - **Acceptance Criteria :**
-  - ✅ Lien offre→supplement fonctionnel
-  - ✅ Flag applyDiscount géré
-- **Files :**
-  - `apps/backend/src/offers/offers.controller.ts`
-  - `apps/backend/src/offers/offers.service.ts`
+  - ✅ Validation rejette enum invalide et `value` négatif
+- **Files :** `dto/create-offer.dto.ts`, `dto/update-offer.dto.ts`
+
+#### S5-BE-002d — `OfferRepository` (abstract class)
+
+- **Statut :** ✅ Done
+- **Type :** Task · **Priority :** P1 · **SP :** 1
+- **Branch :** `feature/S5-BE-002d-offer-repository`
+- **Commit :** `feat(offers): add OfferRepository abstract class`
+- **Depends on :** S5-BE-002b
+- **Description :**
+  - 5 méthodes (`findAll`, `findOne`, `create`, `update`, `remove`), toutes scopées `tourOperatorId`
+  - Abstract class comme token DI (convention Sprint 3+, jamais interface + string token)
+- **Acceptance Criteria :**
+  - ✅ Abstract class compile et est injectable
+- **Files :** `offer.repository.ts`
+
+#### S5-BE-002e — `PrismaOfferRepository`
+
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P1 · **SP :** 3
+- **Branch :** `feature/S5-BE-002e-prisma-offer-repository`
+- **Commit :** `feat(offers): implement PrismaOfferRepository`
+- **Depends on :** S5-BE-002d
+- **Description :**
+  - `findAll` via `$transaction([findMany, count])`
+  - Include `offerPeriods`/`applicableSupplements`
+  - P2002 → `CONFLICT`, P2025 → `NOT_FOUND`
+  - Aucune exception HTTP à ce niveau — accès aux données uniquement
+- **Acceptance Criteria :**
+  - ✅ Tests unitaires mockant `PrismaService`
+  - ✅ Codes d'erreur Prisma correctement mappés
+- **Files :** `prisma-offer.repository.ts`
+
+#### S5-BE-002f — `OffersService`
+
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P1 · **SP :** 3
+- **Branch :** `feature/S5-BE-002f-offers-service`
+- **Commit :** `feat(offers): implement OffersService business logic`
+- **Depends on :** S5-BE-002e
+- **Description :**
+  - `findAll` cape `limit` à `MAX_LIMIT = 100`
+  - `findOne` → 404 si absent
+  - `create`/`update` → `CONFLICT` → 409
+  - `remove` → `NOT_FOUND` → 404
+  - Convertit `value: Number(offer.value)` avant de retourner — le `Decimal` ne fuite jamais hors de ce layer
+- **Acceptance Criteria :**
+  - ✅ Tests couvrent tous les chemins d'erreur (404/409)
+- **Files :** `offers.service.ts`
+
+#### S5-BE-002g — `OffersController`
+
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P1 · **SP :** 2
+- **Branch :** `feature/S5-BE-002g-offers-controller`
+- **Commit :** `feat(offers): implement OffersController REST endpoints`
+- **Depends on :** S5-BE-002f
+- **Description :**
+  - `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(ADMIN, MANAGER)`
+  - `tourOperatorId` extrait du JWT, jamais du body
+  - `GET /offers`, `GET /offers/:id`, `POST /offers`, `PATCH /offers/:id`, `DELETE /offers/:id`
+  - `@HttpCode(204)` sur DELETE — **`PATCH`, pas `PUT`** (convention actée depuis Sprint 3)
+- **Acceptance Criteria :**
+  - ✅ Tests e2e pour chaque endpoint
+  - ✅ 401/403 vérifiés pour rôles non autorisés
+- **Files :** `offers.controller.ts`
 
 ---
 
-### S5-BE-005 : Validation non-mixabilité SEQUENTIAL/ADDITIVE
+### OfferPeriod — chaîne complète
 
-- **Type :** Enhancement
-- **Priority :** P1
-- **Story Points :** 2
+#### S5-BE-003a — Prisma : modèle `OfferPeriod` + migration
+
+- **Statut :** ✅ Done
+- **Type :** Schema · **Priority :** P0 · **SP :** 1
+- **Branch :** `feature/S5-BE-003a-prisma-offer-period`
+- **Commit :** `feat(offers): add OfferPeriod model to Prisma schema`
+- **Depends on :** S5-BE-002a
+- **Description :**
+
+  ```prisma
+  model OfferPeriod {
+    id        String   @id @default(cuid())
+    offerId   String
+    startDate DateTime
+    endDate   DateTime
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+    @@index([offerId])
+  }
+  ```
+
+  - Périodes multiples par offre autorisées (ex: juillet ET décembre) — pas de contrainte d'unicité sur `offerId`
+
+- **Acceptance Criteria :**
+  - ✅ Migration s'applique
+  - ✅ Cascade delete vérifié (supprimer l'`Offer` supprime ses `OfferPeriod`)
+- **Files :** `schema.prisma`, migration générée
+
+#### S5-BE-003b — DTOs : `CreateOfferPeriodDto` + `UpdateOfferPeriodDto`
+
+- **Statut :** ✅ Done
+- **Type :** Task · **Priority :** P1 · **SP :** 1
+- **Branch :** `feature/S5-BE-003b-offer-period-dtos`
+- **Commit :** `feat(offers): add CreateOfferPeriodDto and UpdateOfferPeriodDto`
+- **Depends on :** S5-BE-003a
+- **Description :**
+  - `startDate`/`endDate` requis (`@IsDateString`)
+  - Validation `startDate < endDate` au niveau service (pas DTO — nécessite comparaison entre deux champs)
+- **Acceptance Criteria :**
+  - ✅ Validation rejette dates malformées
+- **Files :** `dto/create-offer-period.dto.ts`, `dto/update-offer-period.dto.ts`
+
+#### S5-BE-003c — `OfferPeriod` : méthodes repository + service
+
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P1 · **SP :** 2
+- **Branch :** `feature/S5-BE-003c-offer-period-logic`
+- **Commit :** `feat(offers): add OfferPeriod methods to repository and service`
+- **Depends on :** S5-BE-003b, S5-BE-002e
+- **Description :**
+  - Étend `OfferRepository`/`OffersService` (pas de repository séparé — sous-ressource nichée, même pattern que `ContractPeriod` sous `ContractRepository`)
+  - Validation `startDate < endDate` dans le service
+  - 404 si `Offer` parent introuvable
+- **Acceptance Criteria :**
+  - ✅ Tests unitaires pour validation dates et cas not-found
+- **Files :** `offer.repository.ts`, `offers.service.ts` (étendus)
+
+#### S5-BE-003d — Endpoints `OfferPeriod` (nested)
+
+- **Statut :** ✅ Done
+- **Type :** Feature · **Priority :** P0 · **SP :** 1
+- **Branch :** `feature/S5-BE-003d-offer-period-endpoints`
+- **Commit :** `feat(offers): add nested OfferPeriod endpoints`
+- **Depends on :** S5-BE-003c, S5-BE-002g
+- **Description :**
+  - `POST /offers/:id/periods`, `PATCH /offers/:id/periods/:periodId`, `DELETE /offers/:id/periods/:periodId`
+  - Mêmes guards que `OffersController`
+- **Acceptance Criteria :**
+  - ✅ Tests e2e CRUD nested + périodes multiples supportées
+- **Files :** `offers.controller.ts` (étendu)
+
+---
+
+### OfferSupplement — chaîne complète
+
+#### S5-BE-004a — Prisma : `OfferSupplement` join model + migration
+
+- **Statut :** ✅ Done
+- **Type :** Schema · **Priority :** P0 · **SP :** 1
+- **Branch :** `feature/S5-BE-004a-prisma-offer-supplement`
+- **Commit :** `feat(offers): add OfferSupplement join model to Prisma schema`
+- **Depends on :** S5-BE-002a
+- **Description :**
+
+  ```prisma
+  model OfferSupplement {
+    id            String     @id @default(cuid())
+    offerId       String
+    supplementId  String
+    applyDiscount Boolean    @default(false)
+    offer         Offer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+    supplement    Supplement @relation(fields: [supplementId], references: [id])
+
+    @@unique([offerId, supplementId])
+    @@index([offerId])
+  }
+  ```
+
+  - Lien vers `Supplement` (Sprint 3, déjà stable — aucune dépendance sur le modèle Sprint 4)
+
+- **Acceptance Criteria :**
+  - ✅ Migration s'applique
+  - ✅ Contrainte `@@unique([offerId, supplementId])` vérifiée
+- **Files :** `schema.prisma`, migration générée
+
+#### S5-BE-004b — DTOs + méthodes repository/service `OfferSupplement`
+
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P1 · **SP :** 2
+- **Branch :** `feature/S5-BE-004b-offer-supplement-logic`
+- **Commit :** `feat(offers): add OfferSupplement DTO and repository/service logic`
+- **Depends on :** S5-BE-004a, S5-BE-002e
+- **Description :**
+  - `CreateOfferSupplementDto` (`supplementId`, `applyDiscount?`)
+  - 404 si `Offer` ou `Supplement` introuvable
+  - 409 si déjà lié (P2002)
+- **Acceptance Criteria :**
+  - ✅ Tests unitaires couvrant lien / doublon / not-found
+- **Files :** `dto/create-offer-supplement.dto.ts`, `offers.service.ts` (étendu)
+
+#### S5-BE-004c — Endpoints `OfferSupplement` (link/unlink)
+
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P1 · **SP :** 1
+- **Branch :** `feature/S5-BE-004c-offer-supplement-endpoints`
+- **Commit :** `feat(offers): add OfferSupplement link/unlink endpoints`
+- **Depends on :** S5-BE-004b, S5-BE-002g
+- **Description :**
+  - `POST /offers/:id/supplements` (lier)
+  - `DELETE /offers/:id/supplements/:supplementId` (délier)
+- **Acceptance Criteria :**
+  - ✅ Tests e2e lier/délier
+- **Files :** `offers.controller.ts` (étendu)
+
+---
+
+### S5-BE-005 — Validation non-mixabilité SEQUENTIAL/ADDITIVE
+
+- **Statut :** ⬜ To Do
+- **Type :** Enhancement · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-BE-005-offers-validation`
-- **Commit :** `feat(offers): add validation endpoint for offer compatibility`
+- **Commit :** `feat(offers): add validate-compatibility endpoint`
+- **Depends on :** S5-BE-002f
 - **Description :**
-  - Endpoint : POST /offers/validate-compatibility
-  - Payload : liste d'offerIds
+  - `POST /offers/validate-compatibility`
+  - Payload : liste d'`offerIds`
   - Retour : `{ compatible: boolean, reason?: string }`
-  - Logique :
-    - Si 1+ offre ADDITIVE → bloquer SEQUENTIAL
-    - Si 1+ offre SEQUENTIAL → bloquer ADDITIVE
+  - 1+ offre ADDITIVE bloque toute SEQUENTIAL dans le même lot, et inversement
 - **Acceptance Criteria :**
-  - ✅ Endpoint fonctionne
-  - ✅ Validation correcte
-- **Files :**
-  - `apps/backend/src/offers/offers.controller.ts`
-  - `apps/backend/src/offers/offers.service.ts`
+  - ✅ Tests unitaires + e2e sur lots mixtes et lots homogènes
+- **Files :** `offers.controller.ts`, `offers.service.ts`
 
 ---
 
-### S5-BE-006 : DTOs avec validation
+### ~~S5-BE-006~~ — DTOs avec validation
 
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 2
-- **Branch :** `chore/S5-BE-006-offers-dto`
-- **Commit :** `chore(offers): add DTOs with validation for offers`
-- **Description :**
-  - CreateOfferDto, UpdateOfferDto
-  - CreateOfferPeriodDto
-  - Enums : OfferType, DiscountMode
-- **Acceptance Criteria :**
-  - ✅ DTOs créés avec validation
-  - ✅ Enums correctement utilisés
-- **Files :**
-  - `apps/backend/src/offers/dto/`
+- **Statut :** ❌ Superseded — absorbé par S5-BE-002c (DTOs `Offer`), S5-BE-003b (DTOs `OfferPeriod`) et S5-BE-004b (DTO `OfferSupplement`). Ne pas implémenter séparément.
 
 ---
 
-## Frontend Tasks
+## 5. Tickets — Frontend
 
-### S5-FE-001 : Créer OffersService
+_Inchangés par rapport au plan original — non concernés par le découpage backend._
 
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 1
+### S5-FE-001 — Créer OffersService
+
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-FE-001-offers-service`
 - **Commit :** `feat(offers): create offers service with BehaviorSubject`
+- **Depends on :** S5-BE-002g, S5-BE-003d, S5-BE-004c, S5-BE-005
 - **Description :**
-  - Créer `features/offers/services/offers.service.ts`
+  - `features/offers/services/offers.service.ts`
   - **BehaviorSubject** (pas NgRx)
-  - Méthodes : getOffers(), getOffer(id), createOffer(), updateOffer(), deleteOffer()
-  - Méthodes pour periods et supplements
-  - Méthode validateCompatibility(offerIds)
-  - `take(1)` sur tous les subscribe()
+  - Méthodes : `getOffers()`, `getOffer(id)`, `createOffer()`, `updateOffer()`, `deleteOffer()` + periods/supplements + `validateCompatibility(offerIds)`
+  - `take(1)` sur tous les `subscribe()`
 - **Acceptance Criteria :**
-  - ✅ Tous les appels API fonctionnels
-  - ✅ Typage TypeScript correct
-- **Files :**
-  - `apps/frontend/src/app/features/offers/services/offers.service.ts`
+  - ✅ Tous les appels API fonctionnels, typage correct
+- **Files :** `features/offers/services/offers.service.ts`
 
----
+### S5-FE-002 — Créer OffersList Component
 
-### S5-FE-002 : Créer OffersList Component
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P0 · **SP :** 2
 - **Branch :** `feature/S5-FE-002-offers-list`
 - **Commit :** `feat(offers): create offers list with discount mode badges`
+- **Depends on :** S5-FE-001
 - **Description :**
-  - Créer `features/offers/components/offers-list/`
-  - Tableau **`p-table`** PrimeNG : Name, Type, Value, Discount Mode, Periods, Actions
-  - Badge visuel avec **`p-tag`** PrimeNG :
-    - SEQUENTIAL → severity `info` (bleu)
-    - ADDITIVE → severity `success` (vert)
-  - Boutons : Create, Edit, Delete
+  - `p-table` : Name, Type, Value, Discount Mode, Periods, Actions
+  - Badge `p-tag` : SEQUENTIAL → severity `info` (bleu), ADDITIVE → severity `success` (vert)
+  - Boutons Create/Edit/Delete
 - **Acceptance Criteria :**
-  - ✅ Liste affichée
-  - ✅ Badges visuels clairs
-  - ✅ Actions fonctionnelles
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offers-list/offers-list.component.ts`
+  - ✅ Liste affichée, badges clairs, actions fonctionnelles
+- **Files :** `features/offers/components/offers-list/offers-list.component.ts`
 
----
+### S5-FE-003 — Créer OfferForm Component
 
-### S5-FE-003 : Créer OfferForm Component
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 4
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P0 · **SP :** 4
 - **Branch :** `feature/S5-FE-003-offer-form`
 - **Commit :** `feat(offers): create offer form with discount mode explanation`
+- **Depends on :** S5-FE-001
 - **Description :**
-  - Créer `features/offers/components/offer-form/`
-  - **Reactive Form** :
-    - Name, Description
-    - Type : PERCENTAGE | FLAT_AMOUNT (**`p-radiobutton`**)
-    - Value : **`p-inputnumber`**
-    - Discount Mode : SEQUENTIAL | ADDITIVE (**`p-radiobutton`**)
-    - Apply to room only : **`p-checkbox`**
-    - Apply to meal supplements : **`p-checkbox`**
-    - minStay : **`p-inputnumber`**
-  - Tooltip explicatif sur Discount Mode :
-    - SEQUENTIAL : "Les réductions se multiplient. Ex: -10% puis -5% = -14.5%"
-    - ADDITIVE : "Les réductions s'additionnent. Ex: -10% + -5% = -15%"
-  - Warning **`p-message`** : "Les offres SEQUENTIAL et ADDITIVE ne sont pas mixables"
+  - Reactive Form : Name, Description, Type (`p-radiobutton`), Value (`p-inputnumber`), Discount Mode (`p-radiobutton`), Apply to room only / Apply to meal supplements (`p-checkbox`), minStay (`p-inputnumber`)
+  - Tooltip explicatif SEQUENTIAL vs ADDITIVE avec exemples chiffrés (voir §7)
+  - Warning `p-message` : offres non mixables
 - **Acceptance Criteria :**
-  - ✅ Formulaire complet
-  - ✅ Tooltips informatifs
-  - ✅ Validation complète
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offer-form/offer-form.component.ts`
+  - ✅ Formulaire complet, tooltips informatifs, validation complète
+- **Files :** `features/offers/components/offer-form/offer-form.component.ts`
 
----
+### S5-FE-004 — OfferForm — Gestion des Périodes
 
-### S5-FE-004 : OfferForm — Gestion des Périodes
-
-- **Type :** Feature
-- **Priority :** P0
-- **Story Points :** 2
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P0 · **SP :** 2
 - **Branch :** `feature/S5-FE-004-offer-periods`
 - **Commit :** `feat(offers): add offer periods management in form`
+- **Depends on :** S5-FE-003, S5-BE-003d
 - **Description :**
-  - Section dans OfferForm : Périodes de validité
-  - Liste des périodes avec **`p-table`**
-  - Dialog **`p-dialog`** pour ajouter/éditer :
-    - startDate (**`p-datepicker`**)
-    - endDate (**`p-datepicker`**)
-  - Permettre plusieurs périodes (ex: juillet + décembre)
+  - Section périodes de validité : `p-table` + `p-dialog` (start/end via `p-datepicker`)
+  - Périodes multiples (ex: juillet + décembre)
 - **Acceptance Criteria :**
-  - ✅ CRUD périodes fonctionnel
-  - ✅ Périodes multiples supportées
-  - ✅ Validation dates
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offer-period-dialog/offer-period-dialog.component.ts`
+  - ✅ CRUD périodes fonctionnel, périodes multiples supportées, validation dates
+- **Files :** `features/offers/components/offer-period-dialog/offer-period-dialog.component.ts`
 
----
+### S5-FE-005 — OfferForm — Gestion des Supplements applicables
 
-### S5-FE-005 : OfferForm — Gestion des Supplements applicables
-
-- **Type :** Feature
-- **Priority :** P1
-- **Story Points :** 2
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-FE-005-offer-supplements`
 - **Commit :** `feat(offers): add applicable supplements management in offer form`
+- **Depends on :** S5-FE-003, S5-BE-004c
 - **Description :**
-  - Section dans OfferForm : Suppléments applicables
-  - Liste des supplements avec **`p-checkbox`**
-  - Pour chaque : checkbox "Appliquer réduction"
+  - Liste `p-checkbox` par supplement + checkbox "Appliquer réduction" (`applyDiscount`)
 - **Acceptance Criteria :**
-  - ✅ Liste supplements avec checkboxes
-  - ✅ Flag applyDiscount géré
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offer-form/offer-form.component.ts`
+  - ✅ Liste avec checkboxes, flag `applyDiscount` géré
+- **Files :** `features/offers/components/offer-form/offer-form.component.ts`
 
----
+### S5-FE-006 — Créer OffersSelectionComponent (pour Booking)
 
-### S5-FE-006 : Créer OffersSelectionComponent (pour Booking)
-
-- **Type :** Feature
-- **Priority :** P1
-- **Story Points :** 3
+- **Statut :** ⬜ To Do
+- **Type :** Feature · **Priority :** P1 · **SP :** 3
 - **Branch :** `feature/S5-FE-006-offers-selection`
 - **Commit :** `feat(offers): create offers selection component with compatibility logic`
+- **Depends on :** S5-FE-001
 - **Description :**
-  - Composant réutilisable pour Booking Wizard
-  - Afficher offres disponibles filtrées (dates + minStay)
-  - **Logique de blocage :**
-    - Offre ADDITIVE sélectionnée → désactiver toutes les SEQUENTIAL
-    - Offre SEQUENTIAL sélectionnée → désactiver toutes les ADDITIVE
-  - Badge **`p-tag`** sur offres désactivées avec tooltip
-  - SEQUENTIAL → `p-tag` severity `info` (bleu)
-  - ADDITIVE → `p-tag` severity `success` (vert)
+  - Composant réutilisable pour Booking Wizard (⚠️ n'existe pas encore — vérifier testabilité isolée avant de coder l'intégration)
+  - Offres filtrées par dates + minStay
+  - Blocage croisé : ADDITIVE sélectionnée → désactive les SEQUENTIAL, et inversement
+  - `p-tag` sur offres désactivées avec tooltip explicatif (mêmes couleurs que FE-002)
 - **Acceptance Criteria :**
-  - ✅ Blocage SEQUENTIAL/ADDITIVE fonctionne
-  - ✅ Tooltips informatifs sur offres désactivées
-  - ✅ UI claire et intuitive
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offers-selection/offers-selection.component.ts`
+  - ✅ Blocage fonctionne, tooltips informatifs, UI claire
+- **Files :** `features/offers/components/offers-selection/offers-selection.component.ts`
 
----
+### S5-FE-007 — Tests unitaires OffersSelectionComponent
 
-### S5-FE-007 : Tests unitaires OffersSelectionComponent
-
-- **Type :** Test
-- **Priority :** P1
-- **Story Points :** 2
+- **Statut :** ⬜ To Do
+- **Type :** Test · **Priority :** P1 · **SP :** 2
 - **Branch :** `test/S5-FE-007-offers-selection-tests`
 - **Commit :** `test(offers): add unit tests for offers selection compatibility logic`
+- **Depends on :** S5-FE-006
 - **Description :**
-  - Tester le blocage SEQUENTIAL/ADDITIVE
-  - Tester le déblocage si désélection
-  - Mock OffersService
+  - Blocage + déblocage à la désélection, coverage > 80%, mock `OffersService`
 - **Acceptance Criteria :**
-  - ✅ Coverage > 80%
-  - ✅ Tous les tests passent
-- **Files :**
-  - `apps/frontend/src/app/features/offers/components/offers-selection/offers-selection.component.spec.ts`
+  - ✅ Coverage > 80%, tous les tests passent
+- **Files :** `features/offers/components/offers-selection/offers-selection.component.spec.ts`
 
----
+### S5-FE-008 — Configurer les routes Offers
 
-### S5-FE-008 : Configurer les routes Offers
-
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
+- **Statut :** ⬜ To Do
+- **Type :** Task · **Priority :** P0 · **SP :** 1
 - **Branch :** `chore/S5-FE-008-offers-routes`
 - **Commit :** `chore(routing): add offers routes with guards`
+- **Depends on :** S5-FE-002, S5-FE-003
 - **Description :**
-  - Créer `features/offers/offers.routes.ts`
-  - Routes : /offers, /offers/new, /offers/:id/edit
-  - Protéger avec `AuthGuard` + `RoleGuard` (ADMIN, MANAGER)
-  - Lazy loading via `loadComponent`
-  - Ajouter dans la Sidebar
+  - Routes `/offers`, `/offers/new`, `/offers/:id/edit`, lazy loading via `loadComponent`
+  - `AuthGuard` + `RoleGuard` (ADMIN, MANAGER)
+  - Sidebar à jour
 - **Acceptance Criteria :**
-  - ✅ Routes accessibles avec les bons rôles
-  - ✅ Sidebar à jour
-- **Files :**
-  - `apps/frontend/src/app/features/offers/offers.routes.ts`
-  - `apps/frontend/src/app/app.routes.ts`
-  - `apps/frontend/src/app/core/shell/sidebar/sidebar.component.ts`
+  - ✅ Routes accessibles selon rôles, sidebar à jour
+- **Files :** `features/offers/offers.routes.ts`, `app.routes.ts`, `sidebar.component.ts`
 
 ---
 
-## Definition of Done - Sprint 5
+## 6. Definition of Done — Sprint 5
 
 ### Backend
 
-- ✅ Offers CRUD complet
-- ✅ OfferPeriod avec périodes multiples
-- ✅ OfferSupplement avec flag applyDiscount
-- ✅ Endpoint validate-compatibility fonctionnel
-- ✅ DTOs avec validation
+- ⬜ `Offer` CRUD complet (chaîne S5-BE-002a→g)
+- ⬜ `OfferPeriod` avec périodes multiples (chaîne S5-BE-003a→d)
+- ⬜ `OfferSupplement` avec flag `applyDiscount` (chaîne S5-BE-004a→c)
+- ⬜ Endpoint `validate-compatibility` fonctionnel
+- ⬜ Tous les DTOs avec validation (`class-validator`)
+- ⬜ `value: number` en shared types, jamais `Decimal`
+- ⬜ Repository Pattern (abstract class) partout, `tourOperatorId` depuis JWT uniquement
+- ⬜ `PATCH` sur toutes les mises à jour
 
 ### Frontend
 
-- ✅ Liste offers avec badges p-tag SEQUENTIAL/ADDITIVE
-- ✅ Formulaire Reactive Forms + PrimeNG
-- ✅ Gestion périodes multiples
-- ✅ Gestion supplements applicables
-- ✅ OffersSelectionComponent avec logique de blocage
-- ✅ Tooltips informatifs
-- ✅ Routes protégées selon rôles
-- ✅ BehaviorSubject pour OffersService (pas NgRx)
-- ✅ Tests unitaires > 80%
+- ⬜ Liste offers avec badges `p-tag` SEQUENTIAL/ADDITIVE
+- ⬜ Formulaire Reactive Forms + PrimeNG, tooltips informatifs
+- ⬜ Gestion périodes multiples + supplements applicables
+- ⬜ `OffersSelectionComponent` avec logique de blocage
+- ⬜ Routes protégées selon rôles
+- ⬜ `BehaviorSubject` pour `OffersService` (pas NgRx)
+- ⬜ Tests unitaires > 80%
 
 ---
 
-## Notes importantes
+## 7. Notes importantes
 
 ### Exemples concrets pour tooltips
 
-**SEQUENTIAL :**
+**SEQUENTIAL :** Prix base 200€, Offre A -10%, Offre B -5%
+`200€ × 0.90 × 0.95 = 171€` → réduction 29€ (14,5%)
 
-```
-Prix base : 200€ / Offre A : -10% / Offre B : -5%
-200€ × (1 - 0.10) = 180€
-180€ × (1 - 0.05) = 171€
-Réduction totale : 29€ (14.5%)
-```
-
-**ADDITIVE :**
-
-```
-Prix base : 200€ / Offre A : -10% / Offre B : -5%
-Total réduction : 10% + 5% = 15%
-200€ × (1 - 0.15) = 170€
-Réduction totale : 30€ (15%)
-```
+**ADDITIVE :** Prix base 200€, Offre A -10%, Offre B -5%
+`200€ × (1 - 0.15) = 170€` → réduction 30€ (15%)
 
 ---
 
-## Dépendances
+## 8. Dépendances
 
-- Sprint 3 (Supplements) recommandé mais pas bloquant
+- Sprint 3 (Supplements) — recommandé, satisfait (module stable, aucune dépendance Sprint 4)
+- Aucune dépendance sur le modèle `BaseRate`/`AgePolicy`/`OccupancyGuidance` (Sprint 4) — les offres s'appliquent en aval du prix calculé
+
+## 9. Risques
+
+| Risque                                                                     | Mitigation                                                                       |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Logique de blocage SEQUENTIAL/ADDITIVE complexe côté frontend              | Tests unitaires exhaustifs (S5-FE-007)                                           |
+| Confusion SEQUENTIAL vs ADDITIVE pour l'utilisateur final                  | Tooltips + exemples chiffrés                                                     |
+| Périodes multiples                                                         | `p-table` + `p-dialog` PrimeNG, même pattern que Sprint 4                        |
+| `OffersSelectionComponent` dépend d'un Booking Wizard pas encore construit | Concevoir le composant testable isolément dès le départ                          |
+| Split des tickets backend en 15 tickets fins vs 6 originaux                | Overhead de suivi accepté en échange de PRs plus petites, un scope par commit    |
+| **Total SP incohérent dans le document révisé (31 annoncé vs 43 réel)**    | **Recalcul fait dans ce document — à valider avec Samuel avant sprint planning** |
 
 ---
 
-## Risques
-
-| Risque                           | Mitigation                   |
-| -------------------------------- | ---------------------------- |
-| Logique blocage complexe         | Tests unitaires exhaustifs   |
-| Confusion SEQUENTIAL vs ADDITIVE | Tooltips + exemples concrets |
-| Périodes multiples difficiles    | p-table + p-dialog PrimeNG   |
+_Document consolidé — fusionne le découpage granulaire backend (demande de Samuel, même finesse que Sprint 3) avec le niveau de détail par ticket du plan original. Total de points recalculé et écart signalé._
