@@ -1,9 +1,11 @@
 # Sprint 5 — Offers (Promotions SEQUENTIAL vs ADDITIVE)
 
 > **Version consolidée.** Fusionne le plan révisé (découpage backend granulaire, aligné sur Sprint 3) avec le niveau de détail par ticket du plan original (Type / Branch / Commit / Acceptance Criteria / Files). Remplace les deux documents précédents.
+>
+> **Mise à jour :** S5-BE-005 repensé — la règle de compatibilité SEQUENTIAL/ADDITIVE devient une pure function partagée (`@runner/shared`) plutôt qu'un endpoint REST dédié. Voir §4 et §6.
 
 **Durée estimée :** 5-6 jours
-**Story Points :** 43 SP
+**Story Points :** 42 SP
 
 ---
 
@@ -22,7 +24,7 @@ Module scaffold (BE-001)
    └─ Offer : Prisma → Types → DTOs → Repository → Service → Controller (BE-002a→g)
         ├─ OfferPeriod : Prisma → DTOs → Repo/Service → Endpoints (BE-003a→d)
         └─ OfferSupplement : Prisma → DTOs/Repo/Service → Endpoints (BE-004a→c)
-   └─ Validation compatibilité SEQUENTIAL/ADDITIVE (BE-005)
+   └─ Règle de compatibilité SEQUENTIAL/ADDITIVE — pure function partagée (BE-005)
         └─ Frontend (FE-001 → FE-008)
 ```
 
@@ -334,21 +336,19 @@ Module scaffold (BE-001)
 
 ---
 
-### S5-BE-005 — Validation non-mixabilité SEQUENTIAL/ADDITIVE
+### S5-BE-005 — [Shared] Implémenter la règle de compatibilité des offres (Pure Function)
 
 - **Statut :** ⬜ To Do
-- **Type :** Enhancement · **Priority :** P1 · **SP :** 2
-- **Branch :** `feature/S5-BE-005-offers-validation`
-- **Commit :** `feat(offers): add validate-compatibility endpoint`
-- **Depends on :** S5-BE-002f
+- **Type :** Task · **Priority :** P1 · **SP :** 1 _(révisé à la baisse — plus de repository/controller/DTO)_
+- **Branch :** `feature/S5-BE-005-offers-compatibility-shared`
+- **Commit :** `feat(shared-types): add checkOfferCompatibility pure function`
+- **Depends on :** S5-BE-002b (types `Offer`/`DiscountMode`)
 - **Description :**
-  - `POST /offers/validate-compatibility`
-  - Payload : liste d'`offerIds`
-  - Retour : `{ compatible: boolean, reason?: string }`
-  - 1+ offre ADDITIVE bloque toute SEQUENTIAL dans le même lot, et inversement
+  - Logique de compatibilité SEQUENTIAL/ADDITIVE déplacée dans `@runner/shared`, consommable à la fois par Angular (réactivité UI, S5-FE-006) et par NestJS (validation à la soumission d'une réservation, futur `POST /bookings`)
+  - **Annulé :** l'endpoint `POST /offers/validate-compatibility` initialement prévu. La vérification d'intégrité (existence en DB, tenant check des `offerIds`) est différée au futur ticket de création de réservation — pas de valeur ajoutée à un endpoint "pre-flight" isolé sans consommateur réel actuellement
 - **Acceptance Criteria :**
-  - ✅ Tests unitaires + e2e sur lots mixtes et lots homogènes
-- **Files :** `offers.controller.ts`, `offers.service.ts`
+  - ✅ Tests unitaires exhaustifs (cas passant homogène, cas à un seul élément, cas mixte incompatible, lot vide)
+- **Files :** `libs/shared/types/src/lib/offer-compatibility.ts` (+ spec)
 
 ---
 
@@ -360,8 +360,6 @@ Module scaffold (BE-001)
 
 ## 5. Tickets — Frontend
 
-_Inchangés par rapport au plan original — non concernés par le découpage backend._
-
 ### S5-FE-001 — Créer OffersService
 
 - **Statut :** ⬜ To Do
@@ -372,10 +370,12 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 - **Description :**
   - `features/offers/services/offers.service.ts`
   - **BehaviorSubject** (pas NgRx)
-  - Méthodes : `getOffers()`, `getOffer(id)`, `createOffer()`, `updateOffer()`, `deleteOffer()` + periods/supplements + `validateCompatibility(offerIds)`
+  - Méthodes HTTP : `getOffers()`, `getOffer(id)`, `createOffer()`, `updateOffer()`, `deleteOffer()` + periods/supplements
+  - **Pas de méthode `validateCompatibility()` côté service HTTP** — la compatibilité est calculée côté client via la pure function `checkOfferCompatibility` importée directement de `@runner/shared` (S5-BE-005), sans appel réseau
   - `take(1)` sur tous les `subscribe()`
 - **Acceptance Criteria :**
   - ✅ Tous les appels API fonctionnels, typage correct
+  - ✅ `checkOfferCompatibility` importable et utilisable sans dépendance à `OffersService`
 - **Files :** `features/offers/services/offers.service.ts`
 
 ### S5-FE-002 — Créer OffersList Component
@@ -441,14 +441,15 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 - **Type :** Feature · **Priority :** P1 · **SP :** 3
 - **Branch :** `feature/S5-FE-006-offers-selection`
 - **Commit :** `feat(offers): create offers selection component with compatibility logic`
-- **Depends on :** S5-FE-001
+- **Depends on :** S5-FE-001, S5-BE-005
 - **Description :**
   - Composant réutilisable pour Booking Wizard (⚠️ n'existe pas encore — vérifier testabilité isolée avant de coder l'intégration)
   - Offres filtrées par dates + minStay
-  - Blocage croisé : ADDITIVE sélectionnée → désactive les SEQUENTIAL, et inversement
+  - Blocage croisé calculé **en local, synchrone**, via `checkOfferCompatibility` (`@runner/shared`) — ADDITIVE sélectionnée → désactive les SEQUENTIAL, et inversement, sans round-trip API
   - `p-tag` sur offres désactivées avec tooltip explicatif (mêmes couleurs que FE-002)
 - **Acceptance Criteria :**
   - ✅ Blocage fonctionne, tooltips informatifs, UI claire
+  - ✅ Aucun appel réseau déclenché lors du (dé)blocage
 - **Files :** `features/offers/components/offers-selection/offers-selection.component.ts`
 
 ### S5-FE-007 — Tests unitaires OffersSelectionComponent
@@ -459,7 +460,7 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 - **Commit :** `test(offers): add unit tests for offers selection compatibility logic`
 - **Depends on :** S5-FE-006
 - **Description :**
-  - Blocage + déblocage à la désélection, coverage > 80%, mock `OffersService`
+  - Blocage + déblocage à la désélection, coverage > 80%, mock `OffersService` (les cas de compatibilité eux-mêmes sont déjà couverts unitairement dans S5-BE-005 — ici on teste le câblage composant/pure function, pas la logique de compatibilité elle-même)
 - **Acceptance Criteria :**
   - ✅ Coverage > 80%, tous les tests passent
 - **Files :** `features/offers/components/offers-selection/offers-selection.component.spec.ts`
@@ -483,12 +484,12 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 
 ## 6. Definition of Done — Sprint 5
 
-### Backend
+### Backend / Shared
 
 - ⬜ `Offer` CRUD complet (chaîne S5-BE-002a→g)
 - ⬜ `OfferPeriod` avec périodes multiples (chaîne S5-BE-003a→d)
 - ⬜ `OfferSupplement` avec flag `applyDiscount` (chaîne S5-BE-004a→c)
-- ⬜ Endpoint `validate-compatibility` fonctionnel
+- ⬜ `checkOfferCompatibility` (pure function) dans `@runner/shared`, testée exhaustivement — **pas d'endpoint `validate-compatibility`**
 - ⬜ Tous les DTOs avec validation (`class-validator`)
 - ⬜ `value: number` en shared types, jamais `Decimal`
 - ⬜ Repository Pattern (abstract class) partout, `tourOperatorId` depuis JWT uniquement
@@ -499,7 +500,7 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 - ⬜ Liste offers avec badges `p-tag` SEQUENTIAL/ADDITIVE
 - ⬜ Formulaire Reactive Forms + PrimeNG, tooltips informatifs
 - ⬜ Gestion périodes multiples + supplements applicables
-- ⬜ `OffersSelectionComponent` avec logique de blocage
+- ⬜ `OffersSelectionComponent` avec logique de blocage basée sur `checkOfferCompatibility` (client-side, sans appel réseau)
 - ⬜ Routes protégées selon rôles
 - ⬜ `BehaviorSubject` pour `OffersService` (pas NgRx)
 - ⬜ Tests unitaires > 80%
@@ -525,15 +526,16 @@ _Inchangés par rapport au plan original — non concernés par le découpage ba
 
 ## 9. Risques
 
-| Risque                                                                     | Mitigation                                                                       |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Logique de blocage SEQUENTIAL/ADDITIVE complexe côté frontend              | Tests unitaires exhaustifs (S5-FE-007)                                           |
-| Confusion SEQUENTIAL vs ADDITIVE pour l'utilisateur final                  | Tooltips + exemples chiffrés                                                     |
-| Périodes multiples                                                         | `p-table` + `p-dialog` PrimeNG, même pattern que Sprint 4                        |
-| `OffersSelectionComponent` dépend d'un Booking Wizard pas encore construit | Concevoir le composant testable isolément dès le départ                          |
-| Split des tickets backend en 15 tickets fins vs 6 originaux                | Overhead de suivi accepté en échange de PRs plus petites, un scope par commit    |
-| **Total SP incohérent dans le document révisé (31 annoncé vs 43 réel)**    | **Recalcul fait dans ce document — à valider avec Samuel avant sprint planning** |
+| Risque                                                                     | Mitigation                                                                                                                                                              |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logique de blocage SEQUENTIAL/ADDITIVE complexe côté frontend              | Pure function partagée testée exhaustivement une seule fois (S5-BE-005), réutilisée telle quelle en FE (S5-FE-006) et future validation booking BE                      |
+| Confusion SEQUENTIAL vs ADDITIVE pour l'utilisateur final                  | Tooltips + exemples chiffrés                                                                                                                                            |
+| Périodes multiples                                                         | `p-table` + `p-dialog` PrimeNG, même pattern que Sprint 4                                                                                                               |
+| `OffersSelectionComponent` dépend d'un Booking Wizard pas encore construit | Concevoir le composant testable isolément dès le départ                                                                                                                 |
+| Split des tickets backend en 15 tickets fins vs 6 originaux                | Overhead de suivi accepté en échange de PRs plus petites, un scope par commit                                                                                           |
+| Endpoint `validate-compatibility` retiré du scope                          | Aucun consommateur actuel ; vérification d'intégrité (existence/tenant des offerIds) reportée au ticket de création de réservation, quand un vrai consommateur existera |
+| Total SP recalculé suite à la révision de S5-BE-005 (43 → 42)              | Recalcul fait dans ce document — à valider avec Samuel avant sprint planning                                                                                            |
 
 ---
 
-_Document consolidé — fusionne le découpage granulaire backend (demande de Samuel, même finesse que Sprint 3) avec le niveau de détail par ticket du plan original. Total de points recalculé et écart signalé._
+_Document consolidé — S5-BE-005 remplacé par une pure function partagée (`checkOfferCompatibility`) au lieu d'un endpoint REST dédié ; total de points recalculé à 42 SP._
