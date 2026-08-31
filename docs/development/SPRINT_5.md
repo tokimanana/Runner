@@ -338,8 +338,8 @@ Module scaffold (BE-001)
 
 ### S5-BE-005 — [Shared] Implémenter la règle de compatibilité des offres (Pure Function)
 
-- **Statut :** ⬜ To Do
-- **Type :** Task · **Priority :** P1 · **SP :** 1 _(révisé à la baisse — plus de repository/controller/DTO)_
+- **Statut :** ✅ Done
+- **Type :** Task · **Priority :** P1 · **SP :** 1
 - **Branch :** `feature/S5-BE-005-offers-compatibility-shared`
 - **Commit :** `feat(shared-types): add checkOfferCompatibility pure function`
 - **Depends on :** S5-BE-002b (types `Offer`/`DiscountMode`)
