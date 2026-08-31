@@ -336,7 +336,7 @@ Module scaffold (BE-001)
 
 ### S5-BE-005 — Validation non-mixabilité SEQUENTIAL/ADDITIVE
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Enhancement · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-BE-005-offers-validation`
 - **Commit :** `feat(offers): add validate-compatibility endpoint`
@@ -349,12 +349,6 @@ Module scaffold (BE-001)
 - **Acceptance Criteria :**
   - ✅ Tests unitaires + e2e sur lots mixtes et lots homogènes
 - **Files :** `offers.controller.ts`, `offers.service.ts`
-
----
-
-### ~~S5-BE-006~~ — DTOs avec validation
-
-- **Statut :** ❌ Superseded — absorbé par S5-BE-002c (DTOs `Offer`), S5-BE-003b (DTOs `OfferPeriod`) et S5-BE-004b (DTO `OfferSupplement`). Ne pas implémenter séparément.
 
 ---
 

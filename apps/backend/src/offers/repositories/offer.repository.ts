@@ -59,4 +59,6 @@ export abstract class OfferRepository {
     offerId: string,
     supplementId: string,
   ): Promise<RepositoryResult>;
+
+  abstract findByIds(ids: string[], tourOperatorId: string): Promise<Offer[]>;
 }

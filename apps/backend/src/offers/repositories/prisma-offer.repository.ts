@@ -204,4 +204,10 @@ export class PrismaOfferRepository extends OfferRepository {
       throw error;
     }
   }
+
+  async findByIds(ids: string[], tourOperatorId: string): Promise<Offer[]> {
+    return this.prisma.offer.findMany({
+      where: { id: { in: ids }, tourOperatorId },
+    });
+  }
 }

@@ -24,7 +24,9 @@ import { CreateOfferSupplementDto } from './dto/create-offer-supplement.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { UpdateOfferPeriodDto } from './dto/update-offer-period.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
+import { ValidateCompatibilityDto } from './dto/validate-compatibility.dto';
 import { OffersService } from './offers.service';
+import { CompatibilityResult } from './offers.types';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.MANAGER)
@@ -49,6 +51,16 @@ export class OffersController {
   ): Promise<PaginatedResult<Offer>> {
     const tourOperatorId = req.user.tourOperatorId;
     return this.offersService.findAll(tourOperatorId, { limit, offset });
+  }
+
+  @Post('validate-compatibility')
+  @HttpCode(HttpStatus.OK)
+  validateCompatibility(
+    @Body() dto: ValidateCompatibilityDto,
+    @Req() req: RequestWithUser,
+  ): Promise<CompatibilityResult> {
+    const tourOperatorId = req.user.tourOperatorId;
+    return this.offersService.validateCompatibility(dto, tourOperatorId);
   }
 
   @Get(':id')

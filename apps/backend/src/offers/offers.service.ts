@@ -25,6 +25,8 @@ import { CreateOfferSupplementDto } from './dto/create-offer-supplement.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { UpdateOfferPeriodDto } from './dto/update-offer-period.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
+import { ValidateCompatibilityDto } from './dto/validate-compatibility.dto';
+import { CompatibilityResult } from './offers.types';
 import { OfferRepository } from './repositories/offer.repository';
 
 @Injectable()
@@ -193,6 +195,39 @@ export class OffersService {
     if (startDate >= endDate) {
       throw new BadRequestException('startDate must be before endDate');
     }
+  }
+
+  async validateCompatibility(
+    dto: ValidateCompatibilityDto,
+    tourOperatorId: string,
+  ): Promise<CompatibilityResult> {
+    const uniqueRequestedIds = new Set(dto.offerIds);
+    const offers = await this.offerRepository.findByIds(
+      [...uniqueRequestedIds],
+      tourOperatorId,
+    );
+
+    if (offers.length !== uniqueRequestedIds.size) {
+      throw new BadRequestException(
+        'One or more requested offers do not exist or belong to another tenant',
+      );
+    }
+
+    if (offers.length === 1) {
+      return { compatible: true };
+    }
+
+    const modes = new Set(offers.map((offer) => offer.discountMode));
+
+    if (modes.size > 1) {
+      return {
+        compatible: false,
+        reason:
+          'Offers with SEQUENTIAL and ADDITIVE discount modes cannot be combined',
+      };
+    }
+
+    return { compatible: true };
   }
 
   private async getOfferPeriodOrThrow(
