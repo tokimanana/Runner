@@ -11,7 +11,7 @@ export const authInitializer = () => {
   return authService.refresh().pipe(
     tap((response) =>
       store.dispatch(
-        AuthActions.loginSuccess({
+        AuthActions.refreshSuccess({
           user: response.user,
         })
       )
