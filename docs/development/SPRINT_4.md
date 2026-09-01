@@ -924,18 +924,19 @@ if (date < contractPeriod.startDate || date > contractPeriod.endDate) {
 - **Branch :** `test/S4-BE-011-contracts-tests`
 - **Commit :** `test(contracts): add unit tests for contracts service`
 
-**Scénarios :**
+## Scénarios
 
-- Création contrat avec vérification hotelId/marketId/currencyId
+- Création contrat (délégation au repository) — ⚠️ `create()` n'a pas de `try/catch` contrairement aux autres `createX()` : les erreurs repository (ex. hotelId/marketId/currencyId invalides) remontent telles quelles, non traduites en `HttpException`. Test à écrire pour documenter ce comportement actuel ; comportement à confirmer séparément (hors scope de ce ticket).
 - Chevauchement de ContractPeriods dans un même contrat
 - Auto-fill dates depuis SeasonPeriod
-- Dates éditables indépendamment de la SeasonPeriod
-- RoomPrice PER_ROOM (pricePerNight requis si PER_ROOM)
+- Dates éditables indépendamment de la SeasonPeriod (fournies explicitement → non écrasées)
 - RoomPrice PER_OCCUPANCY + validation via `capacities[]`
-- ~~`totalRate` calculé et vérifié~~ → backend calcule totalRate depuis ratesPerAge
+- `totalRate` calculé depuis `ratesPerAge` et vérifié (assertion sur la valeur transmise au repository)
 - StopSalesDate hors ContractPeriod → erreur
+- ~~RoomPrice PER_ROOM (pricePerNight requis si PER_ROOM)~~ → retiré : cette contrainte est portée par le DTO/validation-pipe, pas par le service ; rien à tester ici.
+- ~~`buildOccupancyRates` à retirer~~ → retiré : comportement volontairement conservé, retrait planifié dans `S4-REFACTOR-003`, pas ce ticket.
 
-**Acceptance Criteria :**
+## Acceptance Criteria
 
 - ✅ Coverage > 80% sur `contracts.service.ts`
 
