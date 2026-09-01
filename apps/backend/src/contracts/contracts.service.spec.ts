@@ -17,12 +17,16 @@ import {
   RoomPrice,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { Contract as SharedContract } from '@runner/shared/types';
 import { ContractsService } from './contracts.service';
 import { CreateAgePolicyDto } from './dto/create-age-policy.dto';
 import { CreateBaseRateDto } from './dto/create-base-rate.dto';
+import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
+import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateMealPlanSupplementDto } from './dto/create-meal-plan-supplement.dto';
 import { CreateOccupancyGuidanceDto } from './dto/create-occupancy-guidance.dto';
 import { CreateRoomPriceDto } from './dto/create-room-price.dto';
+import { CreateStopSalesDateDto } from './dto/create-stop-sales-date.dto';
 import { UpdateBaseRateDto } from './dto/update-base-rate.dto';
 import { UpdateMealPlanSupplementDto } from './dto/update-meal-plan-supplement.dto';
 import { UpdateRoomPriceDto } from './dto/update-room-price.dto';
@@ -33,6 +37,7 @@ describe('ContractsService', () => {
   let mockRepository: jest.Mocked<ContractRepository>;
 
   const contractId = 'contract-1';
+  const tourOperatorId = 'to-1';
   const periodId = 'period-1';
   const roomTypeId = 'room-type-1';
   const ageCategoryId = 'age-category-1';
@@ -95,6 +100,127 @@ describe('ContractsService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  describe('create', () => {
+    const dto = {
+      hotelId: 'hotel-1',
+      marketId: 'market-1',
+      currencyId: 'currency-1',
+    } as CreateContractDto;
+
+    it('delegates creation to the repository and returns its result', async () => {
+      const created = { id: 'contract-1' } as SharedContract;
+      mockRepository.create.mockResolvedValue(created);
+
+      const result = await service.create(dto, tourOperatorId);
+
+      expect(result).toEqual(created);
+      expect(mockRepository.create).toHaveBeenCalledWith(dto, tourOperatorId);
+    });
+
+    it('propagates repository errors as-is (no try/catch wrapping in create())', async () => {
+      mockRepository.create.mockRejectedValue(
+        new RepositoryException(RepositoryResult.NOT_FOUND),
+      );
+
+      await expect(service.create(dto, tourOperatorId)).rejects.toThrow(
+        RepositoryException,
+      );
+    });
+  });
+
+  // ─── ContractPeriod ─────────────────────────────────────────────
+
+  describe('createPeriod', () => {
+    const seasonPeriod = {
+      id: 'season-1',
+      name: 'Summer 2026',
+      seasonId: 'season-parent-1',
+      startDate: new Date('2026-06-01'),
+      endDate: new Date('2026-09-30'),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('throws BadRequestException when neither seasonPeriodId nor startDate/endDate are provided', async () => {
+      const dto = {} as CreateContractPeriodDto;
+
+      await expect(service.createPeriod(dto, contractId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockRepository.createPeriod).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when seasonPeriodId does not resolve to a SeasonPeriod', async () => {
+      mockRepository.findSeasonPeriod.mockResolvedValue(null);
+      const dto = { seasonPeriodId: 'season-x' } as CreateContractPeriodDto;
+
+      await expect(service.createPeriod(dto, contractId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('auto-fills startDate/endDate from the SeasonPeriod when not provided', async () => {
+      mockRepository.findSeasonPeriod.mockResolvedValue(seasonPeriod);
+      mockRepository.validateNoOverlap.mockResolvedValue(null);
+      mockRepository.createPeriod.mockResolvedValue(mockPeriod);
+      const dto = { seasonPeriodId: 'season-1' } as CreateContractPeriodDto;
+
+      await service.createPeriod(dto, contractId);
+
+      const [payload] = mockRepository.createPeriod.mock.calls[0];
+      expect(payload.startDate).toEqual(seasonPeriod.startDate);
+      expect(payload.endDate).toEqual(seasonPeriod.endDate);
+    });
+
+    it('keeps explicitly provided startDate/endDate even when seasonPeriodId is set', async () => {
+      mockRepository.findSeasonPeriod.mockResolvedValue(seasonPeriod);
+      mockRepository.validateNoOverlap.mockResolvedValue(null);
+      mockRepository.createPeriod.mockResolvedValue(mockPeriod);
+      const ownStart = '2026-07-01';
+      const ownEnd = '2026-08-15';
+      const dto = {
+        seasonPeriodId: 'season-1',
+        startDate: ownStart,
+        endDate: ownEnd,
+      } as CreateContractPeriodDto;
+
+      await service.createPeriod(dto, contractId);
+
+      const [payload] = mockRepository.createPeriod.mock.calls[0];
+      expect(payload.startDate).toEqual(new Date(ownStart));
+      expect(payload.endDate).toEqual(new Date(ownEnd));
+    });
+
+    it('throws ConflictException when the period overlaps an existing one in the same contract', async () => {
+      mockRepository.validateNoOverlap.mockResolvedValue({
+        ...mockPeriod,
+        name: 'Summer 26',
+      });
+      const dto = {
+        startDate: '2026-06-01',
+        endDate: '2026-06-30',
+      } as CreateContractPeriodDto;
+
+      await expect(service.createPeriod(dto, contractId)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockRepository.createPeriod).not.toHaveBeenCalled();
+    });
+
+    it('does not throw and creates the period when there is no overlap', async () => {
+      mockRepository.validateNoOverlap.mockResolvedValue(null);
+      mockRepository.createPeriod.mockResolvedValue(mockPeriod);
+      const dto = {
+        startDate: '2026-06-01',
+        endDate: '2026-06-30',
+      } as CreateContractPeriodDto;
+
+      await expect(service.createPeriod(dto, contractId)).resolves.toEqual(
+        mockPeriod,
+      );
+    });
+  });
 
   // ─── BaseRate ────────────────────────────────────────────────
 
@@ -431,9 +557,44 @@ describe('ContractsService', () => {
       expect(callData.extraPersonTeen).toBeNull();
     });
 
-    // NOTE : ces deux tests couvrent le comportement RÉEL actuel du code
-    // (buildOccupancyRates toujours présent). Le ticket S4-BE-011-BIS
-    // décrivait son retrait — confirmé obsolète, à corriger dans le ticket.
+    it('computes totalRate as the sum of ratesPerAge and forwards it to the repository', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
+      mockRepository.findRoomTypeWithCapacities.mockResolvedValue({
+        id: roomTypeId,
+        name: 'Junior Suite',
+        code: 'JS',
+        hotelId: 'hotel-1',
+        capacities: [{ id: 'cap-1', roomTypeId, ageCategoryId, maxPax: 4 }],
+      });
+      const dto: CreateRoomPriceDto = {
+        roomTypeId,
+        pricingMode: 'PER_OCCUPANCY',
+        occupancyRates: [
+          {
+            numAdults: 2,
+            numChildren: 1,
+            ratesPerAge: { adult: 100, child: 40 },
+          },
+        ],
+      };
+      mockRepository.createRoomPrice.mockResolvedValue({
+        id: 'rp-3',
+        contractPeriodId: periodId,
+        roomTypeId,
+        pricingMode: 'PER_OCCUPANCY',
+        pricePerNight: null,
+        extraPersonAdult: null,
+        extraPersonChild: null,
+        extraPersonTeen: null,
+      });
+
+      await service.createRoomPrice(dto, periodId, contractId);
+
+      const [, , occupancyRatesData] =
+        mockRepository.createRoomPrice.mock.calls[0];
+      expect(occupancyRatesData?.[0].totalRate).toBe(140);
+    });
+
     it('throws BadRequestException when PER_OCCUPANCY occupancyRates is empty', async () => {
       mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
       const dto: CreateRoomPriceDto = {
@@ -549,6 +710,71 @@ describe('ContractsService', () => {
           billingUnit: 'PER_NIGHT',
         },
       );
+    });
+  });
+
+  // ─── StopSalesDate ──────────────────────────────────────────────
+
+  describe('createStopSalesDate', () => {
+    const dto: CreateStopSalesDateDto = { date: '2026-06-15' };
+
+    it('creates a StopSalesDate when the date falls within the ContractPeriod range', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
+      mockRepository.createStopSalesDate.mockResolvedValue({
+        id: 'ssd-1',
+        contractPeriodId: periodId,
+        date: new Date(dto.date),
+      });
+
+      const result = await service.createStopSalesDate(
+        dto,
+        periodId,
+        contractId,
+      );
+
+      expect(result.id).toBe('ssd-1');
+      expect(mockRepository.createStopSalesDate).toHaveBeenCalledWith(
+        { date: new Date(dto.date) },
+        periodId,
+      );
+    });
+
+    it('throws BadRequestException when the date is before the ContractPeriod startDate', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
+      const beforeDto: CreateStopSalesDateDto = { date: '2025-12-31' };
+
+      await expect(
+        service.createStopSalesDate(beforeDto, periodId, contractId),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockRepository.createStopSalesDate).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when the date is after the ContractPeriod endDate', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
+      const afterDto: CreateStopSalesDateDto = { date: '2027-01-01' };
+
+      await expect(
+        service.createStopSalesDate(afterDto, periodId, contractId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when the ContractPeriod does not exist', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(null);
+
+      await expect(
+        service.createStopSalesDate(dto, periodId, contractId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when a StopSalesDate already exists for this date', async () => {
+      mockRepository.findContractPeriod.mockResolvedValue(mockPeriod);
+      mockRepository.createStopSalesDate.mockRejectedValue(
+        new RepositoryException(RepositoryResult.CONFLICT),
+      );
+
+      await expect(
+        service.createStopSalesDate(dto, periodId, contractId),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });
