@@ -20,7 +20,10 @@
     "paths": {
       "@backend/*": ["apps/backend/src/*"],
       "@frontend/*": ["apps/frontend/src/*"],
-      "@runner/shared/types": ["libs/shared/types/src/index.ts"]
+      "@runner/shared/types": ["libs/shared/types/src/index.ts"],
+      "@runner/shared/business-rules": [
+        "libs/shared/business-rules/src/index.ts"
+      ]
     }
   },
   "angularCompilerOptions": {

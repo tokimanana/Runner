@@ -13,5 +13,6 @@ import { SupplementsService } from './supplements.service';
       useClass: PrismaSupplementRepository,
     },
   ],
+  exports: [SupplementsService],
 })
 export class SupplementsModule {}
