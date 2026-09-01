@@ -1736,117 +1736,59 @@ dates sélectionnées devient difficile à auditer visuellement.
 
 ---
 
-## S4-FE-010 : Routes Contracts + Sidebar
+## S4-FE-010 : Fix CI — budget SCSS + bugs de scope sur contract-form
 
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `chore/S4-FE-010-contracts-routes`
-- **Status :** À faire — pas commencé (corrigé : `SPRINT_4.md` le marquait ✅ Done
-  avec plusieurs commits ; le routing détaillé dans le doc reste un plan
-  valide à suivre, mais rien n'est en place dans le code réel)
+- **Status :** ✅ Résolu — CI verte, build passe sans erreur de budget
+- **Commit :** `fix(contracts): further deduplicate styles, promote rooms-badge to root scope`
 
-### Scope
+### Bug de scope #2 trouvé en continuant le refactor
 
-Reprendre tel quel le plan déjà détaillé dans `SPRINT_4.md` (routes nichées
-`contracts-list`/`create`/`:contractId/edit`, componentless, guards hérités du
-parent `management`, entrée sidebar après Currencies) — le contenu de ce
-ticket n'est pas remis en cause, seul son statut l'était.
+`.rooms-badge` (compteur "X supplement(s)"/"X date(s)") souffrait du même bug
+que `.contract-context-bar` : stylé uniquement dans `.room-prices-step`, réutilisé
+sans style dans les headers d'accordéon Steps 4 et 5. Remonté au niveau racine
+dans `_shared-form-patterns.scss`.
 
-### Acceptance Criteria
+### Deuxième passe de dédup
 
-- ⬜ `ContractsListComponent` et `ContractFormComponent` scaffoldés
-- ⬜ Routes nichées, componentless
-- ⬜ `/management/contracts/contracts-list` compile et navigue sans erreur
-- ⬜ Entrée sidebar avec icône, `roles` filtrant l'affichage
-- **Type :** Feature
-- **Priority :** P2
-- **Story Points :** 3
-- **Branch :** `feat/S4-FE-014-BIS-occupancy-guidance-room-type`
-- **Status :** À faire — prêt à démarrer (dépendances résolues)
-- **Emplacement :** `Hotels > [hotel] > Room Types` (fiche room type existante)
-- **Dépend de :** S4-BE-003-BIS (`OccupancyGuidancesController`, ✅ mergé),
-  S4-BE-008-BIS (service, ✅ mergé) — **mise à jour** : les deux étaient listés
-  "à faire" dans la version précédente du ticket, ils sont en réalité déjà
-  mergés depuis la phase backend. Ticket non bloqué.
+- Containers de step (`room-prices-step`/`meal-supplements-step`/`stop-sales-step`
+  identiques, fusionnés ; `periods-step`/`review-step` mutualisent display/flex-direction)
+- `.review-summary-card`/`.stop-sales-list-item` : base bordure/fond fusionnée
 
-### Contexte
+### Résultat CI (nx run frontend:build:production)
 
-`OccupancyGuidance` (combinaisons indicatives d'occupation, non bloquantes) est
-scopée uniquement par `roomTypeId` — aucune dépendance à un contrat ni une
-période. Elle n'a donc pas sa place dans le wizard de contrat et se gère plutôt
-là où le room type lui-même est administré, au même titre que
-`RoomTypeCapacity`.
+- `contract-form.component.scss` : **6.97 kB**, sous le budget error (8 kB).
+  Warning résiduel sur le budget warn (4 kB, dépassé de 2.97 kB) — attendu et
+  non-bloquant pour un component qui couvre un wizard à 6 steps ; pas d'action
+  supplémentaire prévue sur ce ticket.
+- Plus aucune erreur de build.
 
-Confirmé en session : les plafonds d'occupation (max adultes/ados/enfants par
-room type) sont une contrainte de réservation, indépendante de la
-tarification — aucun lien avec `BaseRate`/`AgePolicy`, purement informationnel
-pour l'agent qui saisit un contrat.
+### Hors scope — à ouvrir en ticket séparé
 
-### Décision actée — structure (point resté ouvert dans la version précédente)
+- `bundle initial exceeded maximum budget` (553.15 kB / 500 kB) : c'est le bundle
+  JS initial (main + chunks synchrones), sans lien avec le SCSS de ce ticket.
+  À investiguer séparément (lazy-loading candidat, tree-shaking, taille des
+  dépendances PrimeNG importées globalement, etc.).
+- `_page-layout.scss` toujours importé en `@use` local (par composant) au lieu
+  d'un `@use` global dans `styles.scss`, contrairement à `_forms.scss` et
+  `_shared-form-patterns.scss`. Bug en sommeil identique à celui corrigé ici,
+  qui resurgira si `hotels-form` ou un autre form-component grossit.
 
-Pas de choix "liste structurée **vs** texte libre" à faire : le schéma
-`OccupancyGuidance` combine déjà les deux —
+## Acceptance Criteria
 
-```prisma
-model OccupancyGuidance {
-  roomTypeId  String
-  description String   // texte libre, ex. "3 Adults" ou "2 Adults + 2 Teens"
-  maxAdults   Int      @default(0)
-  maxTeens    Int      @default(0)
-  maxChildren Int      @default(0)
-  maxInfants  Int      @default(0)
-}
-```
-
-Une combinaison réelle du type _"3 ADULTS OR 2 ADULTS + 2 TEENS or 2 CHILDREN
-or 1 INFANT"_ (vue sur les contrats Lux Collective) devient **4 lignes
-`OccupancyGuidance` distinctes** pour le même room type — une par combinaison
-"OR", chacune avec sa propre `description` et ses propres `max*`. Le frontend
-n'a donc rien à trancher structurellement : juste une liste de lignes
-(description + 4 champs numériques), create/edit/delete par ligne.
-
-### Scope
-
-- Section/onglet dédié sur la fiche room type existante, listant les
-  `OccupancyGuidance` du room type (`GET occupancy-guidances/room-types/:roomTypeId`)
-- Création : `description` (texte libre), `maxAdults`/`maxTeens`/
-  `maxChildren`/`maxInfants` (entiers, défaut 0 si omis)
-- Plusieurs guidances par room type autorisées (pas de contrainte
-  d'unicité côté backend — pas de règle à répliquer côté frontend)
-- Édition / suppression d'une guidance existante
-
-### Hors scope
-
-- Toute validation croisée avec `RoomTypeCapacity` (relation entre les
-  deux non tranchée côté backend — discussion ouverte, à traiter
-  séparément)
-- Utilisation de ces guidances dans le wizard de contrat (purement
-  informationnel pour l'instant, aucun lien avec `BaseRate`/`AgePolicy`,
-  confirmé en session)
-
-### Acceptance Criteria
-
-- ⬜ La fiche room type affiche la liste des `OccupancyGuidance` existantes
-- ⬜ Création d'une guidance sans capacités précisées → les 4 champs
-  `max...` valent 0
-- ⬜ Plusieurs guidances peuvent coexister pour le même room type (une par
-  combinaison "OR")
-- ⬜ Édition et suppression fonctionnelles
-- ⬜ `nx build frontend` / `nx test frontend` passent sans erreur
+- ✅ `nx run frontend:build:production` passe sans erreur de budget
+- ✅ `.contract-context-bar` ET `.rooms-badge` stylés identiquement sur tous les steps qui les utilisent
 
 ---
 
-## S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
+### S4-FE-007 : ContractForm — Étape 4 (Meal Supplements)
 
 - **Type :** Feature
 - **Priority :** P1
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-007-contract-form-step4`
-- **Status :** ⬜ À faire
-- **Commit :** aucun — pas encore commencé
+- **Status :** ✅ Done
 
-### Point structurel à noter avant de commencer
+## Point structurel à noter avant de commencer
 
 Le stepper actuel (`contract-form.component.html`) n'a que **3** `p-step`
 ("Contract Info", "Periods", "Room Prices") — pas de 4e étape. Ce ticket
@@ -1854,7 +1796,7 @@ implique donc d'ajouter un vrai step supplémentaire au `p-stepper`, pas
 seulement des champs dans l'existant. Décision structurelle à valider avant
 codage.
 
-### Scope (repris du sprint doc original — à affiner en session)
+## Scope (repris du sprint doc original — à affiner en session)
 
 - Un `LocalMealPlanSupplement` par période : `mealPlanId`, `occupancyRates`
   (`Record<string, number>` — clé = combinaison d'occupation, à définir),
@@ -1863,7 +1805,7 @@ codage.
   édition inline — a été jugé plus adapté au workflow réel lors de
   `S4-FE-005`, probablement à reproduire ici)
 
-### Hors scope
+## Hors scope
 
 - Steps 5 (`S4-FE-008`), submit final (`S4-FE-009`)
 
@@ -1875,10 +1817,9 @@ codage.
 - **Priority :** P2
 - **Story Points :** 2
 - **Branch :** `feature/S4-FE-008-contract-form-step5`
-- **Status :** ⬜ À faire
-- **Commit :** aucun — pas encore commencé
+- **Status :** ✅ Done
 
-### Scope (repris du sprint doc original)
+## Scope (repris du sprint doc original)
 
 Bornes de dates depuis `ContractPeriod.startDate/endDate` (pas
 `SeasonPeriod`) :
@@ -1892,28 +1833,27 @@ periodRange = computed(() => ({
 
 Même remarque structurelle que S4-FE-007 : nécessite un 5e `p-step`.
 
-### Hors scope
+## Hors scope
 
 - Submit final (`S4-FE-009`)
 
 ---
 
-## S4-FE-009 : ContractForm — Récapitulatif + Submit
+### S4-FE-009 : ContractForm — Récapitulatif + Submit
 
 - **Type :** Feature
 - **Priority :** P0
 - **Story Points :** 3
 - **Branch :** `feature/S4-FE-009-contract-submit`
-- **Status :** ⬜ À faire
-- **Commit :** aucun — pas encore commencé
+- **Status :** ✅ Done
 
-### Dépend de
+## Dépend de
 
 S4-FE-007 et S4-FE-008 (les collections `mealSupplementsByPeriod`/
 `stopSalesByPeriod` que le submit original consomme n'existent pas encore).
 **Bloqué tant que ces deux tickets ne sont pas faits.**
 
-### Scope (repris du sprint doc original — squelette `submit()` à valider,
+## Scope (repris du sprint doc original — squelette `submit()` à valider,
 
 pas encore vérifié contre les DTOs réels post-refonte PER_OCCUPANCY)
 
@@ -1924,123 +1864,9 @@ tenir compte du fait que `createRoomPrice` ne prend plus `occupancyRates` en
 être réécrit pour appeler ces endpoints séparément par room type en mode
 `PER_OCCUPANCY`, pas juste passer `rp` tel quel à `createRoomPrice`.
 
-### Hors scope
-
-- Rien — dernier ticket du wizard
-
 ---
 
-## S4-FE-010 : Routes Contracts + Sidebar
-
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `chore/S4-FE-010-contracts-routes`
-- **Status :** ⬜ À faire
-- **Commit :** aucun — pas encore commencé
-
-### Point à vérifier avant de commencer
-
-Le sprint doc original suppose que `contracts-list`/`contract-form` sont déjà
-scaffoldés et juste à router. Vu que tout le reste (S4-FE-007/008/009) n'est
-pas fait, à confirmer : `ContractsListComponent` et `ContractFormComponent`
-existent-ils déjà dans l'arbre de fichiers réel, ou ce ticket doit-il aussi
-les scaffolder ?
-
-### Scope (repris du sprint doc original)
-
-```typescript
-// management.routes.ts
-{
-  path: 'contracts',
-  children: [
-    { path: '', redirectTo: 'contracts-list', pathMatch: 'full' },
-    {
-      path: 'contracts-list',
-      loadComponent: () =>
-        import('./contracts/contracts-list/contracts-list.component')
-          .then(m => m.ContractsListComponent),
-    },
-    {
-      path: 'create',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-    {
-      path: ':contractId/edit',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-  ],
-},
-```
-
-Guards hérités du parent `management` (`RoleGuard`, `roles: ['ADMIN',
-'MANAGER']`), pas de duplication sur les routes enfants.
-
-### Hors scope
-
-- Rien de nouveau signalé
-
----
-
-- **Type :** Task
-- **Priority :** P0
-- **Story Points :** 1
-- **Branch :** `chore/S4-FE-010-contracts-routes`
-- **Status :** ⬜ À faire
-- **Commit :** aucun — pas encore commencé
-
-### Point à vérifier avant de commencer
-
-Le sprint doc original suppose que `contracts-list`/`contract-form` sont déjà
-scaffoldés et juste à router. Vu que tout le reste (S4-FE-007/008/009) n'est
-pas fait, à confirmer : `ContractsListComponent` et `ContractFormComponent`
-existent-ils déjà dans l'arbre de fichiers réel, ou ce ticket doit-il aussi
-les scaffolder ?
-
-### Scope (repris du sprint doc original)
-
-```typescript
-// management.routes.ts
-{
-  path: 'contracts',
-  children: [
-    { path: '', redirectTo: 'contracts-list', pathMatch: 'full' },
-    {
-      path: 'contracts-list',
-      loadComponent: () =>
-        import('./contracts/contracts-list/contracts-list.component')
-          .then(m => m.ContractsListComponent),
-    },
-    {
-      path: 'create',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-    {
-      path: ':contractId/edit',
-      loadComponent: () =>
-        import('./contracts/contract-form/contract-form.component')
-          .then(m => m.ContractFormComponent),
-    },
-  ],
-},
-```
-
-Guards hérités du parent `management` (`RoleGuard`, `roles: ['ADMIN',
-'MANAGER']`), pas de duplication sur les routes enfants.
-
-### Hors scope
-
-- Rien de nouveau signalé
-
----
-
-# S4-REFACTOR-002 : Factoriser les patterns répétés dans ContractsService
+### S4-REFACTOR-002 : Factoriser les patterns répétés dans ContractsService
 
 - **Type :** Refactor
 - **Priority :** P2
@@ -3486,13 +3312,13 @@ Même triplet `create`/`update`/`remove` + `findByPeriod` pour `AgePolicy`, et `
 - `buildOccupancyRates()` (méthode privée entière)
 - L'appel à `buildOccupancyRates()` dans `createRoomPrice()` — remplacé par : si `pricingMode === 'PER_OCCUPANCY'`, `RoomPrice` est créé sans `occupancyRates`, la saisie des tarifs se fait ensuite séparément via `BaseRatesController`/`AgePoliciesController`.
 
-### Hors scope
+## Hors scope
 
 - `findOne` du contrat n'inclut pas encore `baseRates`/`agePolicies` (ticket S4-BE-005-BIS)
 - Tests unitaires (ticket S4-BE-011-BIS)
 - Nettoyage complet des imports/types legacy `OccupancyRateDto` (ticket S4-REFACTOR-003)
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - ✅ `nx build backend` compile sans erreur
 - ✅ Créer un `RoomPrice` en `PER_OCCUPANCY` ne nécessite plus `occupancyRates` dans le payload
@@ -3503,7 +3329,7 @@ Même triplet `create`/`update`/`remove` + `findByPeriod` pour `AgePolicy`, et `
 
 ---
 
-## S4-BE-009-BIS : MealPlanSupplement — ajout billingUnit
+### S4-BE-009-BIS : MealPlanSupplement — ajout billingUnit
 
 - **Type :** Feature
 - **Priority :** P1
@@ -3512,7 +3338,7 @@ Même triplet `create`/`update`/`remove` + `findByPeriod` pour `AgePolicy`, et `
 - **Status :** ✅ Done
 - **Commit :** `feat(contracts): add billingUnit to MealPlanSupplement (PER_NIGHT/PER_STAY)`
 
-### Contexte
+## Contexte
 
 `CreateMealPlanSupplementDto` (backend) exigeait déjà `billingUnit` via
 `@IsEnum(BillingUnit)`, mais le type partagé `MealPlanSupplementDto` et
@@ -3520,14 +3346,14 @@ l'entity `MealPlanSupplement` (`contract.types.ts`) n'avaient jamais été
 mis à jour — trou resté invisible jusqu'à la reprise du frontend sur
 S4-FE-007.
 
-### Scope
+## Scope
 
 - Ajout du type `BillingUnit` (`'PER_NIGHT' | 'PER_STAY'`) dans
   `contract.types.ts`
 - `MealPlanSupplement` += `billingUnit: BillingUnit`
 - `MealPlanSupplementDto` += `billingUnit: BillingUnit`
 
-### Hors scope
+## Hors scope
 
 - Toute logique de calcul dépendant de `billingUnit` (reste un champ de
   saisie/affichage pour l'instant, aucun calcul dérivé)
@@ -4054,5 +3880,111 @@ Dernier ticket de la série. Une fois S4-BE-008-BIS, S4-BE-009-BIS, S4-BE-005-BI
 - ✅ Une recherche globale de `buildOccupancyRates` dans le repo ne retourne aucun résultat
 - ✅ Les tests de S4-BE-011-BIS passent toujours après le nettoyage
 - ✅ Aucun champ/type legacy résiduel ne fait doublon avec `AgePolicy.baseRateReference` (S4-BE-014-BIS) ou le supplément extra person PER_ROOM (S4-BE-015-BIS)
+
+---
+
+## S4-TECH-001 : Migrer \_page-layout.scss vers un @use global
+
+- **Type :** Bug (préventif)
+- **Priority :** P2
+- **Story Points :** 1
+- **Branch :** `fix/S4-TECH-001-page-layout-global-use`
+- **Status :** ✅ Done
+- **Commit :** `fix(styles): migrate page-layout to global @use, drop redundant local forms import`
+
+### Contexte
+
+Découvert en corrigeant S4-FE-010 : `_forms.scss` et `_shared-form-patterns.scss`
+sont chargés globalement dans `styles.scss`, mais `_page-layout.scss` (`.form-page`,
+`.form-header`, `.form-title`, `.form-subtitle`, `.form-actions`) était toujours
+importé en `@use` local, composant par composant. Même bug de scope que
+`.contract-context-bar`/`.rooms-badge` — resterait invisible tant qu'un seul
+composant l'importe, resurgirait silencieusement dès qu'un deuxième composant
+réutiliserait ces classes sans réimporter le partial localement.
+
+### Recensement
+
+Un seul composant concerné : `hotels-form.component.scss`
+(`grep -rln "@use.*page-layout" apps/frontend/src`).
+
+### Nettoyage additionnel inclus
+
+En touchant `hotels-form.component.scss`, `_forms.scss` y était aussi importé
+en `@use` local — redondant, puisque déjà chargé globalement dans `styles.scss`.
+Ne cassait rien (Sass dédupe les `@use` d'un même module, zéro CSS dupliqué en
+sortie), mais même confusion de pattern que ce qu'on nettoie ici. Supprimé dans
+le même commit.
+
+### Changements
+
+- `hotels-form.component.scss` : suppression des deux `@use` locaux
+  (`forms`, `page-layout`) — fichier désormais vide (0 octet), aucun style
+  propre à ce composant pour l'instant.
+- `styles.scss` : ajout de `@use 'styles/page-layout' as *;` aux côtés de
+  `styles/forms` et `styles/shared-form-patterns`.
+
+### Résultat CI (nx run frontend:build:production)
+
+- Build vert, aucune erreur.
+- Warnings inchangés par rapport à S4-FE-010 (bundle initial 553.50 kB,
+  contract-form.component.scss 6.97 kB) → confirme zéro régression, cette
+  migration ne devait avoir aucun impact sur ces chiffres.
+
+### Acceptance Criteria
+
+- ✅ `_page-layout.scss` chargé une seule fois, globalement, dans `styles.scss`
+- ✅ Plus aucun `@use` local vers `page-layout` dans les composants
+- ✅ `nx run frontend:build:production` passe sans régression
+- ✅ Aucun changement visuel sur les pages qui utilisent `.form-page`/`.form-header`/etc. (à confirmer visuellement par toi sur `hotels-form` avant merge, si pas déjà fait)
+
+---
+
+## S4-TECH-002 : Réduire le bundle JS initial sous le budget
+
+- **Type :** Tech debt
+- **Priority :** P2
+- **Story Points :** à estimer (investigation nécessaire avant chiffrage)
+- **Branch :** `chore/S4-TECH-002-initial-bundle-budget`
+- **Status :** ⬜ À faire
+
+### Contexte
+
+Warning non-bloquant relevé pendant S4-FE-010 :
+
+▲ [WARNING] bundle initial exceeded maximum budget.
+Budget 500.00 kB was not met by 53.15 kB with a total of 553.15 kB.
+
+Sans lien avec le SCSS de contract-form — c'est le bundle JS initial
+(`main` + chunks synchrones chargés au démarrage), pas les chunks lazy des
+routes. Non investigué en profondeur : aucune cause confirmée à ce stade,
+seulement des pistes.
+
+### Pistes à vérifier en session (aucune tranchée)
+
+- Imports PrimeNG globaux non tree-shakés (modules importés en bloc plutôt
+  que les composants réellement utilisés)
+- Un import synchrone qui devrait être lazy-loadé (vérifier
+  `app.routes.ts`/`management.routes.ts` pour un `loadComponent`/
+  `loadChildren` manquant sur un module lourd)
+- Dépendances tierces volumineuses chargées dans le chunk initial plutôt que
+  différées
+
+### Scope (à affiner en session)
+
+- Analyser le bundle (`nx run frontend:build:production --stats-json` ou
+  équivalent) pour identifier ce qui compose les 553.15 kB avant de proposer
+  un fix
+- Pas de changement de code avant d'avoir la composition réelle du bundle
+
+### Hors scope
+
+- `_page-layout.scss` (S4-TECH-001, séparé)
+- Tout budget par-composant (déjà traité en S4-FE-010)
+
+### Acceptance Criteria
+
+- ⬜ Composition du bundle initial identifiée (quels modules/chunks pèsent le plus)
+- ⬜ `nx run frontend:build:production` sous 500 kB, ou budget ajusté avec
+  justification explicite si la taille est légitime
 
 ---
