@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { ContractsModule } from './contracts/contracts.module';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { MarketsModule } from './markets/markets.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
     MarketsModule,
     CurrenciesModule,
     SupplementsModule,
+    ContractsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

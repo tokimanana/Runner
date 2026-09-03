@@ -1,0 +1,70 @@
+import {
+  BaseRateReference,
+  BillingUnit,
+  PricingMode,
+  SharingType,
+} from '@runner/shared/types';
+
+export interface LocalContractPeriod {
+  tempId: string;
+  seasonPeriodId: string | null;
+  name: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  baseMealPlanId: string;
+  minStay?: number;
+}
+
+export interface LocalBaseRate {
+  single: number | null;
+  halfDouble: number | null;
+  thirdPersonAdult: number | null;
+  triple: number | null;
+  quadruple: number | null;
+}
+
+export function emptyBaseRate(): LocalBaseRate {
+  return {
+    single: null,
+    halfDouble: null,
+    thirdPersonAdult: null,
+    triple: null,
+    quadruple: null,
+  };
+}
+
+export interface LocalRoomPrice {
+  tempId: string;
+  periodTempId: string;
+  roomTypeId: string;
+  pricingMode: PricingMode;
+  pricePerNight: number | null;
+  baseRate: LocalBaseRate | null;
+  extraPersonAdult: number | null;
+  extraPersonChild: number | null;
+  extraPersonTeen: number | null;
+}
+
+export interface LocalAgePolicyEntry {
+  tempId: string;
+  periodTempId: string;
+  roomTypeId: string;
+  ageCategoryId: string;
+  sharingType: SharingType;
+  occurrenceIndex: number;
+  baseRateReference: BaseRateReference;
+  value: number | null;
+}
+export interface LocalMealPlanSupplement {
+  tempId: string;
+  periodTempId: string;
+  mealPlanId: string;
+  billingUnit: BillingUnit | null;
+  ratesByAgeCategory: Record<string, number>;
+}
+
+export interface LocalStopSalesDate {
+  tempId: string;
+  periodTempId: string;
+  date: Date;
+}

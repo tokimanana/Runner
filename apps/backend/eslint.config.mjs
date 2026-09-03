@@ -1,5 +1,6 @@
 // @ts-check
 import eslint from '@eslint/js';
+import jest from 'eslint-plugin-jest';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -19,9 +20,7 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['src/hotels/*.spec.ts'],
-        },
+        project: ['tsconfig.json', 'tsconfig.spec.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -36,6 +35,14 @@ export default tseslint.config(
         { allow: ['cookie-parser'] },
       ],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
+  },
+  {
+    files: ['**/*.spec.ts'],
+    plugins: { jest },
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      'jest/unbound-method': 'error',
     },
   },
 );
