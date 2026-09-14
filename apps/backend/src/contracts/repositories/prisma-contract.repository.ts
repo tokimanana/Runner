@@ -33,7 +33,6 @@ import {
   MealPlanSupplementUpdateData,
   OccupancyGuidanceCreateData,
   OccupancyGuidanceUpdateData,
-  OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
   StopSalesDateCreateData,
@@ -102,11 +101,7 @@ export class PrismaContractRepository extends ContractRepository {
           include: {
             seasonPeriod: true,
             baseMealPlan: true,
-            roomPrices: {
-              include: {
-                occupancyRates: true, // legacy
-              },
-            },
+            roomPrices: true,
             mealPlanSupplements: true,
             stopSalesDates: true,
             baseRates: {
@@ -281,7 +276,6 @@ export class PrismaContractRepository extends ContractRepository {
   async createRoomPrice(
     dto: RoomPriceCreateData,
     contractPeriodId: string,
-    occupancyRates?: OccupancyRateCreateData[],
   ): Promise<RoomPrice> {
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -289,18 +283,8 @@ export class PrismaContractRepository extends ContractRepository {
           data: { ...dto, contractPeriodId },
         });
 
-        if (occupancyRates?.length) {
-          await tx.occupancyRate.createMany({
-            data: occupancyRates.map((rate) => ({
-              ...rate,
-              roomPriceId: roomPrice.id,
-            })),
-          });
-        }
-
         return tx.roomPrice.findUniqueOrThrow({
           where: { id: roomPrice.id },
-          include: { occupancyRates: true },
         });
       });
     } catch (error) {
