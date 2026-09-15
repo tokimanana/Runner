@@ -47,13 +47,6 @@ export interface RoomPriceUpdateData {
   extraPersonTeen?: number | null;
 }
 
-export interface OccupancyRateCreateData {
-  numAdults: number;
-  numChildren: number;
-  ratesPerAge: Record<string, number>;
-  totalRate: number;
-}
-
 export interface MealPlanSupplementCreateData {
   mealPlanId: string;
   occupancyRates: Record<string, number>;

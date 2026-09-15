@@ -195,23 +195,10 @@ model RoomPrice {
   extraPersonTeen   Decimal?        @db.Decimal(10, 2)
   contractPeriod    ContractPeriod  @relation(fields: [contractPeriodId], references: [id], onDelete: Cascade)
   roomType          RoomType        @relation(fields: [roomTypeId], references: [id])
-  occupancyRates    OccupancyRate[]
   @@unique([contractPeriodId, roomTypeId])
   @@index([contractPeriodId])
 }
 
-// LEGACY
-model OccupancyRate {
-  id          String    @id @default(cuid())
-  roomPriceId String
-  numAdults   Int
-  numChildren Int
-  ratesPerAge Json
-  totalRate   Decimal
-  roomPrice   RoomPrice @relation(fields: [roomPriceId], references: [id], onDelete: Cascade)
-  @@unique([roomPriceId, numAdults, numChildren])
-  @@index([roomPriceId])
-}
 model BaseRate {
   id               String         @id @default(cuid())
   contractPeriodId String

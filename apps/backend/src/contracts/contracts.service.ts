@@ -23,11 +23,10 @@ import {
   StopSalesDate,
 } from '@prisma/client';
 import {
-  OccupancyRateDto,
   PaginatedResult,
   Contract as SharedContract,
 } from '@runner/shared/types';
-import { ContractQuery, OccupancyRateCreateData } from './contracts.types';
+import { ContractQuery } from './contracts.types';
 import { CreateAgePolicyDto } from './dto/create-age-policy.dto';
 import { CreateBaseRateDto } from './dto/create-base-rate.dto';
 import { CreateContractPeriodDto } from './dto/create-contract-period.dto';
@@ -195,15 +194,6 @@ export class ContractsService {
   ): Promise<RoomPrice> {
     await this.getPeriodOrThrow(periodId, contractId);
 
-    let occupancyRatesData: OccupancyRateCreateData[] | undefined;
-
-    if (dto.pricingMode === 'PER_OCCUPANCY') {
-      occupancyRatesData = await this.buildOccupancyRates(
-        dto.roomTypeId,
-        dto.occupancyRates ?? [],
-      );
-    }
-
     try {
       return await this.contractRepository.createRoomPrice(
         {
@@ -219,7 +209,6 @@ export class ContractsService {
             dto.pricingMode === 'PER_ROOM' ? dto.extraPersonTeen : null,
         },
         periodId,
-        occupancyRatesData,
       );
     } catch (error) {
       this.handleRepositoryError(error, {
@@ -335,49 +324,6 @@ export class ContractsService {
     const result = await this.contractRepository.removeStopSalesDate(id);
     if (result === RepositoryResult.NOT_FOUND)
       throw new NotFoundException(`Stop Sales date ${id} not found`);
-  }
-
-  private async buildOccupancyRates(
-    roomTypeId: string,
-    occupancyRates: OccupancyRateDto[],
-  ): Promise<OccupancyRateCreateData[]> {
-    if (!occupancyRates.length) {
-      throw new BadRequestException(
-        'occupancy rate is required when pricing mode is PER OCCUPANCY',
-      );
-    }
-
-    const roomType =
-      await this.contractRepository.findRoomTypeWithCapacities(roomTypeId);
-    if (!roomType)
-      throw new NotFoundException(`room type ${roomTypeId} not found`);
-
-    const totalMaxPax = roomType.capacities.reduce(
-      (sum, c) => sum + c.maxPax,
-      0,
-    );
-
-    return occupancyRates.map((rate) => {
-      const totalPax = rate.numAdults + rate.numChildren;
-
-      if (totalPax > totalMaxPax) {
-        throw new BadRequestException(
-          `Occupancy (${rate.numAdults}A + ${rate.numChildren}C) exceeds room capacity (${totalMaxPax} pax)`,
-        );
-      }
-
-      const totalRate = Object.values(rate.ratesPerAge).reduce(
-        (sum, r) => sum + r,
-        0,
-      );
-
-      return {
-        numAdults: rate.numAdults,
-        numChildren: rate.numChildren,
-        ratesPerAge: rate.ratesPerAge,
-        totalRate,
-      };
-    });
   }
 
   private async validateNoOverlap(

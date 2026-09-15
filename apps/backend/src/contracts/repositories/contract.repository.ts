@@ -26,7 +26,6 @@ import {
   MealPlanSupplementUpdateData,
   OccupancyGuidanceCreateData,
   OccupancyGuidanceUpdateData,
-  OccupancyRateCreateData,
   RoomPriceCreateData,
   RoomPriceUpdateData,
   StopSalesDateCreateData,
@@ -100,7 +99,6 @@ export abstract class ContractRepository {
   abstract createRoomPrice(
     dto: RoomPriceCreateData,
     contractPeriodId: string,
-    occupancyRates?: OccupancyRateCreateData[],
   ): Promise<RoomPrice>;
 
   abstract updateRoomPrice(
