@@ -28,3 +28,29 @@ export interface OfferDto {
   applyToMealSupplements: boolean;
   minStay?: number;
 }
+
+export interface OfferPeriod {
+  id: string;
+  offerId: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OfferPeriodDto {
+  startDate: string;
+  endDate: string;
+}
+
+export interface OfferSupplement {
+  id: string;
+  offerId: string;
+  supplementId: string;
+  applyDiscount: boolean;
+}
+
+export interface OfferSupplementDto {
+  supplementId: string;
+  applyDiscount?: boolean;
+}

@@ -362,7 +362,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-001 — Créer OffersService
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-FE-001-offers-service`
 - **Commit :** `feat(offers): create offers service with BehaviorSubject`
