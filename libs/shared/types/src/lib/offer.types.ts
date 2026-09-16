@@ -15,6 +15,8 @@ export interface Offer {
   tourOperatorId: string;
   createdAt: string;
   updatedAt: string;
+  offerPeriods: OfferPeriod[];
+  applicableSupplements: OfferSupplement[];
 }
 
 export interface OfferDto {
