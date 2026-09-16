@@ -15,7 +15,8 @@ import {
 } from '../common/pagination.constants';
 import { CreateMealPlanDto } from './dto/create-meal-plan.dto';
 import { UpdateMealPlanDto } from './dto/update-meal-plan.dto';
-import { MealPlanQuery } from './meal-plans.type';
+
+import { PaginationQuery } from '@backend/common/pagination.types';
 import { MealPlanRepository } from './repositories/meal-plan.repository';
 
 @Injectable()
@@ -43,7 +44,7 @@ export class MealPlansService {
 
   async findAll(
     tourOperatorId: string,
-    query?: MealPlanQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<MealPlan>> {
     const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
     const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);

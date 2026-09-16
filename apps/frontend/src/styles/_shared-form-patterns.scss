@@ -1,0 +1,75 @@
+.contract-context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--p-surface-100);
+  border: 1px solid var(--p-surface-200);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+
+  .context-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .context-label {
+      font-size: 0.85rem;
+      color: var(--p-text-muted-color);
+      font-weight: 500;
+    }
+
+    .context-value {
+      font-weight: 600;
+      color: var(--p-text-color);
+
+      &.badge-currency {
+        background-color: var(--p-primary-color);
+        color: var(--p-primary-contrast-color);
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+.rooms-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--p-surface-200);
+  color: var(--p-text-color);
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+}
+
+.room-price-card,
+.meal-supplement-card {
+  border: 1px solid var(--p-surface-200);
+  border-radius: 8px;
+  padding: 1.25rem;
+  background-color: var(--p-surface-0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--p-surface-100);
+    margin-bottom: 1rem;
+
+    .room-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+  }
+}
+
+.review-summary-card,
+.stop-sales-list-item {
+  border: 1px solid var(--p-surface-200);
+  border-radius: 8px;
+  background-color: var(--p-surface-0);
+}

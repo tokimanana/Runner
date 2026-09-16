@@ -39,7 +39,7 @@ export class HotelsService implements IHotelsService {
     query: HotelQuery,
   ): Promise<PaginatedResult<HotelDetail>> {
     const sanitizedLimit = Math.min(
-      query.limit ?? DEFAULT_PAGINATION_LIMIT,
+      query?.limit ?? DEFAULT_PAGINATION_LIMIT,
       MAX_PAGINATION_LIMIT,
     );
 

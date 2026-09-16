@@ -4,11 +4,13 @@
     "outDir": "../../dist/apps/backend",
     "types": ["node", "jest"]
   },
+  "exclude": [],
   "include": [
     "jest.config.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "test/**/*.test.ts",
-    "test/**/*.spec.ts"
+    "test/**/*.spec.ts",
+    "test/**/*.e2e-spec.ts"
   ]
 }

@@ -1,12 +1,28 @@
-@use "tailwindcss";
+@use 'tailwindcss';
 @use 'styles/forms' as *;
-@import "primeicons/primeicons.css";
+@use 'styles/page-layout' as *;
+@use 'styles/shared-form-patterns' as *;
+@import 'primeicons/primeicons.css';
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
+}
+
+.period-table-date,
+.period-table-number,
+.period-table-select {
+  width: 100%;
+  min-width: 110px;
+}
+
+.period-table-date input,
+.period-table-number input {
+  width: 100%;
 }

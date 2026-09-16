@@ -1,0 +1,349 @@
+.contract-form-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+
+  .step1-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem 0;
+  }
+
+  .step1-form .field,
+  .periods-toolbar .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    label {
+      font-weight: 600;
+      color: var(--p-text-color);
+    }
+  }
+
+  .periods-toolbar .field {
+    min-width: 260px;
+  }
+
+  .periods-step {
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .periods-toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--p-text-muted-color);
+    padding: 1.5rem 0;
+  }
+
+  .step-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+
+    .step-actions-nav {
+      display: flex;
+      gap: 0.75rem;
+    }
+  }
+
+  /* Grilles de champs numériques par tranche d'âge/room-type — pattern identique partout */
+  .extra-person-grid .field,
+  .base-rate-grid .field,
+  .meal-supplement-rates-grid .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--p-text-muted-color);
+    }
+  }
+
+  /* Conteneurs de step — même layout de base, seuls padding/gap varient */
+  .room-prices-step,
+  .meal-supplements-step,
+  .stop-sales-step {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1rem 0;
+  }
+
+  .periods-step,
+  .review-step {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .periods-step {
+    padding: 1.5rem 0;
+    gap: 1.5rem;
+  }
+
+  .review-step {
+    padding: 1rem 0;
+    gap: 1.5rem;
+  }
+
+  /* --- Step 3 Enhancements --- */
+  .room-prices-step {
+    .period-header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-right: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+
+      .period-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .period-name {
+          font-weight: 700;
+          font-size: 1.05rem;
+          color: var(--p-primary-color);
+        }
+
+        .period-dates-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background-color: var(--p-primary-50);
+          color: var(--p-primary-700);
+          border: 1px solid var(--p-primary-200);
+          font-weight: 600;
+          font-size: 0.85rem;
+          padding: 0.25rem 0.6rem;
+          border-radius: 6px;
+        }
+      }
+
+      .period-meta-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .meta-tag {
+          font-size: 0.85rem;
+          color: var(--p-text-muted-color);
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+      }
+    }
+
+    .room-price-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding-top: 0.5rem;
+    }
+
+    .room-price-card {
+      .room-info {
+        .room-title {
+          margin: 0 0 0.25rem 0;
+        }
+
+        .capacity-pill {
+          font-size: 0.75rem;
+          color: var(--p-primary-700);
+          background-color: var(--p-primary-50);
+          border: 1px solid var(--p-primary-200);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          font-weight: 500;
+        }
+      }
+
+      .single-rate-field {
+        max-width: 320px;
+      }
+
+      .extra-person-grid,
+      .base-rate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .extra-person-grid {
+        margin-top: 1rem;
+      }
+
+      .age-policy-section {
+        margin-top: 1.25rem;
+        border-top: 1px dashed var(--p-surface-200);
+        padding-top: 1rem;
+
+        h5 {
+          margin: 0 0 0.5rem 0;
+          font-size: 0.95rem;
+          color: var(--p-text-color);
+        }
+
+        .age-policy-group {
+          margin-bottom: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .age-policy-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+
+            .age-policy-group-title {
+              font-size: 0.85rem;
+              font-weight: 600;
+              color: var(--p-text-color);
+            }
+          }
+
+          .age-policy-empty {
+            margin: 0;
+            padding: 0.35rem 0;
+            font-size: 0.8rem;
+            color: var(--p-text-muted-color);
+            font-style: italic;
+          }
+
+          .age-policy-occurrence-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+
+            .occurrence-index {
+              font-size: 0.8rem;
+              font-weight: 600;
+              color: var(--p-primary-700);
+              background-color: var(--p-primary-50);
+              border: 1px solid var(--p-primary-200);
+              border-radius: 4px;
+              padding: 0.1rem 0.4rem;
+              min-width: 1.75rem;
+              text-align: center;
+              flex-shrink: 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* --- Step 4 : Meal Plan Supplements --- */
+  .meal-supplements-step {
+    .meal-supplement-toolbar {
+      padding: 0.75rem 0;
+      max-width: 360px;
+    }
+
+    .meal-supplement-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .meal-supplement-card {
+      .meal-supplement-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .meal-supplement-rates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+      }
+    }
+  }
+
+  /* --- Step 5 : Stop Sales --- */
+  .stop-sales-step {
+    .stop-sales-toolbar {
+      padding: 0.75rem 0;
+      max-width: 220px;
+    }
+
+    .stop-sales-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .stop-sales-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+
+        .stop-sale-date {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 500;
+          color: var(--p-text-color);
+
+          i {
+            color: var(--p-red-500);
+          }
+        }
+      }
+    }
+  }
+
+  /* --- Step 6 : Review & Submit --- */
+  .review-step {
+    .review-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .review-summary-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 1.25rem 1rem;
+
+      .review-summary-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--p-primary-color);
+      }
+
+      .review-summary-label {
+        font-size: 0.85rem;
+        color: var(--p-text-muted-color);
+        font-weight: 500;
+      }
+    }
+  }
+}

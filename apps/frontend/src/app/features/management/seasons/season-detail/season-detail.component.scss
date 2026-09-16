@@ -1,0 +1,70 @@
+.season-detail-page {
+  padding: 1.5rem;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.detail-header {
+  margin-bottom: 1.25rem;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.season-name {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.name-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.periods-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.period-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 0.5px solid var(--p-surface-200);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.period-name {
+  font-weight: 500;
+  flex: 0 0 200px;
+}
+
+.period-dates {
+  flex: 1;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.period-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.empty-state {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+  padding: 1rem 0;
+}
+
+.loading-state {
+  color: var(--p-text-muted-color);
+  text-align: center;
+  padding: 3rem 0;
+}

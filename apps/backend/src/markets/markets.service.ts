@@ -1,3 +1,4 @@
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   RepositoryException,
   RepositoryResult,
@@ -15,7 +16,6 @@ import {
 } from '../common/pagination.constants';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { UpdateMarketDto } from './dto/update-market.dto';
-import { MarketQuery } from './market.types';
 import { MarketRepository } from './repository/market.repository';
 
 @Injectable()
@@ -43,7 +43,7 @@ export class MarketsService {
 
   async findAll(
     tourOperatorId: string,
-    query?: MarketQuery,
+    query?: PaginationQuery,
   ): Promise<PaginatedResult<Market>> {
     const { limit = DEFAULT_PAGINATION_LIMIT, offset = 0 } = query ?? {};
     const sanitizedLimit = Math.min(limit, MAX_PAGINATION_LIMIT);

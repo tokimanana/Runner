@@ -36,8 +36,6 @@ export const MANAGEMENT_ROUTES: Routes = [
   },
   {
     path: 'seasons',
-    loadComponent: () =>
-      import('./seasons/seasons.component').then((m) => m.SeasonsComponent),
     children: [
       {
         path: '',
@@ -52,17 +50,10 @@ export const MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
-        path: 'create',
+        path: ':seasonId',
         loadComponent: () =>
-          import('./seasons/seasons-form/seasons-form.component').then(
-            (m) => m.SeasonsFormComponent
-          ),
-      },
-      {
-        path: ':seasonId/edit',
-        loadComponent: () =>
-          import('./seasons/seasons-form/seasons-form.component').then(
-            (m) => m.SeasonsFormComponent
+          import('./seasons/season-detail/season-detail.component').then(
+            (m) => m.SeasonDetailComponent
           ),
       },
     ],
@@ -94,5 +85,36 @@ export const MANAGEMENT_ROUTES: Routes = [
       import('./supplements/supplements-list/supplements-list.component').then(
         (m) => m.SupplementsListComponent
       ),
+  },
+  {
+    path: 'contracts',
+    children: [
+      {
+        path: '',
+        redirectTo: 'contracts-list',
+        pathMatch: 'full',
+      },
+      {
+        path: 'contracts-list',
+        loadComponent: () =>
+          import('./contracts/contracts-list/contracts-list.component').then(
+            (m) => m.ContractsListComponent
+          ),
+      },
+      {
+        path: 'create',
+        loadComponent: () =>
+          import('./contracts/contract-form/contract-form.component').then(
+            (m) => m.ContractFormComponent
+          ),
+      },
+      {
+        path: ':contractId/edit',
+        loadComponent: () =>
+          import('./contracts/contract-form/contract-form.component').then(
+            (m) => m.ContractFormComponent
+          ),
+      },
+    ],
   },
 ];

@@ -1,0 +1,100 @@
+@if (season(); as s) {
+  <div class="season-detail-page">
+    <div class="detail-header">
+      <div class="name-row">
+        @if (isEditingName()) {
+          <input
+            pInputText
+            [formControl]="nameControl"
+            [readonly]="isSubmitting()"
+          />
+          @if (nameControl.invalid && nameControl.touched) {
+            <small class="error">Name is required</small>
+          }
+        } @else {
+          <span class="season-name">{{ s.name }}</span>
+        }
+
+        <div class="name-actions">
+          @if (isEditingName()) {
+            <p-button
+              icon="pi pi-check"
+              size="small"
+              [loading]="isSubmitting()"
+              (onClick)="saveName()"
+            />
+            <p-button
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              [disabled]="isSubmitting()"
+              (onClick)="cancelEdit()"
+            />
+          } @else {
+            <p-button
+              icon="pi pi-pencil"
+              size="small"
+              [outlined]="true"
+              severity="secondary"
+              (onClick)="enableEditing(s.name)"
+            />
+          }
+        </div>
+      </div>
+    </div>
+
+    <p class="section-label">Periods</p>
+
+    @if (s.seasonPeriods && s.seasonPeriods.length > 0) {
+      <div class="periods-table">
+        @for (period of s.seasonPeriods; track period.id) {
+          <div class="period-row">
+            <span class="period-name">{{ period.name }}</span>
+            <span class="period-dates">
+              {{ period.startDate | date: 'mediumDate' }} –
+              {{ period.endDate | date: 'mediumDate' }}
+            </span>
+            <div class="period-actions">
+              <p-button
+                icon="pi pi-pencil"
+                size="small"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="editPeriod(period)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                size="small"
+                [outlined]="true"
+                severity="danger"
+                (onClick)="deletePeriod(period)"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="empty-state">No periods defined for this season yet.</p>
+    }
+
+    <p-button
+      label="Add Period"
+      icon="pi pi-plus"
+      (onClick)="openCreatePeriod()"
+    />
+  </div>
+} @else if (loading()) {
+  <p class="loading-state">Loading season...</p>
+} @else {
+  <p class="empty-state">Season not found.</p>
+}
+
+<app-season-period-form-dialog
+  [visible]="isDialogVisible()"
+  (visibleChange)="_periodBeingEdited.set(undefined)"
+  [seasonId]="seasonId()"
+  [period]="_periodBeingEdited() ?? null"
+/>
+
+<p-confirmDialog />

@@ -19,7 +19,8 @@ import {
 import { UserRole } from '@prisma/client';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { UpdateMarketDto } from './dto/update-market.dto';
-import { MarketQuery } from './market.types';
+
+import { PaginationQuery } from '@backend/common/pagination.types';
 import { MarketsService } from './markets.service';
 
 @Controller('markets')
@@ -41,7 +42,7 @@ export class MarketsController {
   @Get()
   findAll(
     @Req() req: RequestWithUser,
-    @Query() { limit, offset }: MarketQuery,
+    @Query() { limit, offset }: PaginationQuery,
   ) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.marketsService.findAll(tourOperatorId, {

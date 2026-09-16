@@ -9,6 +9,8 @@ import {
   AgeCategoryDto,
   Hotel,
   HotelDto,
+  OccupancyGuidance,
+  OccupancyGuidanceDto,
   PaginatedResult,
   PaginationParams,
   RoomType,
@@ -179,5 +181,37 @@ export class HotelsService {
     return this.http.delete<void>(
       `${this.apiUrl}/hotels/${hotelId}/room-types/${typeId}/capacities/${capacityId}`
     );
+  }
+
+  // OccupancyGuidance — routes top-level (S4-BE-003-BIS), pas nichées sous
+  // /hotels/:hotelId/room-types/:typeId comme RoomTypeCapacity : la donnée
+  // n'est scopée que par roomTypeId, indépendante de l'hôtel dans l'URL.
+  getOccupancyGuidances(roomTypeId: string): Observable<OccupancyGuidance[]> {
+    return this.http.get<OccupancyGuidance[]>(
+      `${this.apiUrl}/occupancy-guidances/room-types/${roomTypeId}`
+    );
+  }
+
+  createOccupancyGuidance(
+    dto: OccupancyGuidanceDto
+  ): Observable<OccupancyGuidance> {
+    return this.http.post<OccupancyGuidance>(
+      `${this.apiUrl}/occupancy-guidances`,
+      dto
+    );
+  }
+
+  updateOccupancyGuidance(
+    id: string,
+    dto: Partial<OccupancyGuidanceDto>
+  ): Observable<OccupancyGuidance> {
+    return this.http.patch<OccupancyGuidance>(
+      `${this.apiUrl}/occupancy-guidances/${id}`,
+      dto
+    );
+  }
+
+  deleteOccupancyGuidance(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/occupancy-guidances/${id}`);
   }
 }

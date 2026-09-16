@@ -43,7 +43,7 @@ export const refreshInterceptor = (
           switchMap((response) => {
             isRefreshing = false;
             refresh$.next(true);
-            store.dispatch(AuthActions.loginSuccess({ user: response.user }));
+            store.dispatch(AuthActions.refreshSuccess({ user: response.user }));
             return next(req);
           }),
           catchError((refreshError) => {

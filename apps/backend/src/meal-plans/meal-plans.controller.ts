@@ -2,6 +2,7 @@ import { Roles } from '@backend/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '@backend/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@backend/auth/guards/roles.guard';
 import { RequestWithUser } from '@backend/auth/types/jwt-user.type';
+import { PaginationQuery } from '@backend/common/pagination.types';
 import {
   Body,
   Controller,
@@ -20,7 +21,6 @@ import { UserRole } from '@prisma/client';
 import { CreateMealPlanDto } from './dto/create-meal-plan.dto';
 import { UpdateMealPlanDto } from './dto/update-meal-plan.dto';
 import { MealPlansService } from './meal-plans.service';
-import { MealPlanQuery } from './meal-plans.type';
 
 @Controller('meal-plans')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,7 +41,7 @@ export class MealPlansController {
   @Get()
   findAll(
     @Req() req: RequestWithUser,
-    @Query() { limit, offset }: MealPlanQuery,
+    @Query() { limit, offset }: PaginationQuery,
   ) {
     const tourOperatorId = req.user.tourOperatorId;
     return this.mealPlansService.findAll(tourOperatorId, {

@@ -1,19 +1,26 @@
-.seasons-list {
+.seasons-list-page {
   padding: 1.5rem;
-  max-width: 960px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.list-toolbar {
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
+}
 
-  p-iconfield {
-    flex: 1;
-    max-width: 24rem;
+.clickable-row {
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background-color: var(--p-content-hover-background);
+    color: var(--p-content-hover-color);
   }
 }
 
@@ -21,6 +28,12 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.25rem;
+}
+
+.error {
+  font-size: 0.75rem;
+  color: var(--p-red-500);
+  margin-top: 4px;
 }
 
 .empty-state {
@@ -32,12 +45,10 @@
   color: var(--p-text-muted-color);
 
   i {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
-}
 
-.list-footer {
-  font-size: 0.8125rem;
-  color: var(--p-text-muted-color);
-  padding: 0.75rem 0;
+  span {
+    font-size: 0.875rem;
+  }
 }
