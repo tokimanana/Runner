@@ -380,7 +380,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-002 — Créer OffersList Component
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P0 · **SP :** 2
 - **Branch :** `feature/S5-FE-002-offers-list`
 - **Commit :** `feat(offers): create offers list with discount mode badges`
