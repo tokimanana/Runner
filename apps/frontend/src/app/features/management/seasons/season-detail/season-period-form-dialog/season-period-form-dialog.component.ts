@@ -96,6 +96,7 @@ export class SeasonPeriodFormDialogComponent {
   }
 
   submit(): void {
+    console.log('clicked');
     if (this.form.invalid) return;
     const raw = this.form.getRawValue();
     const dto: SeasonPeriodDto = {

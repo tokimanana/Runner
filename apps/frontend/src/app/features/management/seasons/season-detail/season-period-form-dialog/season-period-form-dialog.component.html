@@ -69,10 +69,9 @@
       (onClick)="close()"
     />
     <p-button
-      type="submit"
-      form="periodForm"
       [label]="isEditMode() ? 'Save Changes' : 'Create'"
       [loading]="isSubmitting()"
+      (onClick)="submit()"
     />
   </div>
 </p-dialog>
