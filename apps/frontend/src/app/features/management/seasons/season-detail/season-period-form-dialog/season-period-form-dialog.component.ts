@@ -23,6 +23,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { SeasonsService } from '../../seasons.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-season-period-form-dialog',
@@ -81,15 +82,17 @@ export class SeasonPeriodFormDialogComponent {
       }
     });
 
-    this.form.controls.startDate.valueChanges.subscribe((startDate) => {
-      this.minEndDate.set(startDate);
+    this.form.controls.startDate.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((startDate) => {
+        this.minEndDate.set(startDate);
 
-      if (!startDate) return;
-      const endDateControl = this.form.controls.endDate;
-      if (!endDateControl.value || endDateControl.value < startDate) {
-        endDateControl.setValue(new Date(startDate));
-      }
-    });
+        if (!startDate) return;
+        const endDateControl = this.form.controls.endDate;
+        if (!endDateControl.value || endDateControl.value < startDate) {
+          endDateControl.setValue(new Date(startDate));
+        }
+      });
   }
 
   submit(): void {
