@@ -11,7 +11,7 @@
     period.
   </p>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
+  <form id="periodForm" [formGroup]="form" (ngSubmit)="submit()">
     <div class="field">
       <label for="name">Name <span class="required">*</span></label>
       <input pInputText id="name" formControlName="name" class="w-full" />
@@ -30,6 +30,7 @@
           formControlName="startDate"
           dateFormat="dd/mm/yy"
           [showIcon]="true"
+          appendTo="body"
           class="w-full"
         />
         @if (
@@ -45,6 +46,8 @@
           formControlName="endDate"
           dateFormat="dd/mm/yy"
           [showIcon]="true"
+          [minDate]="minEndDate()"
+          appendTo="body"
           class="w-full"
         />
         @if (form.controls.endDate.invalid && form.controls.endDate.touched) {
@@ -67,6 +70,7 @@
     />
     <p-button
       type="submit"
+      form="periodForm"
       [label]="isEditMode() ? 'Save Changes' : 'Create'"
       [loading]="isSubmitting()"
     />
