@@ -869,6 +869,31 @@ export class ContractFormComponent {
     );
   }
 
+  getStopSalesDatesForPeriod(periodTempId: string): Date[] {
+    return this.localStopSalesDates()
+      .filter((d) => d.periodTempId === periodTempId)
+      .map((d) => d.date);
+  }
+
+  onStopSalesDatesChanged(periodTempId: string, dates: Date[] | null): void {
+    const selected = dates ?? [];
+    const selectedTimes = new Set(selected.map((d) => d.getTime()));
+
+    this.localStopSalesDates.update((entries) => {
+      const others = entries.filter((e) => e.periodTempId !== periodTempId);
+      const current = entries.filter((e) => e.periodTempId === periodTempId);
+
+      const kept = current.filter((e) => selectedTimes.has(e.date.getTime()));
+      const keptTimes = new Set(kept.map((e) => e.date.getTime()));
+
+      const added: LocalStopSalesDate[] = selected
+        .filter((date) => !keptTimes.has(date.getTime()))
+        .map((date) => ({ tempId: crypto.randomUUID(), periodTempId, date }));
+
+      return [...others, ...kept, ...added];
+    });
+  }
+
   /** Bornes de saisie pour le datepicker de stop-sale : ContractPeriod, jamais SeasonPeriod. */
   getStopSalesDateRange(period: LocalContractPeriod): {
     minDate: Date | undefined;

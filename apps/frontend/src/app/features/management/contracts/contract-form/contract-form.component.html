@@ -646,9 +646,19 @@
                                       ) {
                                         <div class="age-policy-occurrence-row">
                                           <span class="occurrence-index"
-                                            >#{{
-                                              occurrence.occurrenceIndex
-                                            }}</span
+                                            >{{ occurrence.occurrenceIndex
+                                            }}{{
+                                              occurrence.occurrenceIndex === 1
+                                                ? 'st'
+                                                : occurrence.occurrenceIndex ===
+                                                    2
+                                                  ? 'nd'
+                                                  : occurrence.occurrenceIndex ===
+                                                      3
+                                                    ? 'rd'
+                                                    : 'th'
+                                            }}
+                                            guest</span
                                           >
 
                                           <p-select
@@ -934,14 +944,16 @@
                     <p-accordion-content>
                       <div class="stop-sales-toolbar">
                         <p-datepicker
-                          [ngModel]="null"
+                          [ngModel]="getStopSalesDatesForPeriod(period.tempId)"
                           (ngModelChange)="
-                            addStopSalesDate(period.tempId, $event)
+                            onStopSalesDatesChanged(period.tempId, $event)
                           "
                           [minDate]="getStopSalesDateRange(period).minDate"
                           [maxDate]="getStopSalesDateRange(period).maxDate"
+                          selectionMode="multiple"
+                          [readonlyInput]="true"
                           dateFormat="dd/mm/yy"
-                          placeholder="Add a stop-sale date"
+                          placeholder="Select stop-sale dates"
                           appendTo="body"
                         />
                       </div>
