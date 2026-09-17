@@ -45,6 +45,7 @@ export class SeasonPeriodFormDialogComponent {
   readonly seasonId = input.required<string>();
   readonly period = input<SeasonPeriod | null>(null);
   readonly isSubmitting = signal(false);
+  readonly minEndDate = signal<Date | null>(null);
 
   readonly isEditMode = computed(() => !!this.period());
 
@@ -73,8 +74,20 @@ export class SeasonPeriodFormDialogComponent {
           startDate: new Date(p.startDate),
           endDate: new Date(p.endDate),
         });
+        this.minEndDate.set(new Date(p.startDate));
       } else {
         this.form.reset();
+        this.minEndDate.set(null);
+      }
+    });
+
+    this.form.controls.startDate.valueChanges.subscribe((startDate) => {
+      this.minEndDate.set(startDate);
+
+      if (!startDate) return;
+      const endDateControl = this.form.controls.endDate;
+      if (!endDateControl.value || endDateControl.value < startDate) {
+        endDateControl.setValue(new Date(startDate));
       }
     });
   }
