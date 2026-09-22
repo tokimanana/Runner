@@ -395,7 +395,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-003 — Créer OfferForm Component
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P0 · **SP :** 4
 - **Branch :** `feature/S5-FE-003-offer-form`
 - **Commit :** `feat(offers): create offer form with discount mode explanation`

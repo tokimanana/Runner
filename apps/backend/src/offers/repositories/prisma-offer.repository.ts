@@ -51,6 +51,7 @@ export class PrismaOfferRepository extends OfferRepository {
     try {
       return await this.prisma.offer.create({
         data: { ...dto, tourOperatorId },
+        include: { offerPeriods: true, applicableSupplements: true },
       });
     } catch (error) {
       if (
@@ -71,6 +72,7 @@ export class PrismaOfferRepository extends OfferRepository {
       return await this.prisma.offer.update({
         where: { id, tourOperatorId },
         data: dto,
+        include: { offerPeriods: true, applicableSupplements: true },
       });
     } catch (error) {
       if (

@@ -1,0 +1,169 @@
+<div class="form-container">
+  <div class="form-header">
+    <div>
+      <h3 class="form-title">
+        {{ isEditMode() ? offer()!.name : 'New Offer' }}
+      </h3>
+      <span class="form-subtitle">
+        {{ isEditMode() ? 'Edit offer details' : 'Add a new offer' }}
+      </span>
+    </div>
+    @if (isEditMode()) {
+      <p-button
+        label="Delete"
+        icon="pi pi-trash"
+        severity="danger"
+        [outlined]="true"
+        size="small"
+        (onClick)="confirmDelete()"
+      />
+    }
+  </div>
+
+  <form [formGroup]="form">
+    <div class="form-row">
+      <div class="field">
+        <label for="code">Code <span class="required">*</span></label>
+        <input
+          pInputText
+          id="code"
+          formControlName="code"
+          class="w-full"
+          placeholder="e.g. SUMMER10"
+          autocomplete="off"
+        />
+        @if (form.controls.code.invalid && form.controls.code.touched) {
+          <small class="error">Code is required</small>
+        }
+      </div>
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input
+          pInputText
+          id="name"
+          formControlName="name"
+          class="w-full"
+          autocomplete="off"
+        />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="error">Name is required</small>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea
+        pInputText
+        id="description"
+        formControlName="description"
+        rows="2"
+        class="w-full"
+      ></textarea>
+    </div>
+
+    <span class="section-label">Type</span>
+    <div class="form-row">
+      <div class="field-inline">
+        <p-radioButton
+          inputId="type-percentage"
+          value="PERCENTAGE"
+          formControlName="type"
+        />
+        <label for="type-percentage">Percentage</label>
+      </div>
+      <div class="field-inline">
+        <p-radioButton
+          inputId="type-flat"
+          value="FLAT_AMOUNT"
+          formControlName="type"
+        />
+        <label for="type-flat">Flat amount</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="value">Value <span class="required">*</span></label>
+      <p-inputNumber
+        inputId="value"
+        formControlName="value"
+        [min]="0"
+        [suffix]="form.controls.type.value === 'PERCENTAGE' ? '%' : undefined"
+      />
+      @if (form.controls.value.invalid && form.controls.value.touched) {
+        <small class="error">Value must be 0 or more</small>
+      }
+    </div>
+
+    <span class="section-label">
+      Discount Mode
+      <i
+        class="pi pi-info-circle"
+        pTooltip="SEQUENTIAL: discounts apply one after another on the reduced price (200€ × 0.90 × 0.95 = 171€). ADDITIVE: discounts are summed then applied once (200€ × (1 - 0.15) = 170€)."
+        tooltipPosition="top"
+      ></i>
+    </span>
+    <div class="form-row">
+      <div class="field-inline">
+        <p-radioButton
+          inputId="mode-sequential"
+          value="SEQUENTIAL"
+          formControlName="discountMode"
+        />
+        <label for="mode-sequential">Sequential</label>
+      </div>
+      <div class="field-inline">
+        <p-radioButton
+          inputId="mode-additive"
+          value="ADDITIVE"
+          formControlName="discountMode"
+        />
+        <label for="mode-additive">Additive</label>
+      </div>
+    </div>
+
+    <p-message
+      severity="warn"
+      text="Offers with different discount modes cannot be combined on the same booking."
+    />
+
+    <span class="section-label">Scope</span>
+    <div class="field-inline">
+      <p-checkbox
+        inputId="applyToRoomOnly"
+        formControlName="applyToRoomOnly"
+        [binary]="true"
+      />
+      <label for="applyToRoomOnly">Apply to room only</label>
+    </div>
+    <div class="field-inline">
+      <p-checkbox
+        inputId="applyToMealSupplements"
+        formControlName="applyToMealSupplements"
+        [binary]="true"
+      />
+      <label for="applyToMealSupplements">Apply to meal supplements</label>
+    </div>
+
+    <div class="field">
+      <label for="minStay">Minimum stay (nights)</label>
+      <p-inputNumber inputId="minStay" formControlName="minStay" [min]="1" />
+    </div>
+  </form>
+
+  <div class="form-footer">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="cancelled.emit()"
+    />
+    <p-button
+      [label]="isEditMode() ? 'Save changes' : 'Create offer'"
+      [loading]="isSubmitting()"
+      (onClick)="submit()"
+    />
+  </div>
+</div>
+
+<p-confirmdialog />
