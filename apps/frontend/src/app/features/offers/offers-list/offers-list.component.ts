@@ -1,3 +1,4 @@
+import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,10 +8,15 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { DiscountMode } from '@runner/shared/types';
+import { RouterLink } from '@angular/router';
+import { DiscountMode, Offer } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { OffersService } from '../offers.service';
+import { Button } from 'primeng/button';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { TableModule } from 'primeng/table';
+import { Tag } from 'primeng/tag';
 import { take } from 'rxjs';
+import { OffersService } from '../offers.service';
 
 export function getDiscountModeSeverity(discountMode: DiscountMode): string {
   return discountMode === 'SEQUENTIAL' ? 'info' : 'success';
@@ -18,7 +24,8 @@ export function getDiscountModeSeverity(discountMode: DiscountMode): string {
 
 @Component({
   selector: 'app-offers-list',
-  imports: [],
+  standalone: true,
+  imports: [Button, TableModule, ConfirmDialog, RouterLink, Tag],
   templateUrl: './offers-list.component.html',
   styleUrl: './offers-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +37,7 @@ export class OffersListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly hasError = signal<boolean>(false);
+  readonly getSeverity = getDiscountModeSeverity;
 
   readonly offers = toSignal(this.offersService.offers$, { initialValue: [] });
   readonly loading = toSignal(this.offersService.loading$, {
@@ -38,6 +46,26 @@ export class OffersListComponent implements OnInit {
 
   ngOnInit(): void {
     this.fetchOffers();
+  }
+
+  confirmDeleteOffer(offer: Offer): void {
+    confirmDelete({
+      header: 'Delete Offer',
+      entityName: offer.name,
+      delete$: this.offersService.remove(offer.id),
+      conflictMessage: `"${offer.name}" is still linked to existing periods or supplements.`,
+      confirmationService: this.confirmationService,
+      messageService: this.messageService,
+    });
+  }
+
+  retry(): void {
+    this.fetchOffers();
+  }
+
+  goToCreate(): void {
+    // TODO(S5-FE-008): route '/management/offers/create' pas encore enregistrée
+    console.log('Navigate to create offer — pending S5-FE-008');
   }
 
   private fetchOffers() {

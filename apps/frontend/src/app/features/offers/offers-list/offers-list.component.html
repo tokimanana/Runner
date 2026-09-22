@@ -1,1 +1,84 @@
-<p>offers-list works!</p>
+<div class="offers-list-page">
+  <div class="toolbar">
+    <p-button label="Add Offer" icon="pi pi-plus" (onClick)="goToCreate()" />
+  </div>
+
+  @if (hasError()) {
+    <div class="error-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <strong>An error has occurred</strong>
+      <p-button
+        icon="pi pi-refresh"
+        label="Retry"
+        [text]="true"
+        [rounded]="true"
+        size="small"
+        (onClick)="retry()"
+      />
+    </div>
+  } @else {
+    <p-table [value]="offers()" [loading]="loading()" dataKey="id">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Value</th>
+          <th>Discount Mode</th>
+          <th>Periods</th>
+          <th></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-offer>
+        <tr
+          [routerLink]="['/management/offers', offer.id, 'edit']"
+          class="clickable-row"
+        >
+          <td>{{ offer.name }}</td>
+          <td>{{ offer.type }}</td>
+          <td>{{ offer.value }}</td>
+          <td>
+            <p-tag
+              [value]="offer.discountMode"
+              [severity]="getSeverity(offer.discountMode)"
+            />
+          </td>
+          <td>{{ offer.offerPeriods.length }}</td>
+          <td>
+            <div class="row-actions">
+              <p-button
+                icon="pi pi-pencil"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                [routerLink]="['/management/offers', offer.id, 'edit']"
+                (click)="$event.stopPropagation()"
+              />
+              <p-button
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                severity="danger"
+                (onClick)="confirmDeleteOffer(offer); $event.stopPropagation()"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="pi pi-inbox"></i>
+              <span>No offers found.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</div>
+
+<p-confirmDialog />
