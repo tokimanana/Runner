@@ -410,7 +410,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-004 — OfferForm — Gestion des Périodes
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P0 · **SP :** 2
 - **Branch :** `feature/S5-FE-004-offer-periods`
 - **Commit :** `feat(offers): add offer periods management in form`
