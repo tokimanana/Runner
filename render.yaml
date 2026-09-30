@@ -6,7 +6,7 @@ services:
     plan: free
     branch: main
     buildCommand: NODE_ENV=development npm install && npx prisma generate && npx nx build backend --configuration=production
-    startCommand: npx prisma migrate deploy && node dist/apps/backend/main.js
+    startCommand: bash scripts/start-with-retry.sh
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -29,6 +29,7 @@ services:
         - apps/backend/**
         - prisma/**
         - libs/**
+        - scripts/**
         - package.json
         - package-lock.json
         - nx.json
