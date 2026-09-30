@@ -1,5 +1,6 @@
 import { dateRangeValidator } from '@/app/shared/utils/date-range.util';
 import {
+  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -8,6 +9,7 @@ import {
   model,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
@@ -23,7 +25,6 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { take } from 'rxjs';
 import { SeasonsService } from '../../seasons.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-season-period-form-dialog',
@@ -37,6 +38,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   ],
   templateUrl: './season-period-form-dialog.component.html',
   styleUrl: './season-period-form-dialog.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SeasonPeriodFormDialogComponent {
   private readonly seasonsService = inject(SeasonsService);
@@ -96,7 +98,6 @@ export class SeasonPeriodFormDialogComponent {
   }
 
   submit(): void {
-    console.log('clicked');
     if (this.form.invalid) return;
     const raw = this.form.getRawValue();
     const dto: SeasonPeriodDto = {
