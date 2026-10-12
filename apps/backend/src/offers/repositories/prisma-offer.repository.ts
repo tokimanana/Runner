@@ -5,7 +5,7 @@ import {
 } from '@backend/common/repository.types';
 import { PrismaService } from '@backend/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Offer, OfferPeriod, Prisma } from '@prisma/client';
+import { Offer, OfferPeriod, OfferSupplement, Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PaginatedResult } from '@runner/shared/types';
 import { CreateOfferDto } from '../dto/create-offer.dto';
@@ -158,6 +158,41 @@ export class PrismaOfferRepository extends OfferRepository {
     try {
       await this.prisma.offerPeriod.delete({
         where: { id: periodId, offerId },
+      });
+      return RepositoryResult.DELETED;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      )
+        return RepositoryResult.NOT_FOUND;
+      throw error;
+    }
+  }
+
+  async linkSupplement(
+    offerId: string,
+    supplementId: string,
+    applyDiscount: boolean,
+  ): Promise<OfferSupplement> {
+    return this.prisma.offerSupplement.upsert({
+      where: {
+        offerId_supplementId: { offerId, supplementId },
+      },
+      update: { applyDiscount },
+      create: { offerId, supplementId, applyDiscount },
+    });
+  }
+
+  async unlinkSupplement(
+    offerId: string,
+    supplementId: string,
+  ): Promise<RepositoryResult> {
+    try {
+      await this.prisma.offerSupplement.delete({
+        where: {
+          offerId_supplementId: { offerId, supplementId },
+        },
       });
       return RepositoryResult.DELETED;
     } catch (error) {
