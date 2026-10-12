@@ -88,10 +88,16 @@ export class OffersService {
   }
 
   createPeriod(offerId: string, dto: OfferPeriodDto): Observable<OfferPeriod> {
-    return this.http.post<OfferPeriod>(
-      `${this.apiUrl}/${offerId}/periods`,
-      dto
-    );
+    return this.http
+      .post<OfferPeriod>(`${this.apiUrl}/${offerId}/periods`, dto)
+      .pipe(
+        tap((period) =>
+          this.patchOffer(offerId, (o) => ({
+            ...o,
+            offerPeriods: [...o.offerPeriods, period],
+          }))
+        )
+      );
   }
 
   updatePeriod(
@@ -124,6 +130,12 @@ export class OffersService {
   unlinkSupplement(offerId: string, supplementId: string): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/${offerId}/supplements/${supplementId}`
+    );
+  }
+
+  private patchOffer(offerId: string, patch: (o: Offer) => Offer): void {
+    this._offers$.next(
+      this._offers$.getValue().map((o) => (o.id === offerId ? patch(o) : o))
     );
   }
 }

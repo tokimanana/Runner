@@ -2,7 +2,7 @@
   <div class="form-header">
     <div>
       <h3 class="form-title">
-        {{ isEditMode() ? offer()!.name : 'New Offer' }}
+        {{ isEditMode() ? currentOffer()!.name : 'New Offer' }}
       </h3>
       <span class="form-subtitle">
         {{ isEditMode() ? 'Edit offer details' : 'Add a new offer' }}
@@ -15,6 +15,7 @@
         severity="danger"
         [outlined]="true"
         size="small"
+        [disabled]="isSubmitting()"
         (onClick)="confirmDelete()"
       />
     }
@@ -156,6 +157,7 @@
       label="Cancel"
       severity="secondary"
       [outlined]="true"
+      [disabled]="isSubmitting()"
       (onClick)="cancelled.emit()"
     />
     <p-button
