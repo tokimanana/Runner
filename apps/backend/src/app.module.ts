@@ -7,11 +7,11 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { MarketsModule } from './markets/markets.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
+import { OffersModule } from './offers/offers.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { SupplementsModule } from './supplements/supplements.module';
 import { UsersModule } from './users/users.module';
-
 @Module({
   imports: [
     PrismaModule,
@@ -24,6 +24,7 @@ import { UsersModule } from './users/users.module';
     CurrenciesModule,
     SupplementsModule,
     ContractsModule,
+    OffersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
