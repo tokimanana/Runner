@@ -129,7 +129,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-002d — `OfferRepository` (abstract class)
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Task · **Priority :** P1 · **SP :** 1
 - **Branch :** `feature/S5-BE-002d-offer-repository`
 - **Commit :** `feat(offers): add OfferRepository abstract class`
