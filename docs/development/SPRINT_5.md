@@ -98,7 +98,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-002b — Shared types : `Offer`, `OfferDto`, `OfferType`, `DiscountMode`
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Task · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-BE-002b-shared-types-offer`
 - **Commit :** `feat(shared-types): add Offer types`
