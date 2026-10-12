@@ -113,7 +113,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-002c — DTOs : `CreateOfferDto` + `UpdateOfferDto`
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Task · **Priority :** P1 · **SP :** 1
 - **Branch :** `feature/S5-BE-002c-offer-dtos`
 - **Commit :** `feat(offers): add CreateOfferDto and UpdateOfferDto`
