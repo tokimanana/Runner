@@ -198,7 +198,7 @@ Module scaffold (BE-001)
 
 #### S5-BE-003a — Prisma : modèle `OfferPeriod` + migration
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Schema · **Priority :** P0 · **SP :** 1
 - **Branch :** `feature/S5-BE-003a-prisma-offer-period`
 - **Commit :** `feat(offers): add OfferPeriod model to Prisma schema`
