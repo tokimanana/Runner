@@ -40,12 +40,6 @@ export class SidebarComponent {
       roles: ['ADMIN', 'MANAGER'],
     },
     {
-      label: 'Seasons',
-      icon: 'pi pi-calendar',
-      route: '/management/seasons',
-      roles: ['ADMIN', 'MANAGER'],
-    },
-    {
       label: 'Meal Plans',
       icon: 'pi pi-server',
       route: '/management/meal-plans',
@@ -61,6 +55,12 @@ export class SidebarComponent {
       label: 'Currencies',
       icon: 'pi pi-dollar',
       route: '/management/currencies',
+      roles: ['ADMIN', 'MANAGER'],
+    },
+    {
+      label: 'Seasons',
+      icon: 'pi pi-calendar',
+      route: '/management/seasons',
       roles: ['ADMIN', 'MANAGER'],
     },
     {
