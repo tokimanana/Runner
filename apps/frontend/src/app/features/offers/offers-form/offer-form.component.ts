@@ -76,6 +76,7 @@ export class OfferFormComponent {
 
   private readonly rows = signal<ReadonlyMap<string, PeriodRow>>(new Map());
   private readonly createdOffer = signal<Offer | null>(null);
+  private nextRowKey = 0;
 
   readonly offer = input<Offer | null>(null);
   readonly saved = output<void>();
@@ -209,7 +210,7 @@ export class OfferFormComponent {
   }
 
   addPeriod(data: OfferPeriodDto): void {
-    const clientKey = crypto.randomUUID();
+    const clientKey = this.newClientKey();
     this.patchRows((m) =>
       m.set(clientKey, { clientKey, data, status: 'CREATED' })
     );
@@ -239,7 +240,7 @@ export class OfferFormComponent {
   private toRows(periods: OfferPeriod[]): ReadonlyMap<string, PeriodRow> {
     return new Map(
       periods.map((p): [string, PeriodRow] => {
-        const clientKey = crypto.randomUUID();
+        const clientKey = this.newClientKey();
         return [
           clientKey,
           {
@@ -308,5 +309,9 @@ export class OfferFormComponent {
       concatMap((row) => this.syncRow$(offerId, row)),
       toArray()
     );
+  }
+
+  private newClientKey(): string {
+    return `row-${++this.nextRowKey}`;
   }
 }
