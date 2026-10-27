@@ -105,16 +105,31 @@ export class OffersService {
     periodId: string,
     dto: Partial<OfferPeriodDto>
   ): Observable<OfferPeriod> {
-    return this.http.patch<OfferPeriod>(
-      `${this.apiUrl}/${offerId}/periods/${periodId}`,
-      dto
-    );
+    return this.http
+      .patch<OfferPeriod>(`${this.apiUrl}/${offerId}/periods/${periodId}`, dto)
+      .pipe(
+        tap((updated) =>
+          this.patchOffer(offerId, (o) => ({
+            ...o,
+            offerPeriods: o.offerPeriods.map((p) =>
+              p.id === updated.id ? updated : p
+            ),
+          }))
+        )
+      );
   }
 
   removePeriod(offerId: string, periodId: string): Observable<void> {
-    return this.http.delete<void>(
-      `${this.apiUrl}/${offerId}/periods/${periodId}`
-    );
+    return this.http
+      .delete<void>(`${this.apiUrl}/${offerId}/periods/${periodId}`)
+      .pipe(
+        tap(() =>
+          this.patchOffer(offerId, (o) => ({
+            ...o,
+            offerPeriods: o.offerPeriods.filter((p) => p.id !== periodId),
+          }))
+        )
+      );
   }
 
   linkSupplement(
