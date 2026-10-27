@@ -152,6 +152,68 @@
     </div>
   </form>
 
+  <span class="section-label">Validity periods</span>
+
+  <p-table [value]="visibleRows()" dataKey="clientKey">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Start</th>
+        <th>End</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{ row.data.startDate | date: 'dd/MM/yyyy' : 'UTC' }}</td>
+        <td>{{ row.data.endDate | date: 'dd/MM/yyyy' : 'UTC' }}</td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              [disabled]="isSubmitting()"
+              (onClick)="openEditPeriod(row)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [text]="true"
+              [rounded]="true"
+              size="small"
+              severity="danger"
+              [disabled]="isSubmitting()"
+              (onClick)="removePeriod(row.clientKey)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="3">No period defined yet.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-button
+    label="Add period"
+    icon="pi pi-plus"
+    size="small"
+    [outlined]="true"
+    [disabled]="isSubmitting()"
+    (onClick)="openAddPeriod()"
+  />
+
+  <app-offer-period-dialog
+    [visible]="isPeriodDialogVisible()"
+    (visibleChange)="closePeriodDialog()"
+    [period]="rowBeingEdited()?.data ?? null"
+    (confirmed)="onPeriodConfirmed($event)"
+  />
+
   <div class="form-footer">
     <p-button
       label="Cancel"

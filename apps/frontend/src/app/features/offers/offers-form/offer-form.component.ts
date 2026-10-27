@@ -1,4 +1,5 @@
 import { confirmDelete } from '@/app/shared/utils/confirm-delete.util';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,6 +32,7 @@ import { InputNumber } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
 import { RadioButton } from 'primeng/radiobutton';
+import { TableModule } from 'primeng/table';
 import { Tooltip } from 'primeng/tooltip';
 import {
   concatMap,
@@ -44,6 +46,7 @@ import {
 } from 'rxjs';
 import { PeriodRow } from '../offer-period-row.types';
 import { OffersService } from '../offers.service';
+import { OfferPeriodDialogComponent } from './offer-period-dialog/offer-period-dialog.component';
 
 @Component({
   selector: 'app-offer-form',
@@ -57,6 +60,9 @@ import { OffersService } from '../offers.service';
     Checkbox,
     Message,
     Tooltip,
+    TableModule,
+    DatePipe,
+    OfferPeriodDialogComponent,
   ],
   templateUrl: './offer-form.component.html',
   styleUrl: './offer-form.component.scss',
@@ -99,6 +105,29 @@ export class OfferFormComponent {
     applyToMealSupplements: this.fb.control(false),
     minStay: new FormControl<number | null>(null),
   });
+
+  protected readonly rowBeingEdited = signal<PeriodRow | null | undefined>(
+    undefined
+  );
+  protected readonly isPeriodDialogVisible = computed(
+    () => this.rowBeingEdited() !== undefined
+  );
+
+  openAddPeriod(): void {
+    this.rowBeingEdited.set(null);
+  }
+  openEditPeriod(row: PeriodRow): void {
+    this.rowBeingEdited.set(row);
+  }
+  closePeriodDialog(): void {
+    this.rowBeingEdited.set(undefined);
+  }
+
+  onPeriodConfirmed(dto: OfferPeriodDto): void {
+    const editing = this.rowBeingEdited();
+    if (editing) this.editPeriod(editing.clientKey, dto);
+    else this.addPeriod(dto);
+  }
 
   constructor() {
     effect(() => {
