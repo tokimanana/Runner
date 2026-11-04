@@ -22,6 +22,7 @@ import {
   OfferDto,
   OfferPeriod,
   OfferPeriodDto,
+  OfferSupplement,
   OfferType,
 } from '@runner/shared/types';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -35,6 +36,7 @@ import { RadioButton } from 'primeng/radiobutton';
 import { TableModule } from 'primeng/table';
 import { Tooltip } from 'primeng/tooltip';
 import {
+  concat,
   concatMap,
   EMPTY,
   from,
@@ -73,6 +75,9 @@ export class OfferFormComponent {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly fb = inject(NonNullableFormBuilder);
+
+  private readonly selection = signal<ReadonlyMap<string, boolean>>(new Map());
+  private readonly persisted = signal<ReadonlyMap<string, boolean>>(new Map());
 
   private readonly rows = signal<ReadonlyMap<string, PeriodRow>>(new Map());
   private readonly createdOffer = signal<Offer | null>(null);
@@ -136,6 +141,9 @@ export class OfferFormComponent {
       if (offer) {
         this.form.patchValue({ ...offer, minStay: offer.minStay ?? null });
         this.rows.set(this.toRows(offer.offerPeriods));
+        const linked = this.toSupplementMap(offer.applicableSupplements);
+        this.selection.set(linked);
+        this.persisted.set(new Map(linked));
       } else {
         this.form.reset({
           type: 'PERCENTAGE',
@@ -143,6 +151,8 @@ export class OfferFormComponent {
           value: 0,
         });
         this.rows.set(new Map());
+        this.selection.set(new Map());
+        this.persisted.set(new Map());
         this.createdOffer.set(null);
       }
     });
@@ -170,7 +180,7 @@ export class OfferFormComponent {
 
     offer$
       .pipe(
-        switchMap((saved) => this.syncPeriods$(saved.id)),
+        switchMap((saved) => this.syncChildren$(saved.id)),
         take(1)
       )
       .subscribe({
@@ -234,6 +244,24 @@ export class OfferFormComponent {
       if (!row) return;
       if (row.status === 'CREATED') m.delete(clientKey);
       else m.set(clientKey, { ...row, status: 'DELETED' });
+    });
+  }
+
+  toggleSupplement(supplementId: string, checked: boolean): void {
+    if (this.isSubmitting()) return;
+    this.selection.update((current) => {
+      const next = new Map(current);
+      if (checked) next.set(supplementId, current.get(supplementId) ?? false);
+      else next.delete(supplementId);
+      return next;
+    });
+  }
+
+  setApplyDiscount(supplementId: string, applyDiscount: boolean): void {
+    if (this.isSubmitting()) return;
+    this.selection.update((current) => {
+      if (!current.has(supplementId)) return current;
+      return new Map(current).set(supplementId, applyDiscount);
     });
   }
 
@@ -309,6 +337,52 @@ export class OfferFormComponent {
       concatMap((row) => this.syncRow$(offerId, row)),
       toArray()
     );
+  }
+
+  private toSupplementMap(
+    linked: OfferSupplement[]
+  ): ReadonlyMap<string, boolean> {
+    return new Map(
+      linked.map((s): [string, boolean] => [s.supplementId, s.applyDiscount])
+    );
+  }
+
+  private patchPersisted(mutate: (draft: Map<string, boolean>) => void): void {
+    this.persisted.update((current) => {
+      const next = new Map(current);
+      mutate(next);
+      return next;
+    });
+  }
+
+  private syncSupplements$(offerId: string): Observable<unknown> {
+    const wanted = this.selection();
+    const base = this.persisted();
+
+    const link$ = [...wanted]
+      .filter(([id, apply]) => base.get(id) !== apply)
+      .map(([id, apply]) =>
+        this.offersService
+          .linkSupplement(offerId, { supplementId: id, applyDiscount: apply })
+          .pipe(tap(() => this.patchPersisted((m) => m.set(id, apply))))
+      );
+
+    const unlink$ = [...base.keys()]
+      .filter((id) => !wanted.has(id))
+      .map((id) =>
+        this.offersService
+          .unlinkSupplement(offerId, id)
+          .pipe(tap(() => this.patchPersisted((m) => m.delete(id))))
+      );
+
+    return concat(...link$, ...unlink$).pipe(toArray());
+  }
+
+  private syncChildren$(offerId: string): Observable<unknown> {
+    return concat(
+      this.syncPeriods$(offerId),
+      this.syncSupplements$(offerId)
+    ).pipe(toArray());
   }
 
   private newClientKey(): string {
