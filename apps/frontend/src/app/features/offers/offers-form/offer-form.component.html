@@ -207,6 +207,38 @@
     (onClick)="openAddPeriod()"
   />
 
+  <span class="section-label">Applicable supplements</span>
+
+  @for (supplement of supplements(); track supplement.id) {
+    <div class="supplement-row">
+      <div class="field-inline">
+        <p-checkbox
+          [inputId]="'supp-' + supplement.id"
+          [binary]="true"
+          [ngModel]="selection().has(supplement.id)"
+          (ngModelChange)="toggleSupplement(supplement.id, $event)"
+          [disabled]="isSubmitting()"
+        />
+        <label [attr.for]="'supp-' + supplement.id">{{
+          supplement.name
+        }}</label>
+      </div>
+
+      <div class="field-inline">
+        <p-checkbox
+          [inputId]="'disc-' + supplement.id"
+          [binary]="true"
+          [ngModel]="selection().get(supplement.id) ?? false"
+          (ngModelChange)="setApplyDiscount(supplement.id, $event)"
+          [disabled]="isSubmitting() || !selection().has(supplement.id)"
+        />
+        <label [attr.for]="'disc-' + supplement.id">Apply discount</label>
+      </div>
+    </div>
+  } @empty {
+    <p>No supplement available.</p>
+  }
+
   <app-offer-period-dialog
     [visible]="isPeriodDialogVisible()"
     (visibleChange)="closePeriodDialog()"

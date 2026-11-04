@@ -10,8 +10,10 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
+  FormsModule,
   NonNullableFormBuilder,
   ReactiveFormsModule,
   Validators,
@@ -46,6 +48,7 @@ import {
   tap,
   toArray,
 } from 'rxjs';
+import { SupplementsService } from '../../management/supplements/supplements.service';
 import { PeriodRow } from '../offer-period-row.types';
 import { OffersService } from '../offers.service';
 import { OfferPeriodDialogComponent } from './offer-period-dialog/offer-period-dialog.component';
@@ -54,6 +57,7 @@ import { OfferPeriodDialogComponent } from './offer-period-dialog/offer-period-d
   selector: 'app-offer-form',
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     InputTextModule,
     Button,
     ConfirmDialog,
@@ -75,6 +79,11 @@ export class OfferFormComponent {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly supplementsService = inject(SupplementsService);
+
+  protected readonly supplements = toSignal(this.supplementsService.getAll(), {
+    initialValue: [],
+  });
 
   private readonly selection = signal<ReadonlyMap<string, boolean>>(new Map());
   private readonly persisted = signal<ReadonlyMap<string, boolean>>(new Map());
