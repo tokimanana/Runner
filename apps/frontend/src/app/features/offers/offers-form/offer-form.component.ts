@@ -85,7 +85,9 @@ export class OfferFormComponent {
     initialValue: [],
   });
 
-  private readonly selection = signal<ReadonlyMap<string, boolean>>(new Map());
+  protected readonly selection = signal<ReadonlyMap<string, boolean>>(
+    new Map()
+  );
   private readonly persisted = signal<ReadonlyMap<string, boolean>>(new Map());
 
   private readonly rows = signal<ReadonlyMap<string, PeriodRow>>(new Map());
