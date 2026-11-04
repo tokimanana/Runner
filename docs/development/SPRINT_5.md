@@ -424,7 +424,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-005 — OfferForm — Gestion des Supplements applicables
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 2
 - **Branch :** `feature/S5-FE-005-offer-supplements`
 - **Commit :** `feat(offers): add applicable supplements management in offer form`

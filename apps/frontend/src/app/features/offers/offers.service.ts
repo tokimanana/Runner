@@ -136,16 +136,36 @@ export class OffersService {
     offerId: string,
     dto: OfferSupplementDto
   ): Observable<OfferSupplement> {
-    return this.http.post<OfferSupplement>(
-      `${this.apiUrl}/${offerId}/supplements`,
-      dto
-    );
+    return this.http
+      .post<OfferSupplement>(`${this.apiUrl}/${offerId}/supplements`, dto)
+      .pipe(
+        tap((linked) =>
+          this.patchOffer(offerId, (o) => ({
+            ...o,
+            applicableSupplements: [
+              ...o.applicableSupplements.filter(
+                (s) => s.supplementId !== linked.supplementId
+              ),
+              linked,
+            ],
+          }))
+        )
+      );
   }
 
   unlinkSupplement(offerId: string, supplementId: string): Observable<void> {
-    return this.http.delete<void>(
-      `${this.apiUrl}/${offerId}/supplements/${supplementId}`
-    );
+    return this.http
+      .delete<void>(`${this.apiUrl}/${offerId}/supplements/${supplementId}`)
+      .pipe(
+        tap(() =>
+          this.patchOffer(offerId, (o) => ({
+            ...o,
+            applicableSupplements: o.applicableSupplements.filter(
+              (s) => s.supplementId !== supplementId
+            ),
+          }))
+        )
+      );
   }
 
   private patchOffer(offerId: string, patch: (o: Offer) => Offer): void {
