@@ -2,15 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   input,
   model,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { checkOfferCompatibility } from '@runner/shared/business-rules';
 import { Offer } from '@runner/shared/types';
 import { Checkbox } from 'primeng/checkbox';
 import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
-import { checkOfferCompatibility } from '@runner/shared/business-rules';
 import { getDiscountModeSeverity } from '../offers-list/offers-list.component';
 import { isOfferEligible, Stay } from './offer-eligibility.util';
 
@@ -50,6 +51,20 @@ export class OffersSelectionComponent {
       };
     });
   });
+
+  constructor() {
+    effect(() => {
+      const eligibleIds = new Set(
+        this.eligibleOffers().map((offer) => offer.id)
+      );
+      const current = this.selectedIds();
+      const kept = current.filter((id) => eligibleIds.has(id));
+
+      if (kept.length !== current.length) {
+        this.selectedIds.set(kept);
+      }
+    });
+  }
 
   protected toggle(offerId: string, checked: boolean): void {
     this.selectedIds.update((ids) =>
