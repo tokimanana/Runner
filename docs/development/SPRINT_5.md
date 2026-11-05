@@ -454,7 +454,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-007 — Tests unitaires OffersSelectionComponent
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Test · **Priority :** P1 · **SP :** 2
 - **Branch :** `test/S5-FE-007-offers-selection-tests`
 - **Commit :** `test(offers): add unit tests for offers selection compatibility logic`
