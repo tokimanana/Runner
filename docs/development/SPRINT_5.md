@@ -437,7 +437,7 @@ Module scaffold (BE-001)
 
 ### S5-FE-006 — Créer OffersSelectionComponent (pour Booking)
 
-- **Statut :** ⬜ To Do
+- **Statut :** ✅ Done
 - **Type :** Feature · **Priority :** P1 · **SP :** 3
 - **Branch :** `feature/S5-FE-006-offers-selection`
 - **Commit :** `feat(offers): create offers selection component with compatibility logic`
