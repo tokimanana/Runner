@@ -1,0 +1,24 @@
+<div class="offers-selection">
+  @for (row of rows(); track row.offer.id) {
+    <div class="offer-row">
+      <div class="field-inline">
+        <p-checkbox
+          [inputId]="'offer-' + row.offer.id"
+          [binary]="true"
+          [ngModel]="row.isSelected"
+          (ngModelChange)="toggle(row.offer.id, $event)"
+          [disabled]="row.disabled"
+        />
+        <label [attr.for]="'offer-' + row.offer.id">{{ row.offer.name }}</label>
+      </div>
+      <p-tag
+        [value]="row.offer.discountMode"
+        [severity]="getSeverity(row.offer.discountMode)"
+        [pTooltip]="row.reason"
+        tooltipPosition="top"
+      />
+    </div>
+  } @empty {
+    <p>No offer available for these dates.</p>
+  }
+</div>
