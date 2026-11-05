@@ -8,6 +8,8 @@ const config: Config = {
   rootDir: '.',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@runner/shared/business-rules$':
+      '<rootDir>/../../libs/shared/business-rules/src/index.ts',
   },
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
